@@ -39,6 +39,7 @@ import { useWorkoutSessionsStore } from '@/store/workoutSessionsStore';
 import { normalizeSearchText } from '@/utils/strings';
 import type { Exercise } from '@/constants/exercises';
 import type { SetLog, WorkoutExercise } from '@/types/workout';
+import hierarchyData from '@/data/hierarchy.json';
 
 const DEFAULT_SET_COUNT = 1;
 const SCREEN_HEIGHT = Dimensions.get('window').height;
@@ -151,6 +152,29 @@ const WorkoutSessionScreen: React.FC = () => {
   const semanticResults = useSemanticExerciseSearch(searchTerm, exerciseCatalog, {
     limit: exerciseCatalog.length,
   });
+
+  // Build muscle to mid-level group mapping
+  const muscleToMidLevelMap = useMemo(() => {
+    const map: Record<string, string> = {};
+    const hierarchy = hierarchyData.muscle_hierarchy;
+
+    Object.entries(hierarchy).forEach(([l1, l1Data]) => {
+      if (l1Data.muscles) {
+        Object.entries(l1Data.muscles).forEach(([midLevel, midLevelData]) => {
+          // Map the mid-level group to itself
+          map[midLevel] = midLevel;
+          
+          // Map all low-level muscles to their mid-level parent
+          if (midLevelData.muscles) {
+            Object.keys(midLevelData.muscles).forEach(lowLevel => {
+              map[lowLevel] = midLevel;
+            });
+          }
+        });
+      }
+    });
+    return map;
+  }, []);
 
   const filteredExercises = useMemo(() => {
     const trimmedQuery = searchTerm.trim();
@@ -777,21 +801,33 @@ const WorkoutSessionScreen: React.FC = () => {
                 </Text>
               </View>
             )}
-            renderItem={({ item }) => (
-              <Pressable
-                style={styles.modalItem}
-                onPress={() => handleSelectExercise(item)}
-                accessibilityRole="button"
-                accessibilityLabel={replaceTargetName ? `Replace with ${item.name}` : `Add ${item.name}`}
-              >
-                <Text variant="bodySemibold" color="primary">
-                  {item.name}
-                </Text>
-                <Text variant="caption" color="secondary">
-                  {`${item.muscleGroup} • ${item.movementPattern}`}
-                </Text>
-              </Pressable>
-            )}
+            renderItem={({ item }) => {
+              // Get all muscle names from the exercise's muscles object
+              const muscleNames = Object.keys(item.muscles || {});
+              
+              // Map each muscle to its mid-level parent group
+              const midLevelGroups = muscleNames.map(muscle => muscleToMidLevelMap[muscle]).filter(Boolean);
+              
+              // Remove duplicates and sort for consistency
+              const uniqueGroups = [...new Set(midLevelGroups)];
+              const midLevelMusclesLabel = uniqueGroups.length > 0 ? uniqueGroups.join(' · ') : 'General';
+
+              return (
+                <Pressable
+                  style={styles.modalItem}
+                  onPress={() => handleSelectExercise(item)}
+                  accessibilityRole="button"
+                  accessibilityLabel={replaceTargetName ? `Replace with ${item.name}` : `Add ${item.name}`}
+                >
+                  <Text variant="bodySemibold" color="primary">
+                    {item.name}
+                  </Text>
+                  <Text variant="caption" color="secondary">
+                    {`${midLevelMusclesLabel} • ${item.movementPattern}`}
+                  </Text>
+                </Pressable>
+              );
+            }}
           />
         </AnimatedPressable>
       </Pressable>

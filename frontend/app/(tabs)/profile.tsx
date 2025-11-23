@@ -6,6 +6,7 @@ import { Text } from '@/components/atoms/Text';
 import { ScreenHeader } from '@/components/molecules/ScreenHeader';
 import { TabSwipeContainer } from '@/components/templates/TabSwipeContainer';
 import { FocusDistributionChart } from '@/components/molecules/FocusDistributionChart';
+import { WeeklyVolumeChart } from '@/components/molecules/WeeklyVolumeChart';
 import { colors, spacing } from '@/constants/theme';
 
 const styles = StyleSheet.create({
@@ -20,6 +21,13 @@ const styles = StyleSheet.create({
   cardContent: {
     gap: spacing.md,
   },
+  headerStripe: {
+    height: 4,
+    width: '100%',
+    backgroundColor: colors.accent.orange,
+    borderRadius: 2,
+    marginTop: spacing.xs,
+  },
 });
 
 const StatsScreen: React.FC = () => {
@@ -27,12 +35,27 @@ const StatsScreen: React.FC = () => {
     <TabSwipeContainer contentContainerStyle={styles.contentContainer}>
       <ScreenHeader title="Progress" subtitle="Track your strength and celebrate wins." />
 
-      <SurfaceCard tone="neutral" padding="xl">
+      <SurfaceCard tone="neutral" padding="xl" showAccentStripe={false}>
         <View style={styles.cardContent}>
-          <Text variant="heading3" color="primary">
-            Focus Distribution
-          </Text>
+          <View>
+            <Text variant="heading3" color="primary">
+              Set Distribution
+            </Text>
+            <View style={styles.headerStripe} />
+          </View>
           <FocusDistributionChart />
+        </View>
+      </SurfaceCard>
+
+      <SurfaceCard tone="neutral" padding="xl" showAccentStripe={false}>
+        <View style={styles.cardContent}>
+          <View>
+            <Text variant="heading3" color="primary">
+              Weekly Volume
+            </Text>
+            <View style={styles.headerStripe} />
+          </View>
+          <WeeklyVolumeChart />
         </View>
       </SurfaceCard>
     </TabSwipeContainer>

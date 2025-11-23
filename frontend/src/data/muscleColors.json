@@ -1,0 +1,47 @@
+{
+    "colors": {
+        "high_level": {
+            "Upper Body": "#FF5722",
+            "Lower Body": "#9C27B0",
+            "Core": "#009688"
+        },
+        "mid_level": {
+            "Chest": "#FF9100",
+            "Back": "#BF360C",
+            "Shoulders": "#FF3D00",
+            "Arms": "#FFC400",
+            "Quads": "#7B1FA2",
+            "Hamstrings": "#512DA8",
+            "Glutes": "#827717",
+            "Calves": "#689F38",
+            "Hip Stabilizers": "#33691E",
+            "Abs": "#00BCD4",
+            "Obliques": "#009688"
+        },
+        "low_level": {
+            "Upper Chest": "#FF9800",
+            "Mid Chest": "#FFA726",
+            "Lower Chest": "#FFB74D",
+            "Lats": "#D84315",
+            "Mid Back": "#E64A19",
+            "Upper Back": "#F4511E",
+            "Lower Back": "#FF7043",
+            "Traps": "#FF8A65",
+            "Front Delts": "#FF3D00",
+            "Lateral Delts": "#FF6E40",
+            "Rear Delts": "#FF9E80",
+            "Biceps": "#FFC400",
+            "Triceps": "#FFD740",
+            "Forearms": "#FFE57F",
+            "Quads": "#7B1FA2",
+            "Hamstrings": "#512DA8",
+            "Glutes": "#827717",
+            "Calves": "#689F38",
+            "Adductors": "#558B2F",
+            "Abductors": "#33691E",
+            "Upper Abs": "#00BCD4",
+            "Lower Abs": "#4DD0E1",
+            "Obliques": "#009688"
+        }
+    }
+}

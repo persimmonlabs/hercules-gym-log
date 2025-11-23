@@ -1,23 +1,112 @@
 {
   "muscle_hierarchy": {
     "Upper Body": {
-      "Chest": ["Chest"],
-      "Back": ["Back", "Lats", "Traps"],
-      "Shoulders": ["Shoulders", "Front Delts", "Lateral Delts", "Rear Delts"],
-      "Arms": ["Biceps", "Triceps", "Forearms"]
+      "level": "high",
+      "muscles": {
+        "Chest": {
+          "level": "mid",
+          "muscles": {
+            "Upper Chest": { "level": "low" },
+            "Mid Chest": { "level": "low" },
+            "Lower Chest": { "level": "low" }
+          }
+        },
+        "Back": {
+          "level": "mid",
+          "muscles": {
+            "Lats": { "level": "low" },
+            "Mid Back": { "level": "low" },
+            "Upper Back": { "level": "low" },
+            "Lower Back": { "level": "low" },
+            "Traps": { "level": "low" }
+          }
+        },
+        "Shoulders": {
+          "level": "mid",
+          "muscles": {
+            "Front Delts": { "level": "low" },
+            "Lateral Delts": { "level": "low" },
+            "Rear Delts": { "level": "low" }
+          }
+        },
+        "Arms": {
+          "level": "mid",
+          "muscles": {
+            "Biceps": { "level": "low" },
+            "Triceps": { "level": "low" },
+            "Forearms": { "level": "low" }
+          }
+        }
+      }
     },
     "Lower Body": {
-      "Quads": ["Quads"],
-      "Glutes": ["Glutes"],
-      "Hamstrings": ["Hamstrings"],
-      "Calves": ["Calves", "Tibialis Anterior"],
-      "Adductors": ["Adductors"],
-      "Abductors": ["Abductors"]
+      "level": "high",
+      "muscles": {
+        "Quads": {
+          "level": "mid",
+          "muscles": {
+            "Quads": { "level": "low" }
+          }
+        },
+        "Hamstrings": {
+          "level": "mid",
+          "muscles": {
+            "Hamstrings": { "level": "low" }
+          }
+        },
+        "Glutes": {
+          "level": "mid",
+          "muscles": {
+            "Glutes": { "level": "low" }
+          }
+        },
+        "Calves": {
+          "level": "mid",
+          "muscles": {
+            "Calves": { "level": "low" }
+          }
+        },
+        "Hip Stabilizers": {
+          "level": "mid",
+          "muscles": {
+            "Adductors": { "level": "low" },
+            "Abductors": { "level": "low" }
+          }
+        }
+      }
     },
     "Core": {
-      "Abs": ["Abs"],
-      "Obliques": ["Obliques"],
-      "Lower Back": ["Lower Back"]
+      "level": "high",
+      "muscles": {
+        "Abs": {
+          "level": "mid",
+          "muscles": {
+            "Upper Abs": { "level": "low" },
+            "Lower Abs": { "level": "low" }
+          }
+        },
+        "Obliques": {
+          "level": "mid",
+          "muscles": {
+            "Obliques": { "level": "low" }
+          }
+        }
+      }
     }
+  },
+  "muscle_aliases": {
+    "Chest": ["Upper Chest", "Mid Chest", "Lower Chest"],
+    "Back": ["Lats", "Mid Back", "Upper Back", "Lower Back", "Traps"],
+    "Shoulders": ["Front Delts", "Lateral Delts", "Rear Delts"],
+    "Arms": ["Biceps", "Triceps", "Forearms"],
+    "Quads": ["Quads"],
+    "Hamstrings": ["Hamstrings"],
+    "Glutes": ["Glutes"],
+    "Calves": ["Calves"],
+    "Hip Stabilizers": ["Adductors", "Abductors"],
+    "Upper Body": ["Chest", "Back", "Shoulders", "Arms"],
+    "Lower Body": ["Quads", "Hamstrings", "Glutes", "Calves", "Hip Stabilizers"],
+    "Core": ["Abs", "Obliques"],
+    "Abs": ["Upper Abs", "Lower Abs"]
   }
 }

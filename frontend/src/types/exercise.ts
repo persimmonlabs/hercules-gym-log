@@ -109,6 +109,7 @@ export const FILTER_DIFFICULTY: FilterDifficulty[] = ['Beginner', 'Intermediate'
 export interface Exercise {
   id: string;
   name: string;
+  muscles: Record<string, number>;
   muscleGroup: MuscleGroup;
   filterMuscleGroup: FilterMuscleGroup;
   secondaryMuscleGroups: MuscleGroup[];

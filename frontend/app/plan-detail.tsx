@@ -29,6 +29,7 @@ import { IconSymbol } from '@/components/ui/icon-symbol';
 import { usePlansStore, type PlansState } from '@/store/plansStore';
 import { buttonPressAnimation, springTight, timingSlow } from '@/constants/animations';
 import { colors, radius, spacing } from '@/constants/theme';
+import hierarchyData from '@/data/hierarchy.json';
 
 const BACK_ENTRY_OFFSET = spacing['2xl'];
 const SCREEN_HEIGHT = Dimensions.get('window').height;
@@ -109,6 +110,29 @@ const PlanDetailScreen: React.FC = () => {
   const backTranslateY = useSharedValue(-BACK_ENTRY_OFFSET);
   const containerTranslateY = useSharedValue(SCREEN_HEIGHT);
 
+  // Build muscle to mid-level group mapping
+  const muscleToMidLevelMap = useMemo(() => {
+    const map: Record<string, string> = {};
+    const hierarchy = hierarchyData.muscle_hierarchy;
+
+    Object.entries(hierarchy).forEach(([l1, l1Data]: [string, any]) => {
+      if (l1Data?.muscles) {
+        Object.entries(l1Data.muscles).forEach(([midLevel, midLevelData]: [string, any]) => {
+          // Map the mid-level group to itself
+          map[midLevel] = midLevel;
+          
+          // Map all low-level muscles to their mid-level parent
+          if (midLevelData?.muscles) {
+            Object.keys(midLevelData.muscles).forEach(lowLevel => {
+              map[lowLevel] = midLevel;
+            });
+          }
+        });
+      }
+    });
+    return map;
+  }, []);
+
   const plan = useMemo(() => plans.find((item) => item.id === planId), [planId, plans]);
 
   useEffect(() => {
@@ -186,18 +210,30 @@ const PlanDetailScreen: React.FC = () => {
 
           {plan ? (
             <SurfaceCard tone="neutral" padding="xl" showAccentStripe={false} style={styles.exercisesCard}>
-              {plan.exercises.map((exercise) => (
-                <View key={exercise.id} style={styles.exerciseRow}>
-                  <View style={styles.exerciseInfo}>
-                    <Text variant="bodySemibold" color="primary">
-                      {exercise.name}
-                    </Text>
-                    <Text variant="caption" color="secondary">
-                      {exercise.muscleGroup}
-                    </Text>
+              {plan.exercises.map((exercise) => {
+                // Get all muscle names from the exercise's muscles object
+                const muscleNames = Object.keys(exercise.muscles || {});
+                
+                // Map each muscle to its mid-level parent group
+                const midLevelGroups = muscleNames.map(muscle => muscleToMidLevelMap[muscle]).filter(Boolean);
+                
+                // Remove duplicates and sort for consistency
+                const uniqueGroups = [...new Set(midLevelGroups)];
+                const midLevelMusclesLabel = uniqueGroups.length > 0 ? uniqueGroups.join(' · ') : 'General';
+
+                return (
+                  <View key={exercise.id} style={styles.exerciseRow}>
+                    <View style={styles.exerciseInfo}>
+                      <Text variant="bodySemibold" color="primary">
+                        {exercise.name}
+                      </Text>
+                      <Text variant="caption" color="secondary">
+                        {midLevelMusclesLabel}
+                      </Text>
+                    </View>
                   </View>
-                </View>
-              ))}
+                );
+              })}
             </SurfaceCard>
           ) : (
             <SurfaceCard tone="neutral" padding="xl" showAccentStripe={false} style={styles.placeholderCard}>

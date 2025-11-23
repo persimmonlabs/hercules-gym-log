@@ -10,6 +10,7 @@ import { Text } from '@/components/atoms/Text';
 import type { Exercise } from '@/constants/exercises';
 import { colors, radius, spacing } from '@/constants/theme';
 import { IconSymbol } from '@/components/ui/icon-symbol';
+import hierarchyData from '@/data/hierarchy.json';
 
 interface ExerciseSelectionRowProps {
   exercise: Exercise;
@@ -23,15 +24,41 @@ export const ExerciseSelectionRow: React.FC<ExerciseSelectionRowProps> = ({ exer
     onToggle(exercise);
   }, [exercise, onToggle]);
 
-  const primarySecondaryLabel = useMemo(() => {
-    const parts = [exercise.muscleGroup];
-    
-    if (exercise.secondaryMuscleGroups && exercise.secondaryMuscleGroups.length > 0) {
-      parts.push(...exercise.secondaryMuscleGroups);
-    }
+  // Build muscle to mid-level group mapping
+  const muscleToMidLevelMap = useMemo(() => {
+    const map: Record<string, string> = {};
+    const hierarchy = hierarchyData.muscle_hierarchy;
 
-    return parts.join(' · ');
-  }, [exercise.muscleGroup, exercise.secondaryMuscleGroups]);
+    Object.entries(hierarchy).forEach(([l1, l1Data]) => {
+      if (l1Data.muscles) {
+        Object.entries(l1Data.muscles).forEach(([midLevel, midLevelData]) => {
+          // Map the mid-level group to itself
+          map[midLevel] = midLevel;
+          
+          // Map all low-level muscles to their mid-level parent
+          if (midLevelData.muscles) {
+            Object.keys(midLevelData.muscles).forEach(lowLevel => {
+              map[lowLevel] = midLevel;
+            });
+          }
+        });
+      }
+    });
+    return map;
+  }, []);
+
+  const midLevelMusclesLabel = useMemo(() => {
+    // Get all muscle names from the exercise's muscles object
+    const muscleNames = Object.keys(exercise.muscles || {});
+    
+    // Map each muscle to its mid-level parent group
+    const midLevelGroups = muscleNames.map(muscle => muscleToMidLevelMap[muscle]).filter(Boolean);
+    
+    // Remove duplicates and sort for consistency
+    const uniqueGroups = [...new Set(midLevelGroups)];
+    
+    return uniqueGroups.length > 0 ? uniqueGroups.join(' · ') : 'General';
+  }, [exercise.muscles, muscleToMidLevelMap]);
 
   return (
     <Pressable
@@ -46,7 +73,7 @@ export const ExerciseSelectionRow: React.FC<ExerciseSelectionRowProps> = ({ exer
             {exercise.name}
           </Text>
           <Text variant="caption" color="secondary">
-            {primarySecondaryLabel}
+            {midLevelMusclesLabel}
           </Text>
         </View>
       </View>

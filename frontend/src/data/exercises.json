@@ -2,216 +2,263 @@
   {
     "id": "exercise_001",
     "name": "Barbell Bench Press",
-    "primary_muscle": "Chest",
-    "secondary_muscles": ["Shoulders", "Triceps"],
-    "equipment": ["Barbell", "Bench"],
+    "muscles": {
+      "Upper Chest": 0.23,
+      "Mid Chest": 0.23,
+      "Lower Chest": 0.23,
+      "Front Delts": 0.15,
+      "Triceps": 0.16
+    },
+    "equipment": [
+      "Barbell",
+      "Bench"
+    ],
     "movement_pattern": "Horizontal Push",
     "difficulty": "Intermediate",
-    "is_compound": true,
-    "muscle_group": "Upper Body"
+    "is_compound": true
   },
-
   {
     "id": "exercise_002",
     "name": "Chest Press Machine",
-    "primary_muscle": "Chest",
-    "secondary_muscles": ["Shoulders", "Triceps"],
-    "equipment": ["Machine"],
+    "muscles": {
+      "Upper Chest": 0.25,
+      "Mid Chest": 0.25,
+      "Lower Chest": 0.25,
+      "Front Delts": 0.12,
+      "Triceps": 0.13
+    },
+    "equipment": [
+      "Machine"
+    ],
     "movement_pattern": "Horizontal Push",
     "difficulty": "Beginner",
-    "is_compound": true,
-    "muscle_group": "Upper Body"
+    "is_compound": true
   },
-
   {
     "id": "exercise_003",
     "name": "Butterfly Machine",
-    "primary_muscle": "Chest",
-    "secondary_muscles": ["Shoulders"],
-    "equipment": ["Machine"],
+    "muscles": {
+      "Upper Chest": 0.28,
+      "Mid Chest": 0.28,
+      "Lower Chest": 0.28,
+      "Front Delts": 0.16
+    },
+    "equipment": [
+      "Machine"
+    ],
     "movement_pattern": "Horizontal Push",
     "difficulty": "Beginner",
-    "is_compound": false,
-    "muscle_group": "Upper Body"
+    "is_compound": false
   },
-
   {
     "id": "exercise_004",
     "name": "Lateral Raises",
-    "primary_muscle": "Shoulders",
-    "secondary_muscles": ["Lateral Delts"],
-    "equipment": ["Dumbbell"],
+    "muscles": {
+      "Lateral Delts": 0.9,
+      "Front Delts": 0.1
+    },
+    "equipment": [
+      "Dumbbell"
+    ],
     "movement_pattern": "Lateral Raise",
     "difficulty": "Beginner",
-    "is_compound": false,
-    "muscle_group": "Upper Body"
+    "is_compound": false
   },
-
   {
     "id": "exercise_005",
     "name": "Dumbbell Shoulder Press",
-    "primary_muscle": "Shoulders",
-    "secondary_muscles": ["Triceps"],
-    "equipment": ["Dumbbell"],
+    "muscles": {
+      "Front Delts": 0.5,
+      "Lateral Delts": 0.3,
+      "Triceps": 0.2
+    },
+    "equipment": [
+      "Dumbbell"
+    ],
     "movement_pattern": "Vertical Push",
     "difficulty": "Intermediate",
-    "is_compound": true,
-    "muscle_group": "Upper Body"
+    "is_compound": true
   },
-
   {
     "id": "exercise_006",
     "name": "Cable Triceps Pushdown",
-    "primary_muscle": "Triceps",
-    "secondary_muscles": [],
-    "equipment": ["Cable"],
+    "muscles": {
+      "Triceps": 1
+    },
+    "equipment": [
+      "Cable"
+    ],
     "movement_pattern": "Vertical Push",
     "difficulty": "Beginner",
-    "is_compound": false,
-    "muscle_group": "Upper Body"
+    "is_compound": false
   },
-
   {
     "id": "exercise_007",
     "name": "Seated Triceps Dip Machine",
-    "primary_muscle": "Triceps",
-    "secondary_muscles": ["Chest"],
-    "equipment": ["Machine"],
+    "muscles": {
+      "Triceps": 0.64,
+      "Upper Chest": 0.12,
+      "Mid Chest": 0.12,
+      "Lower Chest": 0.12
+    },
+    "equipment": [
+      "Machine"
+    ],
     "movement_pattern": "Vertical Push",
     "difficulty": "Beginner",
-    "is_compound": true,
-    "muscle_group": "Upper Body"
+    "is_compound": true
   },
-
   {
     "id": "exercise_008",
     "name": "Wide Grip Lat Pulldown",
-    "primary_muscle": "Back",
-    "secondary_muscles": ["Lats", "Biceps"],
-    "equipment": ["Cable"],
+    "muscles": {
+      "Lats": 0.6,
+      "Mid Back": 0.2,
+      "Biceps": 0.2
+    },
+    "equipment": [
+      "Cable"
+    ],
     "movement_pattern": "Vertical Pull",
     "difficulty": "Beginner",
-    "is_compound": true,
-    "muscle_group": "Upper Body"
+    "is_compound": true
   },
-
   {
     "id": "exercise_009",
     "name": "Bicep Curl Machine",
-    "primary_muscle": "Biceps",
-    "secondary_muscles": [],
-    "equipment": ["Machine"],
+    "muscles": {
+      "Biceps": 1
+    },
+    "equipment": [
+      "Machine"
+    ],
     "movement_pattern": "Vertical Pull",
     "difficulty": "Beginner",
-    "is_compound": false,
-    "muscle_group": "Upper Body"
+    "is_compound": false
   },
-
   {
     "id": "exercise_010",
     "name": "Seated Row Machine",
-    "primary_muscle": "Back",
-    "secondary_muscles": ["Lats", "Biceps"],
-    "equipment": ["Machine"],
+    "muscles": {
+      "Mid Back": 0.4,
+      "Lats": 0.35,
+      "Biceps": 0.25
+    },
+    "equipment": [
+      "Machine"
+    ],
     "movement_pattern": "Horizontal Pull",
     "difficulty": "Beginner",
-    "is_compound": true,
-    "muscle_group": "Upper Body"
+    "is_compound": true
   },
-
   {
     "id": "exercise_011",
     "name": "Alternating Dumbbell Hammer Curls",
-    "primary_muscle": "Biceps",
-    "secondary_muscles": ["Forearms"],
-    "equipment": ["Dumbbell"],
+    "muscles": {
+      "Biceps": 0.8,
+      "Forearms": 0.2
+    },
+    "equipment": [
+      "Dumbbell"
+    ],
     "movement_pattern": "Vertical Pull",
     "difficulty": "Beginner",
-    "is_compound": false,
-    "muscle_group": "Upper Body"
+    "is_compound": false
   },
-
   {
     "id": "exercise_012",
     "name": "EZ Bar Curls",
-    "primary_muscle": "Biceps",
-    "secondary_muscles": ["Forearms"],
-    "equipment": ["Barbell"],
+    "muscles": {
+      "Biceps": 0.85,
+      "Forearms": 0.15
+    },
+    "equipment": [
+      "Barbell"
+    ],
     "movement_pattern": "Vertical Pull",
     "difficulty": "Beginner",
-    "is_compound": false,
-    "muscle_group": "Upper Body"
+    "is_compound": false
   },
-
   {
     "id": "exercise_013",
     "name": "Hyperextensions",
-    "primary_muscle": "Lower Back",
-    "secondary_muscles": ["Glutes", "Hamstrings"],
-    "equipment": ["Bench"],
+    "muscles": {
+      "Lower Back": 0.5,
+      "Glutes": 0.35,
+      "Hamstrings": 0.15
+    },
+    "equipment": [
+      "Bench"
+    ],
     "movement_pattern": "Horizontal Extension",
     "difficulty": "Intermediate",
-    "is_compound": true,
-    "muscle_group": "Core"
+    "is_compound": true
   },
-
   {
     "id": "exercise_014",
     "name": "Leg Press",
-    "primary_muscle": "Quads",
-    "secondary_muscles": ["Glutes", "Hamstrings"],
-    "equipment": ["Machine"],
+    "muscles": {
+      "Quads": 0.5,
+      "Glutes": 0.35,
+      "Hamstrings": 0.15
+    },
+    "equipment": [
+      "Machine"
+    ],
     "movement_pattern": "Vertical Push",
     "difficulty": "Beginner",
-    "is_compound": true,
-    "muscle_group": "Lower Body"
+    "is_compound": true
   },
-
   {
     "id": "exercise_015",
     "name": "Leg Extensions",
-    "primary_muscle": "Quads",
-    "secondary_muscles": [],
-    "equipment": ["Machine"],
+    "muscles": {
+      "Quads": 1
+    },
+    "equipment": [
+      "Machine"
+    ],
     "movement_pattern": "Knee Extension",
     "difficulty": "Beginner",
-    "is_compound": false,
-    "muscle_group": "Lower Body"
+    "is_compound": false
   },
-
   {
     "id": "exercise_016",
     "name": "Seated Leg Curl",
-    "primary_muscle": "Hamstrings",
-    "secondary_muscles": [],
-    "equipment": ["Machine"],
+    "muscles": {
+      "Hamstrings": 1
+    },
+    "equipment": [
+      "Machine"
+    ],
     "movement_pattern": "Knee Flexion",
     "difficulty": "Beginner",
-    "is_compound": false,
-    "muscle_group": "Lower Body"
+    "is_compound": false
   },
-
   {
     "id": "exercise_017",
     "name": "Thigh Adductor",
-    "primary_muscle": "Adductors",
-    "secondary_muscles": [],
-    "equipment": ["Machine"],
+    "muscles": {
+      "Adductors": 1
+    },
+    "equipment": [
+      "Machine"
+    ],
     "movement_pattern": "Horizontal Adduction",
     "difficulty": "Beginner",
-    "is_compound": false,
-    "muscle_group": "Lower Body"
+    "is_compound": false
   },
-
   {
     "id": "exercise_018",
     "name": "Thigh Abductor",
-    "primary_muscle": "Abductors",
-    "secondary_muscles": [],
-    "equipment": ["Machine"],
+    "muscles": {
+      "Abductors": 1
+    },
+    "equipment": [
+      "Machine"
+    ],
     "movement_pattern": "Horizontal Abduction",
     "difficulty": "Beginner",
-    "is_compound": false,
-    "muscle_group": "Lower Body"
+    "is_compound": false
   }
 ]

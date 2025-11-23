@@ -3,12 +3,12 @@
  * Screen for editing an existing workout session.
  */
 
-import React, { useCallback } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { FlatList, Pressable, StyleSheet, TextInput, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/atoms/Button';
 import { SurfaceCard } from '@/components/atoms/SurfaceCard';
@@ -16,6 +16,11 @@ import { Text } from '@/components/atoms/Text';
 import { EditableWorkoutExerciseCard } from '@/components/molecules/EditableWorkoutExerciseCard';
 import { colors, radius, spacing } from '@/constants/theme';
 import { useWorkoutEditor } from '@/hooks/useWorkoutEditor';
+import { exercises } from '@/constants/exercises';
+import { useWorkoutSessionsStore } from '@/store/workoutSessionsStore';
+import { normalizeSearchText } from '@/utils/strings';
+import type { Exercise } from '@/constants/exercises';
+import hierarchyData from '@/data/hierarchy.json';
 
 const WorkoutEditScreen: React.FC = () => {
   const router = useRouter();
@@ -26,23 +31,51 @@ const WorkoutEditScreen: React.FC = () => {
     workout,
     planName,
     exerciseDrafts,
+    exerciseCount,
     expandedExercise,
     toggleExercise,
     updateExerciseSets,
     removeExercise,
     moveExercise,
     addExercise,
-    isPickerVisible,
+    saveWorkout,
     openPicker,
     closePicker,
     filteredExercises,
     searchTerm,
     setSearchTerm,
-    exerciseCount,
-    saveWorkout,
   } = useWorkoutEditor(workoutId);
 
-  const [isInteractionLocked, setInteractionLocked] = React.useState(false);
+  // Build muscle to mid-level group mapping
+  const muscleToMidLevelMap = useMemo(() => {
+    const map: Record<string, string> = {};
+    const hierarchy = hierarchyData.muscle_hierarchy;
+
+    Object.entries(hierarchy).forEach(([l1, l1Data]: [string, any]) => {
+      if (l1Data?.muscles) {
+        Object.entries(l1Data.muscles).forEach(([midLevel, midLevelData]: [string, any]) => {
+          // Map the mid-level group to itself
+          map[midLevel] = midLevel;
+          
+          // Map all low-level muscles to their mid-level parent
+          if (midLevelData?.muscles) {
+            Object.keys(midLevelData.muscles).forEach(lowLevel => {
+              map[lowLevel] = midLevel;
+            });
+          }
+        });
+      }
+    });
+    return map;
+  }, []);
+
+  const handleSelectExercise = useCallback(
+    (exercise: any) => {
+      addExercise(exercise);
+      void Haptics.selectionAsync();
+    },
+    [addExercise],
+  );
 
   const handleSaveWorkout = useCallback(async () => {
     const success = await saveWorkout();
@@ -55,13 +88,16 @@ const WorkoutEditScreen: React.FC = () => {
     router.back();
   }, [router, saveWorkout]);
 
-  const handleSelectExercise = useCallback(
-    (exercise: any) => {
-      addExercise(exercise);
-      void Haptics.selectionAsync();
-    },
-    [addExercise],
-  );
+  const [isInteractionLocked, setInteractionLocked] = React.useState(false);
+  const [isPickerVisible, setIsPickerVisible] = React.useState(false);
+
+  const handleOpenPicker = useCallback(() => {
+    setIsPickerVisible(true);
+  }, []);
+
+  const handleClosePicker = useCallback(() => {
+    setIsPickerVisible(false);
+  }, []);
 
   if (!workout) {
     return (
@@ -100,7 +136,7 @@ const WorkoutEditScreen: React.FC = () => {
               style={styles.headerDivider}
             />
             <View style={styles.headerActions}>
-              <Button label="Add Exercise" variant="ghost" size="md" onPress={openPicker} />
+              <Button label="Add Exercise" variant="ghost" size="md" onPress={handleOpenPicker} />
             </View>
           </View>
         )}
@@ -145,7 +181,7 @@ const WorkoutEditScreen: React.FC = () => {
       />
 
       {isPickerVisible ? (
-        <Pressable style={styles.overlay} onPress={closePicker}>
+        <Pressable style={styles.overlay} onPress={handleClosePicker}>
           <Pressable style={styles.modal} onPress={() => undefined}>
             <Text variant="heading3">Add Exercise</Text>
             <TextInput
@@ -160,21 +196,34 @@ const WorkoutEditScreen: React.FC = () => {
               keyExtractor={(item) => item.id}
               style={styles.modalList}
               keyboardShouldPersistTaps="handled"
-              renderItem={({ item }) => (
-                <Pressable
-                  style={styles.modalItem}
-                  onPress={() => handleSelectExercise(item)}
-                >
-                  <Text variant="bodySemibold" color="primary">
-                    {item.name}
-                  </Text>
-                  <Text variant="caption" color="secondary">
-                    {item.muscleGroup}
-                  </Text>
-                </Pressable>
-              )}
+              renderItem={({ item }) => {
+                // Get all muscle names from the exercise's muscles object
+                const muscleNames = Object.keys(item.muscles || {});
+                
+                // Map each muscle to its mid-level parent group
+                const midLevelGroups = muscleNames.map(muscle => muscleToMidLevelMap[muscle]).filter(Boolean);
+                
+                // Remove duplicates and sort for consistency
+                const uniqueGroups = [...new Set(midLevelGroups)];
+                const midLevelMusclesLabel = uniqueGroups.length > 0 ? uniqueGroups.join(' · ') : 'General';
+
+                return (
+                  <Pressable
+                    key={item.id}
+                    style={styles.modalItem}
+                    onPress={() => handleSelectExercise(item)}
+                  >
+                    <Text variant="bodySemibold" color="primary">
+                      {item.name}
+                    </Text>
+                    <Text variant="caption" color="secondary">
+                      {midLevelMusclesLabel}
+                    </Text>
+                  </Pressable>
+                );
+              }}
             />
-            <Button label="Close" variant="ghost" onPress={closePicker} />
+            <Button label="Close" variant="ghost" onPress={handleClosePicker} />
           </Pressable>
         </Pressable>
       ) : null}

@@ -1,4 +1,5 @@
 import rawExercises from '@/data/exercises.json';
+import hierarchyData from '@/data/hierarchy.json';
 import { normalizeSearchText } from '@/utils/strings';
 import {
   type DifficultyLevel,
@@ -20,14 +21,65 @@ import {
 interface RawExercise {
   id: string;
   name: string;
-  primary_muscle: MuscleGroup;
-  secondary_muscles: MuscleGroup[];
+  muscles: Record<string, number>;
   equipment: EquipmentType[];
   movement_pattern: MovementPattern;
   difficulty: DifficultyLevel;
   is_compound: boolean;
-  muscle_group: FilterMuscleGroup;
 }
+
+// --- Hierarchy Mapping Logic ---
+
+const MAP_L2_TO_MUSCLE_GROUP: Record<string, MuscleGroup> = {
+  Chest: 'Chest',
+  Back: 'Back',
+  Shoulders: 'Shoulders',
+  Arms: 'Arms',
+  Quads: 'Legs',
+  Hamstrings: 'Legs',
+  Calves: 'Legs',
+  Glutes: 'Glutes',
+  Adductors: 'Legs',
+  Abductors: 'Legs',
+  Abs: 'Core',
+  Obliques: 'Core',
+  'Lower Back': 'Core',
+};
+
+interface MuscleMeta {
+  muscleGroup: MuscleGroup;
+  filterGroup: FilterMuscleGroup;
+}
+
+const buildMuscleMetaMap = (): Record<string, MuscleMeta> => {
+  const map: Record<string, MuscleMeta> = {};
+  const hierarchy = hierarchyData.muscle_hierarchy as Record<string, any>;
+
+  Object.entries(hierarchy).forEach(([l1Name, l1Data]) => {
+    const filterGroup = l1Name as FilterMuscleGroup;
+
+    if (l1Data.muscles) {
+      Object.entries(l1Data.muscles).forEach(([l2Name, l2Data]: [string, any]) => {
+        const muscleGroup = MAP_L2_TO_MUSCLE_GROUP[l2Name] || ('Full Body' as MuscleGroup); // Fallback
+        
+        // Map L2 itself
+        map[l2Name] = { muscleGroup, filterGroup };
+
+        // Map L3s
+        if (l2Data.muscles) {
+          Object.keys(l2Data.muscles).forEach((l3Name) => {
+            map[l3Name] = { muscleGroup, filterGroup };
+          });
+        }
+      });
+    }
+  });
+  return map;
+};
+
+const MUSCLE_META_MAP = buildMuscleMetaMap();
+
+// --- Validation ---
 
 const isStringArray = (value: unknown): value is string[] =>
   Array.isArray(value) && value.every((item) => typeof item === 'string');
@@ -42,26 +94,37 @@ const isValidRawExercise = (candidate: unknown): candidate is RawExercise => {
   return (
     typeof exercise.id === 'string' &&
     typeof exercise.name === 'string' &&
-    typeof exercise.primary_muscle === 'string' &&
-    isStringArray(exercise.secondary_muscles) &&
+    typeof exercise.muscles === 'object' &&
+    exercise.muscles !== null &&
     isStringArray(exercise.equipment) &&
     typeof exercise.movement_pattern === 'string' &&
     typeof exercise.difficulty === 'string' &&
-    typeof exercise.is_compound === 'boolean' &&
-    typeof exercise.muscle_group === 'string'
+    typeof exercise.is_compound === 'boolean'
   );
 };
 
-const buildSearchIndex = (exercise: RawExercise): string => {
+// --- Transformation ---
+
+const buildSearchIndex = (
+  exercise: RawExercise,
+  primaryMuscle: string,
+  muscleGroup: MuscleGroup,
+  filterGroup: FilterMuscleGroup,
+  secondaryGroups: MuscleGroup[]
+): string => {
   const parts: string[] = [
     exercise.name,
-    exercise.primary_muscle,
-    ...exercise.secondary_muscles,
+    primaryMuscle,
+    muscleGroup,
+    filterGroup,
+    ...secondaryGroups,
     ...exercise.equipment,
     exercise.movement_pattern,
     exercise.difficulty,
-    exercise.muscle_group,
   ];
+
+  // Add all specific muscle names from the muscles object
+  parts.push(...Object.keys(exercise.muscles));
 
   if (exercise.is_compound) {
     parts.push('compound');
@@ -78,18 +141,42 @@ const toExercise = (exercise: RawExercise): ExerciseCatalogItem => {
   const isBodyweight =
     exercise.equipment.length === 1 && exercise.equipment[0] === 'Bodyweight';
 
+  // Derive muscle info
+  const sortedMuscles = Object.entries(exercise.muscles).sort((a, b) => b[1] - a[1]);
+  const primaryMuscleEntry = sortedMuscles[0];
+  
+  // Default to Full Body/Upper Body if no muscles defined (shouldn't happen with valid data)
+  const primaryMuscleName = primaryMuscleEntry ? primaryMuscleEntry[0] : 'Full Body';
+  
+  const meta = MUSCLE_META_MAP[primaryMuscleName] || { 
+    muscleGroup: 'Full Body' as MuscleGroup, 
+    filterGroup: 'Upper Body' as FilterMuscleGroup 
+  };
+
+  const muscleGroup = meta.muscleGroup;
+  const filterMuscleGroup = meta.filterGroup;
+
+  // Derive secondary muscle groups
+  const secondaryMuscleGroups = sortedMuscles
+    .slice(1)
+    .map(([name]) => MUSCLE_META_MAP[name]?.muscleGroup)
+    .filter((g): g is MuscleGroup => !!g && g !== muscleGroup)
+    // Unique
+    .filter((value, index, self) => self.indexOf(value) === index);
+
   return {
     id: exercise.id,
     name: exercise.name,
-    muscleGroup: exercise.primary_muscle,
-    filterMuscleGroup: exercise.muscle_group,
-    secondaryMuscleGroups: exercise.secondary_muscles,
+    muscles: exercise.muscles,
+    muscleGroup,
+    filterMuscleGroup,
+    secondaryMuscleGroups,
     equipment: exercise.equipment,
     movementPattern: exercise.movement_pattern,
     difficulty: exercise.difficulty,
     isCompound: exercise.is_compound,
     isBodyweight,
-    searchIndex: buildSearchIndex(exercise),
+    searchIndex: buildSearchIndex(exercise, primaryMuscleName, muscleGroup, filterMuscleGroup, secondaryMuscleGroups),
   };
 };
 

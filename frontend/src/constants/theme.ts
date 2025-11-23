@@ -29,6 +29,7 @@ export const colors = {
   // Neutral utility colors
   neutral: {
     charcoal: '#2D3748',
+    gray200: '#E2E8F0',
     gray400: '#CBD5E0',
     gray600: '#4A5568',
     espresso: '#2B1A12',
