@@ -369,7 +369,7 @@ const WorkoutSessionScreen: React.FC = () => {
 
   const handleCancel = useCallback(() => {
     clearSession();
-    router.back();
+    router.replace('/(tabs)');
   }, [clearSession, router]);
 
   const openExerciseMenu = useCallback((exerciseName: string, pageX: number, pageY: number, width: number, height: number) => {
@@ -596,16 +596,26 @@ const WorkoutSessionScreen: React.FC = () => {
           onPress={handleAddExercisePress}
           disabled={isFinishingWorkout}
         />
-        <Button
-          label="Finish Workout"
-          size="md"
-          onPress={handleFinishWorkout}
-          disabled={!hasExercises || isFinishingWorkout}
-          loading={isFinishingWorkout}
-        />
+        {hasExercises ? (
+          <Button
+            label="Finish Workout"
+            size="md"
+            onPress={handleFinishWorkout}
+            disabled={isFinishingWorkout}
+            loading={isFinishingWorkout}
+          />
+        ) : (
+          <Button
+            label="Cancel Workout"
+            variant="secondary"
+            size="md"
+            onPress={handleCancel}
+            disabled={isFinishingWorkout}
+          />
+        )}
       </View>
     ),
-    [handleAddExercisePress, handleFinishWorkout, hasExercises, isFinishingWorkout, tabBarTopOffset]
+    [handleAddExercisePress, handleFinishWorkout, handleCancel, hasExercises, isFinishingWorkout, tabBarTopOffset]
   );
   const listEmptyComponent = useMemo(
     () => (

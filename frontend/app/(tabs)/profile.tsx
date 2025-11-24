@@ -7,6 +7,7 @@ import { ScreenHeader } from '@/components/molecules/ScreenHeader';
 import { TabSwipeContainer } from '@/components/templates/TabSwipeContainer';
 import { FocusDistributionChart } from '@/components/molecules/FocusDistributionChart';
 import { WeeklyVolumeChart } from '@/components/molecules/WeeklyVolumeChart';
+import { PersonalRecordsSection } from '@/components/organisms/PersonalRecordsSection';
 import { colors, spacing } from '@/constants/theme';
 
 const styles = StyleSheet.create({
@@ -33,7 +34,9 @@ const styles = StyleSheet.create({
 const StatsScreen: React.FC = () => {
   return (
     <TabSwipeContainer contentContainerStyle={styles.contentContainer}>
-      <ScreenHeader title="Progress" subtitle="Track your strength and celebrate wins." />
+      <ScreenHeader title="Performance" subtitle="View your training metrics and personal records." />
+
+      <PersonalRecordsSection />
 
       <SurfaceCard tone="neutral" padding="xl" showAccentStripe={false}>
         <View style={styles.cardContent}>

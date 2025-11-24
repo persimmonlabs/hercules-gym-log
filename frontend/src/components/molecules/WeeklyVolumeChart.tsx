@@ -1,6 +1,6 @@
-import React, { useMemo, useState } from 'react';
-import { View, Dimensions, StyleSheet, ScrollView, NativeSyntheticEvent, NativeScrollEvent } from 'react-native';
-import { BarChart } from 'react-native-chart-kit';
+import React, { useMemo, useState, useEffect } from 'react';
+import { View, Dimensions, StyleSheet, ScrollView, NativeSyntheticEvent, NativeScrollEvent, TouchableOpacity } from 'react-native';
+import { VictoryChart, VictoryBar, VictoryAxis, VictoryTheme } from 'victory-native';
 
 import { Text } from '@/components/atoms/Text';
 import { colors, spacing, radius } from '@/constants/theme';
@@ -11,7 +11,7 @@ import exercisesData from '@/data/exercises.json';
 import hierarchyData from '@/data/hierarchy.json';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
-const CHART_WIDTH = SCREEN_WIDTH - spacing.xl * 2;
+const CHART_WIDTH = SCREEN_WIDTH - spacing.sm * 2;
 
 // Build Maps
 const buildMaps = () => {
@@ -55,82 +55,177 @@ interface ChartPageProps {
     title: string;
     data: {
         labels: string[];
-        datasets: { data: number[] }[];
+        values: number[];
     };
+    selectedBar: { label: string; value: number } | null;
+    setSelectedBar: (bar: { label: string; value: number } | null) => void;
 }
 
-const ChartPage: React.FC<ChartPageProps> = ({ title, data }) => {
-    // Calculate Max Value and Segments
-    const rawMax = Math.max(...data.datasets[0].data, 0);
+const ChartPage: React.FC<ChartPageProps> = ({ title, data, selectedBar, setSelectedBar }) => {
+    // Calculate Max Value and Y-axis ticks
+    const rawMax = Math.max(...data.values, 0);
 
-    // Find best step size
-    const steps = [1, 5, 10, 25, 50, 100, 200, 250, 500, 1000, 2500, 5000, 10000];
+    // Allowed increment values
+    const allowedIncrements = [
+        0.1, 0.25, 0.5, 1, 2.5, 5, 10, 25, 50, 100, 200, 250, 300, 400, 500,
+        1000, 2000, 2500, 3000, 4000, 5000, 10000, 20000, 25000, 50000, 100000
+    ];
+
     let targetMax = 10;
-    let segments = 4;
+    let increment = 2.5;
 
     if (rawMax > 0) {
-        for (const step of steps) {
-            const segs = Math.ceil(rawMax / step);
-            if (segs <= 5) {
-                targetMax = segs * step;
-                segments = segs;
+        // Find the best increment that gives us 2-5 segments
+        for (const inc of allowedIncrements) {
+            const segs = Math.ceil(rawMax / inc);
+            if (segs >= 2 && segs <= 5) {
+                targetMax = segs * inc;
+                increment = inc;
                 break;
+            }
+        }
+
+        // Fallback: if no increment gives 2-5 segments, use the last one that fits
+        if (targetMax < rawMax) {
+            for (const inc of allowedIncrements) {
+                const segs = Math.ceil(rawMax / inc);
+                if (segs <= 5) {
+                    targetMax = segs * inc;
+                    increment = inc;
+                    break;
+                }
             }
         }
     }
 
-    // Ensure we have at least 2 segments for aesthetics if possible, or fallback defaults
-    if (segments < 2 && targetMax > 0) {
-        // If we picked a step that gave 1 segment (e.g. max=4, step=5 -> seg=1, max=5),
-        // maybe we prefer smaller steps? 
-        // Actually, the loop finds the *first* step where segs <= 5.
-        // Since we iterate from small steps, we would have hit a larger segment count first.
-        // Example max=4. step=1 -> seg=4. <=5? Yes. Pick step=1. targetMax=4. segments=4.
-        // Example max=90. step=10 -> seg=9. >5. step=25 -> seg=4. <=5. Pick step=25. targetMax=100. segments=4.
-        // So this logic is sound.
+    // Generate Y-axis tick values
+    const yTickValues: number[] = [];
+    for (let i = 0; i <= targetMax; i += increment) {
+        yTickValues.push(i);
     }
+
+    // Prepare chart data
+    const chartData = data.labels.map((label, index) => ({
+        x: label,
+        y: data.values[index] || 0,
+    }));
+
+    // Calculate tooltip position based on selected bar value and position
+    const getTooltipPosition = () => {
+        if (!selectedBar) return { top: 10, left: 0 };
+        
+        const chartHeight = 250;
+        const chartWidth = CHART_WIDTH - spacing.sm * 2;
+        const chartPadding = { top: 20, bottom: 40, left: 50, right: 30 };
+        const usableHeight = chartHeight - chartPadding.top - chartPadding.bottom;
+        const usableWidth = chartWidth - chartPadding.left - chartPadding.right;
+        const maxValue = Math.max(...data.values, 1);
+        
+        // Find the index of the selected bar
+        const barIndex = data.labels.indexOf(selectedBar.label);
+        const numBars = data.labels.length;
+        
+        // Calculate bar position (center of the bar)
+        const barWidth = 20; // VictoryBar width from style
+        const domainPadding = 40; // domainPadding from VictoryChart
+        const barSpacing = (usableWidth - domainPadding * 2) / numBars;
+        const barCenterX = chartPadding.left + domainPadding + (barIndex * barSpacing) + (barSpacing / 2);
+        
+        // Calculate vertical position (just above the bar top)
+        const barHeight = (selectedBar.value / maxValue) * usableHeight;
+        const tooltipTop = chartPadding.top + usableHeight - barHeight - 25; // 25px above bar top
+        
+        return { 
+            top: Math.max(chartPadding.top, tooltipTop),
+            left: barCenterX,
+        };
+    };
 
     return (
         <View style={styles.pageContainer}>
             <Text variant="heading3" color="primary" style={styles.chartTitle}>{title}</Text>
-            <BarChart
-                data={data}
-                width={CHART_WIDTH}
-                height={220}
-                yAxisLabel=""
-                yAxisSuffix=" lbs"
-                yLabelsOffset={28}
-                segments={segments}
-                {...({ yMax: targetMax } as any)} // Force yMax
-                chartConfig={{
-                    backgroundColor: '#ffffff',
-                    backgroundGradientFrom: '#ffffff',
-                    backgroundGradientTo: '#ffffff',
-                    decimalPlaces: 0,
-                    color: (opacity = 1) => `rgba(255, 85, 0, ${opacity})`,
-                    labelColor: (opacity = 1) => colors.text.primary,
-                    fillShadowGradient: '#FF5500',
-                    fillShadowGradientOpacity: 1,
-                    style: {
-                        borderRadius: 16,
-                    },
-                    barPercentage: 0.85,
-                    propsForBackgroundLines: {
-                        strokeDasharray: '4',
-                        stroke: colors.neutral.gray400,
-                        strokeWidth: 0.5,
-                    },
-                    propsForLabels: {
-                        fontSize: 11,
-                    },
-                }}
-                style={{
-                    marginVertical: 8,
-                    borderRadius: 16,
-                }}
-                showValuesOnTopOfBars={false}
-                fromZero
-            />
+            <View style={styles.chartContainer}>
+                <VictoryChart
+                    theme={VictoryTheme.material}
+                    domainPadding={{ x: 40 }}
+                    padding={{ top: 20, bottom: 40, left: 50, right: 30 }}
+                    height={250}
+                    width={CHART_WIDTH - spacing.sm * 2}
+                >
+                    <VictoryAxis
+                        tickValues={data.labels}
+                        style={{
+                            axis: { stroke: 'none' },
+                            tickLabels: { fill: colors.text.primary, fontSize: 10, padding: 5 },
+                            grid: { stroke: 'none' }
+                        }}
+                    />
+                    <VictoryAxis
+                        dependentAxis
+                        tickValues={yTickValues}
+                        tickFormat={(t) => `${Math.round(t)}`}
+                        style={{
+                            axis: { stroke: 'none' },
+                            tickLabels: { fill: colors.text.secondary, fontSize: 10, padding: 5 },
+                            grid: { stroke: colors.neutral.gray200, strokeDasharray: '4, 4' }
+                        }}
+                    />
+                    <VictoryBar
+                        data={chartData}
+                        style={{
+                            data: {
+                                fill: '#FF5500',
+                                width: 20,
+                            }
+                        }}
+                        cornerRadius={{ top: 4 }}
+                        animate={{
+                            duration: 500,
+                            onLoad: { duration: 500 }
+                        }}
+                        events={[{
+                            target: "data",
+                            eventHandlers: {
+                                onPressIn: () => {
+                                    return [
+                                        {
+                                            target: "data",
+                                            mutation: (props) => {
+                                                const barData = {
+                                                    label: props.datum.x,
+                                                    value: props.datum.y
+                                                };
+                                                // Toggle: if same bar is selected, close it; otherwise show new bar
+                                                const newBarData = selectedBar?.label === barData.label ? null : barData;
+                                                setSelectedBar(newBarData);
+                                                return null;
+                                            }
+                                        }
+                                    ];
+                                }
+                            }
+                        }]}
+                    />
+                </VictoryChart>
+                
+                {/* Tooltip */}
+                {selectedBar && (
+                    <View style={[styles.tooltip, getTooltipPosition()]}>
+                        <Text variant="caption" color="primary" style={styles.tooltipText}>
+                            {selectedBar.label}: {Math.round(selectedBar.value)} lbs
+                        </Text>
+                    </View>
+                )}
+            </View>
+            
+            {/* Transparent overlay to capture taps anywhere on screen */}
+            {selectedBar && (
+                <TouchableOpacity 
+                    style={styles.fullScreenOverlay}
+                    onPress={() => setSelectedBar(null)}
+                    activeOpacity={1}
+                />
+            )}
         </View>
     );
 };
@@ -138,6 +233,12 @@ const ChartPage: React.FC<ChartPageProps> = ({ title, data }) => {
 export const WeeklyVolumeChart: React.FC = () => {
     const workouts = useWorkoutSessionsStore((state) => state.workouts);
     const [currentPage, setCurrentPage] = useState(0);
+    const [selectedBar, setSelectedBar] = useState<{ label: string; value: number } | null>(null);
+
+    // Clear selected bar when switching pages
+    useEffect(() => {
+        setSelectedBar(null);
+    }, [currentPage]);
 
     const { dataL1, dataUpper, dataLower, dataCore, hasData } = useMemo(() => {
         const volumeL1: Record<string, number> = {
@@ -187,12 +288,12 @@ export const WeeklyVolumeChart: React.FC = () => {
 
         const formatData = (labels: string[], values: number[]) => ({
             labels,
-            datasets: [{ data: values.map(v => Math.round(v)) }],
+            values: values.map(v => Math.round(v))
         });
 
         // L1 Data
         const dataL1 = formatData(
-            ['Upper Body', 'Lower Body', 'Core'],
+            ['Upper\nBody', 'Lower\nBody', 'Core'],
             [volumeL1['Upper Body'], volumeL1['Lower Body'], volumeL1['Core']]
         );
 
@@ -224,7 +325,7 @@ export const WeeklyVolumeChart: React.FC = () => {
     if (!hasData) {
         return (
             <View style={styles.emptyContainer}>
-                <Text variant="body" color="secondary">No volume data for the last week.</Text>
+                <Text variant="body" color="secondary">No workout data available for this week.</Text>
             </View>
         );
     }
@@ -250,10 +351,10 @@ export const WeeklyVolumeChart: React.FC = () => {
                 onMomentumScrollEnd={handleScroll}
                 style={{ width: CHART_WIDTH }}
             >
-                <ChartPage title="Total Volume" data={dataL1} />
-                <ChartPage title="Upper Body" data={dataUpper} />
-                <ChartPage title="Lower Body" data={dataLower} />
-                <ChartPage title="Core" data={dataCore} />
+                <ChartPage title="Total Volume (lbs)" data={dataL1} selectedBar={selectedBar} setSelectedBar={setSelectedBar} />
+                <ChartPage title="Upper Body" data={dataUpper} selectedBar={selectedBar} setSelectedBar={setSelectedBar} />
+                <ChartPage title="Lower Body" data={dataLower} selectedBar={selectedBar} setSelectedBar={setSelectedBar} />
+                <ChartPage title="Core" data={dataCore} selectedBar={selectedBar} setSelectedBar={setSelectedBar} />
             </ScrollView>
         </View>
     );
@@ -267,6 +368,13 @@ const styles = StyleSheet.create({
     pageContainer: {
         width: CHART_WIDTH,
         alignItems: 'center',
+        backgroundColor: '#ffffff',
+        borderRadius: 16,
+        padding: spacing.sm,
+    },
+    chartContainer: {
+        alignItems: 'center',
+        justifyContent: 'center',
     },
     chartTitle: {
         marginBottom: spacing.sm,
@@ -291,5 +399,24 @@ const styles = StyleSheet.create({
     },
     inactiveDot: {
         backgroundColor: colors.neutral.gray400,
+    },
+    tooltip: {
+        position: 'absolute',
+        backgroundColor: 'rgba(255, 255, 255, 0.9)',
+        paddingHorizontal: spacing.xs,
+        paddingVertical: 2,
+        borderRadius: radius.sm,
+        transform: [{ translateX: -50 }], // Center the tooltip on the calculated position
+    },
+    tooltipText: {
+        textAlign: 'center',
+    },
+    fullScreenOverlay: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'transparent',
     },
 });

@@ -36,10 +36,10 @@ import { useSessionStore } from '@/store/sessionStore';
 import type { Schedule } from '@/types/schedule';
 
 const QUICK_LINKS: QuickLinkItem[] = [
-  { id: 'link-workout', title: 'Start Workout', description: 'Log a fresh training session.', icon: 'flash-outline', route: 'workout', variant: 'primary' },
-  { id: 'link-calendar', title: 'View History', description: 'Review past sessions and PRs.', icon: 'calendar-outline', route: 'calendar' },
-  { id: 'link-plans', title: 'Edit Plans', description: 'Fine-tune upcoming workouts.', icon: 'document-text-outline', route: 'plans' },
-  { id: 'link-stats', title: 'View Stats', description: 'Track progress and personal bests.', icon: 'stats-chart-outline', route: 'profile' },
+  { id: 'link-workout', title: 'Start Workout', description: 'Log a new workout session.', icon: 'flash-outline', route: 'workout', variant: 'primary' },
+  { id: 'link-calendar', title: 'View Calendar', description: 'Review past workout sessions.', icon: 'calendar-outline', route: 'calendar' },
+  { id: 'link-plans', title: 'Edit Plans', description: 'Customize your workout routines.', icon: 'document-text-outline', route: 'plans' },
+  { id: 'link-stats', title: 'Analyze Performance', description: 'Explore your workout analytics.', icon: 'stats-chart-outline', route: 'profile' },
 ];
 
 const TAB_ROUTE_PATHS: Record<MainTabRoute, Href> = {

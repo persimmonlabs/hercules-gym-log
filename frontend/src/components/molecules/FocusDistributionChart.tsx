@@ -1,6 +1,6 @@
 import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { View, Dimensions, StyleSheet, ScrollView, NativeSyntheticEvent, NativeScrollEvent, TouchableOpacity, LayoutChangeEvent, Platform, UIManager, Animated, Easing } from 'react-native';
-import PieChart from 'react-native-chart-kit/dist/PieChart';
+import { VictoryPie } from 'victory-native';
 
 import { Text } from '@/components/atoms/Text';
 import { colors, spacing, radius } from '@/constants/theme';
@@ -9,7 +9,6 @@ import { useWorkoutSessionsStore } from '@/store/workoutSessionsStore';
 // Import data
 import exercisesData from '@/data/exercises.json';
 import hierarchyData from '@/data/hierarchy.json';
-
 import muscleColorsData from '@/data/muscleColors.json';
 
 if (Platform.OS === 'android') {
@@ -20,6 +19,7 @@ if (Platform.OS === 'android') {
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const CHART_WIDTH = SCREEN_WIDTH - spacing.xl * 2;
+const PIE_SIZE = 220; // Reduced size
 
 // Build Maps
 const buildMaps = () => {
@@ -61,50 +61,76 @@ const EXERCISE_NAME_TO_MUSCLES = exercisesData.reduce((acc, ex) => {
   return acc;
 }, {} as Record<string, Record<string, number>>);
 
+interface ChartDataItem {
+  name: string;
+  population: number;
+  color: string;
+  legendFontColor: string;
+  legendFontSize: number;
+}
+
 interface ChartPageProps {
   title: string;
-  data: Array<{
-    name: string;
-    population: number;
-    color: string;
-    legendFontColor: string;
-    legendFontSize: number;
-  }>;
+  data: ChartDataItem[];
   selectedSlice: string | null;
   onSelectSlice: (name: string) => void;
   onLayout?: (event: LayoutChangeEvent) => void;
 }
 
 const ChartPage: React.FC<ChartPageProps> = ({ title, data, selectedSlice, onSelectSlice, onLayout }) => {
-  // Process data for visual feedback
-  const displayData = useMemo(() => {
-    if (!selectedSlice) return data;
-    return data.map(item => ({
-      ...item,
-      color: item.name === selectedSlice ? item.color : colors.neutral.gray200,
+  // Prepare chart data for Victory
+  const chartData = useMemo(() => {
+    return data.map((item) => ({
+      x: item.name,
+      y: item.population,
+      color: item.color, // Always use the actual color, never grey out initially
+      label: `${Math.round(item.population * 100)}%`
     }));
-  }, [data, selectedSlice]);
+  }, [data]);
+
+  const colorScale = chartData.map(d => d.color);
 
   return (
     <View style={styles.pageContainer} onLayout={onLayout}>
       <Text variant="heading3" color="primary" style={styles.chartTitle}>{title}</Text>
       {data.length > 0 ? (
         <>
-          <PieChart
-            data={displayData}
-            width={CHART_WIDTH}
-            height={220}
-            chartConfig={{
-              color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
-              labelColor: (opacity = 1) => colors.text.primary,
-            }}
-            accessor={'population'}
-            backgroundColor={'transparent'}
-            paddingLeft={'85'}
-            center={[0, 0]}
-            absolute
-            hasLegend={false}
-          />
+          <View style={styles.chartContainer}>
+            <VictoryPie
+              data={chartData}
+              width={PIE_SIZE + 40}
+              height={PIE_SIZE + 40}
+              colorScale={colorScale}
+              innerRadius={50}
+              radius={({ datum }) => (selectedSlice === datum.x ? PIE_SIZE / 2 + 10 : PIE_SIZE / 2)}
+              padAngle={2}
+              style={{
+                data: {
+                  fill: ({ datum }) => selectedSlice && selectedSlice !== datum.x ? colors.neutral.gray200 : datum.color,
+                },
+                labels: {
+                  fill: 'transparent', // Hide labels on the chart itself for cleaner look, or use them if desired
+                }
+              }}
+              events={[{
+                target: "data",
+                eventHandlers: {
+                  onPressIn: () => {
+                    return [
+                      {
+                        target: "data",
+                        mutation: (props) => {
+                          onSelectSlice(props.datum.x);
+                          return null;
+                        }
+                      }
+                    ];
+                  }
+                }
+              }]}
+            />
+            {/* Center Text or Overlay if needed */}
+          </View>
           <View style={styles.customLegend}>
             {data.map((item, index) => {
               const isSelected = selectedSlice === item.name;
@@ -139,7 +165,7 @@ const ChartPage: React.FC<ChartPageProps> = ({ title, data, selectedSlice, onSel
 export const FocusDistributionChart: React.FC = () => {
   const workouts = useWorkoutSessionsStore((state) => state.workouts);
   const [currentPage, setCurrentPage] = useState(0);
-  const [selectedSlice, setSelectedSlice] = useState<string | null>(null);
+  const [selections, setSelections] = useState<Record<number, string | null>>({});
   const [pageHeights, setPageHeights] = useState<Record<number, number>>({});
 
   const heightAnim = useRef(new Animated.Value(0)).current;
@@ -180,22 +206,34 @@ export const FocusDistributionChart: React.FC = () => {
       });
     });
 
-    const formatData = (dist: Record<string, number>, colorMap: Record<string, string>) => {
-      return Object.entries(dist)
-        .sort((a, b) => b[1] - a[1]) // Sort by value descending
-        .map(([name, value]) => ({
-          name,
-          population: totalSets > 0 ? value / totalSets : 0,
-          color: colorMap[name as keyof typeof colorMap] || colors.neutral.gray600,
-          legendFontColor: colors.text.primary,
-          legendFontSize: 12,
-        }))
+    const formatData = (dist: Record<string, number>) => {
+      const sortedEntries = Object.entries(dist).sort((a, b) => b[1] - a[1]);
+      const totalItems = sortedEntries.length;
+
+      return sortedEntries
+        .map(([name, value], index) => {
+          // Interpolate opacity: Largest (index 0) is 1.0, Smallest (last index) is 0.3
+          // Formula: 1.0 - (ratio * 0.7) where ratio is index / (total - 1)
+          let opacity = 1.0;
+          if (totalItems > 1) {
+            const ratio = index / (totalItems - 1);
+            opacity = 1.0 - (ratio * 0.7);
+          }
+          
+          return {
+            name,
+            population: totalSets > 0 ? value / totalSets : 0,
+            color: `rgba(255, 107, 74, ${opacity})`,
+            legendFontColor: colors.text.primary,
+            legendFontSize: 12,
+          };
+        })
         .filter(item => item.population > 0);
     };
 
-    const dataL1 = formatData(distL1, muscleColorsData.colors.high_level);
-    const dataL2 = formatData(distL2, muscleColorsData.colors.mid_level);
-    const dataL3 = formatData(distL3, muscleColorsData.colors.low_level);
+    const dataL1 = formatData(distL1);
+    const dataL2 = formatData(distL2);
+    const dataL3 = formatData(distL3);
 
     return { dataL1, dataL2, dataL3 };
   }, [workouts]);
@@ -217,12 +255,15 @@ export const FocusDistributionChart: React.FC = () => {
     }
   }, [currentPage, pageHeights]);
 
+  useEffect(() => {
+    setSelections({});
+  }, [currentPage]);
+
   const handleMomentumScrollEnd = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
     const contentOffsetX = event.nativeEvent.contentOffset.x;
     const pageIndex = Math.round(contentOffsetX / CHART_WIDTH);
     if (pageIndex !== currentPage) {
       setCurrentPage(pageIndex);
-      setSelectedSlice(null); // Reset selection on page change
     }
   };
 
@@ -234,7 +275,6 @@ export const FocusDistributionChart: React.FC = () => {
       const targetPage = Math.round(targetContentOffset.x / CHART_WIDTH);
       if (targetPage !== currentPage) {
         setCurrentPage(targetPage);
-        setSelectedSlice(null);
       }
       return;
     }
@@ -260,7 +300,6 @@ export const FocusDistributionChart: React.FC = () => {
 
     if (targetPage !== currentPage) {
       setCurrentPage(targetPage);
-      setSelectedSlice(null);
     }
   };
 
@@ -271,12 +310,16 @@ export const FocusDistributionChart: React.FC = () => {
     }
   };
 
-  const handleSelectSlice = (name: string) => {
-    if (selectedSlice === name) {
-      setSelectedSlice(null); // Deselect
-    } else {
-      setSelectedSlice(name);
-    }
+  const handleSelectSlice = (pageIndex: number, name: string) => {
+    setSelections(prev => {
+      const current = prev[pageIndex];
+      if (current === name) {
+        const next = { ...prev };
+        delete next[pageIndex];
+        return next;
+      }
+      return { ...prev, [pageIndex]: name };
+    });
   };
 
   if (workouts.length === 0) {
@@ -314,22 +357,22 @@ export const FocusDistributionChart: React.FC = () => {
           <ChartPage
             title="Body Region"
             data={dataL1}
-            selectedSlice={selectedSlice}
-            onSelectSlice={handleSelectSlice}
+            selectedSlice={selections[0] || null}
+            onSelectSlice={(name) => handleSelectSlice(0, name)}
             onLayout={handlePageLayout(0)}
           />
           <ChartPage
             title="Muscle Group"
             data={dataL2}
-            selectedSlice={selectedSlice}
-            onSelectSlice={handleSelectSlice}
+            selectedSlice={selections[1] || null}
+            onSelectSlice={(name) => handleSelectSlice(1, name)}
             onLayout={handlePageLayout(1)}
           />
           <ChartPage
             title="Specific Muscle"
             data={dataL3}
-            selectedSlice={selectedSlice}
-            onSelectSlice={handleSelectSlice}
+            selectedSlice={selections[2] || null}
+            onSelectSlice={(name) => handleSelectSlice(2, name)}
             onLayout={handlePageLayout(2)}
           />
         </ScrollView>
@@ -346,6 +389,11 @@ const styles = StyleSheet.create({
   pageContainer: {
     width: CHART_WIDTH,
     alignItems: 'center',
+  },
+  chartContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.md,
   },
   chartTitle: {
     marginBottom: spacing.sm,
