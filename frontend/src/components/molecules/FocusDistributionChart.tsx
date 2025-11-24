@@ -9,7 +9,6 @@ import { useWorkoutSessionsStore } from '@/store/workoutSessionsStore';
 // Import data
 import exercisesData from '@/data/exercises.json';
 import hierarchyData from '@/data/hierarchy.json';
-import muscleColorsData from '@/data/muscleColors.json';
 
 if (Platform.OS === 'android') {
   if (UIManager.setLayoutAnimationEnabledExperimental) {
