@@ -32,7 +32,7 @@ export default function TabLayout() {
           name="create-plan"
           options={{
             href: null,
-            title: 'Create Plan',
+            title: 'Create Workout',
           }}
         />
         <Tabs.Screen

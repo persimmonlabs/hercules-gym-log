@@ -159,6 +159,7 @@ const AddExercisesScreen: React.FC = () => {
     toggleBodyweightOnly,
     toggleCompoundOnly,
     resetFilters,
+    updateFilters,
   } = usePlanBuilderContext();
 
   const [selectedMap, setSelectedMap] = useState<SelectedExerciseMap>({});
@@ -379,12 +380,6 @@ const AddExercisesScreen: React.FC = () => {
         filterOptions={filterOptions}
         onClose={handleCloseFilters}
         onApply={handleApplyFilters}
-        toggleMuscleGroupFilter={toggleMuscleGroupFilter}
-        toggleSpecificMuscleFilter={toggleSpecificMuscleFilter}
-        toggleEquipmentFilter={toggleEquipmentFilter}
-        toggleDifficultyFilter={toggleDifficultyFilter}
-        toggleBodyweightOnly={toggleBodyweightOnly}
-        toggleCompoundOnly={toggleCompoundOnly}
       />
 
       <View pointerEvents="none" style={[styles.bottomOverlay, { height: bottomOverlayHeight }]} />

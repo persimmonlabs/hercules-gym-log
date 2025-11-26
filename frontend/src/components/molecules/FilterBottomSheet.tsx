@@ -14,21 +14,23 @@ import { colors, radius, spacing, shadows } from '@/constants/theme';
 import type { ExerciseFilters, FilterDifficulty, FilterEquipment, FilterMuscleGroup, MuscleGroup } from '@/types/exercise';
 import type { exerciseFilterOptions } from '@/constants/exercises';
 import hierarchyData from '@/data/hierarchy.json';
+import { toggleFilterValue } from '@/utils/exerciseFilters';
 
-const MUSCLE_HIERARCHY = hierarchyData.muscle_hierarchy as Record<string, Record<string, string[]>>;
+const MUSCLE_HIERARCHY = hierarchyData.muscle_hierarchy as unknown as Record<string, { muscles: Record<string, any> }>;
 
 interface FilterBottomSheetProps {
   visible: boolean;
   filters: ExerciseFilters;
   filterOptions: typeof exerciseFilterOptions;
   onClose: () => void;
-  onApply: () => void;
-  toggleMuscleGroupFilter: (value: FilterMuscleGroup) => void;
-  toggleSpecificMuscleFilter: (value: MuscleGroup) => void;
-  toggleEquipmentFilter: (value: FilterEquipment) => void;
-  toggleDifficultyFilter: (value: FilterDifficulty) => void;
-  toggleBodyweightOnly: () => void;
-  toggleCompoundOnly: () => void;
+  onApply: (filters: ExerciseFilters) => void;
+  // Legacy props (unused in new implementation but kept for type compatibility if needed, or made optional)
+  toggleMuscleGroupFilter?: (value: FilterMuscleGroup) => void;
+  toggleSpecificMuscleFilter?: (value: MuscleGroup) => void;
+  toggleEquipmentFilter?: (value: FilterEquipment) => void;
+  toggleDifficultyFilter?: (value: FilterDifficulty) => void;
+  toggleBodyweightOnly?: () => void;
+  toggleCompoundOnly?: () => void;
 }
 
 export const FilterBottomSheet: React.FC<FilterBottomSheetProps> = ({
@@ -37,12 +39,6 @@ export const FilterBottomSheet: React.FC<FilterBottomSheetProps> = ({
   filterOptions,
   onClose,
   onApply,
-  toggleMuscleGroupFilter,
-  toggleSpecificMuscleFilter,
-  toggleEquipmentFilter,
-  toggleDifficultyFilter,
-  toggleBodyweightOnly,
-  toggleCompoundOnly,
 }) => {
   const insets = useSafeAreaInsets();
   const headerHeight = 140; // Height covering drag handle + header text area
@@ -50,22 +46,72 @@ export const FilterBottomSheet: React.FC<FilterBottomSheetProps> = ({
   const hasActiveGesture = useRef(false);
   const closeDistance = useRef(Dimensions.get('window').height).current;
 
+  // Local state for buffering filter changes
+  const [localFilters, setLocalFilters] = React.useState<ExerciseFilters>(filters);
+
+  // Sync local state with props when sheet opens or external filters change
+  useEffect(() => {
+    if (visible) {
+      setLocalFilters(filters);
+    }
+  }, [visible, filters]);
+
+  const handleToggleMuscleGroup = (value: FilterMuscleGroup) => {
+    setLocalFilters((prev) => ({
+      ...prev,
+      muscleGroups: toggleFilterValue(prev.muscleGroups, value),
+    }));
+  };
+
+  const handleToggleSpecificMuscle = (value: MuscleGroup) => {
+    setLocalFilters((prev) => ({
+      ...prev,
+      specificMuscles: toggleFilterValue(prev.specificMuscles, value),
+    }));
+  };
+
+  const handleToggleEquipment = (value: FilterEquipment) => {
+    setLocalFilters((prev) => ({
+      ...prev,
+      equipment: toggleFilterValue(prev.equipment, value),
+    }));
+  };
+
+  const handleToggleDifficulty = (value: FilterDifficulty) => {
+    setLocalFilters((prev) => ({
+      ...prev,
+      difficulty: toggleFilterValue(prev.difficulty, value),
+    }));
+  };
+
+  const handleToggleBodyweight = () => {
+    setLocalFilters((prev) => ({ ...prev, bodyweightOnly: !prev.bodyweightOnly }));
+  };
+
+  const handleToggleCompound = () => {
+    setLocalFilters((prev) => ({ ...prev, compoundOnly: !prev.compoundOnly }));
+  };
+
+  const handleApply = () => {
+    onApply(localFilters);
+  };
+
   // Calculate active specific muscles for display
   const activeSpecificOptions = React.useMemo(() => {
     const options: { group: FilterMuscleGroup; muscles: MuscleGroup[] }[] = [];
     
-    filters.muscleGroups.forEach((group) => {
+    localFilters.muscleGroups.forEach((group) => {
       const hierarchy = MUSCLE_HIERARCHY[group];
-      if (hierarchy) {
+      if (hierarchy && hierarchy.muscles) {
         options.push({
           group,
-          muscles: Object.keys(hierarchy) as MuscleGroup[],
+          muscles: Object.keys(hierarchy.muscles) as MuscleGroup[],
         });
       }
     });
     
     return options;
-  }, [filters.muscleGroups]);
+  }, [localFilters.muscleGroups]);
 
   useEffect(() => {
     if (visible) {
@@ -147,7 +193,7 @@ export const FilterBottomSheet: React.FC<FilterBottomSheetProps> = ({
           style={[
             styles.container,
             { 
-              paddingBottom: insets.bottom + spacing.lg,
+              paddingBottom: insets.bottom,
               transform: [{ translateY }],
             },
           ]}
@@ -171,8 +217,8 @@ export const FilterBottomSheet: React.FC<FilterBottomSheetProps> = ({
               <ExerciseFilterGroup
                 title="Muscle group"
                 values={filterOptions.muscleGroups}
-                selected={filters.muscleGroups}
-                onToggle={toggleMuscleGroupFilter}
+                selected={localFilters.muscleGroups}
+                onToggle={handleToggleMuscleGroup}
                 testIDPrefix="filter-muscle"
               />
 
@@ -181,8 +227,8 @@ export const FilterBottomSheet: React.FC<FilterBottomSheetProps> = ({
                   <ExerciseFilterGroup
                     title={group}
                     values={muscles}
-                    selected={filters.specificMuscles}
-                    onToggle={toggleSpecificMuscleFilter}
+                    selected={localFilters.specificMuscles}
+                    onToggle={handleToggleSpecificMuscle}
                     testIDPrefix={`filter-specific-${group}`}
                   />
                 </View>
@@ -191,16 +237,16 @@ export const FilterBottomSheet: React.FC<FilterBottomSheetProps> = ({
               <ExerciseFilterGroup
                 title="Equipment"
                 values={filterOptions.equipment}
-                selected={filters.equipment}
-                onToggle={toggleEquipmentFilter}
+                selected={localFilters.equipment}
+                onToggle={handleToggleEquipment}
                 testIDPrefix="filter-equipment"
               />
 
               <ExerciseFilterGroup
                 title="Difficulty"
                 values={filterOptions.difficulty}
-                selected={filters.difficulty}
-                onToggle={toggleDifficultyFilter}
+                selected={localFilters.difficulty}
+                onToggle={handleToggleDifficulty}
                 testIDPrefix="filter-difficulty"
               />
 
@@ -211,14 +257,14 @@ export const FilterBottomSheet: React.FC<FilterBottomSheetProps> = ({
                 <View style={styles.toggleRow}>
                   <QuickFilterChip
                     label="Bodyweight"
-                    active={filters.bodyweightOnly}
-                    onPress={toggleBodyweightOnly}
+                    active={localFilters.bodyweightOnly}
+                    onPress={handleToggleBodyweight}
                     testID="filter-bodyweight"
                   />
                   <QuickFilterChip
                     label="Compound"
-                    active={filters.compoundOnly}
-                    onPress={toggleCompoundOnly}
+                    active={localFilters.compoundOnly}
+                    onPress={handleToggleCompound}
                     testID="filter-compound"
                   />
                 </View>
@@ -231,7 +277,7 @@ export const FilterBottomSheet: React.FC<FilterBottomSheetProps> = ({
               label="Apply Filters"
               variant="primary"
               size="lg"
-              onPress={onApply}
+              onPress={handleApply}
             />
           </View>
         </Animated.View>
@@ -251,7 +297,7 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-    maxHeight: '85%',
+    maxHeight: '92%',
     borderTopLeftRadius: radius.xl,
     borderTopRightRadius: radius.xl,
     backgroundColor: colors.surface.card,
@@ -264,12 +310,11 @@ const styles = StyleSheet.create({
     borderRadius: 2,
     backgroundColor: colors.border.medium,
     alignSelf: 'center',
-    marginTop: spacing.md,
-    marginBottom: spacing.md,
+    marginTop: spacing.sm,
+    marginBottom: spacing.sm,
   },
   header: {
     paddingHorizontal: spacing.xl,
-    paddingTop: spacing.xl,
     paddingBottom: spacing.md,
     borderBottomWidth: 1,
     borderBottomColor: colors.border.light,
@@ -303,7 +348,7 @@ const styles = StyleSheet.create({
   },
   footer: {
     paddingHorizontal: spacing.xl,
-    paddingTop: spacing.md,
-    paddingBottom: spacing.md,
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.xs,
   },
 });

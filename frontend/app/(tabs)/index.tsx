@@ -26,6 +26,7 @@ import { QuickLinkItem, RecentWorkoutSummary, WeekDayTracker } from '@/types/das
 import { createWeekTracker } from '@/utils/dashboard';
 import { useSchedulesStore, type SchedulesState } from '@/store/schedulesStore';
 import { usePlansStore, type Plan, type PlansState } from '@/store/plansStore';
+import { useProgramsStore } from '@/store/programsStore';
 import { WEEKDAY_LABELS } from '@/constants/schedule';
 import type { ScheduleDayKey } from '@/types/schedule';
 import * as Haptics from 'expo-haptics';
@@ -34,11 +35,12 @@ import type { Workout, WorkoutExercise, SetLog } from '@/types/workout';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { useSessionStore } from '@/store/sessionStore';
 import type { Schedule } from '@/types/schedule';
+import type { UserProgram, RotationSchedule, ProgramWorkout } from '@/types/premadePlan';
 
 const QUICK_LINKS: QuickLinkItem[] = [
   { id: 'link-workout', title: 'Start Workout', description: 'Log a new workout session.', icon: 'flash-outline', route: 'workout', variant: 'primary' },
   { id: 'link-calendar', title: 'View Calendar', description: 'Review past workout sessions.', icon: 'calendar-outline', route: 'calendar' },
-  { id: 'link-plans', title: 'Edit Plans', description: 'Customize your workout routines.', icon: 'document-text-outline', route: 'plans' },
+  { id: 'link-plans', title: 'Edit Programs', description: 'Customize your workout routines.', icon: 'document-text-outline', route: 'plans' },
   { id: 'link-stats', title: 'Analyze Performance', description: 'Explore your workout analytics.', icon: 'stats-chart-outline', route: 'profile' },
 ];
 
@@ -490,6 +492,7 @@ const DashboardScreen: React.FC = () => {
   const hydrateSchedules = useSchedulesStore((state: SchedulesState) => state.hydrateSchedules);
   const plans = usePlansStore((state: PlansState) => state.plans);
   const hydratePlans = usePlansStore((state: PlansState) => state.hydratePlans);
+  const { activeRotation, getCurrentRotationWorkout, hydratePrograms, userPrograms } = useProgramsStore();
   const hydrateWorkouts = useWorkoutSessionsStore((state: WorkoutSessionsState) => state.hydrateWorkouts);
   const startSession = useSessionStore((state) => state.startSession);
   const setCompletionOverlayVisible = useSessionStore((state) => state.setCompletionOverlayVisible);
@@ -501,6 +504,10 @@ const DashboardScreen: React.FC = () => {
   useEffect(() => {
     void hydratePlans();
   }, [hydratePlans]);
+
+  useEffect(() => {
+    void hydratePrograms();
+  }, [hydratePrograms]);
 
   useEffect(() => {
     void hydrateWorkouts();
@@ -530,6 +537,7 @@ const DashboardScreen: React.FC = () => {
     | { variant: 'noPlans' }
     | { variant: 'rest'; dayLabel: string }
     | { variant: 'plan'; dayLabel: string; plan: Plan }
+    | { variant: 'rotation'; programName: string; workout: ProgramWorkout; programId: string }
     | { variant: 'completed'; workout: Workout };
 
   const todaysCardState: TodaysCardState = useMemo(() => {
@@ -551,7 +559,27 @@ const DashboardScreen: React.FC = () => {
       return { variant: 'completed', workout: latestWorkout };
     }
 
-    if (plans.length === 0) {
+    // Check for active rotation
+    if (activeRotation) {
+      const nextWorkoutId = getCurrentRotationWorkout();
+      if (nextWorkoutId) {
+        // Find program
+        const program = userPrograms.find(p => p.id === activeRotation.programId);
+        if (program) {
+          const nextWorkout = program.workouts.find(w => w.id === nextWorkoutId);
+          if (nextWorkout) {
+            return { 
+              variant: 'rotation', 
+              programName: program.name, 
+              workout: nextWorkout,
+              programId: program.id
+            };
+          }
+        }
+      }
+    }
+
+    if (plans.length === 0 && userPrograms.length === 0) {
       return { variant: 'noPlans' };
     }
 
@@ -572,12 +600,13 @@ const DashboardScreen: React.FC = () => {
     }
 
     return { variant: 'plan', dayLabel: todayLabel, plan };
-  }, [activeSchedule, planNameLookup, plans.length, todayKey, todayLabel, workouts]);
+  }, [activeSchedule, activeRotation, getCurrentRotationWorkout, planNameLookup, plans.length, todayKey, todayLabel, userPrograms, workouts]);
 
   const todaysPlan = todaysCardState.variant === 'plan' ? todaysCardState.plan : null;
+  const rotationWorkout = todaysCardState.variant === 'rotation' ? todaysCardState.workout : null;
 
   const handleTodaysCardPress = useCallback(() => {
-    if (todaysCardState.variant === 'plan' || todaysCardState.variant === 'noPlans') {
+    if (todaysCardState.variant === 'plan' || todaysCardState.variant === 'rotation' || todaysCardState.variant === 'noPlans') {
       return;
     }
 
@@ -593,11 +622,11 @@ const DashboardScreen: React.FC = () => {
 
   const handleCreatePlanPress = useCallback(() => {
     void Haptics.selectionAsync();
-    router.push('/(tabs)/create-plan');
+    router.push('/(tabs)/plans');
   }, [router]);
 
   const handlePlanActionStart = useCallback(() => {
-    if (!todaysPlan) {
+    if (!todaysPlan && !rotationWorkout) {
       return;
     }
 
@@ -606,14 +635,19 @@ const DashboardScreen: React.FC = () => {
     // Explicitly reset overlay state before starting new session
     setCompletionOverlayVisible(false);
 
-    const workoutExercises: WorkoutExercise[] = todaysPlan.exercises.map((exercise) => ({
+    const target = todaysPlan || rotationWorkout;
+    if (!target) return;
+
+    const workoutExercises: WorkoutExercise[] = target.exercises.map((exercise) => ({
       name: exercise.name,
       sets: createDefaultSetLogs(),
     }));
 
-    startSession(todaysPlan.id, workoutExercises);
+    const planId = todaysCardState.variant === 'rotation' ? todaysCardState.programId : (todaysPlan?.id ?? '');
+
+    startSession(planId, workoutExercises);
     router.push('/(tabs)/workout');
-  }, [todaysPlan, startSession, router, setCompletionOverlayVisible]);
+  }, [todaysPlan, rotationWorkout, startSession, router, setCompletionOverlayVisible, todaysCardState]);
 
   const recentWorkouts = useMemo<Workout[]>(() => {
     if (workouts.length === 0) {
@@ -638,7 +672,7 @@ const DashboardScreen: React.FC = () => {
     const durationMinutes = workout.duration ? Math.max(Math.round(workout.duration / 60), 1) : null;
 
     if (durationMinutes) {
-      return `${base} · ${durationMinutes} min session`;
+      return `${base} · ${durationMinutes} min`;
     }
 
     return base;
@@ -753,7 +787,7 @@ const DashboardScreen: React.FC = () => {
                   <Text variant="heading3" color="primary">
                     Today's Workout
                   </Text>
-                  {todaysCardState.variant === 'plan' ? (
+                  {todaysCardState.variant === 'plan' || todaysCardState.variant === 'rotation' ? (
                     <SurfaceCard
                       tone="neutral"
                       padding="lg"
@@ -763,10 +797,14 @@ const DashboardScreen: React.FC = () => {
                       <View style={styles.quickLinkRow}>
                         <View style={styles.quickLinkInfo}>
                           <Text variant="bodySemibold" color="primary">
-                            {todaysCardState.plan.name}
+                            {todaysCardState.variant === 'rotation' 
+                              ? `${todaysCardState.programName}: ${todaysCardState.workout.name}`
+                              : todaysCardState.plan.name}
                           </Text>
                           <Text variant="body" color="secondary">
-                            {`${todaysCardState.plan.exercises.length} ${todaysCardState.plan.exercises.length === 1 ? 'exercise' : 'exercises'}`}
+                            {todaysCardState.variant === 'rotation'
+                              ? `${todaysCardState.workout.exercises.length} exercises`
+                              : `${todaysCardState.plan.exercises.length} exercises`}
                           </Text>
                         </View>
                         <Pressable

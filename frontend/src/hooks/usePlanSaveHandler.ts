@@ -7,14 +7,16 @@ import * as Haptics from 'expo-haptics';
 
 import type { Exercise } from '@/constants/exercises';
 import { usePlansStore } from '@/store/plansStore';
+import { useProgramsStore } from '@/store/programsStore';
 import { savePlan } from '@/utils/storage';
 import type { PlanExercise, WorkoutPlan } from '@/types/plan';
+import type { ProgramWorkout } from '@/types/premadePlan';
 
 const DEFAULT_PLAN_SET_COUNT = 3;
 
 const createPlanIdentifier = (): string => `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
-export type SubmitPlanResult = 'success' | 'missing-name' | 'no-exercises' | 'error';
+export type SubmitPlanResult = 'success' | 'missing-name' | 'no-exercises' | 'duplicate-name' | 'error';
 
 interface UsePlanSaveHandlerParams {
   editingPlanId: string | null;
@@ -45,6 +47,8 @@ export const usePlanSaveHandler = ({
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const persistPlan = usePlansStore((state) => state.addPlan);
   const updatePlan = usePlansStore((state) => state.updatePlan);
+  const plans = usePlansStore((state) => state.plans);
+  const { updateWorkoutInProgram } = useProgramsStore();
 
   const isEditing = Boolean(editingPlanId);
 
@@ -53,6 +57,21 @@ export const usePlanSaveHandler = ({
 
     if (!trimmedName) {
       return 'missing-name';
+    }
+
+    const isProgramWorkout = editingPlanId?.startsWith('program:');
+
+    // Check for duplicate names only for regular Plans
+    if (!isProgramWorkout) {
+      const duplicate = plans.find(
+        (p) =>
+          p.name.trim().toLowerCase() === trimmedName.toLowerCase() &&
+          p.id !== editingPlanId
+      );
+
+      if (duplicate) {
+        return 'duplicate-name';
+      }
     }
 
     if (selectedExercises.length === 0) {
@@ -65,23 +84,35 @@ export const usePlanSaveHandler = ({
 
     setIsSaving(true);
 
-    const planIdentifier = editingPlanId ?? createPlanIdentifier();
-    const createdAtTimestamp = editingPlanCreatedAt ?? Date.now();
-
     const normalizedExercises: PlanExercise[] = selectedExercises.map((exercise) => ({
       id: exercise.id,
       name: exercise.name,
       sets: DEFAULT_PLAN_SET_COUNT,
     }));
 
-    const payload: WorkoutPlan = {
-      id: planIdentifier,
-      name: trimmedName,
-      exercises: normalizedExercises,
-      createdAt: new Date(createdAtTimestamp).toISOString(),
-    };
-
     try {
+      if (isProgramWorkout && editingPlanId) {
+        const [_, programId, workoutId] = editingPlanId.split(':');
+        await updateWorkoutInProgram(programId, workoutId, {
+          name: trimmedName,
+          exercises: normalizedExercises,
+        });
+        
+        await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        onSuccess?.();
+        return 'success';
+      }
+
+      const planIdentifier = editingPlanId ?? createPlanIdentifier();
+      const createdAtTimestamp = editingPlanCreatedAt ?? Date.now();
+
+      const payload: WorkoutPlan = {
+        id: planIdentifier,
+        name: trimmedName,
+        exercises: normalizedExercises,
+        createdAt: new Date(createdAtTimestamp).toISOString(),
+      };
+
       await savePlan(payload);
 
       if (isEditing) {
@@ -114,12 +145,12 @@ export const usePlanSaveHandler = ({
     } finally {
       setIsSaving(false);
     }
-  }, [editingPlanCreatedAt, editingPlanId, isEditing, isSaving, onSuccess, persistPlan, planName, resetBuilder, selectedExercises, updatePlan]);
+  }, [editingPlanCreatedAt, editingPlanId, isEditing, isSaving, onSuccess, persistPlan, planName, plans, resetBuilder, selectedExercises, updatePlan, updateWorkoutInProgram]);
 
-  const saveLabel = 'Save Plan';
+  const saveLabel = 'Save Workout';
   const selectedListTitle = 'Exercises';
   const selectedListSubtitle = '';
-  const saveCtaLabel = 'Save Plan';
+  const saveCtaLabel = 'Save Workout';
 
   const isSaveDisabled = useMemo(() => {
     const trimmedName = planName.trim();

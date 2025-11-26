@@ -8,6 +8,7 @@ import {
   type ExerciseCatalogItem,
 } from '@/constants/exercises';
 import { usePlansStore, type Plan } from '@/store/plansStore';
+import { useProgramsStore } from '@/store/programsStore';
 import { useSemanticExerciseSearch } from '@/hooks/useSemanticExerciseSearch';
 import {
   type ExerciseFilters,
@@ -52,6 +53,7 @@ interface PlanBuilderState {
   toggleBodyweightOnly: () => void;
   toggleCompoundOnly: () => void;
   resetFilters: () => void;
+  updateFilters: (newFilters: ExerciseFilters) => void;
   filterOptions: typeof exerciseFilterOptions;
 }
 
@@ -67,12 +69,35 @@ export const usePlanBuilderState = (editingPlanId: string | null): PlanBuilderSt
   }, [editingPlanId]);
 
   const plans = usePlansStore((state) => state.plans);
+  const { userPrograms } = useProgramsStore();
+
   const editingPlan = useMemo<Plan | null>(() => {
     if (!editingPlanId) {
       return null;
     }
+
+    if (editingPlanId.startsWith('program:')) {
+      const [_, programId, workoutId] = editingPlanId.split(':');
+      const program = userPrograms.find(p => p.id === programId);
+      const workout = program?.workouts.find(w => w.id === workoutId);
+      
+      if (workout) {
+        const mappedExercises = workout.exercises
+          .map(ex => exercises.find(e => e.name === ex.name) || null)
+          .filter((e): e is ExerciseCatalogItem => e !== null);
+
+        return {
+          id: workout.id,
+          name: workout.name,
+          exercises: mappedExercises,
+          createdAt: Date.now(),
+        } as Plan;
+      }
+      return null;
+    }
+
     return plans.find((plan) => plan.id === editingPlanId) ?? null;
-  }, [editingPlanId, plans]);
+  }, [editingPlanId, plans, userPrograms]);
 
   const isEditing = Boolean(editingPlanId);
 
@@ -103,6 +128,10 @@ export const usePlanBuilderState = (editingPlanId: string | null): PlanBuilderSt
     setSearchTerm('');
     setFilters(createDefaultExerciseFilters());
   }, [isEditing]);
+
+  const updateFilters = useCallback((newFilters: ExerciseFilters) => {
+    setFilters(newFilters);
+  }, []);
 
   const toggleMuscleGroupFilter = useCallback((value: FilterMuscleGroup) => {
     setFilters((prev: ExerciseFilters) => ({
@@ -302,7 +331,7 @@ export const usePlanBuilderState = (editingPlanId: string | null): PlanBuilderSt
     });
   }, []);
 
-  const headerTitle = isEditing ? 'Edit Plan' : 'Create Plan';
+  const headerTitle = isEditing ? 'Edit Workout' : 'Create Workout';
   const headerSubtitle = isEditing ? 'Update your workout template' : 'Build your workout template';
   const editingPlanCreatedAt = editingPlan?.createdAt ?? null;
   const isEditingPlanMissing = isEditing && !editingPlan;
@@ -335,6 +364,7 @@ export const usePlanBuilderState = (editingPlanId: string | null): PlanBuilderSt
     toggleBodyweightOnly,
     toggleCompoundOnly,
     resetFilters,
+    updateFilters,
     filterOptions: exerciseFilterOptions,
   };
 };

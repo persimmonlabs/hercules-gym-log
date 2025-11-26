@@ -9,6 +9,7 @@ import { exercises as exerciseCatalog, type Exercise } from '@/constants/exercis
 import type { SetLog, Workout, WorkoutExercise } from '@/types/workout';
 import { usePlansStore } from '@/store/plansStore';
 import { useWorkoutSessionsStore } from '@/store/workoutSessionsStore';
+import { getLastCompletedSetsForExercise } from '@/utils/exerciseHistory';
 
 interface WorkoutEditorHook {
   workout: Workout | null;
@@ -32,8 +33,27 @@ interface WorkoutEditorHook {
 
 const DEFAULT_SET_COUNT = 3;
 
-const createDefaultSetLogs = (): SetLog[] =>
-  Array.from({ length: DEFAULT_SET_COUNT }, () => ({ reps: 8, weight: 0, completed: false }));
+const createDefaultSetLogs = (exerciseName: string, workouts: Workout[], currentWorkoutId?: string): SetLog[] => {
+  // Filter out the current workout to avoid using incomplete data
+  const historicalWorkouts = currentWorkoutId
+    ? workouts.filter((w) => w.id !== currentWorkoutId)
+    : workouts;
+
+  // Try to get history for this exercise from other workouts
+  const lastSets = getLastCompletedSetsForExercise(exerciseName, historicalWorkouts);
+
+  if (lastSets && lastSets.length > 0) {
+    // Use the historical sets, but mark them as not completed
+    return lastSets.map((set) => ({
+      reps: set.reps,
+      weight: set.weight,
+      completed: false,
+    }));
+  }
+
+  // No history, use defaults
+  return Array.from({ length: DEFAULT_SET_COUNT }, () => ({ reps: 8, weight: 0, completed: false }));
+};
 
 export const useWorkoutEditor = (workoutId?: string): WorkoutEditorHook => {
   const workouts = useWorkoutSessionsStore((state) => state.workouts);
@@ -143,9 +163,25 @@ export const useWorkoutEditor = (workoutId?: string): WorkoutEditorHook => {
         baseName = `${baseName} (${suffix})`;
       }
 
+      // First, check if this exercise exists in the current workout with completed sets
+      const currentExercise = prev.find((ex) => ex.name === baseName);
+      let defaultSets: SetLog[];
+
+      if (currentExercise && currentExercise.sets.some((set) => set.completed)) {
+        // Use the current workout's data
+        defaultSets = currentExercise.sets.map((set) => ({
+          reps: set.reps,
+          weight: set.weight,
+          completed: false,
+        }));
+      } else {
+        // Fall back to historical workouts (excluding current workout)
+        defaultSets = createDefaultSetLogs(baseName, workouts, workout?.id);
+      }
+
       const next: WorkoutExercise = {
         name: baseName,
-        sets: createDefaultSetLogs(),
+        sets: defaultSets,
       };
 
       resolvedName = baseName;
@@ -154,7 +190,7 @@ export const useWorkoutEditor = (workoutId?: string): WorkoutEditorHook => {
     setPickerVisible(false);
     setSearchTerm('');
     setExpandedExercise(resolvedName);
-  }, []);
+  }, [workouts, workout]);
 
   const openPicker = useCallback(() => {
     setPickerVisible(true);

@@ -38,7 +38,7 @@ const StatsScreen: React.FC = () => {
 
       <PersonalRecordsSection />
 
-      <SurfaceCard tone="neutral" padding="xl" showAccentStripe={false}>
+      <SurfaceCard tone="neutral" padding="md" showAccentStripe={false}>
         <View style={styles.cardContent}>
           <View>
             <Text variant="heading3" color="primary">
@@ -50,7 +50,7 @@ const StatsScreen: React.FC = () => {
         </View>
       </SurfaceCard>
 
-      <SurfaceCard tone="neutral" padding="xl" showAccentStripe={false}>
+      <SurfaceCard tone="neutral" padding="md" showAccentStripe={false}>
         <View style={styles.cardContent}>
           <View>
             <Text variant="heading3" color="primary">

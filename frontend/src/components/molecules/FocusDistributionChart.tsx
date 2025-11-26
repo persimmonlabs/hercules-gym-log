@@ -1,6 +1,7 @@
-import React, { useMemo, useState, useEffect, useRef } from 'react';
+import React, { useMemo, useState, useEffect, useRef, useCallback } from 'react';
 import { View, Dimensions, StyleSheet, ScrollView, NativeSyntheticEvent, NativeScrollEvent, TouchableOpacity, LayoutChangeEvent, Platform, UIManager, Animated, Easing } from 'react-native';
 import { VictoryPie } from 'victory-native';
+import { useFocusEffect } from '@react-navigation/native';
 
 import { Text } from '@/components/atoms/Text';
 import { colors, spacing, radius } from '@/constants/theme';
@@ -161,14 +162,30 @@ const ChartPage: React.FC<ChartPageProps> = ({ title, data, selectedSlice, onSel
   );
 };
 
+// Constants for reliable height calculation
+const PIE_CHART_HEIGHT = PIE_SIZE + 40; // 260px for pie chart area
+const TITLE_HEIGHT = 30; // Approximate title height
+const LEGEND_ROW_HEIGHT = 24; // Approximate height per legend row
+const MIN_CHART_HEIGHT = PIE_CHART_HEIGHT + TITLE_HEIGHT + spacing.md + spacing.sm; // Minimum fallback
+
+// Calculate expected height based on data item count
+const calculateExpectedHeight = (itemCount: number): number => {
+  if (itemCount === 0) return 220 + TITLE_HEIGHT + spacing.md; // Empty state height
+  // Estimate legend rows: ~3 items per row at current width
+  const legendRows = Math.ceil(itemCount / 3);
+  return PIE_CHART_HEIGHT + TITLE_HEIGHT + (legendRows * LEGEND_ROW_HEIGHT) + spacing.md + spacing.sm;
+};
+
 export const FocusDistributionChart: React.FC = () => {
   const workouts = useWorkoutSessionsStore((state) => state.workouts);
   const [currentPage, setCurrentPage] = useState(0);
   const [selections, setSelections] = useState<Record<number, string | null>>({});
   const [pageHeights, setPageHeights] = useState<Record<number, number>>({});
 
-  const heightAnim = useRef(new Animated.Value(0)).current;
+  const heightAnim = useRef(new Animated.Value(MIN_CHART_HEIGHT)).current;
+  const scrollViewRef = useRef<ScrollView>(null);
   const [isHeightInitialized, setIsHeightInitialized] = useState(false);
+  const lastWorkoutCount = useRef(workouts.length);
 
   const { dataL1, dataL2, dataL3 } = useMemo(() => {
     const distL1: Record<string, number> = {};
@@ -237,26 +254,65 @@ export const FocusDistributionChart: React.FC = () => {
     return { dataL1, dataL2, dataL3 };
   }, [workouts]);
 
-  useEffect(() => {
-    const targetHeight = pageHeights[currentPage];
-    if (targetHeight) {
-      if (!isHeightInitialized) {
-        heightAnim.setValue(targetHeight);
-        setIsHeightInitialized(true);
-      } else {
-        Animated.timing(heightAnim, {
-          toValue: targetHeight,
-          duration: 400,
-          useNativeDriver: false,
-          easing: Easing.out(Easing.cubic),
-        }).start();
-      }
-    }
-  }, [currentPage, pageHeights]);
+  // Get data item counts for height calculation
+  const dataItemCounts = useMemo(() => [dataL1.length, dataL2.length, dataL3.length], [dataL1, dataL2, dataL3]);
 
+  // Initialize height on mount and when data changes
+  useEffect(() => {
+    const expectedHeight = calculateExpectedHeight(dataItemCounts[currentPage]);
+    if (!isHeightInitialized) {
+      heightAnim.setValue(expectedHeight);
+      setIsHeightInitialized(true);
+    }
+  }, [dataItemCounts, isHeightInitialized]);
+
+  // Animate height when page changes or measured heights update
+  useEffect(() => {
+    const measuredHeight = pageHeights[currentPage];
+    const expectedHeight = calculateExpectedHeight(dataItemCounts[currentPage]);
+    const targetHeight = measuredHeight || expectedHeight;
+    
+    if (targetHeight > 0 && isHeightInitialized) {
+      Animated.timing(heightAnim, {
+        toValue: targetHeight,
+        duration: 300,
+        useNativeDriver: false,
+        easing: Easing.out(Easing.cubic),
+      }).start();
+    }
+  }, [currentPage, pageHeights, dataItemCounts, isHeightInitialized]);
+
+  // Clear page-specific selections when switching pages
   useEffect(() => {
     setSelections({});
   }, [currentPage]);
+
+  // Reset pageHeights when workout data changes significantly
+  useEffect(() => {
+    if (workouts.length !== lastWorkoutCount.current) {
+      lastWorkoutCount.current = workouts.length;
+      setPageHeights({});
+    }
+  }, [workouts.length]);
+
+  // Reset state when user returns to the performance tab
+  useFocusEffect(
+    useCallback(() => {
+      setCurrentPage(0);
+      setSelections({});
+      // Don't reset height initialization to avoid flicker
+      // Just reset scroll position
+      scrollViewRef.current?.scrollTo({ x: 0, animated: false });
+      
+      // Sync height to page 0's expected/measured height
+      const measuredHeight = pageHeights[0];
+      const expectedHeight = calculateExpectedHeight(dataItemCounts[0]);
+      const targetHeight = measuredHeight || expectedHeight;
+      if (targetHeight > 0) {
+        heightAnim.setValue(targetHeight);
+      }
+    }, [pageHeights, dataItemCounts])
+  );
 
   const handleMomentumScrollEnd = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
     const contentOffsetX = event.nativeEvent.contentOffset.x;
@@ -343,8 +399,9 @@ export const FocusDistributionChart: React.FC = () => {
         ))}
       </View>
 
-      <Animated.View style={[{ overflow: 'hidden' }, isHeightInitialized ? { height: heightAnim } : null]}>
+      <Animated.View style={[styles.chartWrapper, { height: heightAnim }]}>
         <ScrollView
+          ref={scrollViewRef}
           horizontal
           pagingEnabled
           showsHorizontalScrollIndicator={false}
@@ -384,6 +441,11 @@ const styles = StyleSheet.create({
   container: {
     alignItems: 'center',
     justifyContent: 'center',
+    width: '100%',
+  },
+  chartWrapper: {
+    overflow: 'hidden',
+    minHeight: MIN_CHART_HEIGHT,
   },
   pageContainer: {
     width: CHART_WIDTH,

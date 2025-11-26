@@ -193,12 +193,12 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
         if (idx !== index) return set;
 
         const currentValue = set[field] ?? 0;
-        
+
         let nextValue: number;
         if (field === 'weight') {
           // Check if current value is a multiple of 2.5
           const isMultipleOf2_5 = currentValue % 2.5 === 0;
-          
+
           if (!isMultipleOf2_5) {
             // Snap to nearest 2.5 multiple
             if (delta > 0) {
@@ -210,9 +210,9 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
             // Already a multiple, increment normally
             nextValue = currentValue + delta;
           }
-          
+
           nextValue = Math.max(0, Number.parseFloat(nextValue.toFixed(1)));
-          
+
           return {
             ...set,
             weight: nextValue,
@@ -232,14 +232,26 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
 
   const addSet = () => {
     void Haptics.selectionAsync();
-    setSets((prev) => [
-      ...prev,
-      {
-        ...DEFAULT_NEW_SET,
-        weightInput: formatWeightInputValue(DEFAULT_NEW_SET.weight),
-        repsInput: String(DEFAULT_NEW_SET.reps),
-      },
-    ]);
+    setSets((prev) => {
+      // Find the last completed set to use its values
+      const lastCompletedSet = [...prev].reverse().find((set) => set.completed);
+
+      const newSetValues = lastCompletedSet
+        ? {
+          weight: lastCompletedSet.weight,
+          reps: lastCompletedSet.reps,
+          completed: false,
+          weightInput: formatWeightInputValue(lastCompletedSet.weight),
+          repsInput: String(lastCompletedSet.reps),
+        }
+        : {
+          ...DEFAULT_NEW_SET,
+          weightInput: formatWeightInputValue(DEFAULT_NEW_SET.weight),
+          repsInput: String(DEFAULT_NEW_SET.reps),
+        };
+
+      return [...prev, newSetValues];
+    });
   };
 
   const removeSet = (index: number) => {
@@ -303,7 +315,42 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
 
   const toggleSetCompletion = useCallback((index: number) => {
     void Haptics.selectionAsync();
-    setSets((prev) => prev.map((set, idx) => (idx === index ? { ...set, completed: !set.completed } : set)));
+    setSets((prev) => {
+      const updatedSets = prev.map((set, idx) => {
+        if (idx === index) {
+          return { ...set, completed: !set.completed };
+        }
+        return set;
+      });
+
+      // If we just marked a set as completed, populate the next uncompleted set
+      const justCompleted = !prev[index].completed && updatedSets[index].completed;
+      if (justCompleted) {
+        const completedSet = updatedSets[index];
+
+        // Find the next uncompleted set
+        const nextUncompletedIndex = updatedSets.findIndex(
+          (set, idx) => idx > index && !set.completed
+        );
+
+        if (nextUncompletedIndex !== -1) {
+          const nextSet = updatedSets[nextUncompletedIndex];
+
+          // Only update if the next set has default values (0 weight and 8 reps)
+          if (nextSet.weight === 0 && nextSet.reps === 8) {
+            updatedSets[nextUncompletedIndex] = {
+              ...nextSet,
+              weight: completedSet.weight,
+              reps: completedSet.reps,
+              weightInput: formatWeightInputValue(completedSet.weight),
+              repsInput: String(completedSet.reps),
+            };
+          }
+        }
+      }
+
+      return updatedSets;
+    });
   }, []);
 
   const handleCompleteSetPress = useCallback((index: number) => {

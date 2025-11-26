@@ -11,9 +11,10 @@ import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Text } from '@/components/atoms/Text';
-import { colors, radius, spacing, zIndex, typography } from '@/constants/theme';
+import { colors, radius, spacing, zIndex, typography, shadows } from '@/constants/theme';
 import { useWorkoutSessionsStore } from '@/store/workoutSessionsStore';
-import { springGentle } from '@/constants/animations';
+import { springGentle }
+  from '@/constants/animations';
 
 const SCREEN_HEIGHT = Dimensions.get('window').height;
 const SHEET_DISMISS_THRESHOLD = spacing['2xl'] * 2;
@@ -30,16 +31,16 @@ export const ExerciseHistoryModal: React.FC<ExerciseHistoryModalProps> = ({
   onClose,
   exerciseName,
 }) => {
-  console.log('[ExerciseHistoryModal] Rendered with:', { visible, exerciseName });
+
   const insets = useSafeAreaInsets();
   const sheetTranslateY = useSharedValue(SCREEN_HEIGHT);
   const workouts = useWorkoutSessionsStore((state) => state.workouts);
 
   const historyData = useMemo(() => {
     if (!exerciseName) return [];
-    
+
     return workouts
-      .filter((workout) => 
+      .filter((workout) =>
         workout.exercises.some((e) => e.name === exerciseName)
       )
       .map((workout) => {
@@ -53,12 +54,12 @@ export const ExerciseHistoryModal: React.FC<ExerciseHistoryModalProps> = ({
   }, [workouts, exerciseName]);
 
   useEffect(() => {
-    console.log('[ExerciseHistoryModal] useEffect triggered, visible:', visible);
+
     if (visible) {
-      console.log('[ExerciseHistoryModal] Animating sheet to visible position');
+
       sheetTranslateY.value = withSpring(0, springGentle);
     } else {
-      console.log('[ExerciseHistoryModal] Animating sheet to hidden position');
+
       // Animate out when visibility changes to false
       sheetTranslateY.value = withTiming(SCREEN_HEIGHT, { duration: 300 });
     }
@@ -111,20 +112,20 @@ export const ExerciseHistoryModal: React.FC<ExerciseHistoryModalProps> = ({
   };
 
   return (
-    <View 
-      style={[styles.overlay, !visible && styles.invisible]} 
+    <View
+      style={[styles.overlay, !visible && styles.invisible]}
       pointerEvents={visible ? 'auto' : 'none'}
     >
       <Pressable style={styles.backdrop} onPress={handleBackdropPress} />
       <GestureDetector gesture={sheetGesture}>
-        <AnimatedPressable 
+        <AnimatedPressable
           style={[styles.sheet, { paddingBottom: insets.bottom + spacing.lg }, sheetAnimatedStyle]}
-          onPress={() => {}} // Consume press
+          onPress={() => { }} // Consume press
         >
           <View style={styles.handleContainer}>
             <View style={styles.handle} />
           </View>
-          
+
           <View style={styles.header}>
             <Text variant="heading2">{exerciseName || 'History'}</Text>
           </View>
@@ -178,12 +179,6 @@ const styles = StyleSheet.create({
     // But wait, if !visible, we want to be able to see the exit animation.
     // So we shouldn't set opacity: 0 immediately on !visible unless we delay it.
     // We'll remove this style and rely on pointerEvents and sheet translation.
-    // The backdrop will remain visible though? 
-    // We need to animate backdrop opacity too ideally.
-    // For now, let's just keep the backdrop always there if visible=true.
-    // If visible=false, we need it to disappear.
-    // But we want to animate the sheet out.
-    // Let's remove 'invisible' and just use pointerEvents.
     // But then the backdrop covers the screen even if invisible?
     // Yes.
     // So we need to hide it after animation.
@@ -206,18 +201,9 @@ const styles = StyleSheet.create({
     height: '80%',
     width: '100%',
     overflow: 'hidden',
-    borderTopWidth: 2,
-    borderTopColor: colors.accent.orange,
-    borderLeftWidth: 2,
-    borderLeftColor: colors.accent.orange,
-    borderRightWidth: 2,
-    borderRightColor: colors.accent.orange,
-    // Shadow
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    elevation: 10,
+    borderWidth: 1,
+    borderColor: colors.neutral.gray200,
+    ...shadows.lg,
   },
   handleContainer: {
     alignItems: 'center',
@@ -226,8 +212,8 @@ const styles = StyleSheet.create({
   handle: {
     width: 40,
     height: 4,
-    borderRadius: radius.full,
-    backgroundColor: colors.accent.orange,
+    borderRadius: 2,
+    backgroundColor: colors.border.light,
   },
   header: {
     paddingHorizontal: spacing.lg,

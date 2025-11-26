@@ -13,6 +13,7 @@ import {
   useSchedulesStore,
 } from '@/store/schedulesStore';
 import { usePlansStore } from '@/store/plansStore';
+import { useProgramsStore } from '@/store/programsStore';
 
 type ScheduleOption = { label: string; value: string | null };
 
@@ -31,6 +32,7 @@ interface UseScheduleEditorReturn {
 
 export const useScheduleEditor = (): UseScheduleEditorReturn => {
   const plans = usePlansStore((state: PlansState) => state.plans);
+  const { userPrograms } = useProgramsStore();
   const schedules = useSchedulesStore((state: SchedulesState) => state.schedules);
   const hydrateSchedules = useSchedulesStore((state: SchedulesState) => state.hydrateSchedules);
   const addSchedule = useSchedulesStore((state: SchedulesState) => state.addSchedule);
@@ -56,18 +58,39 @@ export const useScheduleEditor = (): UseScheduleEditorReturn => {
   }, [activeSchedule]);
 
   const planNameLookup = useMemo(() => {
-    return plans.reduce<Record<string, string>>((acc, plan: Plan) => {
+    const lookup = plans.reduce<Record<string, string>>((acc, plan: Plan) => {
       acc[plan.id] = plan.name;
       return acc;
     }, {});
-  }, [plans]);
+
+    userPrograms.forEach((prog) => {
+      prog.workouts.forEach((workout) => {
+        lookup[workout.id] = `${prog.name}: ${workout.name}`;
+      });
+    });
+
+    return lookup;
+  }, [plans, userPrograms]);
 
   const planOptions = useMemo<ScheduleOption[]>(() => {
-    return [
+    const options = [
       { label: 'Rest Day', value: null },
       ...plans.map((plan: Plan) => ({ label: plan.name, value: plan.id })),
     ];
-  }, [plans]);
+
+    if (userPrograms.length > 0) {
+      userPrograms.forEach((prog) => {
+        prog.workouts.forEach((workout) => {
+          options.push({
+            label: `${prog.name}: ${workout.name}`,
+            value: workout.id,
+          });
+        });
+      });
+    }
+
+    return options;
+  }, [plans, userPrograms]);
 
   const selectDay = useCallback((day: ScheduleDayKey) => {
     void Haptics.selectionAsync();

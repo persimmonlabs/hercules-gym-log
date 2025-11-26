@@ -43,6 +43,7 @@ interface CreatePlanBuilderState {
   toggleBodyweightOnly: () => void;
   toggleCompoundOnly: () => void;
   resetFilters: () => void;
+  updateFilters: (newFilters: ExerciseFilters) => void;
   filterOptions: ReturnType<typeof usePlanBuilderState>['filterOptions'];
 }
 

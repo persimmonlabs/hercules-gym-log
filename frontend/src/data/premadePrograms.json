@@ -1,0 +1,94 @@
+{
+  "programs": [
+    {
+      "id": "ppl-beginner",
+      "name": "Push Pull Legs (Beginner)",
+      "metadata": {
+        "goal": "build-muscle",
+        "experienceLevel": "beginner",
+        "equipment": "full-gym",
+        "daysPerWeek": 3,
+        "durationWeeks": 8,
+        "description": "Classic 3-day split perfect for beginners. Focus on compound movements to build a solid foundation.",
+        "tags": ["hypertrophy", "compound", "split"]
+      },
+      "scheduleType": "rotation",
+      "workouts": [
+        {
+          "id": "ppl-push",
+          "name": "Push Day",
+          "exercises": [
+            { "id": "barbell-bench-press", "name": "Barbell Bench Press", "sets": 3 },
+            { "id": "overhead-press", "name": "Overhead Press", "sets": 3 },
+            { "id": "incline-dumbbell-press", "name": "Incline Dumbbell Press", "sets": 3 },
+            { "id": "tricep-pushdown", "name": "Tricep Pushdown", "sets": 3 }
+          ]
+        },
+        {
+          "id": "ppl-pull",
+          "name": "Pull Day",
+          "exercises": [
+            { "id": "barbell-row", "name": "Barbell Row", "sets": 3 },
+            { "id": "lat-pulldown", "name": "Lat Pulldown", "sets": 3 },
+            { "id": "face-pull", "name": "Face Pull", "sets": 3 },
+            { "id": "barbell-curl", "name": "Barbell Curl", "sets": 3 }
+          ]
+        },
+        {
+          "id": "ppl-legs",
+          "name": "Leg Day",
+          "exercises": [
+            { "id": "squat", "name": "Squat", "sets": 3 },
+            { "id": "romanian-deadlift", "name": "Romanian Deadlift", "sets": 3 },
+            { "id": "leg-press", "name": "Leg Press", "sets": 3 },
+            { "id": "calf-raise", "name": "Calf Raise", "sets": 3 }
+          ]
+        }
+      ],
+      "suggestedSchedule": {
+        "rotation": ["ppl-push", "ppl-pull", "ppl-legs"]
+      },
+      "isPremade": true
+    },
+    {
+      "id": "full-body-2day",
+      "name": "Full Body Essentials",
+      "metadata": {
+        "goal": "general-fitness",
+        "experienceLevel": "beginner",
+        "equipment": "dumbbells-only",
+        "daysPerWeek": 2,
+        "description": "A simple 2-day routine for busy schedules using only dumbbells.",
+        "tags": ["full-body", "dumbbells", "efficient"]
+      },
+      "scheduleType": "weekly",
+      "workouts": [
+        {
+          "id": "fb-a",
+          "name": "Workout A",
+          "exercises": [
+            { "id": "goblet-squat", "name": "Goblet Squat", "sets": 3 },
+            { "id": "dumbbell-bench-press", "name": "Dumbbell Bench Press", "sets": 3 },
+            { "id": "dumbbell-row", "name": "Dumbbell Row", "sets": 3 }
+          ]
+        },
+        {
+          "id": "fb-b",
+          "name": "Workout B",
+          "exercises": [
+            { "id": "dumbbell-deadlift", "name": "Dumbbell Deadlift", "sets": 3 },
+            { "id": "dumbbell-shoulder-press", "name": "Dumbbell Shoulder Press", "sets": 3 },
+            { "id": "dumbbell-lunge", "name": "Dumbbell Lunge", "sets": 3 }
+          ]
+        }
+      ],
+      "suggestedSchedule": {
+        "weekly": {
+          "monday": "fb-a",
+          "thursday": "fb-b"
+        }
+      },
+      "isPremade": true
+    }
+  ]
+}

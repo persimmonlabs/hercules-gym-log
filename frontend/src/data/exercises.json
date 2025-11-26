@@ -153,7 +153,7 @@
   },
   {
     "id": "exercise_011",
-    "name": "Alternating Dumbbell Hammer Curls",
+    "name": "Dumbbell Hammer Curls",
     "muscles": {
       "Biceps": 0.8,
       "Forearms": 0.2
@@ -429,7 +429,7 @@
 
 {
   "id": "exercise_027",
-  "name": "Alternating Dumbbell Bicep Curls",
+  "name": "Dumbbell Bicep Curls",
   "muscles": {
     "Biceps": 0.800,
     "Forearms": 0.140,
@@ -1270,6 +1270,875 @@
   "movement_pattern": "Vertical Push",
   "difficulty": "Beginner",
     "is_compound": false
+},
+
+{
+  "id": "exercise_064",
+  "name": "Cable Underhand Pulldown",
+  "muscles": {
+    "Lats": 0.450,
+    "Biceps": 0.300,
+    "Traps": 0.070,
+    "Forearms": 0.050,
+    "Mid Back": 0.040,
+    "Rear Delts": 0.040,
+    "Lower Back": 0.030,
+    "Upper Abs": 0.020
+  },
+  "equipment": [
+    "Cable"
+  ],
+  "movement_pattern": "Vertical Pull",
+  "difficulty": "Beginner",
+  "is_compound": true
+},
+
+{
+  "id": "exercise_065",
+  "name": "Cable Upright Row",
+  "muscles": {
+    "Lateral Delts": 0.400,
+    "Traps": 0.250,
+    "Front Delts": 0.100,
+    "Rear Delts": 0.070,
+    "Forearms": 0.050,
+    "Biceps": 0.030,
+    "Triceps": 0.030,
+    "Lower Back": 0.030,
+    "Upper Abs": 0.020,
+    "Obliques": 0.020
+  },
+  "equipment": [
+    "Cable"
+  ],
+  "movement_pattern": "Vertical Pull",
+  "difficulty": "Intermediate",
+  "is_compound": true
+},
+
+{
+  "id": "exercise_066",
+  "name": "Calf Press on a Leg Press Machine",
+  "muscles": {
+    "Calves": 0.880,
+    "Quads": 0.050,
+    "Hamstrings": 0.020,
+    "Glutes": 0.020,
+    "Upper Abs": 0.010,
+    "Lower Back": 0.010,
+    "Obliques": 0.010
+  },
+  "equipment": [
+    "Machine"
+  ],
+  "movement_pattern": "Knee Extension",
+  "difficulty": "Beginner",
+  "is_compound": false
+},
+
+{
+  "id": "exercise_067",
+  "name": "Chest Supported T-Bar Row",
+  "muscles": {
+    "Lats": 0.400,
+    "Mid Back": 0.175,
+    "Traps": 0.175,
+    "Biceps": 0.100,
+    "Rear Delts": 0.080,
+    "Forearms": 0.050,
+    "Lower Back": 0.010,
+    "Upper Abs": 0.010
+  },
+  "equipment": [
+    "Barbell",
+    "Bench"
+  ],
+  "movement_pattern": "Horizontal Pull",
+  "difficulty": "Intermediate",
+  "is_compound": true
+},
+
+{
+  "id": "exercise_068",
+  "name": "Close Grip Barbell Bench Press",
+  "muscles": {
+    "Triceps": 0.500,
+    "Upper Chest": 0.100,
+    "Mid Chest": 0.100,
+    "Lower Chest": 0.100,
+    "Front Delts": 0.080,
+    "Mid Back": 0.050,
+    "Forearms": 0.030,
+    "Upper Abs": 0.010,
+    "Lower Abs": 0.010,
+    "Biceps": 0.010,
+    "Lateral Delts": 0.005,
+    "Rear Delts": 0.005
+  },
+  "equipment": [
+    "Barbell",
+    "Bench"
+  ],
+  "movement_pattern": "Horizontal Push",
+  "difficulty": "Intermediate",
+  "is_compound": true
+},
+
+{
+  "id": "exercise_069",
+  "name": "Close Grip Lat Pulldown",
+  "muscles": {
+    "Lats": 0.450,
+    "Biceps": 0.300,
+    "Traps": 0.070,
+    "Forearms": 0.050,
+    "Mid Back": 0.040,
+    "Rear Delts": 0.040,
+    "Lower Back": 0.030,
+    "Upper Abs": 0.020
+  },
+  "equipment": [
+    "Cable"
+  ],
+  "movement_pattern": "Vertical Pull",
+  "difficulty": "Beginner",
+  "is_compound": true
+},
+
+{
+  "id": "exercise_070",
+  "name": "Decline Barbell Bench Press",
+  "muscles": {
+    "Lower Chest": 0.200,
+    "Triceps": 0.400,
+    "Mid Chest": 0.130,
+    "Upper Chest": 0.120,
+    "Front Delts": 0.060,
+    "Mid Back": 0.040,
+    "Forearms": 0.020,
+    "Upper Abs": 0.008,
+    "Lower Abs": 0.007,
+    "Biceps": 0.005,
+    "Lateral Delts": 0.005,
+    "Rear Delts": 0.005
+  },
+  "equipment": [
+    "Barbell",
+    "Bench"
+  ],
+  "movement_pattern": "Horizontal Push",
+  "difficulty": "Intermediate",
+  "is_compound": true
+},
+
+{
+  "id": "exercise_071",
+  "name": "Decline Chest Press Machine",
+  "muscles": {
+    "Triceps": 0.355,
+    "Lower Chest": 0.255,
+    "Mid Chest": 0.150,
+    "Upper Chest": 0.100,
+    "Front Delts": 0.050,
+    "Forearms": 0.030,
+    "Mid Back": 0.005,
+    "Traps": 0.005,
+    "Lateral Delts": 0.010,
+    "Lower Back": 0.010,
+    "Biceps": 0.010,
+    "Upper Abs": 0.005,
+    "Lower Abs": 0.005,
+    "Rear Delts": 0.005
+  },
+  "equipment": [
+    "Machine"
+  ],
+  "movement_pattern": "Horizontal Push",
+  "difficulty": "Beginner",
+  "is_compound": true
+},
+
+{
+  "id": "exercise_072",
+  "name": "Decline Dumbbell Bench Press",
+  "muscles": {
+    "Lower Chest": 0.355,
+    "Triceps": 0.305,
+    "Mid Chest": 0.150,
+    "Upper Chest": 0.050,
+    "Front Delts": 0.040,
+    "Mid Back": 0.015,
+    "Traps": 0.015,
+    "Forearms": 0.020,
+    "Lateral Delts": 0.015,
+    "Rear Delts": 0.015,
+    "Upper Abs": 0.010,
+    "Lower Back": 0.005,
+    "Lower Abs": 0.005
+  },
+  "equipment": [
+    "Dumbbell",
+    "Bench"
+  ],
+  "movement_pattern": "Horizontal Push",
+  "difficulty": "Intermediate",
+  "is_compound": true
+},
+
+{
+  "id": "exercise_073",
+  "name": "Decline Dumbbell Fly",
+  "muscles": {
+    "Lower Chest": 0.440,
+    "Mid Chest": 0.300,
+    "Upper Chest": 0.100,
+    "Forearms": 0.030,
+    "Front Delts": 0.025,
+    "Mid Back": 0.0125,
+    "Traps": 0.0125,
+    "Lateral Delts": 0.020,
+    "Triceps": 0.020,
+    "Rear Delts": 0.015,
+    "Lower Back": 0.010,
+    "Biceps": 0.005,
+    "Upper Abs": 0.005,
+    "Lower Abs": 0.005,
+    "Obliques": 0.005
+  },
+  "equipment": [
+    "Dumbbell",
+    "Bench"
+  ],
+  "movement_pattern": "Horizontal Push",
+  "difficulty": "Beginner",
+  "is_compound": false
+},
+
+{
+  "id": "exercise_074",
+  "name": "Decline Oblique Crunch",
+  "muscles": {
+    "Obliques": 0.650,
+    "Upper Abs": 0.180,
+    "Lower Abs": 0.130,
+    "Lower Back": 0.020,
+    "Forearms": 0.020
+  },
+  "equipment": [
+    "Bench"
+  ],
+  "movement_pattern": "Horizontal Extension",
+  "difficulty": "Beginner",
+  "is_compound": false
+},
+
+{
+  "id": "exercise_075",
+  "name": "Decline Sit-ups",
+  "muscles": {
+    "Lower Abs": 0.315,
+    "Upper Abs": 0.295,
+    "Obliques": 0.150,
+    "Lower Back": 0.050,
+    "Forearms": 0.040,
+    "Quads": 0.150
+  },
+  "equipment": [
+    "Bench"
+  ],
+  "movement_pattern": "Vertical Push",
+  "difficulty": "Beginner",
+  "is_compound": false
+},
+
+{
+  "id": "exercise_076",
+  "name": "Dumbbell Bench Press",
+  "muscles": {
+    "Mid Chest": 0.300,
+    "Triceps": 0.250,
+    "Front Delts": 0.150,
+    "Lower Chest": 0.115,
+    "Upper Chest": 0.050,
+    "Mid Back": 0.025,
+    "Traps": 0.025,
+    "Forearms": 0.030,
+    "Lateral Delts": 0.030,
+    "Rear Delts": 0.020,
+    "Upper Abs": 0.005,
+    "Lower Abs": 0.005,
+    "Biceps": 0.005,
+    "Lower Back": 0.005
+  },
+  "equipment": [
+    "Dumbbell",
+    "Bench"
+  ],
+  "movement_pattern": "Horizontal Push",
+  "difficulty": "Beginner",
+  "is_compound": true
+},
+
+{
+  "id": "exercise_077",
+  "name": "Dumbbell Bulgarian Split Squats",
+  "muscles": {
+    "Quads": 0.350,
+    "Glutes": 0.300,
+    "Hamstrings": 0.100,
+    "Obliques": 0.085,
+    "Upper Abs": 0.050,
+    "Lower Abs": 0.050,
+    "Forearms": 0.030,
+    "Lower Back": 0.020,
+    "Front Delts": 0.010,
+    "Lateral Delts": 0.005
+  },
+  "equipment": [
+    "Dumbbell",
+    "Bench"
+  ],
+  "movement_pattern": "Vertical Push",
+  "difficulty": "Intermediate",
+  "is_compound": true
+},
+
+{
+  "id": "exercise_078",
+  "name": "Dumbbell Concentration Curl",
+  "muscles": {
+    "Biceps": 0.750,
+    "Forearms": 0.150,
+    "Triceps": 0.020,
+    "Front Delts": 0.015,
+    "Upper Abs": 0.010,
+    "Lower Abs": 0.010,
+    "Obliques": 0.010,
+    "Lateral Delts": 0.010,
+    "Rear Delts": 0.005,
+    "Lower Back": 0.005
+  },
+  "equipment": [
+    "Dumbbell"
+  ],
+  "movement_pattern": "Vertical Pull",
+  "difficulty": "Beginner",
+  "is_compound": false
+},
+
+{
+  "id": "exercise_079",
+  "name": "Dumbbell Cuban Press",
+  "muscles": {
+    "Front Delts": 0.200,
+    "Triceps": 0.200,
+    "Rear Delts": 0.150,
+    "Lateral Delts": 0.150,
+    "Mid Back": 0.075,
+    "Traps": 0.075,
+    "Forearms": 0.050,
+    "Upper Chest": 0.040,
+    "Lower Back": 0.020,
+    "Mid Chest": 0.015,
+    "Biceps": 0.015,
+    "Upper Abs": 0.010,
+    "Obliques": 0.005,
+    "Lower Abs": 0.005
+  },
+  "equipment": [
+    "Dumbbell"
+  ],
+  "movement_pattern": "Vertical Push",
+  "difficulty": "Intermediate",
+  "is_compound": true
+},
+
+{
+  "id": "exercise_080",
+  "name": "Dumbbell Deadlifts",
+  "muscles": {
+    "Glutes": 0.300,
+    "Hamstrings": 0.250,
+    "Lower Back": 0.200,
+    "Quads": 0.100,
+    "Traps": 0.050,
+    "Lats": 0.040,
+    "Forearms": 0.030,
+    "Upper Abs": 0.010,
+    "Obliques": 0.010,
+    "Lower Abs": 0.005,
+    "Adductors": 0.005
+  },
+  "equipment": [
+    "Dumbbell"
+  ],
+  "movement_pattern": "Horizontal Pull",
+  "difficulty": "Intermediate",
+  "is_compound": true
+},
+
+{
+  "id": "exercise_081",
+  "name": "Dumbbell Fly",
+  "muscles": {
+    "Mid Chest": 0.420,
+    "Lower Chest": 0.305,
+    "Upper Chest": 0.130,
+    "Front Delts": 0.040,
+    "Forearms": 0.030,
+    "Triceps": 0.020,
+    "Lateral Delts": 0.020,
+    "Rear Delts": 0.015,
+    "Mid Back": 0.005,
+    "Traps": 0.005,
+    "Lower Back": 0.005,
+    "Upper Abs": 0.005,
+    "Lower Abs": 0.005
+  },
+  "equipment": [
+    "Dumbbell",
+    "Bench"
+  ],
+  "movement_pattern": "Horizontal Push",
+  "difficulty": "Beginner",
+  "is_compound": false
+},
+
+{
+  "id": "exercise_082",
+  "name": "Dumbbell Front Raises",
+  "muscles": {
+    "Front Delts": 0.700,
+    "Upper Chest": 0.080,
+    "Forearms": 0.050,
+    "Traps": 0.050,
+    "Lower Back": 0.050,
+    "Upper Abs": 0.015,
+    "Lower Abs": 0.015,
+    "Lateral Delts": 0.030,
+    "Rear Delts": 0.010
+  },
+  "equipment": [
+    "Dumbbell"
+  ],
+  "movement_pattern": "Lateral Raise",
+  "difficulty": "Beginner",
+  "is_compound": false
+},
+
+{
+  "id": "exercise_083",
+  "name": "Dumbbell Front Squat",
+  "muscles": {
+    "Quads": 0.350,
+    "Glutes": 0.250,
+    "Hamstrings": 0.100,
+    "Mid Back": 0.035,
+    "Traps": 0.035,
+    "Upper Abs": 0.060,
+    "Lower Back": 0.040,
+    "Lower Abs": 0.040,
+    "Calves": 0.040,
+    "Forearms": 0.030,
+    "Obliques": 0.030,
+    "Lateral Delts": 0.005,
+    "Front Delts": 0.005
+  },
+  "equipment": [
+    "Dumbbell"
+  ],
+  "movement_pattern": "Vertical Push",
+  "difficulty": "Intermediate",
+  "is_compound": true
+},
+
+{
+  "id": "exercise_084",
+  "name": "Dumbbell Hammer Preacher Curls",
+  "muscles": {
+    "Biceps": 0.750,
+    "Forearms": 0.200,
+    "Triceps": 0.030,
+    "Front Delts": 0.005,
+    "Mid Back": 0.0025,
+    "Traps": 0.0025,
+    "Upper Abs": 0.005,
+    "Lower Abs": 0.005
+  },
+  "equipment": [
+    "Dumbbell",
+    "Bench"
+  ],
+  "movement_pattern": "Vertical Pull",
+  "difficulty": "Beginner",
+  "is_compound": false
+},
+
+{
+  "id": "exercise_085",
+  "name": "Dumbbell Lunges",
+  "muscles": {
+    "Quads": 0.350,
+    "Glutes": 0.300,
+    "Hamstrings": 0.150,
+    "Calves": 0.060,
+    "Forearms": 0.050,
+    "Lower Back": 0.040,
+    "Upper Abs": 0.015,
+    "Lower Abs": 0.015,
+    "Obliques": 0.020
+  },
+  "equipment": [
+    "Dumbbell"
+  ],
+  "movement_pattern": "Vertical Push",
+  "difficulty": "Beginner",
+  "is_compound": true
+},
+
+{
+  "id": "exercise_086",
+  "name": "Dumbbell Reverse Lunges",
+  "muscles": {
+    "Quads": 0.350,
+    "Glutes": 0.300,
+    "Hamstrings": 0.150,
+    "Calves": 0.060,
+    "Forearms": 0.050,
+    "Lower Back": 0.040,
+    "Upper Abs": 0.015,
+    "Lower Abs": 0.015,
+    "Obliques": 0.020
+  },
+  "equipment": [
+    "Dumbbell"
+  ],
+  "movement_pattern": "Vertical Push",
+  "difficulty": "Beginner",
+  "is_compound": true
+},
+
+{
+  "id": "exercise_087",
+  "name": "Dumbbell Romanian Deadlifts",
+  "muscles": {
+    "Hamstrings": 0.350,
+    "Glutes": 0.280,
+    "Lower Back": 0.200,
+    "Traps": 0.025,
+    "Lats": 0.025,
+    "Quads": 0.050,
+    "Forearms": 0.040,
+    "Upper Abs": 0.010,
+    "Lower Abs": 0.010,
+    "Obliques": 0.010,
+    "Calves": 0.030
+  },
+  "equipment": [
+    "Dumbbell"
+  ],
+  "movement_pattern": "Horizontal Pull",
+  "difficulty": "Intermediate",
+  "is_compound": true
+},
+
+{
+  "id": "exercise_088",
+  "name": "Dumbbell Shrugs",
+  "muscles": {
+    "Traps": 0.700,
+    "Forearms": 0.150,
+    "Mid Back": 0.025,
+    "Lats": 0.025,
+    "Upper Abs": 0.015,
+    "Lower Abs": 0.010,
+    "Lower Back": 0.025,
+    "Quads": 0.0167,
+    "Glutes": 0.0167,
+    "Calves": 0.0166
+  },
+  "equipment": [
+    "Dumbbell"
+  ],
+  "movement_pattern": "Vertical Pull",
+  "difficulty": "Beginner",
+  "is_compound": false
+},
+
+{
+  "id": "exercise_089",
+  "name": "Dumbbell Spider Curl",
+  "muscles": {
+    "Biceps": 0.750,
+    "Forearms": 0.200,
+    "Triceps": 0.030,
+    "Front Delts": 0.005,
+    "Mid Back": 0.0025,
+    "Traps": 0.0025,
+    "Upper Abs": 0.005,
+    "Lower Abs": 0.005
+  },
+  "equipment": [
+    "Dumbbell",
+    "Bench"
+  ],
+  "movement_pattern": "Vertical Pull",
+  "difficulty": "Beginner",
+  "is_compound": false
+},
+
+{
+  "id": "exercise_090",
+  "name": "Dumbbell Squats",
+  "muscles": {
+    "Quads": 0.350,
+    "Glutes": 0.250,
+    "Hamstrings": 0.150,
+    "Lower Back": 0.100,
+    "Upper Abs": 0.020,
+    "Lower Abs": 0.020,
+    "Obliques": 0.020,
+    "Forearms": 0.050,
+    "Calves": 0.040
+  },
+  "equipment": [
+    "Dumbbell"
+  ],
+  "movement_pattern": "Vertical Push",
+  "difficulty": "Beginner",
+  "is_compound": true
+},
+
+{
+  "id": "exercise_091",
+  "name": "Dumbbell Step-Ups",
+  "muscles": {
+    "Quads": 0.350,
+    "Glutes": 0.350,
+    "Hamstrings": 0.150,
+    "Forearms": 0.050,
+    "Lower Back": 0.040,
+    "Upper Abs": 0.010,
+    "Lower Abs": 0.010,
+    "Obliques": 0.010,
+    "Calves": 0.030
+  },
+  "equipment": [
+    "Dumbbell",
+    "Bench"
+  ],
+  "movement_pattern": "Vertical Push",
+  "difficulty": "Beginner",
+  "is_compound": true
+},
+
+{
+  "id": "exercise_092",
+  "name": "Dumbbell Triceps Kickback",
+  "muscles": {
+    "Triceps": 0.800,
+    "Forearms": 0.080,
+    "Front Delts": 0.015,
+    "Mid Back": 0.015,
+    "Traps": 0.015,
+    "Lower Back": 0.030,
+    "Upper Abs": 0.015,
+    "Lower Abs": 0.015
+  },
+  "equipment": [
+    "Dumbbell"
+  ],
+  "movement_pattern": "Vertical Push",
+  "difficulty": "Beginner",
+  "is_compound": false
+},
+
+{
+  "id": "exercise_093",
+  "name": "Dumbbell Upright Row",
+  "muscles": {
+    "Traps": 0.300,
+    "Lateral Delts": 0.250,
+    "Front Delts": 0.100,
+    "Biceps": 0.100,
+    "Forearms": 0.080,
+    "Quads": 0.0167,
+    "Glutes": 0.0167,
+    "Calves": 0.0166,
+    "Triceps": 0.050,
+    "Rear Delts": 0.050,
+    "Upper Abs": 0.008,
+    "Lower Abs": 0.007,
+    "Lower Back": 0.005
+  },
+  "equipment": [
+    "Dumbbell"
+  ],
+  "movement_pattern": "Vertical Pull",
+  "difficulty": "Intermediate",
+  "is_compound": true
+},
+
+{
+  "id": "exercise_094",
+  "name": "Dumbbell Zottman Curls",
+  "muscles": {
+    "Biceps": 0.700,
+    "Forearms": 0.250,
+    "Triceps": 0.030,
+    "Front Delts": 0.008,
+    "Lateral Delts": 0.003,
+    "Rear Delts": 0.003,
+    "Upper Abs": 0.003,
+    "Lower Abs": 0.003
+  },
+  "equipment": [
+    "Dumbbell"
+  ],
+  "movement_pattern": "Vertical Pull",
+  "difficulty": "Beginner",
+  "is_compound": false
+},
+
+{
+  "id": "exercise_095",
+  "name": "EZ Bar Decline Triceps Extension",
+  "muscles": {
+    "Triceps": 0.800,
+    "Forearms": 0.100,
+    "Front Delts": 0.012,
+    "Mid Back": 0.012,
+    "Traps": 0.013,
+    "Lower Back": 0.025,
+    "Upper Abs": 0.012,
+    "Lower Abs": 0.013,
+    "Upper Chest": 0.003,
+    "Mid Chest": 0.003,
+    "Lower Chest": 0.002
+  },
+  "equipment": [
+    "Barbell"
+  ],
+  "movement_pattern": "Vertical Push",
+  "difficulty": "Intermediate",
+  "is_compound": false
+},
+
+{
+  "id": "exercise_096",
+  "name": "Face Pull",
+  "muscles": {
+    "Rear Delts": 0.350,
+    "Mid Back": 0.250,
+    "Traps": 0.150,
+    "Biceps": 0.100,
+    "Forearms": 0.080,
+    "Lats": 0.040,
+    "Upper Abs": 0.015,
+    "Lower Abs": 0.010,
+    "Lower Back": 0.005
+  },
+  "equipment": [
+    "Cable"
+  ],
+  "movement_pattern": "Horizontal Pull",
+  "difficulty": "Beginner",
+  "is_compound": false
+},
+
+{
+  "id": "exercise_097",
+  "name": "Hack Squat Machine",
+  "muscles": {
+    "Quads": 0.400,
+    "Glutes": 0.250,
+    "Hamstrings": 0.150,
+    "Lower Back": 0.080,
+    "Upper Abs": 0.025,
+    "Lower Abs": 0.020,
+    "Obliques": 0.025,
+    "Calves": 0.050,
+    "Forearms": 0.025,
+    "Traps": 0.012,
+    "Mid Back": 0.013
+  },
+  "equipment": [
+    "Machine"
+  ],
+  "movement_pattern": "Vertical Push",
+  "difficulty": "Beginner",
+  "is_compound": true
+},
+
+{
+  "id": "exercise_098",
+  "name": "Hip Thrust Machine",
+  "muscles": {
+    "Glutes": 0.500,
+    "Lower Back": 0.200,
+    "Hamstrings": 0.150,
+    "Upper Abs": 0.025,
+    "Lower Abs": 0.020,
+    "Obliques": 0.025,
+    "Quads": 0.050,
+    "Calves": 0.010,
+    "Forearms": 0.010,
+    "Traps": 0.005
+  },
+  "equipment": [
+    "Machine"
+  ],
+  "movement_pattern": "Horizontal Extension",
+  "difficulty": "Beginner",
+  "is_compound": true
+},
+
+{
+  "id": "exercise_099",
+  "name": "Incline Barbell Bench Press",
+  "muscles": {
+    "Upper Chest": 0.400,
+    "Front Delts": 0.250,
+    "Triceps": 0.250,
+    "Forearms": 0.050,
+    "Biceps": 0.030,
+    "Rear Delts": 0.010,
+    "Lateral Delts": 0.005,
+    "Upper Abs": 0.003,
+    "Lower Abs": 0.002
+  },
+  "equipment": [
+    "Barbell",
+    "Bench"
+  ],
+  "movement_pattern": "Horizontal Push",
+  "difficulty": "Intermediate",
+  "is_compound": true
+},
+
+{
+  "id": "exercise_100",
+  "name": "Incline Barbell Triceps Extension",
+  "muscles": {
+    "Triceps": 0.800,
+    "Forearms": 0.100,
+    "Front Delts": 0.012,
+    "Mid Back": 0.012,
+    "Traps": 0.013,
+    "Lower Back": 0.025,
+    "Upper Abs": 0.012,
+    "Lower Abs": 0.013,
+    "Upper Chest": 0.003,
+    "Mid Chest": 0.003,
+    "Lower Chest": 0.002
+  },
+  "equipment": [
+    "Barbell",
+    "Bench"
+  ],
+  "movement_pattern": "Vertical Push",
+  "difficulty": "Intermediate",
+  "is_compound": false
 }
 
 

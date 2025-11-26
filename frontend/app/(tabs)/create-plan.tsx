@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Alert, Pressable, StyleSheet, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -150,6 +150,13 @@ const CreatePlanScreen: React.FC = () => {
 
       if (result === 'success') {
         router.push('/(tabs)/plans');
+      } else if (result === 'duplicate-name') {
+        void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+        Alert.alert(
+          'Plan Name Taken',
+          'A workout plan with this name already exists. Please choose a different name.',
+          [{ text: 'OK' }]
+        );
       }
     })();
   }, [handleSavePlan, router]);

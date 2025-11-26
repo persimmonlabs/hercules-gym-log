@@ -13,6 +13,8 @@ export interface UseMonthlyCalendarOptions {
   markers?: string[];
   onSelectDate?: (isoDate: string) => void;
   locale?: string;
+  currentMonth?: string;
+  onCurrentMonthChange?: (isoDate: string) => void;
 }
 
 export interface CalendarGridItem {
@@ -57,7 +59,15 @@ const getWeekdayLabels = (formatter: Intl.DateTimeFormat): string[] => {
 };
 
 export const useMonthlyCalendar = (options: UseMonthlyCalendarOptions = {}) => {
-  const { initialMonth, selectedDate, markers = [], onSelectDate, locale = 'en-US' } = options;
+  const {
+    initialMonth,
+    selectedDate,
+    markers = [],
+    onSelectDate,
+    locale = 'en-US',
+    currentMonth,
+    onCurrentMonthChange,
+  } = options;
 
   const todayISO = useMemo(() => getTodayLocalISO(), []);
   const [visibleMonth, setVisibleMonth] = useState<Date>(() =>
@@ -75,6 +85,16 @@ export const useMonthlyCalendar = (options: UseMonthlyCalendarOptions = {}) => {
         : nextVisible
     );
   }, [selectedDate]);
+
+  useEffect(() => {
+    if (!currentMonth) return;
+    const nextVisible = startOfMonth(createDateFromISO(currentMonth));
+    setVisibleMonth((prev) =>
+      prev.getFullYear() === nextVisible.getFullYear() && prev.getMonth() === nextVisible.getMonth()
+        ? prev
+        : nextVisible
+    );
+  }, [currentMonth]);
 
   const markerSet = useMemo(() => new Set(markers), [markers]);
   const monthFormatter = useMemo(
@@ -108,9 +128,16 @@ export const useMonthlyCalendar = (options: UseMonthlyCalendarOptions = {}) => {
 
   const monthLabel = useMemo(() => monthFormatter.format(visibleMonth), [monthFormatter, visibleMonth]);
 
-  const changeMonth = useCallback((offset: number) => {
-    setVisibleMonth((prev) => new Date(prev.getFullYear(), prev.getMonth() + offset, 1));
-  }, []);
+  const changeMonth = useCallback(
+    (offset: number) => {
+      setVisibleMonth((prev) => {
+        const newDate = new Date(prev.getFullYear(), prev.getMonth() + offset, 1);
+        onCurrentMonthChange?.(formatDateToLocalISO(newDate));
+        return newDate;
+      });
+    },
+    [onCurrentMonthChange]
+  );
 
   const selectDate = useCallback(
     (isoDate: string) => {

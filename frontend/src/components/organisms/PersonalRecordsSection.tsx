@@ -5,7 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { SurfaceCard } from '@/components/atoms/SurfaceCard';
 import { Text } from '@/components/atoms/Text';
 import { PRCard } from '@/components/molecules/PRCard';
-import { colors, spacing, radius } from '@/constants/theme';
+import { colors, spacing, radius, shadows } from '@/constants/theme';
 import { useWorkoutSessionsStore } from '@/store/workoutSessionsStore';
 import type { Workout } from '@/types/workout';
 import exercisesData from '@/data/exercises.json';
@@ -22,7 +22,7 @@ export const PersonalRecordsSection: React.FC = () => {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [selectedExerciseIndex, setSelectedExerciseIndex] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  
+
   const screenHeight = Dimensions.get('window').height;
   const slideAnim = useRef(new Animated.Value(screenHeight)).current;
 
@@ -127,7 +127,7 @@ export const PersonalRecordsSection: React.FC = () => {
   };
 
   const filteredExercises = useMemo(() => {
-    return exercisesData.filter(ex => 
+    return exercisesData.filter(ex =>
       ex.name.toLowerCase().includes(searchQuery.toLowerCase()) &&
       !trackedExercises.includes(ex.name)
     );
@@ -163,7 +163,7 @@ export const PersonalRecordsSection: React.FC = () => {
           onRequestClose={closeModal}
         >
           <View style={styles.modalOverlay}>
-            <Animated.View 
+            <Animated.View
               style={[
                 styles.modalContent,
                 { transform: [{ translateY: slideAnim }] }
@@ -178,7 +178,7 @@ export const PersonalRecordsSection: React.FC = () => {
                   <Ionicons name="close" size={24} color={colors.text.primary} />
                 </TouchableOpacity>
               </View>
-              
+
               <TextInput
                 style={styles.searchInput}
                 placeholder="Search exercises..."
@@ -204,8 +204,8 @@ export const PersonalRecordsSection: React.FC = () => {
             </Animated.View>
           </View>
         </Modal>
-      </View>
-    </SurfaceCard>
+      </View >
+    </SurfaceCard >
   );
 };
 
@@ -231,6 +231,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface.card,
     borderTopLeftRadius: radius.xl,
     borderTopRightRadius: radius.xl,
+    borderWidth: 1,
+    borderColor: colors.neutral.gray200,
+    ...shadows.lg,
     padding: spacing.lg,
     paddingTop: spacing.sm,
     height: '80%',
@@ -254,7 +257,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   searchInput: {
-    backgroundColor: colors.surface.subtle,
+    backgroundColor: colors.primary.bg,
+    borderWidth: 1,
+    borderColor: colors.accent.orange + '66',
     padding: spacing.md,
     borderRadius: radius.md,
     fontSize: 16,
@@ -268,7 +273,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingVertical: spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border.light,
+    borderBottomWidth: 0.5,
+    borderBottomColor: colors.accent.orange + '66',
   },
 });

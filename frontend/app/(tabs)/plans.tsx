@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Modal, Pressable, StyleSheet, View } from 'react-native';
+import { Modal, Pressable, StyleSheet, View, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 
@@ -12,10 +12,13 @@ import { WEEKDAY_LABELS } from '@/constants/schedule';
 import { colors, radius, shadows, spacing } from '@/constants/theme';
 import { usePlansStore, type Plan, type PlansState } from '@/store/plansStore';
 import { useSchedulesStore, type SchedulesState } from '@/store/schedulesStore';
+import { useProgramsStore } from '@/store/programsStore';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { useSessionStore } from '@/store/sessionStore';
+import { ProgramCard } from '@/components/molecules/ProgramCard';
 import type { WorkoutExercise } from '@/types/workout';
 import type { Schedule } from '@/types/schedule';
+import type { PremadeProgram } from '@/types/premadePlan';
 
 const styles = StyleSheet.create({
   contentContainer: {
@@ -150,6 +153,12 @@ const styles = StyleSheet.create({
   dialogCancelButton: {
     borderColor: colors.accent.gradientStart,
   },
+  browseCard: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: spacing.xl,
+    gap: spacing.md,
+  },
 });
 
 const PlansScreen: React.FC = () => {
@@ -159,15 +168,59 @@ const PlansScreen: React.FC = () => {
   const schedules = useSchedulesStore((state: SchedulesState) => state.schedules);
   const hydrateSchedules = useSchedulesStore((state: SchedulesState) => state.hydrateSchedules);
   const updateSchedule = useSchedulesStore((state: SchedulesState) => state.updateSchedule);
+  const { userPrograms, deleteUserProgram, deleteWorkoutFromProgram } = useProgramsStore();
   const startSession = useSessionStore((state) => state.startSession);
   const setCompletionOverlayVisible = useSessionStore((state) => state.setCompletionOverlayVisible);
   const [expandedPlanId, setExpandedPlanId] = useState<string | null>(null);
-  const [pendingDeletePlan, setPendingDeletePlan] = useState<Plan | null>(null);
+  const [pendingDeletePlan, setPendingDeletePlan] = useState<any | null>(null);
+  const [isAddModalVisible, setIsAddModalVisible] = useState(false);
 
-  const handleCreatePlanPress = useCallback(() => {
+  const handleAddPlanPress = useCallback(() => {
     void Haptics.selectionAsync();
+    setIsAddModalVisible(true);
+  }, []);
+
+  const handleCloseAddModal = useCallback(() => {
+    setIsAddModalVisible(false);
+  }, []);
+
+  const handleCreateCustomPlan = useCallback(() => {
+    void Haptics.selectionAsync();
+    setIsAddModalVisible(false);
     router.push('/(tabs)/create-plan');
   }, [router]);
+
+  const handleBrowseLibrary = useCallback(() => {
+    void Haptics.selectionAsync();
+    setIsAddModalVisible(false);
+    router.push('/browse-programs');
+  }, [router]);
+
+  const handleStartQuiz = useCallback(() => {
+    void Haptics.selectionAsync();
+    setIsAddModalVisible(false);
+    router.push('/quiz');
+  }, [router]);
+
+  const handleBrowseProgramsPress = useCallback(() => {
+    void Haptics.selectionAsync();
+    router.push('/browse-programs');
+  }, [router]);
+
+  const handleProgramPress = useCallback((program: any) => {
+    void Haptics.selectionAsync();
+    setExpandedPlanId((prev) => (prev === program.id ? null : program.id));
+  }, []);
+
+  const handleViewProgram = useCallback((program: any) => {
+    void Haptics.selectionAsync();
+    router.push({ pathname: '/program-details', params: { programId: program.id } });
+  }, [router]);
+
+  const handleDeleteProgram = useCallback((program: any) => {
+    void Haptics.selectionAsync();
+    setPendingDeletePlan({ ...program, type: 'program' });
+  }, []);
 
   const handlePlanPress = useCallback(
     (planId: string) => {
@@ -177,10 +230,10 @@ const PlansScreen: React.FC = () => {
     [],
   );
 
-  const handleDeletePlan = useCallback(
-    (plan: Plan) => {
+  const handleDeleteWorkoutItem = useCallback(
+    (item: any) => {
       void Haptics.selectionAsync();
-      setPendingDeletePlan(plan);
+      setPendingDeletePlan(item);
     },
     [],
   );
@@ -196,55 +249,61 @@ const PlansScreen: React.FC = () => {
 
     void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
 
-    schedules.forEach((schedule: Schedule) => {
-      const nextWeekdays = { ...schedule.weekdays };
-      let didUpdate = false;
+    if (pendingDeletePlan.type === 'program') {
+      // Check if it's a program deletion (from My Plans) or a workout deletion (from My Workouts)
+      if (pendingDeletePlan.workouts) {
+        // It's a full program being deleted
+        await deleteUserProgram(pendingDeletePlan.id);
+      } else {
+        // It's a workout being deleted from a program
+        await deleteWorkoutFromProgram(pendingDeletePlan.programId, pendingDeletePlan.id);
+        
+        // Check if the program is now empty and remove it if so
+        const updatedPrograms = useProgramsStore.getState().userPrograms;
+        const program = updatedPrograms.find(p => p.id === pendingDeletePlan.programId);
+        if (program && program.workouts.length === 0) {
+          await deleteUserProgram(pendingDeletePlan.programId);
+        }
+      }
+    } else {
+      schedules.forEach((schedule: Schedule) => {
+        const nextWeekdays = { ...schedule.weekdays };
+        let didUpdate = false;
 
-      (Object.keys(nextWeekdays) as (keyof Schedule['weekdays'])[]).forEach((day) => {
-        if (nextWeekdays[day] === pendingDeletePlan.id) {
-          nextWeekdays[day] = null;
-          didUpdate = true;
+        (Object.keys(nextWeekdays) as (keyof Schedule['weekdays'])[]).forEach((day) => {
+          if (nextWeekdays[day] === pendingDeletePlan.id) {
+            nextWeekdays[day] = null;
+            didUpdate = true;
+          }
+        });
+
+        if (didUpdate) {
+          void updateSchedule({ ...schedule, weekdays: nextWeekdays });
         }
       });
 
-      if (didUpdate) {
-        void updateSchedule({ ...schedule, weekdays: nextWeekdays });
-      }
-    });
+      void removePlan(pendingDeletePlan.id);
+    }
 
-    void removePlan(pendingDeletePlan.id);
     setExpandedPlanId((prev) => (prev === pendingDeletePlan.id ? null : prev));
     setPendingDeletePlan(null);
-  }, [pendingDeletePlan, removePlan, schedules, updateSchedule]);
+  }, [pendingDeletePlan, removePlan, schedules, updateSchedule, deleteWorkoutFromProgram, deleteUserProgram]);
 
   const createDefaultSetLogs = useCallback(() => {
     return Array.from({ length: 3 }, () => ({ reps: 8, weight: 0, completed: false }));
   }, []);
 
-  const handleStartPlan = useCallback(
-    (plan: Plan) => {
-      void Haptics.selectionAsync();
-
-      // Reset overlay state before starting new session
-      setCompletionOverlayVisible(false);
-
-      const workoutExercises: WorkoutExercise[] = plan.exercises.map((exercise) => ({
-        name: exercise.name,
-        sets: createDefaultSetLogs(),
-      }));
-
-      startSession(plan.id, workoutExercises);
-      setExpandedPlanId(null);
-      router.push('/(tabs)/workout');
-    },
-    [createDefaultSetLogs, router, startSession, setCompletionOverlayVisible],
-  );
-
-  const handleEditPlan = useCallback(
-    (plan: Plan) => {
+  const handleEditWorkoutItem = useCallback(
+    (item: any) => {
       void Haptics.selectionAsync();
       setExpandedPlanId(null);
-      router.push({ pathname: '/(tabs)/create-plan', params: { planId: plan.id } });
+      
+      if (item.type === 'program') {
+         const compositeId = `program:${item.programId}:${item.id}`;
+         router.push({ pathname: '/(tabs)/create-plan', params: { planId: compositeId } });
+      } else {
+         router.push({ pathname: '/(tabs)/create-plan', params: { planId: item.id } });
+      }
     },
     [router],
   );
@@ -267,6 +326,51 @@ const PlansScreen: React.FC = () => {
     }, {});
   }, [plans]);
 
+  const myWorkouts = useMemo(() => {
+    const customWorkouts = plans.map(p => ({ 
+      ...p, 
+      type: 'custom' as const,
+      uniqueId: p.id,
+      subtitle: p.exercises.length === 1 ? '1 exercise' : `${p.exercises.length} exercises`
+    }));
+    
+    const programWorkouts = userPrograms.flatMap(prog => 
+      prog.workouts.map(w => ({
+        id: w.id,
+        name: w.name,
+        exercises: w.exercises,
+        type: 'program' as const,
+        programName: prog.name,
+        programId: prog.id,
+        uniqueId: `${prog.id}-${w.id}`,
+        subtitle: `${prog.name} • ${w.exercises.length} exercises`
+      }))
+    );
+
+    return [...customWorkouts, ...programWorkouts].sort((a, b) => a.name.localeCompare(b.name));
+  }, [plans, userPrograms]);
+
+  const myPlans = useMemo(() => {
+    return userPrograms;
+  }, [userPrograms]);
+
+  const handleStartWorkoutItem = useCallback((item: any) => {
+    void Haptics.selectionAsync();
+    setCompletionOverlayVisible(false);
+
+    const workoutExercises: WorkoutExercise[] = item.exercises.map((exercise: any) => ({
+      name: exercise.name,
+      sets: createDefaultSetLogs(),
+    }));
+
+    // Use program ID if it's a program workout, otherwise the plan ID
+    const planId = item.type === 'program' ? item.programId : item.id;
+    
+    startSession(planId, workoutExercises);
+    setExpandedPlanId(null);
+    router.push('/(tabs)/workout');
+  }, [createDefaultSetLogs, router, startSession, setCompletionOverlayVisible]);
+
   return (
     <TabSwipeContainer contentContainerStyle={styles.contentContainer}>
       <ScreenHeader title="My Programs" subtitle="Create and manage your workout plans." />
@@ -278,20 +382,20 @@ const PlansScreen: React.FC = () => {
           </Text>
 
           <View style={styles.planCards}>
-            {plans.length > 0 ? (
-              plans.map((plan: Plan) => (
+            {myWorkouts.length > 0 ? (
+              myWorkouts.map((item) => (
                 <Pressable
-                  key={plan.id}
+                  key={item.uniqueId}
                   style={styles.planCardShell}
-                  onPress={() => handlePlanPress(plan.id)}
+                  onPress={() => handlePlanPress(item.uniqueId)}
                   accessibilityRole="button"
-                  accessibilityLabel={`View ${plan.name}`}
+                  accessibilityLabel={`View ${item.name}`}
                 >
-                  {expandedPlanId === plan.id ? (
+                  {expandedPlanId === item.uniqueId ? (
                       <View style={styles.planExpandedContent}>
                         <View style={styles.planCardHeader}>
                           <Text variant="bodySemibold" color="primary">
-                            {plan.name}
+                            {item.name}
                           </Text>
                         </View>
                         <View style={styles.planActionGrid}>
@@ -299,49 +403,37 @@ const PlansScreen: React.FC = () => {
                             style={styles.planActionButton}
                             onPress={(event) => {
                               event.stopPropagation();
-                              handleStartPlan(plan);
+                              handleStartWorkoutItem(item);
                             }}
-                            accessibilityRole="button"
-                            accessibilityLabel={`Start ${plan.name}`}
                           >
                             <View style={styles.planActionIconWrapper}>
                               <IconSymbol name="play-arrow" color={colors.accent.primary} size={spacing.lg} />
                             </View>
-                            <Text variant="caption" color="primary" style={styles.planActionLabel}>
-                              Start
-                            </Text>
+                            <Text variant="caption" color="primary" style={styles.planActionLabel}>Start</Text>
                           </Pressable>
                           <Pressable
                             style={styles.planActionButton}
                             onPress={(event) => {
                               event.stopPropagation();
-                              handleEditPlan(plan);
+                              handleEditWorkoutItem(item);
                             }}
-                            accessibilityRole="button"
-                            accessibilityLabel={`Edit ${plan.name}`}
                           >
                             <View style={styles.planActionIconWrapper}>
                               <IconSymbol name="edit" color={colors.accent.primary} size={spacing.lg} />
                             </View>
-                            <Text variant="caption" color="primary" style={styles.planActionLabel}>
-                              Edit
-                            </Text>
+                            <Text variant="caption" color="primary" style={styles.planActionLabel}>Edit</Text>
                           </Pressable>
                           <Pressable
                             style={styles.planActionButton}
                             onPress={(event) => {
                               event.stopPropagation();
-                              handleDeletePlan(plan);
+                              handleDeleteWorkoutItem(item);
                             }}
-                            accessibilityRole="button"
-                            accessibilityLabel={`Delete ${plan.name}`}
                           >
                             <View style={[styles.planActionIconWrapper, { borderColor: colors.accent.orange }]}>
                               <IconSymbol name="delete" color={colors.accent.orange} size={spacing.lg} />
                             </View>
-                            <Text variant="caption" color="primary" style={styles.planActionLabel}>
-                              Delete
-                            </Text>
+                            <Text variant="caption" color="primary" style={styles.planActionLabel}>Delete</Text>
                           </Pressable>
                           <Pressable
                             style={styles.planActionButton}
@@ -349,15 +441,11 @@ const PlansScreen: React.FC = () => {
                               event.stopPropagation();
                               setExpandedPlanId(null);
                             }}
-                            accessibilityRole="button"
-                            accessibilityLabel={`Back from ${plan.name} actions`}
                           >
                             <View style={[styles.planActionIconWrapper, { borderColor: colors.accent.orange }]}>
                               <IconSymbol name="arrow-back" color={colors.accent.orange} size={spacing.lg} />
                             </View>
-                            <Text variant="caption" color="primary" style={styles.planActionLabel}>
-                              Back
-                            </Text>
+                            <Text variant="caption" color="primary" style={styles.planActionLabel}>Back</Text>
                           </Pressable>
                         </View>
                       </View>
@@ -365,13 +453,11 @@ const PlansScreen: React.FC = () => {
                       <View style={styles.planCardContent}>
                         <View style={styles.planCardHeader}>
                           <Text variant="bodySemibold" color="primary">
-                            {plan.name}
+                            {item.name}
                           </Text>
                         </View>
                         <Text variant="body" color="secondary">
-                          {plan.exercises.length === 1
-                            ? '1 exercise'
-                            : `${plan.exercises.length} exercises`}
+                          {item.subtitle}
                         </Text>
                       </View>
                     )}
@@ -380,17 +466,111 @@ const PlansScreen: React.FC = () => {
             ) : (
               <View style={[styles.planCardShell, styles.planCardContent]}>
                 <Text variant="bodySemibold" color="primary">
-                  No plans yet
+                  No workouts yet
                 </Text>
                 <Text variant="body" color="secondary">
-                  Create a plan to see it appear here.
+                  Create a custom plan or add a program to see workouts here.
                 </Text>
               </View>
             )}
           </View>
 
           <View style={styles.planCreateButtonWrapper}>
-            <Button label="Create Workout Plan" onPress={handleCreatePlanPress} size="md" />
+            <Button label="Add Workout" onPress={handleAddPlanPress} size="md" />
+          </View>
+        </View>
+      </SurfaceCard>
+
+      <SurfaceCard padding="xl" tone="neutral">
+        <View style={styles.outerCardContent}>
+          <Text variant="heading3" color="primary">
+            My Plans
+          </Text>
+
+          <View style={styles.planCards}>
+            {myPlans.length > 0 ? (
+              myPlans.map((program) => (
+                <Pressable
+                  key={program.id}
+                  style={styles.planCardShell}
+                  onPress={() => handleProgramPress(program)}
+                  accessibilityRole="button"
+                  accessibilityLabel={`View ${program.name}`}
+                >
+                  {expandedPlanId === program.id ? (
+                    <View style={styles.planExpandedContent}>
+                      <View style={styles.planCardHeader}>
+                        <Text variant="bodySemibold" color="primary">
+                          {program.name}
+                        </Text>
+                      </View>
+                      <View style={styles.planActionGrid}>
+                        <Pressable
+                          style={styles.planActionButton}
+                          onPress={(event) => {
+                            event.stopPropagation();
+                            handleViewProgram(program);
+                          }}
+                        >
+                          <View style={styles.planActionIconWrapper}>
+                            <IconSymbol name="visibility" color={colors.accent.primary} size={spacing.lg} />
+                          </View>
+                          <Text variant="caption" color="primary" style={styles.planActionLabel}>View</Text>
+                        </Pressable>
+                        <Pressable
+                          style={styles.planActionButton}
+                          onPress={(event) => {
+                            event.stopPropagation();
+                            handleDeleteProgram(program);
+                          }}
+                        >
+                          <View style={[styles.planActionIconWrapper, { borderColor: colors.accent.orange }]}>
+                            <IconSymbol name="delete" color={colors.accent.orange} size={spacing.lg} />
+                          </View>
+                          <Text variant="caption" color="primary" style={styles.planActionLabel}>Delete</Text>
+                        </Pressable>
+                        <Pressable
+                          style={styles.planActionButton}
+                          onPress={(event) => {
+                            event.stopPropagation();
+                            setExpandedPlanId(null);
+                          }}
+                        >
+                          <View style={[styles.planActionIconWrapper, { borderColor: colors.accent.orange }]}>
+                            <IconSymbol name="arrow-back" color={colors.accent.orange} size={spacing.lg} />
+                          </View>
+                          <Text variant="caption" color="primary" style={styles.planActionLabel}>Back</Text>
+                        </Pressable>
+                      </View>
+                    </View>
+                  ) : (
+                    <View style={styles.planCardContent}>
+                      <View style={styles.planCardHeader}>
+                        <Text variant="bodySemibold" color="primary">
+                          {program.name}
+                        </Text>
+                      </View>
+                      <Text variant="body" color="secondary">
+                        {program.workouts.length} workouts • {program.metadata?.daysPerWeek || 3} days/week
+                      </Text>
+                    </View>
+                  )}
+                </Pressable>
+              ))
+            ) : (
+               <View style={[styles.planCardShell, styles.planCardContent]}>
+                <Text variant="bodySemibold" color="primary">
+                  No programs yet
+                </Text>
+                <Text variant="body" color="secondary">
+                  Add a program from the library to see it here.
+                </Text>
+              </View>
+            )}
+          </View>
+
+          <View style={styles.planCreateButtonWrapper}>
+            <Button label="Add Plan" onPress={handleAddPlanPress} size="md" />
           </View>
         </View>
       </SurfaceCard>
@@ -436,41 +616,27 @@ const PlansScreen: React.FC = () => {
       <SurfaceCard padding="xl" tone="neutral">
         <View style={styles.outerCardContent}>
           <Text variant="heading3" color="primary">
-            Sample Workouts
+            Program Library
           </Text>
 
           <SurfaceCard tone="neutral" padding="lg" showAccentStripe={false} style={styles.planCardShell}>
-            <View style={styles.planCardContent}>
-              <Text variant="bodySemibold" color="primary">
-                Curated sample workouts are coming soon
-              </Text>
-              <Text variant="body" color="secondary">
-                We're polishing guided sessions to help you get started. Check back shortly.
-              </Text>
+            <View style={styles.browseCard}>
+              <IconSymbol name="search" size={48} color={colors.accent.primary} />
+              <View style={{ alignItems: 'center', gap: spacing.xs }}>
+                <Text variant="bodySemibold" color="primary" style={{ textAlign: 'center' }}>
+                  Explore Premade Plans
+                </Text>
+                <Text variant="body" color="secondary" style={{ textAlign: 'center' }}>
+                  Browse our curated collection of workout programs for all levels.
+                </Text>
+              </View>
+              <Button label="Browse Library" onPress={handleBrowseProgramsPress} size="md" />
             </View>
           </SurfaceCard>
         </View>
       </SurfaceCard>
 
-      <SurfaceCard padding="xl" tone="neutral">
-        <View style={styles.outerCardContent}>
-          <Text variant="heading3" color="primary">
-            Sample Schedules
-          </Text>
-
-          <SurfaceCard tone="neutral" padding="lg" showAccentStripe={false} style={styles.planCardShell}>
-            <View style={styles.planCardContent}>
-              <Text variant="bodySemibold" color="primary">
-                Sample schedules are on the way
-              </Text>
-              <Text variant="body" color="secondary">
-                We're designing weekly templates so you can jump right in. Coming soon.
-              </Text>
-            </View>
-          </SurfaceCard>
-        </View>
-      </SurfaceCard>
-
+      {/* Delete Confirmation Modal */}
       <Modal
         transparent
         visible={Boolean(pendingDeletePlan)}
@@ -506,6 +672,104 @@ const PlansScreen: React.FC = () => {
             </View>
           </SurfaceCard>
         </View>
+      </Modal>
+
+      {/* Add Plan Selection Modal */}
+      <Modal
+        transparent
+        visible={isAddModalVisible}
+        animationType="fade"
+        onRequestClose={handleCloseAddModal}
+      >
+        <Pressable style={styles.dialogOverlay} onPress={handleCloseAddModal}>
+          <SurfaceCard 
+            tone="neutral" 
+            padding="xl" 
+            showAccentStripe={false} 
+            style={styles.dialogCard}
+          >
+            <Pressable onPress={(e) => e.stopPropagation()}>
+              <View style={styles.dialogContent}>
+                <Text variant="heading2" color="primary">
+                  Add Workout
+                </Text>
+                <Text variant="body" color="secondary">
+                  How would you like to create your new plan?
+                </Text>
+
+                <View style={{ gap: spacing.md, marginTop: spacing.md }}>
+                  <Pressable
+                    style={({ pressed }) => [
+                      styles.planCardShell,
+                      { backgroundColor: pressed ? colors.surface.elevated : colors.surface.card }
+                    ]}
+                    onPress={handleBrowseLibrary}
+                  >
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
+                      <View style={styles.planActionIconWrapper}>
+                        <IconSymbol name="search" size={24} color={colors.accent.primary} />
+                      </View>
+                      <View style={{ flex: 1, gap: spacing.xs }}>
+                        <Text variant="bodySemibold" color="primary">Browse Library</Text>
+                        <Text variant="caption" color="secondary">Find a premade program for your goals.</Text>
+                      </View>
+                      <IconSymbol name="chevron-right" size={20} color={colors.text.tertiary} />
+                    </View>
+                  </Pressable>
+
+                  <Pressable
+                    style={({ pressed }) => [
+                      styles.planCardShell,
+                      { backgroundColor: pressed ? colors.surface.elevated : colors.surface.card }
+                    ]}
+                    onPress={handleStartQuiz}
+                  >
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
+                      <View style={styles.planActionIconWrapper}>
+                        <IconSymbol name="auto-awesome" size={24} color={colors.accent.primary} />
+                      </View>
+                      <View style={{ flex: 1, gap: spacing.xs }}>
+                        <Text variant="bodySemibold" color="primary">Get a Recommendation</Text>
+                        <Text variant="caption" color="secondary">Take a quick quiz to find your perfect plan.</Text>
+                      </View>
+                      <IconSymbol name="chevron-right" size={20} color={colors.text.tertiary} />
+                    </View>
+                  </Pressable>
+
+                  <Pressable
+                    style={({ pressed }) => [
+                      styles.planCardShell,
+                      { backgroundColor: pressed ? colors.surface.elevated : colors.surface.card }
+                    ]}
+                    onPress={handleCreateCustomPlan}
+                  >
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
+                      <View style={styles.planActionIconWrapper}>
+                        <IconSymbol name="add" size={24} color={colors.accent.primary} />
+                      </View>
+                      <View style={{ flex: 1, gap: spacing.xs }}>
+                        <Text variant="bodySemibold" color="primary">Create from Scratch</Text>
+                        <Text variant="caption" color="secondary">Build a custom plan exercise by exercise.</Text>
+                      </View>
+                      <IconSymbol name="chevron-right" size={20} color={colors.text.tertiary} />
+                    </View>
+                  </Pressable>
+                </View>
+              </View>
+              
+              <View style={[styles.dialogActions, { marginTop: spacing.lg }]}>
+                <Button
+                  label="Cancel"
+                  variant="ghost"
+                  onPress={handleCloseAddModal}
+                  size="md"
+                  textColor={colors.text.secondary}
+                  style={styles.dialogActionButton}
+                />
+              </View>
+            </Pressable>
+          </SurfaceCard>
+        </Pressable>
       </Modal>
     </TabSwipeContainer>
   );

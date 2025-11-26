@@ -15,7 +15,7 @@ import type {
   MuscleGroup,
 } from '@/types/exercise';
 
-const MUSCLE_HIERARCHY = hierarchyData.muscle_hierarchy as Record<string, Record<string, string[]>>;
+const MUSCLE_HIERARCHY = hierarchyData.muscle_hierarchy as unknown as Record<string, { muscles: Record<string, any> }>;
 
 export const createDefaultExerciseFilters = (): ExerciseFilters => ({
   muscleGroups: [],
@@ -67,7 +67,7 @@ const matchesMuscleGroup = (exercise: Exercise, filters: ExerciseFilters): boole
     }
     
     // 2. Get specific muscles for this broad group from hierarchy
-    const hierarchyMuscles = Object.keys(MUSCLE_HIERARCHY[broadGroup] || {});
+    const hierarchyMuscles = Object.keys(MUSCLE_HIERARCHY[broadGroup]?.muscles || {});
     
     // 3. Check if any of these are selected in specificMuscles
     const selectedSpecificsForGroup = specificMuscles.filter(m => hierarchyMuscles.includes(m));

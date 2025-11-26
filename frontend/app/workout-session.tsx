@@ -21,6 +21,7 @@ import Animated, {
   useSharedValue,
   withSpring,
   withTiming,
+  Layout,
 } from 'react-native-reanimated';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 
@@ -36,12 +37,14 @@ import { useSemanticExerciseSearch } from '@/hooks/useSemanticExerciseSearch';
 import { useSessionStore } from '@/store/sessionStore';
 import { usePlansStore } from '@/store/plansStore';
 import { useWorkoutSessionsStore } from '@/store/workoutSessionsStore';
+import { useProgramsStore } from '@/store/programsStore';
 import { normalizeSearchText } from '@/utils/strings';
+import { getLastCompletedSetsForExercise } from '@/utils/exerciseHistory';
 import type { Exercise } from '@/constants/exercises';
 import type { SetLog, WorkoutExercise } from '@/types/workout';
 import hierarchyData from '@/data/hierarchy.json';
 
-const DEFAULT_SET_COUNT = 1;
+const DEFAULT_SET_COUNT = 3;
 const SCREEN_HEIGHT = Dimensions.get('window').height;
 const SHEET_DISMISS_THRESHOLD = spacing['2xl'] * 2;
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
@@ -51,7 +54,24 @@ interface ExerciseProgressSnapshot {
   totalSets: number;
 }
 
-const createDefaultSetLogs = (): WorkoutExercise['sets'] => {
+const createDefaultSetLogs = (exerciseName: string, allWorkouts: any[], currentSessionId?: string): WorkoutExercise['sets'] => {
+  // Filter out the current session to avoid using incomplete data
+  const historicalWorkouts = currentSessionId
+    ? allWorkouts.filter((w) => w.id !== currentSessionId)
+    : allWorkouts;
+
+  // Try to get history for this exercise from other workouts
+  const lastSets = getLastCompletedSetsForExercise(exerciseName, historicalWorkouts);
+
+  if (lastSets && lastSets.length > 0) {
+    // Use the historical sets, but mark them as not completed
+    return lastSets.map((set) => ({
+      reps: set.reps,
+      weight: set.weight,
+      completed: false,
+    }));
+  }
+
   return Array.from({ length: DEFAULT_SET_COUNT }, () => ({ reps: 8, weight: 0, completed: false }));
 };
 
@@ -91,6 +111,7 @@ const WorkoutSessionScreen: React.FC = () => {
   const updateExercise = useSessionStore((state) => state.updateExercise);
   const removeExercise = useSessionStore((state) => state.removeExercise);
   const addWorkout = useWorkoutSessionsStore((state) => state.addWorkout);
+  const { activeRotation, advanceRotation } = useProgramsStore();
 
   const sessionExercises = sessionToDisplay?.exercises ?? [];
 
@@ -163,7 +184,7 @@ const WorkoutSessionScreen: React.FC = () => {
         Object.entries(l1Data.muscles).forEach(([midLevel, midLevelData]) => {
           // Map the mid-level group to itself
           map[midLevel] = midLevel;
-          
+
           // Map all low-level muscles to their mid-level parent
           if (midLevelData.muscles) {
             Object.keys(midLevelData.muscles).forEach(lowLevel => {
@@ -229,12 +250,13 @@ const WorkoutSessionScreen: React.FC = () => {
 
   const handleSelectExercise = (exercise: Exercise) => {
     const targetName = replaceTargetName;
+    const allWorkouts = useWorkoutSessionsStore.getState().workouts;
 
     if (targetName) {
       const existing = sessionExercises.find((item) => item.name === targetName);
       const nextExercise: WorkoutExercise = {
         name: exercise.name,
-        sets: existing?.sets ?? createDefaultSetLogs(),
+        sets: existing?.sets ?? createDefaultSetLogs(exercise.name, allWorkouts),
       };
 
       updateExercise(targetName, nextExercise);
@@ -259,7 +281,7 @@ const WorkoutSessionScreen: React.FC = () => {
     } else {
       const nextExercise: WorkoutExercise = {
         name: exercise.name,
-        sets: createDefaultSetLogs(),
+        sets: createDefaultSetLogs(exercise.name, allWorkouts),
       };
 
       addExerciseToSession(nextExercise);
@@ -352,7 +374,12 @@ const WorkoutSessionScreen: React.FC = () => {
 
     try {
       await addWorkout(workout);
-      
+
+      // If this workout corresponds to the active rotation, advance it
+      if (activeRotation && currentSessionData.planId === activeRotation.programId) {
+        await advanceRotation();
+      }
+
       // Navigate to success screen to show confirmation message before redirecting home
       // Session clearing is handled here to ensure it happens reliably before navigation
       endSession();
@@ -381,7 +408,7 @@ const WorkoutSessionScreen: React.FC = () => {
     const top = pageY + height + spacing.xs;
     const right = Dimensions.get('window').width - (pageX + width);
     console.log('[Menu] Calculated position:', { top, right });
-    
+
     setMenuPosition({
       top,
       right,
@@ -482,7 +509,7 @@ const WorkoutSessionScreen: React.FC = () => {
 
   const exerciseCount = sessionExercises.length;
   const hasExercises = exerciseCount > 0;
-  
+
   const completedExercisesCount = useMemo(() => {
     return sessionExercises.filter((exercise) => {
       const totalSets = exerciseProgress[exercise.name]?.totalSets ?? exercise.sets.length;
@@ -525,7 +552,7 @@ const WorkoutSessionScreen: React.FC = () => {
           const remainingDistance = 1000 - sheetTranslateY.value;
           const velocity = event.velocityY || 0;
           const estimatedDuration = Math.max(300, Math.min(600, remainingDistance / Math.max(velocity, 1)));
-          
+
           sheetTranslateY.value = withTiming(1000, { duration: estimatedDuration }, () => {
             runOnJS(dismissPicker)();
           });
@@ -588,7 +615,7 @@ const WorkoutSessionScreen: React.FC = () => {
     () => (
       <View
         style={[styles.footerStack, { paddingBottom: spacing.xl + tabBarTopOffset }]}
-      >        
+      >
         <Button
           label="Add Exercise"
           variant="ghost"
@@ -653,109 +680,118 @@ const WorkoutSessionScreen: React.FC = () => {
           keyExtractor={(item) => item.name}
           contentContainerStyle={listContentStyle}
           extraData={{ expandedExercises: Array.from(expandedExercises), exerciseProgress, menuExerciseName }}
+          maintainVisibleContentPosition={{
+            minIndexForVisible: 0,
+            autoscrollToTopThreshold: 10,
+          }}
           ListHeaderComponent={listHeaderComponent}
           ListEmptyComponent={listEmptyComponent}
           ListFooterComponent={listFooterComponent}
           ItemSeparatorComponent={renderExerciseSeparator}
           renderItem={({ item, index }) => {
-          const totalSets = exerciseProgress[item.name]?.totalSets ?? item.sets.length;
-          const completedSets = exerciseProgress[item.name]?.completedSets ?? item.sets.filter((set) => set.completed).length;
-          const isComplete = totalSets > 0 && completedSets === totalSets;
-          const isExpanded = expandedExercises.has(item.name);
+            const totalSets = exerciseProgress[item.name]?.totalSets ?? item.sets.length;
+            const completedSets = exerciseProgress[item.name]?.completedSets ?? item.sets.filter((set) => set.completed).length;
+            const isComplete = totalSets > 0 && completedSets === totalSets;
+            const isExpanded = expandedExercises.has(item.name);
 
-          const badgeGradientColors: readonly [ColorValue, ColorValue] = [
-            colors.accent.gradientStart,
-            colors.accent.gradientEnd,
-          ];
+            const badgeGradientColors: readonly [ColorValue, ColorValue] = [
+              colors.accent.gradientStart,
+              colors.accent.gradientEnd,
+            ];
 
-          const isMenuOpen = menuExerciseName === item.name;
+            const isMenuOpen = menuExerciseName === item.name;
 
-          return (
-            <View style={[styles.exerciseItem, isMenuOpen && styles.exerciseItemMenuActive]}>
-              <View style={[styles.exerciseCard, isMenuOpen && styles.exerciseCardMenuActive]}>
-                <Pressable
-                  style={[styles.exerciseHeader, { minHeight: spacing.md }]}
-                  onPress={() => handleToggleExercise(item.name)}
-                  hitSlop={spacing.sm}
-                  pressRetentionOffset={{ top: spacing.sm, bottom: spacing.sm, left: spacing.sm, right: spacing.sm }}
-                  android_ripple={{ color: colors.surface.subtle }}
-                  accessibilityLabel={`Toggle exercise ${item.name}`}
-                >
-                  <View style={styles.exerciseCardRow}>
-                    <View style={styles.badgeContainer}>
-                      {isComplete ? (
-                        <LinearGradient
-                          colors={badgeGradientColors}
-                          start={{ x: 0, y: 0 }}
-                          end={{ x: 1, y: 1 }}
-                          style={styles.badge}
-                        >
-                          <Text variant="bodySemibold" color="onAccent">
-                            {index + 1}
-                          </Text>
-                        </LinearGradient>
-                      ) : (
-                        <View style={styles.badgeNeutral}>
-                          <Text variant="bodySemibold" color="primary">
-                            {index + 1}
-                          </Text>
-                        </View>
-                      )}
-                      <View style={styles.cardBody}>
-                        <Text variant="bodySemibold">{item.name}</Text>
-                        <View style={styles.cardMeta}>
-                          <Text
-                            variant="bodySemibold"
-                            color="secondary"
-                            style={styles.completionText}
+            return (
+              <Animated.View
+                layout={Layout.duration(200)}
+                style={[styles.exerciseItem, isMenuOpen && styles.exerciseItemMenuActive]}
+              >
+                <View style={[styles.exerciseCard, isMenuOpen && styles.exerciseCardMenuActive]}>
+                  <Pressable
+                    style={[styles.exerciseHeader, { minHeight: spacing.md }]}
+                    onPress={() => handleToggleExercise(item.name)}
+                    hitSlop={spacing.sm}
+                    pressRetentionOffset={{ top: spacing.sm, bottom: spacing.sm, left: spacing.sm, right: spacing.sm }}
+                    android_ripple={{ color: colors.surface.subtle }}
+                    accessibilityLabel={`Toggle exercise ${item.name}`}
+                  >
+                    <View style={styles.exerciseCardRow}>
+                      <View style={styles.badgeContainer}>
+                        {isComplete ? (
+                          <LinearGradient
+                            colors={badgeGradientColors}
+                            start={{ x: 0, y: 0 }}
+                            end={{ x: 1, y: 1 }}
+                            style={styles.badge}
                           >
-                            {`${completedSets}/${totalSets || 0}`}
-                          </Text>
-                          <Pressable
-                            style={styles.menuButton}
-                            onPress={(event) => {
-                              event.stopPropagation();
-                              if (isMenuOpen) {
-                                closeExerciseMenu();
-                              } else {
-                                // Get button position and open menu
-                                const target = event.currentTarget as any;
-                                target.measure((x: number, y: number, width: number, height: number, pageX: number, pageY: number) => {
-                                  openExerciseMenu(item.name, pageX, pageY, width, height);
-                                });
-                              }
-                            }}
-                          >
-                            <MaterialCommunityIcons
-                              name="dots-vertical"
-                              size={sizing.iconSM}
-                              color={colors.overlay.navigation}
-                            />
-                          </Pressable>
+                            <Text variant="bodySemibold" color="onAccent">
+                              {index + 1}
+                            </Text>
+                          </LinearGradient>
+                        ) : (
+                          <View style={styles.badgeNeutral}>
+                            <Text variant="bodySemibold" color="primary">
+                              {index + 1}
+                            </Text>
+                          </View>
+                        )}
+                        <View style={styles.cardBody}>
+                          <View style={styles.exerciseNameContainer}>
+                            <Text variant="bodySemibold">{item.name}</Text>
+                          </View>
+                          <View style={styles.cardMeta}>
+                            <Text
+                              variant="bodySemibold"
+                              color="secondary"
+                              style={styles.completionText}
+                            >
+                              {`${completedSets}/${totalSets || 0}`}
+                            </Text>
+                            <Pressable
+                              style={styles.menuButton}
+                              onPress={(event) => {
+                                event.stopPropagation();
+                                if (isMenuOpen) {
+                                  closeExerciseMenu();
+                                } else {
+                                  // Get button position and open menu
+                                  const target = event.currentTarget as any;
+                                  target.measure((x: number, y: number, width: number, height: number, pageX: number, pageY: number) => {
+                                    openExerciseMenu(item.name, pageX, pageY, width, height);
+                                  });
+                                }
+                              }}
+                            >
+                              <MaterialCommunityIcons
+                                name="dots-vertical"
+                                size={sizing.iconSM}
+                                color={colors.overlay.navigation}
+                              />
+                            </Pressable>
+                          </View>
                         </View>
                       </View>
                     </View>
-                  </View>
-                </Pressable>
+                  </Pressable>
 
-                {/* Menu is now rendered at root level */}
+                  {/* Menu is now rendered at root level */}
 
-                {isExpanded ? (
-                  <View style={styles.exerciseContent} pointerEvents="box-none">
-                    <ExerciseSetEditor
-                      isExpanded
-                      embedded
-                      exerciseName={item.name}
-                      initialSets={item.sets}
-                      onSetsChange={(updatedSets) => handleExerciseSetsChange(item.name, updatedSets)}
-                      onProgressChange={(progress) => handleExerciseProgressChange(item.name, progress)}
-                    />
-                  </View>
-                ) : null}
-              </View>
-            </View>
-          );
-        }}
+                  {isExpanded ? (
+                    <View style={styles.exerciseContent} pointerEvents="box-none">
+                      <ExerciseSetEditor
+                        isExpanded
+                        embedded
+                        exerciseName={item.name}
+                        initialSets={item.sets}
+                        onSetsChange={(updatedSets) => handleExerciseSetsChange(item.name, updatedSets)}
+                        onProgressChange={(progress) => handleExerciseProgressChange(item.name, progress)}
+                      />
+                    </View>
+                  ) : null}
+                </View>
+              </Animated.View>
+            );
+          }}
         />
 
         <View pointerEvents="none" style={[styles.bottomSafeFill, { height: bottomSafeFillHeight }]} />
@@ -814,10 +850,10 @@ const WorkoutSessionScreen: React.FC = () => {
             renderItem={({ item }) => {
               // Get all muscle names from the exercise's muscles object
               const muscleNames = Object.keys(item.muscles || {});
-              
+
               // Map each muscle to its mid-level parent group
               const midLevelGroups = muscleNames.map(muscle => muscleToMidLevelMap[muscle]).filter(Boolean);
-              
+
               // Remove duplicates and sort for consistency
               const uniqueGroups = [...new Set(midLevelGroups)];
               const midLevelMusclesLabel = uniqueGroups.length > 0 ? uniqueGroups.join(' · ') : 'General';
@@ -862,8 +898,8 @@ const WorkoutSessionScreen: React.FC = () => {
           >
             <Text variant="body">Replace Exercise</Text>
           </Pressable>
-          <Pressable 
-            style={styles.menuPopoverItem} 
+          <Pressable
+            style={styles.menuPopoverItem}
             onPress={() => {
               console.log('[Menu] Delete item pressed');
               handleDeleteExercise();
@@ -984,6 +1020,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: spacing.xs,
+    minHeight: sizing.iconLG,
+  },
+  exerciseNameContainer: {
+    flex: 1,
+    marginRight: spacing.sm,
   },
   cardMeta: {
     flexDirection: 'row',

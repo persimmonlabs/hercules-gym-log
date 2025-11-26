@@ -1,6 +1,7 @@
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect, useCallback, useRef } from 'react';
 import { View, Dimensions, StyleSheet, ScrollView, NativeSyntheticEvent, NativeScrollEvent, TouchableOpacity } from 'react-native';
 import { VictoryChart, VictoryBar, VictoryAxis, VictoryTheme } from 'victory-native';
+import { useFocusEffect } from '@react-navigation/native';
 
 import { Text } from '@/components/atoms/Text';
 import { colors, spacing, radius } from '@/constants/theme';
@@ -11,7 +12,12 @@ import exercisesData from '@/data/exercises.json';
 import hierarchyData from '@/data/hierarchy.json';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
-const CHART_WIDTH = SCREEN_WIDTH - spacing.sm * 2;
+const CHART_WIDTH = SCREEN_WIDTH - spacing.xl * 2; // Match FocusDistributionChart width
+
+// Fixed chart heights for consistent layout
+const CHART_CONTENT_HEIGHT = 250; // VictoryChart height
+const TITLE_HEIGHT = 30; // Approximate title height
+const CHART_CONTAINER_HEIGHT = CHART_CONTENT_HEIGHT + TITLE_HEIGHT + spacing.sm * 2;
 
 // Build Maps
 const buildMaps = () => {
@@ -115,8 +121,8 @@ const ChartPage: React.FC<ChartPageProps> = ({ title, data, selectedBar, setSele
         if (!selectedBar) return { top: 10, left: 0 };
         
         const chartHeight = 250;
-        const chartWidth = CHART_WIDTH - spacing.sm * 2;
-        const chartPadding = { top: 20, bottom: 40, left: 50, right: 30 };
+        const chartWidth = CHART_WIDTH;
+        const chartPadding = { top: 20, bottom: 40, left: 40, right: 40 };
         const usableHeight = chartHeight - chartPadding.top - chartPadding.bottom;
         const usableWidth = chartWidth - chartPadding.left - chartPadding.right;
         const maxValue = Math.max(...data.values, 1);
@@ -126,7 +132,7 @@ const ChartPage: React.FC<ChartPageProps> = ({ title, data, selectedBar, setSele
         const numBars = data.labels.length;
         
         // Calculate bar position (center of the bar)
-        const barWidth = 20; // VictoryBar width from style
+        const barWidth = 32; // VictoryBar width from style
         const domainPadding = 40; // domainPadding from VictoryChart
         const barSpacing = (usableWidth - domainPadding * 2) / numBars;
         const barCenterX = chartPadding.left + domainPadding + (barIndex * barSpacing) + (barSpacing / 2);
@@ -148,15 +154,16 @@ const ChartPage: React.FC<ChartPageProps> = ({ title, data, selectedBar, setSele
                 <VictoryChart
                     theme={VictoryTheme.material}
                     domainPadding={{ x: 40 }}
-                    padding={{ top: 20, bottom: 40, left: 50, right: 30 }}
+                    padding={{ top: 20, bottom: 40, left: 40, right: 40 }}
                     height={250}
-                    width={CHART_WIDTH - spacing.sm * 2}
+                    width={CHART_WIDTH}
                 >
                     <VictoryAxis
                         tickValues={data.labels}
+                        fixLabelOverlap
                         style={{
                             axis: { stroke: 'none' },
-                            tickLabels: { fill: colors.text.primary, fontSize: 10, padding: 5 },
+                            tickLabels: { fill: colors.text.primary, fontSize: 9, padding: 3 },
                             grid: { stroke: 'none' }
                         }}
                     />
@@ -175,10 +182,10 @@ const ChartPage: React.FC<ChartPageProps> = ({ title, data, selectedBar, setSele
                         style={{
                             data: {
                                 fill: '#FF5500',
-                                width: 20,
+                                width: 32,
                             }
                         }}
-                        cornerRadius={{ top: 4 }}
+                        cornerRadius={{ top: 6 }}
                         animate={{
                             duration: 500,
                             onLoad: { duration: 500 }
@@ -233,12 +240,30 @@ const ChartPage: React.FC<ChartPageProps> = ({ title, data, selectedBar, setSele
 export const WeeklyVolumeChart: React.FC = () => {
     const workouts = useWorkoutSessionsStore((state) => state.workouts);
     const [currentPage, setCurrentPage] = useState(0);
-    const [selectedBar, setSelectedBar] = useState<{ label: string; value: number } | null>(null);
+    // Per-page selected bar state to prevent cross-page artifacts
+    const [selectedBars, setSelectedBars] = useState<Record<number, { label: string; value: number } | null>>({});
+    const scrollViewRef = useRef<ScrollView>(null);
+
+    // Get selected bar for current page
+    const selectedBar = selectedBars[currentPage] || null;
+    const setSelectedBar = useCallback((bar: { label: string; value: number } | null) => {
+        setSelectedBars(prev => ({ ...prev, [currentPage]: bar }));
+    }, [currentPage]);
 
     // Clear selected bar when switching pages
     useEffect(() => {
-        setSelectedBar(null);
+        // Clear all selections when page changes to ensure clean state
+        setSelectedBars({});
     }, [currentPage]);
+
+    // Reset state when user returns to the performance tab
+    useFocusEffect(
+        useCallback(() => {
+            setCurrentPage(0);
+            setSelectedBars({});
+            scrollViewRef.current?.scrollTo({ x: 0, animated: false });
+        }, [])
+    );
 
     const { dataL1, dataUpper, dataLower, dataCore, hasData } = useMemo(() => {
         const volumeL1: Record<string, number> = {
@@ -301,7 +326,11 @@ export const WeeklyVolumeChart: React.FC = () => {
         const getL2Data = (parentL1: string) => {
             const muscles = Object.keys(hierarchyData.muscle_hierarchy[parentL1 as keyof typeof hierarchyData.muscle_hierarchy].muscles);
             const values = muscles.map(m => volumeL2[m] || 0);
-            const labels = muscles.map(m => m === 'Hip Stabilizers' ? 'Hips' : m);
+            const labels = muscles.map(m => {
+                if (m === 'Hip Stabilizers') return 'Hips';
+                if (m === 'Hamstrings') return 'Hams';
+                return m;
+            });
             return formatData(labels, values);
         };
 
@@ -314,11 +343,45 @@ export const WeeklyVolumeChart: React.FC = () => {
         return { dataL1, dataUpper, dataLower, dataCore, hasData };
     }, [workouts]);
 
-    const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const handleMomentumScrollEnd = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
         const contentOffsetX = event.nativeEvent.contentOffset.x;
         const pageIndex = Math.round(contentOffsetX / CHART_WIDTH);
         if (pageIndex !== currentPage) {
             setCurrentPage(pageIndex);
+        }
+    };
+
+    const handleScrollEndDrag = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+        const { contentOffset, velocity, targetContentOffset } = event.nativeEvent;
+
+        // 1. Trust the OS prediction if available (iOS mostly)
+        if (targetContentOffset) {
+            const targetPage = Math.round(targetContentOffset.x / CHART_WIDTH);
+            if (targetPage !== currentPage) {
+                setCurrentPage(targetPage);
+            }
+            return;
+        }
+
+        // 2. Fallback for Android/others: Predict based on velocity + position
+        let targetPage = currentPage;
+        const currentPosition = contentOffset.x / CHART_WIDTH;
+
+        if (velocity && Math.abs(velocity.x) > 0.2) {
+            if (velocity.x > 0) {
+                targetPage = Math.ceil(currentPosition);
+            } else {
+                targetPage = Math.floor(currentPosition);
+            }
+        } else {
+            targetPage = Math.round(currentPosition);
+        }
+
+        // Clamp to valid page range (0-3)
+        targetPage = Math.max(0, Math.min(3, targetPage));
+
+        if (targetPage !== currentPage) {
+            setCurrentPage(targetPage);
         }
     };
 
@@ -344,18 +407,23 @@ export const WeeklyVolumeChart: React.FC = () => {
                 ))}
             </View>
 
-            <ScrollView
-                horizontal
-                pagingEnabled
-                showsHorizontalScrollIndicator={false}
-                onMomentumScrollEnd={handleScroll}
-                style={{ width: CHART_WIDTH }}
-            >
-                <ChartPage title="Total Volume (lbs)" data={dataL1} selectedBar={selectedBar} setSelectedBar={setSelectedBar} />
-                <ChartPage title="Upper Body" data={dataUpper} selectedBar={selectedBar} setSelectedBar={setSelectedBar} />
-                <ChartPage title="Lower Body" data={dataLower} selectedBar={selectedBar} setSelectedBar={setSelectedBar} />
-                <ChartPage title="Core" data={dataCore} selectedBar={selectedBar} setSelectedBar={setSelectedBar} />
-            </ScrollView>
+            <View style={styles.chartWrapper}>
+                <ScrollView
+                    ref={scrollViewRef}
+                    horizontal
+                    pagingEnabled
+                    showsHorizontalScrollIndicator={false}
+                    onMomentumScrollEnd={handleMomentumScrollEnd}
+                    onScrollEndDrag={handleScrollEndDrag}
+                    style={{ width: CHART_WIDTH }}
+                    contentContainerStyle={{ alignItems: 'flex-start' }}
+                >
+                    <ChartPage title="Total Volume (lbs)" data={dataL1} selectedBar={selectedBar} setSelectedBar={setSelectedBar} />
+                    <ChartPage title="Upper Body" data={dataUpper} selectedBar={selectedBar} setSelectedBar={setSelectedBar} />
+                    <ChartPage title="Lower Body" data={dataLower} selectedBar={selectedBar} setSelectedBar={setSelectedBar} />
+                    <ChartPage title="Core" data={dataCore} selectedBar={selectedBar} setSelectedBar={setSelectedBar} />
+                </ScrollView>
+            </View>
         </View>
     );
 };
@@ -364,13 +432,17 @@ const styles = StyleSheet.create({
     container: {
         alignItems: 'center',
         justifyContent: 'center',
+        width: '100%',
+    },
+    chartWrapper: {
+        overflow: 'hidden',
+        height: CHART_CONTAINER_HEIGHT,
     },
     pageContainer: {
         width: CHART_WIDTH,
+        height: CHART_CONTAINER_HEIGHT,
         alignItems: 'center',
-        backgroundColor: '#ffffff',
-        borderRadius: 16,
-        padding: spacing.sm,
+        justifyContent: 'flex-start',
     },
     chartContainer: {
         alignItems: 'center',

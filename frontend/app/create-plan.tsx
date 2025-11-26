@@ -150,8 +150,8 @@ const CreatePlanScreen: React.FC = () => {
   const namePlaceholder = 'e.g. Push Day';
   const selectedListTitle = 'Plan exercises';
   const selectedListSubtitle = 'Tap to remove. Use arrows to reorder.';
-  const saveCtaLabel = isEditing ? 'Update Plan' : 'Save Plan';
-  const headerTitle = isEditing ? 'Edit Plan' : 'Create Plan';
+  const saveCtaLabel = isEditing ? 'Update Workout' : 'Save Workout';
+  const headerTitle = isEditing ? 'Edit Workout' : 'Create Workout';
   const headerSubtitle = isEditing ? 'Update your workout template' : 'Build your workout template';
 
   const animatedContainerStyle = useAnimatedStyle(() => ({

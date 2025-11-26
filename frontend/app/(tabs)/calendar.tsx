@@ -31,6 +31,7 @@ const getWorkoutLocalISO = (workout: WorkoutSessionsState['workouts'][number]): 
 const CalendarScreen: React.FC = () => {
   const router = useRouter();
   const [selectedDate, setSelectedDate] = useState<string>(() => formatDateToLocalISO(getDeviceCurrentDate()));
+  const [currentMonth, setCurrentMonth] = useState<string>(() => formatDateToLocalISO(getDeviceCurrentDate()));
 
   const workouts = useWorkoutSessionsStore((state: WorkoutSessionsState) => state.workouts);
   const hydrateWorkouts = useWorkoutSessionsStore((state: WorkoutSessionsState) => state.hydrateWorkouts);
@@ -106,7 +107,9 @@ const CalendarScreen: React.FC = () => {
 
   useFocusEffect(
     useCallback(() => {
-      setSelectedDate(formatDateToLocalISO(getDeviceCurrentDate()));
+      const today = formatDateToLocalISO(getDeviceCurrentDate());
+      setSelectedDate(today);
+      setCurrentMonth(today);
       void hydrateWorkouts();
     }, [])
   );
@@ -122,7 +125,7 @@ const CalendarScreen: React.FC = () => {
   return (
     <TabSwipeContainer contentContainerStyle={styles.contentContainer}>
       <ScreenHeader
-        title="Training Calendar"
+        title="Calendar"
         subtitle="Track workouts and build consistency."
       />
 
@@ -132,6 +135,8 @@ const CalendarScreen: React.FC = () => {
           onSelectDate={handleSelectDate}
           markers={markers}
           onDayLongPress={handleDayLongPress}
+          currentMonth={currentMonth}
+          onCurrentMonthChange={setCurrentMonth}
         />
       </View>
 
