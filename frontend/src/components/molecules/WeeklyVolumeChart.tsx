@@ -388,7 +388,7 @@ export const WeeklyVolumeChart: React.FC = () => {
     if (!hasData) {
         return (
             <View style={styles.emptyContainer}>
-                <Text variant="body" color="secondary">No workout data available for this week.</Text>
+                <Text variant="body" color="secondary" style={{ textAlign: 'center' }}>No workout data available yet.</Text>
             </View>
         );
     }
@@ -453,8 +453,9 @@ const styles = StyleSheet.create({
         textAlign: 'center',
     },
     emptyContainer: {
-        padding: spacing.lg,
+        padding: spacing.sm,
         alignItems: 'center',
+        minHeight: 60,
     },
     pagination: {
         flexDirection: 'row',

@@ -1,0 +1,106 @@
+{
+  "workouts": [
+    {
+      "id": "classic-push",
+      "name": "Classic Push Day",
+      "exercises": [
+        { "id": "exercise_001", "name": "Barbell Bench Press", "sets": 3 },
+        { "id": "exercise_005", "name": "Dumbbell Shoulder Press", "sets": 3 },
+        { "id": "exercise_099", "name": "Incline Barbell Bench Press", "sets": 3 },
+        { "id": "exercise_004", "name": "Lateral Raises", "sets": 3 },
+        { "id": "exercise_006", "name": "Cable Triceps Pushdown", "sets": 3 }
+      ],
+      "metadata": {
+        "goal": "build-muscle",
+        "experienceLevel": "intermediate",
+        "equipment": "full-gym",
+        "durationMinutes": 60,
+        "description": "Focus on chest, shoulders, and triceps with compound movements.",
+        "tags": ["push", "hypertrophy", "upper-body"]
+      },
+      "isPremade": true
+    },
+    {
+      "id": "classic-pull",
+      "name": "Classic Pull Day",
+      "exercises": [
+        { "id": "exercise_020", "name": "Barbell Deadlift", "sets": 3 },
+        { "id": "exercise_008", "name": "Wide Grip Lat Pulldown", "sets": 3 },
+        { "id": "exercise_052", "name": "Barbell Bent-Over Row", "sets": 3 },
+        { "id": "exercise_096", "name": "Face Pull", "sets": 3 },
+        { "id": "exercise_031", "name": "Barbell Bicep Curl", "sets": 3 }
+      ],
+      "metadata": {
+        "goal": "build-muscle",
+        "experienceLevel": "intermediate",
+        "equipment": "full-gym",
+        "durationMinutes": 60,
+        "description": "Build a thick, wide back and biceps.",
+        "tags": ["pull", "hypertrophy", "upper-body"]
+      },
+      "isPremade": true
+    },
+    {
+      "id": "dumbbell-full-body",
+      "name": "Dumbbell Full Body Blast",
+      "exercises": [
+        { "id": "exercise_023", "name": "Dumbbell Bulgarian Split Squat", "sets": 3 },
+        { "id": "exercise_047", "name": "Barbell Romanian Deadlift", "sets": 3 },
+        { "id": "exercise_076", "name": "Dumbbell Bench Press", "sets": 3 },
+        { "id": "exercise_052", "name": "Barbell Bent-Over Row", "sets": 3 },
+        { "id": "exercise_005", "name": "Dumbbell Shoulder Press", "sets": 3 },
+        { "id": "exercise_027", "name": "Dumbbell Bicep Curls", "sets": 3 }
+      ],
+      "metadata": {
+        "goal": "general-fitness",
+        "experienceLevel": "beginner",
+        "equipment": "dumbbells-only",
+        "durationMinutes": 45,
+        "description": "Total body workout using free weights. Great for strength and stability.",
+        "tags": ["full-body", "dumbbells", "beginner"]
+      },
+      "isPremade": true
+    },
+    {
+      "id": "machine-circuit",
+      "name": "Full Body Machine Circuit",
+      "exercises": [
+        { "id": "exercise_014", "name": "Leg Press", "sets": 3 },
+        { "id": "exercise_002", "name": "Chest Press Machine", "sets": 3 },
+        { "id": "exercise_010", "name": "Seated Row Machine", "sets": 3 },
+        { "id": "exercise_022", "name": "Seated Shoulder Press Machine", "sets": 3 },
+        { "id": "exercise_063", "name": "Cable Crunch", "sets": 3 }
+      ],
+      "metadata": {
+        "goal": "general-fitness",
+        "experienceLevel": "beginner",
+        "equipment": "full-gym",
+        "durationMinutes": 30,
+        "description": "Safe and effective machine-based circuit for total body conditioning.",
+        "tags": ["circuit", "machines", "beginner"]
+      },
+      "isPremade": true
+    },
+    {
+      "id": "leg-day-destroyer",
+      "name": "Leg Day Destroyer",
+      "exercises": [
+        { "id": "exercise_019", "name": "Barbell Squat", "sets": 4 },
+        { "id": "exercise_014", "name": "Leg Press", "sets": 4 },
+        { "id": "exercise_047", "name": "Barbell Romanian Deadlift", "sets": 3 },
+        { "id": "exercise_015", "name": "Leg Extensions", "sets": 3 },
+        { "id": "exercise_025", "name": "Lying Leg Curl", "sets": 3 },
+        { "id": "exercise_024", "name": "Standing Calf Raise Machine", "sets": 4 }
+      ],
+      "metadata": {
+        "goal": "build-muscle",
+        "experienceLevel": "advanced",
+        "equipment": "full-gym",
+        "durationMinutes": 75,
+        "description": "High volume leg workout for maximum growth.",
+        "tags": ["legs", "hypertrophy", "high-volume"]
+      },
+      "isPremade": true
+    }
+  ]
+}

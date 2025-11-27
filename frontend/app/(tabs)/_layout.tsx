@@ -49,6 +49,20 @@ export default function TabLayout() {
             title: 'Workout Detail',
           }}
         />
+        <Tabs.Screen
+          name="browse-programs"
+          options={{
+            href: null,
+            title: 'Browse Programs',
+          }}
+        />
+        <Tabs.Screen
+          name="add-workout"
+          options={{
+            href: null,
+            title: 'Add Workout',
+          }}
+        />
       </Tabs>
     </View>
   );

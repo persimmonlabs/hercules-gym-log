@@ -45,6 +45,14 @@ export interface PremadeProgram {
   isPremade: true;
 }
 
+/** A standalone premade workout (not part of a program) */
+export interface PremadeWorkout extends ProgramWorkout {
+  metadata: Omit<ProgramMetadata, 'daysPerWeek' | 'durationWeeks'> & {
+    durationMinutes: number; // Estimated time to complete
+  };
+  isPremade: true;
+}
+
 /** User's saved program (cloned from premade or custom) */
 export interface UserProgram extends Omit<PremadeProgram, 'isPremade'> {
   isPremade: false;

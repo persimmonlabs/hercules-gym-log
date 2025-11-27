@@ -1,7 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Modal, Pressable, StyleSheet, View, Alert } from 'react-native';
+import { Modal, Pressable, StyleSheet, View, Alert, type ViewStyle } from 'react-native';
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
+import Animated, { Easing, useAnimatedStyle, useSharedValue, withSpring, withTiming, type AnimatedStyle } from 'react-native-reanimated';
 
 import { SurfaceCard } from '@/components/atoms/SurfaceCard';
 import { Text } from '@/components/atoms/Text';
@@ -9,7 +10,7 @@ import { ScreenHeader } from '@/components/molecules/ScreenHeader';
 import { TabSwipeContainer } from '@/components/templates/TabSwipeContainer';
 import { Button } from '@/components/atoms/Button';
 import { WEEKDAY_LABELS } from '@/constants/schedule';
-import { colors, radius, shadows, spacing } from '@/constants/theme';
+import { colors, radius, shadows, sizing, spacing } from '@/constants/theme';
 import { usePlansStore, type Plan, type PlansState } from '@/store/plansStore';
 import { useSchedulesStore, type SchedulesState } from '@/store/schedulesStore';
 import { useProgramsStore } from '@/store/programsStore';
@@ -19,6 +20,94 @@ import { ProgramCard } from '@/components/molecules/ProgramCard';
 import type { WorkoutExercise } from '@/types/workout';
 import type { Schedule } from '@/types/schedule';
 import type { PremadeProgram } from '@/types/premadePlan';
+
+const CARD_LIFT_TRANSLATE = -2;
+const CARD_LIFT_DURATION_MS = 200;
+const CARD_PRESS_SCALE = 0.98;
+const SCALE_DOWN_DURATION_MS = 150;
+const scaleDownTimingConfig = {
+  duration: SCALE_DOWN_DURATION_MS,
+  easing: Easing.out(Easing.cubic),
+};
+const scaleUpSpringConfig = {
+  damping: 15,
+  stiffness: 300,
+};
+
+const timingConfig = {
+  duration: CARD_LIFT_DURATION_MS,
+  easing: Easing.out(Easing.cubic),
+};
+
+type ShadowConfig = {
+  shadowOpacity: number;
+  shadowRadius: number;
+  elevation: number;
+};
+
+const shadowConfigs: Record<'sm' | 'md' | 'lg', ShadowConfig> = {
+  sm: {
+    shadowOpacity: shadows.sm.shadowOpacity,
+    shadowRadius: shadows.sm.shadowRadius,
+    elevation: shadows.sm.elevation,
+  },
+  md: {
+    shadowOpacity: shadows.md.shadowOpacity,
+    shadowRadius: shadows.md.shadowRadius,
+    elevation: shadows.md.elevation,
+  },
+  lg: {
+    shadowOpacity: shadows.lg.shadowOpacity,
+    shadowRadius: shadows.lg.shadowRadius,
+    elevation: shadows.lg.elevation,
+  },
+};
+
+type CardLiftAnimation = {
+  animatedStyle: AnimatedStyle<ViewStyle>;
+  onPressIn: () => void;
+  onPressOut: () => void;
+};
+
+const useCardLiftAnimation = (initialShadow: ShadowConfig, activeShadow: ShadowConfig): CardLiftAnimation => {
+  const translateY = useSharedValue<number>(0);
+  const shadowOpacity = useSharedValue<number>(initialShadow.shadowOpacity);
+  const shadowRadius = useSharedValue<number>(initialShadow.shadowRadius);
+  const elevation = useSharedValue<number>(initialShadow.elevation);
+  const scale = useSharedValue<number>(1);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [
+      { translateY: translateY.value },
+      { scale: scale.value },
+    ],
+    shadowOpacity: shadowOpacity.value,
+    shadowRadius: shadowRadius.value,
+    elevation: elevation.value,
+  }));
+
+  const handlePressIn = () => {
+    translateY.value = withTiming(CARD_LIFT_TRANSLATE, timingConfig);
+    shadowOpacity.value = withTiming(activeShadow.shadowOpacity, timingConfig);
+    shadowRadius.value = withTiming(activeShadow.shadowRadius, timingConfig);
+    elevation.value = withTiming(activeShadow.elevation, timingConfig);
+    scale.value = withTiming(CARD_PRESS_SCALE, scaleDownTimingConfig);
+  };
+
+  const handlePressOut = () => {
+    translateY.value = withTiming(0, timingConfig);
+    shadowOpacity.value = withTiming(initialShadow.shadowOpacity, timingConfig);
+    shadowRadius.value = withTiming(initialShadow.shadowRadius, timingConfig);
+    elevation.value = withTiming(initialShadow.elevation, timingConfig);
+    scale.value = withSpring(1, scaleUpSpringConfig);
+  };
+
+  return {
+    animatedStyle,
+    onPressIn: handlePressIn,
+    onPressOut: handlePressOut,
+  };
+};
 
 const styles = StyleSheet.create({
   contentContainer: {
@@ -69,8 +158,8 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   planActionIconWrapper: {
-    width: spacing['2xl'],
-    height: spacing['2xl'],
+    width: sizing.iconXL,
+    height: sizing.iconXL,
     borderRadius: radius.full,
     alignItems: 'center',
     justifyContent: 'center',
@@ -173,38 +262,21 @@ const PlansScreen: React.FC = () => {
   const setCompletionOverlayVisible = useSessionStore((state) => state.setCompletionOverlayVisible);
   const [expandedPlanId, setExpandedPlanId] = useState<string | null>(null);
   const [pendingDeletePlan, setPendingDeletePlan] = useState<any | null>(null);
-  const [isAddModalVisible, setIsAddModalVisible] = useState(false);
 
   const handleAddPlanPress = useCallback(() => {
     void Haptics.selectionAsync();
-    setIsAddModalVisible(true);
-  }, []);
-
-  const handleCloseAddModal = useCallback(() => {
-    setIsAddModalVisible(false);
-  }, []);
-
-  const handleCreateCustomPlan = useCallback(() => {
-    void Haptics.selectionAsync();
-    setIsAddModalVisible(false);
-    router.push('/(tabs)/create-plan');
+    router.push('/(tabs)/add-workout?mode=plan');
   }, [router]);
 
-  const handleBrowseLibrary = useCallback(() => {
+  const handleAddWorkoutPress = useCallback(() => {
     void Haptics.selectionAsync();
-    setIsAddModalVisible(false);
-    router.push('/browse-programs');
+    router.push('/(tabs)/add-workout?mode=workout');
   }, [router]);
 
-  const handleStartQuiz = useCallback(() => {
-    void Haptics.selectionAsync();
-    setIsAddModalVisible(false);
-    router.push('/quiz');
-  }, [router]);
 
   const handleBrowseProgramsPress = useCallback(() => {
     void Haptics.selectionAsync();
-    router.push('/browse-programs');
+    router.push('/(tabs)/browse-programs');
   }, [router]);
 
   const handleProgramPress = useCallback((program: any) => {
@@ -257,7 +329,7 @@ const PlansScreen: React.FC = () => {
       } else {
         // It's a workout being deleted from a program
         await deleteWorkoutFromProgram(pendingDeletePlan.programId, pendingDeletePlan.id);
-        
+
         // Check if the program is now empty and remove it if so
         const updatedPrograms = useProgramsStore.getState().userPrograms;
         const program = updatedPrograms.find(p => p.id === pendingDeletePlan.programId);
@@ -297,12 +369,12 @@ const PlansScreen: React.FC = () => {
     (item: any) => {
       void Haptics.selectionAsync();
       setExpandedPlanId(null);
-      
+
       if (item.type === 'program') {
-         const compositeId = `program:${item.programId}:${item.id}`;
-         router.push({ pathname: '/(tabs)/create-plan', params: { planId: compositeId } });
+        const compositeId = `program:${item.programId}:${item.id}`;
+        router.push({ pathname: '/(tabs)/create-plan', params: { planId: compositeId } });
       } else {
-         router.push({ pathname: '/(tabs)/create-plan', params: { planId: item.id } });
+        router.push({ pathname: '/(tabs)/create-plan', params: { planId: item.id } });
       }
     },
     [router],
@@ -327,14 +399,14 @@ const PlansScreen: React.FC = () => {
   }, [plans]);
 
   const myWorkouts = useMemo(() => {
-    const customWorkouts = plans.map(p => ({ 
-      ...p, 
+    const customWorkouts = plans.map(p => ({
+      ...p,
       type: 'custom' as const,
       uniqueId: p.id,
       subtitle: p.exercises.length === 1 ? '1 exercise' : `${p.exercises.length} exercises`
     }));
-    
-    const programWorkouts = userPrograms.flatMap(prog => 
+
+    const programWorkouts = userPrograms.flatMap(prog =>
       prog.workouts.map(w => ({
         id: w.id,
         name: w.name,
@@ -365,7 +437,7 @@ const PlansScreen: React.FC = () => {
 
     // Use program ID if it's a program workout, otherwise the plan ID
     const planId = item.type === 'program' ? item.programId : item.id;
-    
+
     startSession(planId, workoutExercises);
     setExpandedPlanId(null);
     router.push('/(tabs)/workout');
@@ -392,75 +464,75 @@ const PlansScreen: React.FC = () => {
                   accessibilityLabel={`View ${item.name}`}
                 >
                   {expandedPlanId === item.uniqueId ? (
-                      <View style={styles.planExpandedContent}>
-                        <View style={styles.planCardHeader}>
-                          <Text variant="bodySemibold" color="primary">
-                            {item.name}
-                          </Text>
-                        </View>
-                        <View style={styles.planActionGrid}>
-                          <Pressable
-                            style={styles.planActionButton}
-                            onPress={(event) => {
-                              event.stopPropagation();
-                              handleStartWorkoutItem(item);
-                            }}
-                          >
-                            <View style={styles.planActionIconWrapper}>
-                              <IconSymbol name="play-arrow" color={colors.accent.primary} size={spacing.lg} />
-                            </View>
-                            <Text variant="caption" color="primary" style={styles.planActionLabel}>Start</Text>
-                          </Pressable>
-                          <Pressable
-                            style={styles.planActionButton}
-                            onPress={(event) => {
-                              event.stopPropagation();
-                              handleEditWorkoutItem(item);
-                            }}
-                          >
-                            <View style={styles.planActionIconWrapper}>
-                              <IconSymbol name="edit" color={colors.accent.primary} size={spacing.lg} />
-                            </View>
-                            <Text variant="caption" color="primary" style={styles.planActionLabel}>Edit</Text>
-                          </Pressable>
-                          <Pressable
-                            style={styles.planActionButton}
-                            onPress={(event) => {
-                              event.stopPropagation();
-                              handleDeleteWorkoutItem(item);
-                            }}
-                          >
-                            <View style={[styles.planActionIconWrapper, { borderColor: colors.accent.orange }]}>
-                              <IconSymbol name="delete" color={colors.accent.orange} size={spacing.lg} />
-                            </View>
-                            <Text variant="caption" color="primary" style={styles.planActionLabel}>Delete</Text>
-                          </Pressable>
-                          <Pressable
-                            style={styles.planActionButton}
-                            onPress={(event) => {
-                              event.stopPropagation();
-                              setExpandedPlanId(null);
-                            }}
-                          >
-                            <View style={[styles.planActionIconWrapper, { borderColor: colors.accent.orange }]}>
-                              <IconSymbol name="arrow-back" color={colors.accent.orange} size={spacing.lg} />
-                            </View>
-                            <Text variant="caption" color="primary" style={styles.planActionLabel}>Back</Text>
-                          </Pressable>
-                        </View>
-                      </View>
-                    ) : (
-                      <View style={styles.planCardContent}>
-                        <View style={styles.planCardHeader}>
-                          <Text variant="bodySemibold" color="primary">
-                            {item.name}
-                          </Text>
-                        </View>
-                        <Text variant="body" color="secondary">
-                          {item.subtitle}
+                    <View style={styles.planExpandedContent}>
+                      <View style={styles.planCardHeader}>
+                        <Text variant="bodySemibold" color="primary">
+                          {item.name}
                         </Text>
                       </View>
-                    )}
+                      <View style={styles.planActionGrid}>
+                        <Pressable
+                          style={styles.planActionButton}
+                          onPress={(event) => {
+                            event.stopPropagation();
+                            handleStartWorkoutItem(item);
+                          }}
+                        >
+                          <View style={styles.planActionIconWrapper}>
+                            <IconSymbol name="play-arrow" color={colors.accent.primary} size={sizing.iconMD} />
+                          </View>
+                          <Text variant="caption" color="primary" style={styles.planActionLabel}>Start</Text>
+                        </Pressable>
+                        <Pressable
+                          style={styles.planActionButton}
+                          onPress={(event) => {
+                            event.stopPropagation();
+                            handleEditWorkoutItem(item);
+                          }}
+                        >
+                          <View style={styles.planActionIconWrapper}>
+                            <IconSymbol name="edit" color={colors.accent.primary} size={sizing.iconMD} />
+                          </View>
+                          <Text variant="caption" color="primary" style={styles.planActionLabel}>Edit</Text>
+                        </Pressable>
+                        <Pressable
+                          style={styles.planActionButton}
+                          onPress={(event) => {
+                            event.stopPropagation();
+                            handleDeleteWorkoutItem(item);
+                          }}
+                        >
+                          <View style={[styles.planActionIconWrapper, { borderColor: colors.accent.orange }]}>
+                            <IconSymbol name="delete" color={colors.accent.orange} size={sizing.iconMD} />
+                          </View>
+                          <Text variant="caption" color="primary" style={styles.planActionLabel}>Delete</Text>
+                        </Pressable>
+                        <Pressable
+                          style={styles.planActionButton}
+                          onPress={(event) => {
+                            event.stopPropagation();
+                            setExpandedPlanId(null);
+                          }}
+                        >
+                          <View style={[styles.planActionIconWrapper, { borderColor: colors.accent.orange }]}>
+                            <IconSymbol name="arrow-back" color={colors.accent.orange} size={sizing.iconMD} />
+                          </View>
+                          <Text variant="caption" color="primary" style={styles.planActionLabel}>Back</Text>
+                        </Pressable>
+                      </View>
+                    </View>
+                  ) : (
+                    <View style={styles.planCardContent}>
+                      <View style={styles.planCardHeader}>
+                        <Text variant="bodySemibold" color="primary">
+                          {item.name}
+                        </Text>
+                      </View>
+                      <Text variant="labelMedium" color="secondary">
+                        {item.subtitle}
+                      </Text>
+                    </View>
+                  )}
                 </Pressable>
               ))
             ) : (
@@ -476,7 +548,7 @@ const PlansScreen: React.FC = () => {
           </View>
 
           <View style={styles.planCreateButtonWrapper}>
-            <Button label="Add Workout" onPress={handleAddPlanPress} size="md" />
+            <Button label="Add Workout" onPress={handleAddWorkoutPress} size="md" />
           </View>
         </View>
       </SurfaceCard>
@@ -513,7 +585,7 @@ const PlansScreen: React.FC = () => {
                           }}
                         >
                           <View style={styles.planActionIconWrapper}>
-                            <IconSymbol name="visibility" color={colors.accent.primary} size={spacing.lg} />
+                            <IconSymbol name="visibility" color={colors.accent.primary} size={sizing.iconMD} />
                           </View>
                           <Text variant="caption" color="primary" style={styles.planActionLabel}>View</Text>
                         </Pressable>
@@ -525,7 +597,7 @@ const PlansScreen: React.FC = () => {
                           }}
                         >
                           <View style={[styles.planActionIconWrapper, { borderColor: colors.accent.orange }]}>
-                            <IconSymbol name="delete" color={colors.accent.orange} size={spacing.lg} />
+                            <IconSymbol name="delete" color={colors.accent.orange} size={sizing.iconMD} />
                           </View>
                           <Text variant="caption" color="primary" style={styles.planActionLabel}>Delete</Text>
                         </Pressable>
@@ -537,7 +609,7 @@ const PlansScreen: React.FC = () => {
                           }}
                         >
                           <View style={[styles.planActionIconWrapper, { borderColor: colors.accent.orange }]}>
-                            <IconSymbol name="arrow-back" color={colors.accent.orange} size={spacing.lg} />
+                            <IconSymbol name="arrow-back" color={colors.accent.orange} size={sizing.iconMD} />
                           </View>
                           <Text variant="caption" color="primary" style={styles.planActionLabel}>Back</Text>
                         </Pressable>
@@ -550,7 +622,7 @@ const PlansScreen: React.FC = () => {
                           {program.name}
                         </Text>
                       </View>
-                      <Text variant="body" color="secondary">
+                      <Text variant="labelMedium" color="secondary">
                         {program.workouts.length} workouts • {program.metadata?.daysPerWeek || 3} days/week
                       </Text>
                     </View>
@@ -558,7 +630,7 @@ const PlansScreen: React.FC = () => {
                 </Pressable>
               ))
             ) : (
-               <View style={[styles.planCardShell, styles.planCardContent]}>
+              <View style={[styles.planCardShell, styles.planCardContent]}>
                 <Text variant="bodySemibold" color="primary">
                   No programs yet
                 </Text>
@@ -612,165 +684,6 @@ const PlansScreen: React.FC = () => {
           </View>
         </View>
       </SurfaceCard>
-
-      <SurfaceCard padding="xl" tone="neutral">
-        <View style={styles.outerCardContent}>
-          <Text variant="heading3" color="primary">
-            Program Library
-          </Text>
-
-          <SurfaceCard tone="neutral" padding="lg" showAccentStripe={false} style={styles.planCardShell}>
-            <View style={styles.browseCard}>
-              <IconSymbol name="search" size={48} color={colors.accent.primary} />
-              <View style={{ alignItems: 'center', gap: spacing.xs }}>
-                <Text variant="bodySemibold" color="primary" style={{ textAlign: 'center' }}>
-                  Explore Premade Plans
-                </Text>
-                <Text variant="body" color="secondary" style={{ textAlign: 'center' }}>
-                  Browse our curated collection of workout programs for all levels.
-                </Text>
-              </View>
-              <Button label="Browse Library" onPress={handleBrowseProgramsPress} size="md" />
-            </View>
-          </SurfaceCard>
-        </View>
-      </SurfaceCard>
-
-      {/* Delete Confirmation Modal */}
-      <Modal
-        transparent
-        visible={Boolean(pendingDeletePlan)}
-        animationType="fade"
-        onRequestClose={dismissDeleteDialog}
-      >
-        <View style={styles.dialogOverlay}>
-          <SurfaceCard tone="neutral" padding="lg" showAccentStripe={false} style={styles.dialogCard}>
-            <View style={styles.dialogContent}>
-              <Text variant="heading3" color="primary">
-                Delete plan
-              </Text>
-              <Text variant="body" color="secondary">
-                Are you sure you want to delete {pendingDeletePlan?.name ?? 'this plan'}? This action cannot be undone.
-              </Text>
-            </View>
-            <View style={styles.dialogActions}>
-              <Button
-                label="Cancel"
-                variant="ghost"
-                onPress={dismissDeleteDialog}
-                size="md"
-                textColor={colors.accent.gradientStart}
-                style={[styles.dialogActionButton, styles.dialogCancelButton]}
-              />
-              <Button
-                label="Delete"
-                variant="primary"
-                onPress={confirmDeletePlan}
-                size="md"
-                style={styles.dialogActionButton}
-              />
-            </View>
-          </SurfaceCard>
-        </View>
-      </Modal>
-
-      {/* Add Plan Selection Modal */}
-      <Modal
-        transparent
-        visible={isAddModalVisible}
-        animationType="fade"
-        onRequestClose={handleCloseAddModal}
-      >
-        <Pressable style={styles.dialogOverlay} onPress={handleCloseAddModal}>
-          <SurfaceCard 
-            tone="neutral" 
-            padding="xl" 
-            showAccentStripe={false} 
-            style={styles.dialogCard}
-          >
-            <Pressable onPress={(e) => e.stopPropagation()}>
-              <View style={styles.dialogContent}>
-                <Text variant="heading2" color="primary">
-                  Add Workout
-                </Text>
-                <Text variant="body" color="secondary">
-                  How would you like to create your new plan?
-                </Text>
-
-                <View style={{ gap: spacing.md, marginTop: spacing.md }}>
-                  <Pressable
-                    style={({ pressed }) => [
-                      styles.planCardShell,
-                      { backgroundColor: pressed ? colors.surface.elevated : colors.surface.card }
-                    ]}
-                    onPress={handleBrowseLibrary}
-                  >
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
-                      <View style={styles.planActionIconWrapper}>
-                        <IconSymbol name="search" size={24} color={colors.accent.primary} />
-                      </View>
-                      <View style={{ flex: 1, gap: spacing.xs }}>
-                        <Text variant="bodySemibold" color="primary">Browse Library</Text>
-                        <Text variant="caption" color="secondary">Find a premade program for your goals.</Text>
-                      </View>
-                      <IconSymbol name="chevron-right" size={20} color={colors.text.tertiary} />
-                    </View>
-                  </Pressable>
-
-                  <Pressable
-                    style={({ pressed }) => [
-                      styles.planCardShell,
-                      { backgroundColor: pressed ? colors.surface.elevated : colors.surface.card }
-                    ]}
-                    onPress={handleStartQuiz}
-                  >
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
-                      <View style={styles.planActionIconWrapper}>
-                        <IconSymbol name="auto-awesome" size={24} color={colors.accent.primary} />
-                      </View>
-                      <View style={{ flex: 1, gap: spacing.xs }}>
-                        <Text variant="bodySemibold" color="primary">Get a Recommendation</Text>
-                        <Text variant="caption" color="secondary">Take a quick quiz to find your perfect plan.</Text>
-                      </View>
-                      <IconSymbol name="chevron-right" size={20} color={colors.text.tertiary} />
-                    </View>
-                  </Pressable>
-
-                  <Pressable
-                    style={({ pressed }) => [
-                      styles.planCardShell,
-                      { backgroundColor: pressed ? colors.surface.elevated : colors.surface.card }
-                    ]}
-                    onPress={handleCreateCustomPlan}
-                  >
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
-                      <View style={styles.planActionIconWrapper}>
-                        <IconSymbol name="add" size={24} color={colors.accent.primary} />
-                      </View>
-                      <View style={{ flex: 1, gap: spacing.xs }}>
-                        <Text variant="bodySemibold" color="primary">Create from Scratch</Text>
-                        <Text variant="caption" color="secondary">Build a custom plan exercise by exercise.</Text>
-                      </View>
-                      <IconSymbol name="chevron-right" size={20} color={colors.text.tertiary} />
-                    </View>
-                  </Pressable>
-                </View>
-              </View>
-              
-              <View style={[styles.dialogActions, { marginTop: spacing.lg }]}>
-                <Button
-                  label="Cancel"
-                  variant="ghost"
-                  onPress={handleCloseAddModal}
-                  size="md"
-                  textColor={colors.text.secondary}
-                  style={styles.dialogActionButton}
-                />
-              </View>
-            </Pressable>
-          </SurfaceCard>
-        </Pressable>
-      </Modal>
     </TabSwipeContainer>
   );
 };

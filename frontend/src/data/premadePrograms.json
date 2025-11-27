@@ -18,30 +18,30 @@
           "id": "ppl-push",
           "name": "Push Day",
           "exercises": [
-            { "id": "barbell-bench-press", "name": "Barbell Bench Press", "sets": 3 },
-            { "id": "overhead-press", "name": "Overhead Press", "sets": 3 },
-            { "id": "incline-dumbbell-press", "name": "Incline Dumbbell Press", "sets": 3 },
-            { "id": "tricep-pushdown", "name": "Tricep Pushdown", "sets": 3 }
+            { "id": "exercise_001", "name": "Barbell Bench Press", "sets": 3 },
+            { "id": "exercise_005", "name": "Dumbbell Shoulder Press", "sets": 3 },
+            { "id": "exercise_099", "name": "Incline Barbell Bench Press", "sets": 3 },
+            { "id": "exercise_006", "name": "Cable Triceps Pushdown", "sets": 3 }
           ]
         },
         {
           "id": "ppl-pull",
           "name": "Pull Day",
           "exercises": [
-            { "id": "barbell-row", "name": "Barbell Row", "sets": 3 },
-            { "id": "lat-pulldown", "name": "Lat Pulldown", "sets": 3 },
-            { "id": "face-pull", "name": "Face Pull", "sets": 3 },
-            { "id": "barbell-curl", "name": "Barbell Curl", "sets": 3 }
+            { "id": "exercise_052", "name": "Barbell Bent-Over Row", "sets": 3 },
+            { "id": "exercise_008", "name": "Wide Grip Lat Pulldown", "sets": 3 },
+            { "id": "exercise_096", "name": "Face Pull", "sets": 3 },
+            { "id": "exercise_031", "name": "Barbell Bicep Curl", "sets": 3 }
           ]
         },
         {
           "id": "ppl-legs",
           "name": "Leg Day",
           "exercises": [
-            { "id": "squat", "name": "Squat", "sets": 3 },
-            { "id": "romanian-deadlift", "name": "Romanian Deadlift", "sets": 3 },
-            { "id": "leg-press", "name": "Leg Press", "sets": 3 },
-            { "id": "calf-raise", "name": "Calf Raise", "sets": 3 }
+            { "id": "exercise_019", "name": "Barbell Squat", "sets": 3 },
+            { "id": "exercise_047", "name": "Barbell Romanian Deadlift", "sets": 3 },
+            { "id": "exercise_014", "name": "Leg Press", "sets": 3 },
+            { "id": "exercise_024", "name": "Standing Calf Raise Machine", "sets": 3 }
           ]
         }
       ],
@@ -67,18 +67,18 @@
           "id": "fb-a",
           "name": "Workout A",
           "exercises": [
-            { "id": "goblet-squat", "name": "Goblet Squat", "sets": 3 },
-            { "id": "dumbbell-bench-press", "name": "Dumbbell Bench Press", "sets": 3 },
-            { "id": "dumbbell-row", "name": "Dumbbell Row", "sets": 3 }
+            { "id": "exercise_023", "name": "Dumbbell Bulgarian Split Squat", "sets": 3 },
+            { "id": "exercise_076", "name": "Dumbbell Bench Press", "sets": 3 },
+            { "id": "exercise_052", "name": "Barbell Bent-Over Row", "sets": 3 }
           ]
         },
         {
           "id": "fb-b",
           "name": "Workout B",
           "exercises": [
-            { "id": "dumbbell-deadlift", "name": "Dumbbell Deadlift", "sets": 3 },
-            { "id": "dumbbell-shoulder-press", "name": "Dumbbell Shoulder Press", "sets": 3 },
-            { "id": "dumbbell-lunge", "name": "Dumbbell Lunge", "sets": 3 }
+            { "id": "exercise_047", "name": "Barbell Romanian Deadlift", "sets": 3 },
+            { "id": "exercise_005", "name": "Dumbbell Shoulder Press", "sets": 3 },
+            { "id": "exercise_023", "name": "Dumbbell Bulgarian Split Squat", "sets": 3 }
           ]
         }
       ],

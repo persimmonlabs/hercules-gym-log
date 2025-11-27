@@ -51,6 +51,7 @@ export const usePlanSaveHandler = ({
   const { updateWorkoutInProgram } = useProgramsStore();
 
   const isEditing = Boolean(editingPlanId);
+  const isPremadeReview = Boolean(editingPlanId?.startsWith('premade:'));
 
   const handleSavePlan = useCallback(async (): Promise<SubmitPlanResult> => {
     const trimmedName = planName.trim();
@@ -97,7 +98,7 @@ export const usePlanSaveHandler = ({
           name: trimmedName,
           exercises: normalizedExercises,
         });
-        
+
         await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         onSuccess?.();
         return 'success';
@@ -115,7 +116,7 @@ export const usePlanSaveHandler = ({
 
       await savePlan(payload);
 
-      if (isEditing) {
+      if (isEditing && !isPremadeReview) {
         updatePlan({
           id: planIdentifier,
           name: trimmedName,
@@ -123,12 +124,33 @@ export const usePlanSaveHandler = ({
           createdAt: createdAtTimestamp,
         });
       } else {
-        persistPlan({
-          id: planIdentifier,
-          name: trimmedName,
-          exercises: selectedExercises,
-          createdAt: createdAtTimestamp,
-        });
+        // If premade review, we are creating a NEW plan, so use persistPlan
+        // and ensure we use the new ID generated above (if editingPlanId was premade:...)
+        const finalId = isPremadeReview ? createPlanIdentifier() : planIdentifier;
+
+        // If it was premade review, we need to save the payload with the NEW ID, not the premade ID
+        if (isPremadeReview) {
+          const newPayload: WorkoutPlan = {
+            ...payload,
+            id: finalId,
+            createdAt: new Date().toISOString(),
+          };
+          await savePlan(newPayload);
+
+          persistPlan({
+            id: finalId,
+            name: trimmedName,
+            exercises: selectedExercises,
+            createdAt: Date.now(),
+          });
+        } else {
+          persistPlan({
+            id: planIdentifier,
+            name: trimmedName,
+            exercises: selectedExercises,
+            createdAt: createdAtTimestamp,
+          });
+        }
       }
 
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -147,7 +169,12 @@ export const usePlanSaveHandler = ({
     }
   }, [editingPlanCreatedAt, editingPlanId, isEditing, isSaving, onSuccess, persistPlan, planName, plans, resetBuilder, selectedExercises, updatePlan, updateWorkoutInProgram]);
 
-  const saveLabel = 'Save Workout';
+  let saveLabel = 'Save Workout';
+  if (isEditing && !isPremadeReview) {
+    saveLabel = 'Update Workout';
+  } else if (isPremadeReview) {
+    saveLabel = 'Add Workout';
+  }
   const selectedListTitle = 'Exercises';
   const selectedListSubtitle = '';
   const saveCtaLabel = 'Save Workout';

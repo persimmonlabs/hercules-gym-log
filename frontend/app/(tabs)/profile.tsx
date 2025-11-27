@@ -22,6 +22,10 @@ const styles = StyleSheet.create({
   cardContent: {
     gap: spacing.md,
   },
+  headerContent: {
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+  },
   headerStripe: {
     height: 4,
     width: '100%',
@@ -40,7 +44,7 @@ const StatsScreen: React.FC = () => {
 
       <SurfaceCard tone="neutral" padding="md" showAccentStripe={false}>
         <View style={styles.cardContent}>
-          <View>
+          <View style={styles.headerContent}>
             <Text variant="heading3" color="primary">
               Set Distribution
             </Text>
@@ -52,7 +56,7 @@ const StatsScreen: React.FC = () => {
 
       <SurfaceCard tone="neutral" padding="md" showAccentStripe={false}>
         <View style={styles.cardContent}>
-          <View>
+          <View style={styles.headerContent}>
             <Text variant="heading3" color="primary">
               Weekly Volume
             </Text>

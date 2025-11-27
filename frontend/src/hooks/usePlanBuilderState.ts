@@ -69,7 +69,7 @@ export const usePlanBuilderState = (editingPlanId: string | null): PlanBuilderSt
   }, [editingPlanId]);
 
   const plans = usePlansStore((state) => state.plans);
-  const { userPrograms } = useProgramsStore();
+  const { userPrograms, premadeWorkouts } = useProgramsStore();
 
   const editingPlan = useMemo<Plan | null>(() => {
     if (!editingPlanId) {
@@ -80,7 +80,7 @@ export const usePlanBuilderState = (editingPlanId: string | null): PlanBuilderSt
       const [_, programId, workoutId] = editingPlanId.split(':');
       const program = userPrograms.find(p => p.id === programId);
       const workout = program?.workouts.find(w => w.id === workoutId);
-      
+
       if (workout) {
         const mappedExercises = workout.exercises
           .map(ex => exercises.find(e => e.name === ex.name) || null)
@@ -96,10 +96,30 @@ export const usePlanBuilderState = (editingPlanId: string | null): PlanBuilderSt
       return null;
     }
 
+    if (editingPlanId.startsWith('premade:')) {
+      const [_, premadeId] = editingPlanId.split(':');
+      const workout = premadeWorkouts.find(w => w.id === premadeId);
+
+      if (workout) {
+        const mappedExercises = workout.exercises
+          .map(ex => exercises.find(e => e.id === ex.id) || null)
+          .filter((e): e is ExerciseCatalogItem => e !== null);
+
+        return {
+          id: workout.id,
+          name: workout.name,
+          exercises: mappedExercises,
+          createdAt: Date.now(),
+        } as Plan;
+      }
+      return null;
+    }
+
     return plans.find((plan) => plan.id === editingPlanId) ?? null;
-  }, [editingPlanId, plans, userPrograms]);
+  }, [editingPlanId, plans, userPrograms, premadeWorkouts]);
 
   const isEditing = Boolean(editingPlanId);
+  const isPremadeReview = Boolean(editingPlanId?.startsWith('premade:'));
 
   const hasActiveFilters = useMemo<boolean>(() => countActiveFilters(filters) > 0, [filters]);
 
@@ -331,8 +351,18 @@ export const usePlanBuilderState = (editingPlanId: string | null): PlanBuilderSt
     });
   }, []);
 
-  const headerTitle = isEditing ? 'Edit Workout' : 'Create Workout';
-  const headerSubtitle = isEditing ? 'Update your workout template' : 'Build your workout template';
+  let headerTitle = 'Create Workout';
+  let headerSubtitle = 'Build your workout template';
+
+  if (isEditing) {
+    if (isPremadeReview) {
+      headerTitle = 'Review Workout';
+      headerSubtitle = 'Review and customize this workout template';
+    } else {
+      headerTitle = 'Edit Workout';
+      headerSubtitle = 'Update your workout template';
+    }
+  }
   const editingPlanCreatedAt = editingPlan?.createdAt ?? null;
   const isEditingPlanMissing = isEditing && !editingPlan;
 

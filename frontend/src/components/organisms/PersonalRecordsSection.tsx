@@ -12,8 +12,8 @@ import exercisesData from '@/data/exercises.json';
 
 const DEFAULT_TRACKED_EXERCISES = [
   'Barbell Bench Press',
-  'Chest Press Machine',
-  'Butterfly Machine',
+  'Barbell Squat',
+  'Barbell Deadlift',
 ];
 
 export const PersonalRecordsSection: React.FC = () => {

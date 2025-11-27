@@ -36,19 +36,7 @@ const styles = StyleSheet.create({
     gap: spacing.md,
     flexDirection: 'row',
     alignItems: 'flex-start',
-  },
-  backButtonContainer: {
-    borderRadius: radius.lg,
-    marginLeft: spacing.sm,
-    paddingTop: spacing.xs,
-  },
-  backButtonPressable: {
-    paddingVertical: spacing.xs,
-    paddingRight: spacing.sm,
-    paddingLeft: 0,
-    borderRadius: radius.lg,
-    alignItems: 'flex-start',
-    justifyContent: 'center',
+    justifyContent: 'space-between',
   },
   headerContent: {
     gap: spacing.sm,
@@ -97,14 +85,19 @@ const styles = StyleSheet.create({
 const CreatePlanScreen: React.FC = () => {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { planId } = useLocalSearchParams<{ planId?: string }>();
+  const { planId, premadeWorkoutId } = useLocalSearchParams<{ planId?: string; premadeWorkoutId?: string }>();
   const editingPlanId = useMemo(() => {
+    if (premadeWorkoutId) {
+      const id = Array.isArray(premadeWorkoutId) ? premadeWorkoutId[0] : premadeWorkoutId;
+      return `premade:${id}`;
+    }
+
     if (!planId) {
       return null;
     }
 
     return Array.isArray(planId) ? planId[0] ?? null : planId;
-  }, [planId]);
+  }, [planId, premadeWorkoutId]);
   const {
     planName,
     setPlanName,
@@ -139,9 +132,14 @@ const CreatePlanScreen: React.FC = () => {
     router.prefetch('/add-exercises');
   }, [router]);
 
+  const isPremadeReview = Boolean(premadeWorkoutId);
+
   const handleBackPress = useCallback(() => {
     void Haptics.selectionAsync();
-    router.push('/(tabs)/plans');
+    router.replace({
+      pathname: '/(tabs)/add-workout',
+      params: { mode: 'workout' }
+    });
   }, [router]);
 
   const handleSavePlanPress = useCallback(() => {
@@ -182,19 +180,18 @@ const CreatePlanScreen: React.FC = () => {
       >
         <View style={styles.topSection}>
           <View style={styles.headerContent}>
-            <Text variant="heading1" color="primary" style={styles.headerTitle} fadeIn>
+            <Text variant="heading2" color="primary" style={styles.headerTitle} fadeIn>
               {headerTitle}
             </Text>
             <Text variant="body" color="secondary" style={styles.headerSubtitle} fadeIn>
               {headerSubtitle}
             </Text>
           </View>
-
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Go Back"
-            style={styles.backButtonContainer}
             onPress={handleBackPress}
+            style={{ padding: spacing.sm, paddingTop: spacing.xs, borderRadius: radius.full }}
           >
             <IconSymbol name="arrow-back" size={sizing.iconMD} color={colors.text.primary} />
           </Pressable>

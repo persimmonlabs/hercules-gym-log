@@ -28,9 +28,10 @@ import type { PlanQuickBuilderField } from '@/types/planQuickBuilder';
 import { PlanSelectedExerciseList } from '@/components/molecules/PlanSelectedExerciseList';
 import { useSemanticExerciseSearch } from '@/hooks/useSemanticExerciseSearch';
 import { type Plan, type PlansState, usePlansStore } from '@/store/plansStore';
+import { useProgramsStore } from '@/store/programsStore';
 import type { PlanExercise, WorkoutPlan } from '@/types/plan';
 import { savePlan } from '@/utils/storage';
-import { exercises, type Exercise } from '@/constants/exercises';
+import { exercises, type Exercise, type ExerciseCatalogItem } from '@/constants/exercises';
 import { timingSlow } from '@/constants/animations';
 import { colors, radius, spacing, sizing, zIndex } from '@/constants/theme';
 
@@ -106,7 +107,7 @@ const styles = StyleSheet.create({
 const CreatePlanScreen: React.FC = () => {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { planId } = useLocalSearchParams<{ planId?: string }>();
+  const { planId, premadeWorkoutId } = useLocalSearchParams<{ planId?: string; premadeWorkoutId?: string }>();
   const editingPlanId = useMemo(() => {
     if (!planId) {
       return null;
@@ -114,6 +115,13 @@ const CreatePlanScreen: React.FC = () => {
 
     return Array.isArray(planId) ? planId[0] ?? null : planId;
   }, [planId]);
+
+  const targetPremadeWorkoutId = useMemo(() => {
+    if (!premadeWorkoutId) {
+      return null;
+    }
+    return Array.isArray(premadeWorkoutId) ? premadeWorkoutId[0] ?? null : premadeWorkoutId;
+  }, [premadeWorkoutId]);
   const scrollRef = useRef<ScrollView | null>(null);
   const cardOffset = useRef<number>(0);
   const fieldPositions = useRef<Record<PlanQuickBuilderField, number>>({
@@ -139,6 +147,12 @@ const CreatePlanScreen: React.FC = () => {
 
     return plans.find((plan) => plan.id === editingPlanId) ?? null;
   }, [plans, editingPlanId]);
+
+  const premadeWorkouts = useProgramsStore((state) => state.premadeWorkouts);
+  const premadeWorkout = useMemo(() => {
+    if (!targetPremadeWorkoutId) return null;
+    return premadeWorkouts.find(w => w.id === targetPremadeWorkoutId) ?? null;
+  }, [premadeWorkouts, targetPremadeWorkoutId]);
   const selectedIds = selectedExercises.map((exercise) => exercise.id);
   const suggestedExercises = useSemanticExerciseSearch(searchTerm, exercises, {
     excludeIds: selectedIds,
@@ -146,13 +160,26 @@ const CreatePlanScreen: React.FC = () => {
   });
 
   const isEditing = Boolean(editingPlanId);
+  const isPremadeReview = Boolean(targetPremadeWorkoutId);
+
   const nameFieldLabel = 'Name';
   const namePlaceholder = 'e.g. Push Day';
   const selectedListTitle = 'Plan exercises';
   const selectedListSubtitle = 'Tap to remove. Use arrows to reorder.';
-  const saveCtaLabel = isEditing ? 'Update Workout' : 'Save Workout';
-  const headerTitle = isEditing ? 'Edit Workout' : 'Create Workout';
-  const headerSubtitle = isEditing ? 'Update your workout template' : 'Build your workout template';
+
+  let saveCtaLabel = 'Save Workout';
+  let headerTitle = 'Create Workout';
+  let headerSubtitle = 'Build your workout template';
+
+  if (isEditing) {
+    saveCtaLabel = 'Update Workout';
+    headerTitle = 'Edit Workout';
+    headerSubtitle = 'Update your workout template';
+  } else if (isPremadeReview) {
+    saveCtaLabel = 'Add Workout';
+    headerTitle = 'Review Workout';
+    headerSubtitle = 'Review and customize this workout template';
+  }
 
   const animatedContainerStyle = useAnimatedStyle(() => ({
     transform: [{ translateY: containerTranslateY.value }],
@@ -163,22 +190,33 @@ const CreatePlanScreen: React.FC = () => {
   }, [containerTranslateY]);
 
   useEffect(() => {
-    if (!isEditing) {
-      hasInitializedFromPlan.current = false;
+    if (hasInitializedFromPlan.current) {
       return;
     }
 
-    if (editingPlan && !hasInitializedFromPlan.current) {
+    if (isEditing && editingPlan) {
       setPlanName(editingPlan.name);
       setSelectedExercises(editingPlan.exercises);
       setSearchTerm('');
       hasInitializedFromPlan.current = true;
+    } else if (premadeWorkout) {
+      setPlanName(premadeWorkout.name);
+
+      // Map premade exercises (which might just have IDs) to full Exercise objects
+      const mappedExercises = premadeWorkout.exercises.map(ex => {
+        const fullExercise = exercises.find(e => e.id === ex.id);
+        return fullExercise ? { ...fullExercise } : null;
+      }).filter((ex): ex is ExerciseCatalogItem => ex !== null);
+
+      setSelectedExercises(mappedExercises);
+      setSearchTerm('');
+      hasInitializedFromPlan.current = true;
     }
-  }, [editingPlan, isEditing]);
+  }, [editingPlan, isEditing, premadeWorkout]);
 
   useEffect(() => {
     const trimmedName = planName.trim();
-    
+
     if (!trimmedName) {
       setIsNameDuplicate(false);
       return;
@@ -338,7 +376,7 @@ const CreatePlanScreen: React.FC = () => {
   }, [containerTranslateY, router]);
 
   return (
-    <Animated.View style={[styles.container, { paddingTop: spacing.lg + insets.top }, animatedContainerStyle]}>
+    <Animated.View style={[styles.container, { paddingTop: spacing.lg + insets.top, paddingBottom: insets.bottom + sizing.tabBarHeight }, animatedContainerStyle]}>
       <KeyboardAvoidingView
         style={styles.keyboardAvoider}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}

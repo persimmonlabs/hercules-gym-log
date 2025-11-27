@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 import { useProgramsStore } from '@/store/programsStore';
-import type { PremadeProgram, TrainingGoal, ExperienceLevel, EquipmentType } from '@/types/premadePlan';
+import type { PremadeProgram, PremadeWorkout, TrainingGoal, ExperienceLevel, EquipmentType } from '@/types/premadePlan';
 
 export interface QuizPreferences {
   goal: TrainingGoal | null;
@@ -10,7 +10,7 @@ export interface QuizPreferences {
 }
 
 export const useProgramRecommendation = () => {
-  const { premadePrograms } = useProgramsStore();
+  const { premadePrograms, premadeWorkouts } = useProgramsStore();
 
   const getRecommendations = useCallback((prefs: QuizPreferences): PremadeProgram[] => {
     if (!prefs.goal || !prefs.experienceLevel || !prefs.equipment || !prefs.daysPerWeek) {
@@ -32,9 +32,6 @@ export const useProgramRecommendation = () => {
       if (progLevel > userLevel) return false;
 
       // 3. Relaxed match on Experience
-      // If user is Advanced, they can see Intermediate. If Intermediate, can see Beginner.
-      // But usually people want their exact level. Let's do exact match for now, 
-      // or allow +/- 1 level if strict match fails (TODO).
       if (m.experienceLevel !== prefs.experienceLevel) return false;
 
       // 4. Relaxed match on Days (+/- 1 day)
@@ -45,7 +42,33 @@ export const useProgramRecommendation = () => {
     });
   }, [premadePrograms]);
 
+  const getWorkoutRecommendations = useCallback((prefs: Omit<QuizPreferences, 'daysPerWeek'>): PremadeWorkout[] => {
+    if (!prefs.goal || !prefs.experienceLevel || !prefs.equipment) {
+      return [];
+    }
+
+    return premadeWorkouts.filter((workout) => {
+      const m = workout.metadata;
+
+      // 1. Strict match on Goal
+      if (m.goal !== prefs.goal) return false;
+
+      // 2. Strict match on Equipment
+      const equipLevels = ['bodyweight', 'minimal', 'dumbbells-only', 'full-gym'];
+      const userLevel = equipLevels.indexOf(prefs.equipment!);
+      const progLevel = equipLevels.indexOf(m.equipment);
+      
+      if (progLevel > userLevel) return false;
+
+      // 3. Relaxed match on Experience
+      if (m.experienceLevel !== prefs.experienceLevel) return false;
+
+      return true;
+    });
+  }, [premadeWorkouts]);
+
   return {
     getRecommendations,
+    getWorkoutRecommendations,
   };
 };

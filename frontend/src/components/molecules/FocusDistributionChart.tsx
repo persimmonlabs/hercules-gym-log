@@ -380,7 +380,7 @@ export const FocusDistributionChart: React.FC = () => {
   if (workouts.length === 0) {
     return (
       <View style={styles.emptyContainer}>
-        <Text variant="body" color="secondary">No workout data available yet.</Text>
+        <Text variant="body" color="secondary" style={{ textAlign: 'center' }}>No workout data available yet.</Text>
       </View>
     );
   }
@@ -461,12 +461,12 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   emptyContainer: {
-    padding: spacing.lg,
+    padding: spacing.sm,
     alignItems: 'center',
+    minHeight: 60,
   },
   emptyChart: {
-    height: 220,
-    justifyContent: 'center',
+    height: 120,
     alignItems: 'center',
   },
   pagination: {

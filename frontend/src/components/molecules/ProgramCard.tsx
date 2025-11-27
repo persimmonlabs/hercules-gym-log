@@ -5,11 +5,11 @@ import { Text } from '@/components/atoms/Text';
 import { Badge } from '@/components/atoms';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { colors, radius, spacing } from '@/constants/theme';
-import type { PremadeProgram, UserProgram } from '@/types/premadePlan';
+import type { PremadeProgram, UserProgram, PremadeWorkout } from '@/types/premadePlan';
 
 interface ProgramCardProps {
-  program: PremadeProgram | UserProgram;
-  onPress: (program: PremadeProgram | UserProgram) => void;
+  program: PremadeProgram | UserProgram | PremadeWorkout;
+  onPress: (program: PremadeProgram | UserProgram | PremadeWorkout) => void;
   style?: ViewStyle;
 }
 
@@ -45,7 +45,11 @@ const styles = StyleSheet.create({
 });
 
 export const ProgramCard: React.FC<ProgramCardProps> = ({ program, onPress, style }) => {
-  const { name, metadata, workouts } = program;
+  const { name, metadata } = program;
+  const isWorkout = 'durationMinutes' in metadata;
+  // Workouts don't have a 'workouts' array of their own, they contain exercises directly
+  const itemCount = 'workouts' in program ? program.workouts.length : program.exercises.length;
+  const itemLabel = 'workouts' in program ? 'workouts' : 'exercises';
 
   return (
     <SurfaceCard tone="neutral" padding="lg" style={[styles.container, style]} showAccentStripe={false}>
@@ -66,12 +70,21 @@ export const ProgramCard: React.FC<ProgramCardProps> = ({ program, onPress, styl
 
         <View style={styles.footer}>
           <View style={styles.stat}>
-            <IconSymbol name="calendar-today" size={14} color={colors.text.secondary} />
-            <Text variant="caption" color="secondary">{metadata.daysPerWeek} days/week</Text>
+            <IconSymbol 
+              name={isWorkout ? "timer" : "calendar-today"} 
+              size={14} 
+              color={colors.text.secondary} 
+            />
+            <Text variant="caption" color="secondary">
+              {isWorkout 
+                ? `${(metadata as any).durationMinutes} min` 
+                : `${(metadata as any).daysPerWeek} days/week`
+              }
+            </Text>
           </View>
           <View style={styles.stat}>
             <IconSymbol name="fitness-center" size={14} color={colors.text.secondary} />
-            <Text variant="caption" color="secondary">{workouts.length} workouts</Text>
+            <Text variant="caption" color="secondary">{itemCount} {itemLabel}</Text>
           </View>
         </View>
       </Pressable>

@@ -62,7 +62,7 @@ const styles = StyleSheet.create({
     borderColor: colors.border.light,
     backgroundColor: colors.surface.card,
     paddingVertical: spacing.xs,
-    paddingHorizontal: spacing.md,
+    paddingHorizontal: spacing.sm,
   },
   chipActive: {
     backgroundColor: colors.accent.primary,

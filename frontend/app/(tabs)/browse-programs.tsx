@@ -1,16 +1,17 @@
 import React, { useEffect, useMemo, useState, useCallback } from 'react';
-import { View, StyleSheet, FlatList, Pressable } from 'react-native';
-import { useRouter } from 'expo-router';
+import { StyleSheet, FlatList, Pressable, View } from 'react-native';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 
 import { Text } from '@/components/atoms/Text';
-import { QuickFilterChip } from '@/components/atoms/QuickFilterChip';
+import { TabSwipeContainer } from '@/components/templates/TabSwipeContainer';
 import { ProgramCard } from '@/components/molecules/ProgramCard';
+import { QuickFilterChip } from '@/components/atoms/QuickFilterChip';
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { colors, spacing, radius } from '@/constants/theme';
+import { colors, spacing, radius, sizing } from '@/constants/theme';
 import { useProgramsStore } from '@/store/programsStore';
-import type { PremadeProgram, UserProgram, ExperienceLevel } from '@/types/premadePlan';
+import type { PremadeProgram, UserProgram, ExperienceLevel, PremadeWorkout } from '@/types/premadePlan';
 
 const FILTERS: { label: string; value: ExperienceLevel | 'all' }[] = [
   { label: 'All Levels', value: 'all' },
@@ -26,13 +27,16 @@ const styles = StyleSheet.create({
   },
   header: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
     paddingHorizontal: spacing.md,
-    marginBottom: spacing.lg,
+    paddingTop: spacing.xl,
+    paddingBottom: spacing.lg,
     gap: spacing.sm,
   },
   backButton: {
     padding: spacing.sm,
+    paddingTop: spacing.xs,
     borderRadius: radius.full,
   },
   titleContainer: {
@@ -62,48 +66,65 @@ const styles = StyleSheet.create({
 export default function BrowseProgramsScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { premadePrograms, loadPremadePrograms } = useProgramsStore();
+  const { mode } = useLocalSearchParams<{ mode?: 'program' | 'workout' }>();
+  const isWorkoutMode = mode === 'workout';
+
+  const { premadePrograms, premadeWorkouts } = useProgramsStore();
+
   const [selectedFilter, setSelectedFilter] = useState<ExperienceLevel | 'all'>('all');
 
-  useEffect(() => {
-    loadPremadePrograms();
-  }, [loadPremadePrograms]);
+  const filteredItems = useMemo(() => {
+    const items = isWorkoutMode ? premadeWorkouts : premadePrograms;
 
-  const filteredPrograms = useMemo(() => {
     if (selectedFilter === 'all') {
-      return premadePrograms;
+      return items;
     }
-    return premadePrograms.filter(p => p.metadata.experienceLevel === selectedFilter);
-  }, [premadePrograms, selectedFilter]);
+    return items.filter(p => p.metadata.experienceLevel === selectedFilter);
+  }, [premadePrograms, premadeWorkouts, selectedFilter, isWorkoutMode]);
 
   const handleBack = useCallback(() => {
-    Haptics.selectionAsync().catch(() => {});
-    router.back();
-  }, [router]);
-
-  const handleProgramPress = useCallback((program: PremadeProgram | UserProgram) => {
-    Haptics.selectionAsync().catch(() => {});
+    Haptics.selectionAsync().catch(() => { });
     router.push({
-      pathname: '/program-details',
-      params: { programId: program.id }
+      pathname: '/(tabs)/add-workout',
+      params: { mode: isWorkoutMode ? 'workout' : 'program' }
     });
-  }, [router]);
+  }, [router, isWorkoutMode]);
+  const handleProgramPress = useCallback((item: PremadeProgram | UserProgram | PremadeWorkout) => {
+    Haptics.selectionAsync().catch(() => { });
+
+    if (isWorkoutMode) {
+      const workout = item as PremadeWorkout;
+      router.push({
+        pathname: '/(tabs)/create-plan',
+        params: { premadeWorkoutId: workout.id }
+      });
+    } else {
+      router.push({
+        pathname: '/program-details',
+        params: { programId: item.id }
+      });
+    }
+  }, [router, isWorkoutMode]);
 
   const handleFilterPress = useCallback((value: ExperienceLevel | 'all') => {
     setSelectedFilter(value);
   }, []);
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top + spacing.md }]}>
+    <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom + sizing.tabBarHeight }]}>
       {/* Header */}
       <View style={styles.header}>
+        <View style={styles.titleContainer}>
+          <Text variant="heading2" color="primary">
+            {isWorkoutMode ? 'Browse Workouts' : 'Browse Programs'}
+          </Text>
+          <Text variant="body" color="secondary">
+            {isWorkoutMode ? 'Find a session that fits your goals' : 'Find a plan that fits your goals'}
+          </Text>
+        </View>
         <Pressable onPress={handleBack} style={styles.backButton} hitSlop={8}>
           <IconSymbol name="arrow-back" size={24} color={colors.text.primary} />
         </Pressable>
-        <View style={styles.titleContainer}>
-          <Text variant="heading2" color="primary">Browse Programs</Text>
-          <Text variant="body" color="secondary">Find a plan that fits your goals</Text>
-        </View>
       </View>
 
       {/* Filters */}
@@ -124,9 +145,9 @@ export default function BrowseProgramsScreen() {
         />
       </View>
 
-      {/* Program List */}
+      {/* List */}
       <FlatList
-        data={filteredPrograms}
+        data={filteredItems}
         contentContainerStyle={styles.listContent}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
@@ -135,7 +156,7 @@ export default function BrowseProgramsScreen() {
         ListEmptyComponent={
           <View style={styles.emptyState}>
             <IconSymbol name="search" size={48} color={colors.neutral.gray400} />
-            <Text variant="body" color="secondary">No programs found for this level.</Text>
+            <Text variant="body" color="secondary">No {isWorkoutMode ? 'workouts' : 'programs'} found for this level.</Text>
           </View>
         }
       />

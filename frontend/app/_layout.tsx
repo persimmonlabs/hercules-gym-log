@@ -12,6 +12,7 @@ import { colors, sizing } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { AuthProvider } from '@/providers/AuthProvider';
 import { PlanBuilderProvider } from '@/providers/PlanBuilderProvider';
+import { ProgramBuilderProvider } from '@/providers/ProgramBuilderProvider';
 
 import './add-exercises';
 
@@ -60,9 +61,10 @@ const RootLayout: React.FC = () => {
   return (
     <AuthProvider>
       <PlanBuilderProvider>
-        <GestureHandlerRootView
-          style={[styles.root, isDarkMode ? styles.rootDark : styles.rootLight]}
-        >
+        <ProgramBuilderProvider>
+          <GestureHandlerRootView
+            style={[styles.root, isDarkMode ? styles.rootDark : styles.rootLight]}
+          >
           <ThemeProvider value={navigationTheme}>
             <Stack
               screenOptions={{
@@ -71,42 +73,42 @@ const RootLayout: React.FC = () => {
               }}
             >
               <Stack.Screen name="(tabs)" options={{ headerShown: false, animation: 'none' }} />
-            <Stack.Screen
-              name="plan-detail"
-              options={{
-                animation: 'none',
-                headerShown: false,
-                presentation: 'transparentModal',
-                contentStyle: {
-                  backgroundColor: 'transparent',
-                },
-              }}
-            />
-            <Stack.Screen
-              name="workout-edit"
-              options={{
-                animation: 'slide_from_right',
-                headerShown: false,
-              }}
-            />
-            <Stack.Screen
-              name="schedule-editor"
-              options={{
-                animation: 'none',
-                headerShown: false,
-                presentation: 'transparentModal',
-                contentStyle: {
-                  backgroundColor: 'transparent',
-                },
-              }}
-            />
-            <Stack.Screen
-              name="workout-success"
-              options={{
-                headerShown: false,
-                animation: 'none',
-              }}
-            />
+              <Stack.Screen
+                name="plan-detail"
+                options={{
+                  animation: 'none',
+                  headerShown: false,
+                  presentation: 'transparentModal',
+                  contentStyle: {
+                    backgroundColor: 'transparent',
+                  },
+                }}
+              />
+              <Stack.Screen
+                name="workout-edit"
+                options={{
+                  animation: 'slide_from_right',
+                  headerShown: false,
+                }}
+              />
+              <Stack.Screen
+                name="schedule-editor"
+                options={{
+                  animation: 'none',
+                  headerShown: false,
+                  presentation: 'transparentModal',
+                  contentStyle: {
+                    backgroundColor: 'transparent',
+                  },
+                }}
+              />
+              <Stack.Screen
+                name="workout-success"
+                options={{
+                  headerShown: false,
+                  animation: 'none',
+                }}
+              />
               <Stack.Screen
                 name="add-exercises"
                 options={{
@@ -115,6 +117,15 @@ const RootLayout: React.FC = () => {
                   animation: 'none',
                 }}
               />
+              <Stack.Screen
+                name="quiz"
+                options={{
+                  headerShown: false,
+                  presentation: 'transparentModal',
+                  animation: 'none',
+                }}
+              />
+
               <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
             </Stack>
             <StatusBar
@@ -124,6 +135,7 @@ const RootLayout: React.FC = () => {
             />
           </ThemeProvider>
         </GestureHandlerRootView>
+        </ProgramBuilderProvider>
       </PlanBuilderProvider>
     </AuthProvider>
   );

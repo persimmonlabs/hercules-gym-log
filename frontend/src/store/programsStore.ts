@@ -1,13 +1,15 @@
 import { create } from 'zustand';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import type { PremadeProgram, UserProgram, RotationSchedule, ProgramWorkout } from '@/types/premadePlan';
+import type { PremadeProgram, UserProgram, RotationSchedule, ProgramWorkout, PremadeWorkout } from '@/types/premadePlan';
 import premadeData from '@/data/premadePrograms.json';
+import premadeWorkoutsData from '@/data/premadeWorkouts.json';
 
 const USER_PROGRAMS_KEY = '@hercules/user-programs';
 const ACTIVE_ROTATION_KEY = '@hercules/active-rotation';
 
 interface ProgramsState {
   premadePrograms: PremadeProgram[];
+  premadeWorkouts: PremadeWorkout[];
   userPrograms: UserProgram[];
   activeRotation: RotationSchedule | null;
   
@@ -30,11 +32,15 @@ interface ProgramsState {
 
 export const useProgramsStore = create<ProgramsState>((set, get) => ({
   premadePrograms: [],
+  premadeWorkouts: [],
   userPrograms: [],
   activeRotation: null,
   
   loadPremadePrograms: () => {
-    set({ premadePrograms: premadeData.programs as PremadeProgram[] });
+    set({ 
+      premadePrograms: premadeData.programs as PremadeProgram[],
+      premadeWorkouts: premadeWorkoutsData.workouts as PremadeWorkout[]
+    });
   },
 
   hydratePrograms: async () => {
