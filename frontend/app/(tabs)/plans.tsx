@@ -261,7 +261,6 @@ const PlansScreen: React.FC = () => {
   const startSession = useSessionStore((state) => state.startSession);
   const setCompletionOverlayVisible = useSessionStore((state) => state.setCompletionOverlayVisible);
   const [expandedPlanId, setExpandedPlanId] = useState<string | null>(null);
-  const [pendingDeletePlan, setPendingDeletePlan] = useState<any | null>(null);
 
   const handleAddPlanPress = useCallback(() => {
     void Haptics.selectionAsync();
@@ -289,10 +288,63 @@ const PlansScreen: React.FC = () => {
     router.push({ pathname: '/program-details', params: { programId: program.id } });
   }, [router]);
 
+  const executeDelete = useCallback(async (item: any) => {
+    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+
+    if (item.type === 'program') {
+      // Check if it's a program deletion (from My Plans) or a workout deletion (from My Workouts)
+      if (item.workouts) {
+        // It's a full program being deleted
+        await deleteUserProgram(item.id);
+      } else {
+        // It's a workout being deleted from a program
+        await deleteWorkoutFromProgram(item.programId, item.id);
+
+        // Check if the program is now empty and remove it if so
+        const updatedPrograms = useProgramsStore.getState().userPrograms;
+        const program = updatedPrograms.find(p => p.id === item.programId);
+        if (program && program.workouts.length === 0) {
+          await deleteUserProgram(item.programId);
+        }
+      }
+    } else {
+      schedules.forEach((schedule: Schedule) => {
+        const nextWeekdays = { ...schedule.weekdays };
+        let didUpdate = false;
+
+        (Object.keys(nextWeekdays) as (keyof Schedule['weekdays'])[]).forEach((day) => {
+          if (nextWeekdays[day] === item.id) {
+            nextWeekdays[day] = null;
+            didUpdate = true;
+          }
+        });
+
+        if (didUpdate) {
+          void updateSchedule({ ...schedule, weekdays: nextWeekdays });
+        }
+      });
+
+      void removePlan(item.id);
+    }
+
+    setExpandedPlanId((prev) => (prev === item.id ? null : prev));
+  }, [removePlan, schedules, updateSchedule, deleteWorkoutFromProgram, deleteUserProgram]);
+
   const handleDeleteProgram = useCallback((program: any) => {
     void Haptics.selectionAsync();
-    setPendingDeletePlan({ ...program, type: 'program' });
-  }, []);
+    Alert.alert(
+      'Delete Plan',
+      `Are you sure you want to delete "${program.name}"? This cannot be undone.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Delete', 
+          style: 'destructive',
+          onPress: () => executeDelete({ ...program, type: 'program' })
+        }
+      ]
+    );
+  }, [executeDelete]);
 
   const handlePlanPress = useCallback(
     (planId: string) => {
@@ -305,61 +357,21 @@ const PlansScreen: React.FC = () => {
   const handleDeleteWorkoutItem = useCallback(
     (item: any) => {
       void Haptics.selectionAsync();
-      setPendingDeletePlan(item);
-    },
-    [],
-  );
-
-  const dismissDeleteDialog = useCallback(() => {
-    setPendingDeletePlan(null);
-  }, []);
-
-  const confirmDeletePlan = useCallback(async () => {
-    if (!pendingDeletePlan) {
-      return;
-    }
-
-    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-
-    if (pendingDeletePlan.type === 'program') {
-      // Check if it's a program deletion (from My Plans) or a workout deletion (from My Workouts)
-      if (pendingDeletePlan.workouts) {
-        // It's a full program being deleted
-        await deleteUserProgram(pendingDeletePlan.id);
-      } else {
-        // It's a workout being deleted from a program
-        await deleteWorkoutFromProgram(pendingDeletePlan.programId, pendingDeletePlan.id);
-
-        // Check if the program is now empty and remove it if so
-        const updatedPrograms = useProgramsStore.getState().userPrograms;
-        const program = updatedPrograms.find(p => p.id === pendingDeletePlan.programId);
-        if (program && program.workouts.length === 0) {
-          await deleteUserProgram(pendingDeletePlan.programId);
-        }
-      }
-    } else {
-      schedules.forEach((schedule: Schedule) => {
-        const nextWeekdays = { ...schedule.weekdays };
-        let didUpdate = false;
-
-        (Object.keys(nextWeekdays) as (keyof Schedule['weekdays'])[]).forEach((day) => {
-          if (nextWeekdays[day] === pendingDeletePlan.id) {
-            nextWeekdays[day] = null;
-            didUpdate = true;
+      Alert.alert(
+        'Remove Workout',
+        `Are you sure you want to remove "${item.name}"?`,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { 
+            text: 'Remove', 
+            style: 'destructive',
+            onPress: () => executeDelete(item)
           }
-        });
-
-        if (didUpdate) {
-          void updateSchedule({ ...schedule, weekdays: nextWeekdays });
-        }
-      });
-
-      void removePlan(pendingDeletePlan.id);
-    }
-
-    setExpandedPlanId((prev) => (prev === pendingDeletePlan.id ? null : prev));
-    setPendingDeletePlan(null);
-  }, [pendingDeletePlan, removePlan, schedules, updateSchedule, deleteWorkoutFromProgram, deleteUserProgram]);
+        ]
+      );
+    },
+    [executeDelete],
+  );
 
   const createDefaultSetLogs = useCallback(() => {
     return Array.from({ length: 3 }, () => ({ reps: 8, weight: 0, completed: false }));
@@ -372,9 +384,9 @@ const PlansScreen: React.FC = () => {
 
       if (item.type === 'program') {
         const compositeId = `program:${item.programId}:${item.id}`;
-        router.push({ pathname: '/(tabs)/create-plan', params: { planId: compositeId } });
+        router.push({ pathname: '/(tabs)/create-workout', params: { planId: compositeId } });
       } else {
-        router.push({ pathname: '/(tabs)/create-plan', params: { planId: item.id } });
+        router.push({ pathname: '/(tabs)/create-workout', params: { planId: item.id } });
       }
     },
     [router],
@@ -419,7 +431,19 @@ const PlansScreen: React.FC = () => {
       }))
     );
 
-    return [...customWorkouts, ...programWorkouts].sort((a, b) => a.name.localeCompare(b.name));
+    const allWorkouts = [...customWorkouts, ...programWorkouts];
+    const seenNames = new Set<string>();
+    
+    const uniqueWorkouts = allWorkouts.filter(workout => {
+      const normalizedName = workout.name.trim().toLowerCase();
+      if (seenNames.has(normalizedName)) {
+        return false;
+      }
+      seenNames.add(normalizedName);
+      return true;
+    });
+
+    return uniqueWorkouts.sort((a, b) => a.name.localeCompare(b.name));
   }, [plans, userPrograms]);
 
   const myPlans = useMemo(() => {

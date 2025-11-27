@@ -1,3 +1,14 @@
+/**
+ * AddWorkoutsToPlanScreen (file: add-workouts-to-program.tsx)
+ * Screen for selecting workouts to add to a Plan.
+ * 
+ * TERMINOLOGY:
+ * - Plan: A collection of workouts (e.g., "PPL", "Bro Split")
+ * - Workout: A collection of exercises (e.g., "Push Day", "Pull Day")
+ * 
+ * Note: The file is named "add-workouts-to-program" but it adds Workouts to a Plan.
+ * "Program" is a legacy term for "Plan".
+ */
 import React, { useCallback, useState, useMemo } from 'react';
 import { FlatList, Pressable, StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -9,6 +20,7 @@ import { SurfaceCard } from '@/components/atoms/SurfaceCard';
 import { Button } from '@/components/atoms/Button';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { colors, radius, spacing, sizing } from '@/constants/theme';
+// Plan here refers to a Workout (collection of exercises) - legacy naming in plansStore
 import { usePlansStore, type Plan } from '@/store/plansStore';
 import { useProgramBuilderContext } from '@/providers/ProgramBuilderProvider';
 

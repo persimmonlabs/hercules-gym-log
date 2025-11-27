@@ -1,6 +1,13 @@
 /**
- * ProgramBuilderProvider
- * Shares create-program builder state across screens.
+ * PlanBuilderProvider (file: ProgramBuilderProvider.tsx)
+ * Shares create-plan builder state across screens.
+ * 
+ * TERMINOLOGY:
+ * - Plan: A collection of workouts (e.g., "PPL", "Bro Split")
+ * - Workout: A collection of exercises (e.g., "Push Day", "Pull Day")
+ * 
+ * Note: This provider helps build Plans by selecting Workouts.
+ * The "Program" naming is legacy; "Plan" is the correct term.
  */
 import React, {
   createContext,
@@ -10,6 +17,7 @@ import React, {
   useState,
   type ReactNode,
 } from 'react';
+// Plan here refers to a Workout (collection of exercises) - legacy naming
 import type { Plan } from '@/store/plansStore';
 
 interface ProgramBuilderProviderProps {

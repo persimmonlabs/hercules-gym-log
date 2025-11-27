@@ -245,7 +245,7 @@ export default function QuizScreen() {
     } else {
       // It's a PremadeWorkout
       router.push({
-        pathname: '/(tabs)/create-plan',
+        pathname: '/(tabs)/create-workout',
         params: { premadeWorkoutId: program.id }
       });
     }
@@ -282,12 +282,12 @@ export default function QuizScreen() {
             <View style={{ alignItems: 'center', gap: spacing.md, marginTop: -spacing['2xl'] * 2 }}>
               <IconSymbol name="auto-awesome" size={64} color={colors.accent.primary} />
               <Text variant="heading1" color="primary" style={{ textAlign: 'center' }}>
-                {isWorkoutMode ? 'Personalized Workout' : 'Personalized Plan'}
+                {isWorkoutMode ? 'Personalized Workouts' : 'Personalized Plans'}
               </Text>
               <Text variant="body" color="secondary" style={{ textAlign: 'center' }}>
                 {isWorkoutMode 
-                  ? "Answer 3 quick questions and we'll recommend the perfect workout for you."
-                  : "Answer 4 quick questions and we'll recommend the perfect workout program for you."}
+                  ? "Answer 3 quick questions and we'll recommend the perfect workouts for you."
+                  : "Answer 4 quick questions and we'll recommend the perfect workout plans for you."}
               </Text>
             </View>
           </View>

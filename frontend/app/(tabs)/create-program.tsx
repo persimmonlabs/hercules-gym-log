@@ -90,7 +90,18 @@ const styles = StyleSheet.create({
   },
 });
 
-const CreateProgramScreen: React.FC = () => {
+/**
+ * CreatePlanScreen (file: create-program.tsx)
+ * Screen for creating a Plan (collection of workouts).
+ * 
+ * TERMINOLOGY:
+ * - Plan: A collection of workouts (e.g., "PPL", "Bro Split")
+ * - Workout: A collection of exercises (e.g., "Push Day", "Pull Day")
+ * 
+ * Note: The file is named "create-program" for routing but creates Plans.
+ * "Program" and "Plan" are used interchangeably in this codebase.
+ */
+const CreatePlanScreen: React.FC = () => {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   
@@ -361,4 +372,4 @@ const CreateProgramScreen: React.FC = () => {
   );
 };
 
-export default CreateProgramScreen;
+export default CreatePlanScreen;

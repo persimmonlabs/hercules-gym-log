@@ -29,10 +29,17 @@ export default function TabLayout() {
         <Tabs.Screen name="plans" options={{ title: 'Plans' }} />
         <Tabs.Screen name="profile" options={{ title: 'Profile' }} />
         <Tabs.Screen
-          name="create-plan"
+          name="create-workout"
           options={{
             href: null,
             title: 'Create Workout',
+          }}
+        />
+        <Tabs.Screen
+          name="create-plan"
+          options={{
+            href: null,
+            title: 'Create Workout (Legacy)',
           }}
         />
         <Tabs.Screen
@@ -61,6 +68,13 @@ export default function TabLayout() {
           options={{
             href: null,
             title: 'Add Workout',
+          }}
+        />
+        <Tabs.Screen
+          name="create-program"
+          options={{
+            href: null,
+            title: 'Create Plan',
           }}
         />
       </Tabs>

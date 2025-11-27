@@ -1,6 +1,14 @@
 /**
- * plansStore
- * Zustand store managing user-created workout plans.
+ * workoutsStore (formerly plansStore)
+ * Zustand store managing user-created workouts.
+ * 
+ * TERMINOLOGY:
+ * - Workout: A collection of exercises (e.g., "Push Day", "Pull Day")
+ * - Plan: A collection of workouts (e.g., "PPL", "Bro Split") - see programsStore
+ * - Exercise: An individual movement (e.g., "Bench Press", "Squat")
+ * 
+ * Note: The "Plan" type here is actually a Workout. This naming is legacy.
+ * Use the Workout type alias for new code.
  */
 import { create } from 'zustand';
 
@@ -9,6 +17,10 @@ import { useWorkoutSessionsStore } from '@/store/workoutSessionsStore';
 import { deletePlan, getPlans } from '@/utils/storage';
 import { canUseAsyncStorage } from '@/utils/environment';
 
+/**
+ * A Workout is a collection of exercises (e.g., "Push Day")
+ * @deprecated The name "Plan" is misleading. Use Workout type alias instead.
+ */
 export interface Plan {
   id: string;
   name: string;
@@ -16,6 +28,10 @@ export interface Plan {
   createdAt: number;
 }
 
+/** A Workout is a collection of exercises (e.g., "Push Day", "Pull Day") */
+export type Workout = Plan;
+
+/** @deprecated Use WorkoutsState instead */
 export interface PlansState {
   plans: Plan[];
   addPlan: (input: { id?: string; name: string; exercises: Exercise[]; createdAt?: number }) => void;
@@ -135,3 +151,9 @@ if (canUseAsyncStorage()) {
   hydrateWorkoutsOnStartup();
   hydratePlansOnStartup();
 }
+
+// Correctly-named exports (use these for new code)
+/** WorkoutsState - the state interface for the workouts store */
+export type WorkoutsState = PlansState;
+/** useWorkoutsStore - hook to access the workouts store */
+export const useWorkoutsStore = usePlansStore;

@@ -181,7 +181,7 @@ export default function AddWorkoutScreen() {
   const handleCreateCustomPlan = useCallback(() => {
     void Haptics.selectionAsync();
     if (isWorkoutMode) {
-      router.push('/(tabs)/create-plan');
+      router.push('/(tabs)/create-workout');
     } else {
       router.push('/(tabs)/create-program');
     }

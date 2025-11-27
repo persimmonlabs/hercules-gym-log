@@ -1,3 +1,15 @@
+/**
+ * programsStore
+ * Zustand store managing training plans (programs).
+ * 
+ * TERMINOLOGY:
+ * - Plan/Program: A collection of workouts (e.g., "PPL", "Bro Split")
+ * - Workout: A collection of exercises (e.g., "Push Day", "Pull Day")
+ * - Exercise: An individual movement (e.g., "Bench Press", "Squat")
+ * 
+ * Note: "Program" and "Plan" are used interchangeably in this codebase.
+ * Both refer to a collection of workouts.
+ */
 import { create } from 'zustand';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { PremadeProgram, UserProgram, RotationSchedule, ProgramWorkout, PremadeWorkout } from '@/types/premadePlan';

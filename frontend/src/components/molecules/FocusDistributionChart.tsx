@@ -223,10 +223,19 @@ export const FocusDistributionChart: React.FC = () => {
     });
 
     const formatData = (dist: Record<string, number>) => {
+      // 1. Sort all entries first to handle the main ones
       const sortedEntries = Object.entries(dist).sort((a, b) => b[1] - a[1]);
-      const totalItems = sortedEntries.length;
+      
+      // 2. Calculate total contribution for percentage check
+      const totalContribution = Object.values(dist).reduce((sum, val) => sum + val, 0);
+      const threshold = totalContribution * 0.01; // 1% threshold
 
-      return sortedEntries
+      // 3. Filter out items below threshold (don't show them at all)
+      const mainItems = sortedEntries.filter(([, value]) => value >= threshold);
+
+      const totalItems = mainItems.length;
+
+      return mainItems
         .map(([name, value], index) => {
           // Interpolate opacity: Largest (index 0) is 1.0, Smallest (last index) is 0.3
           // Formula: 1.0 - (ratio * 0.7) where ratio is index / (total - 1)

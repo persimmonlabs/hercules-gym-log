@@ -95,7 +95,7 @@ export default function BrowseProgramsScreen() {
     if (isWorkoutMode) {
       const workout = item as PremadeWorkout;
       router.push({
-        pathname: '/(tabs)/create-plan',
+        pathname: '/(tabs)/create-workout',
         params: { premadeWorkoutId: workout.id }
       });
     } else {

@@ -1,3 +1,15 @@
+/**
+ * premadePlan.ts
+ * Type definitions for Plans (collections of workouts).
+ * 
+ * TERMINOLOGY:
+ * - Exercise: An individual movement (e.g., "Bench Press", "Squat")
+ * - Workout: A collection of exercises (e.g., "Push Day", "Pull Day")
+ * - Plan: A collection of workouts (e.g., "PPL", "Bro Split")
+ * - Program: Legacy term for Plan (used interchangeably)
+ * 
+ * This file defines types for Plans and their components.
+ */
 import type { PlanExercise } from '@/types/plan';
 
 /** Equipment requirement options */
@@ -12,15 +24,15 @@ export type TrainingGoal = 'build-muscle' | 'lose-fat' | 'strength' | 'general-f
 /** Schedule type - weekly or rotation */
 export type ScheduleType = 'weekly' | 'rotation';
 
-/** A single workout template within a program */
-export interface ProgramWorkout {
+/** A single workout template within a plan */
+export interface PlanWorkout {
   id: string;
   name: string; // e.g., "Push Day", "Day 1"
   exercises: PlanExercise[];
 }
 
 /** Metadata for filtering/recommendations */
-export interface ProgramMetadata {
+export interface PlanMetadata {
   goal: TrainingGoal;
   experienceLevel: ExperienceLevel;
   equipment: EquipmentType;
@@ -30,12 +42,12 @@ export interface ProgramMetadata {
   tags?: string[];
 }
 
-/** A complete premade workout program */
-export interface PremadeProgram {
+/** A complete premade plan (collection of workouts) */
+export interface PremadePlan {
   id: string;
   name: string;
-  workouts: ProgramWorkout[];
-  metadata: ProgramMetadata;
+  workouts: PlanWorkout[];
+  metadata: PlanMetadata;
   scheduleType: ScheduleType;
   /** For weekly: suggested day assignments. For rotation: workout order */
   suggestedSchedule?: {
@@ -45,16 +57,16 @@ export interface PremadeProgram {
   isPremade: true;
 }
 
-/** A standalone premade workout (not part of a program) */
-export interface PremadeWorkout extends ProgramWorkout {
-  metadata: Omit<ProgramMetadata, 'daysPerWeek' | 'durationWeeks'> & {
+/** A standalone premade workout (not part of a plan) */
+export interface PremadeWorkout extends PlanWorkout {
+  metadata: Omit<PlanMetadata, 'daysPerWeek' | 'durationWeeks'> & {
     durationMinutes: number; // Estimated time to complete
   };
   isPremade: true;
 }
 
-/** User's saved program (cloned from premade or custom) */
-export interface UserProgram extends Omit<PremadeProgram, 'isPremade'> {
+/** User's saved plan (cloned from premade or custom) */
+export interface UserPlan extends Omit<PremadePlan, 'isPremade'> {
   isPremade: false;
   sourceId?: string; // Original premade program ID if cloned
   createdAt: number;
@@ -65,8 +77,18 @@ export interface UserProgram extends Omit<PremadeProgram, 'isPremade'> {
 export interface RotationSchedule {
   id: string;
   name: string;
-  programId: string;
+  programId: string; // ID of the plan/program this rotation belongs to
   workoutSequence: string[]; // Ordered list of workout IDs
   currentIndex: number; // Points to next workout
   lastAdvancedAt?: number; // Timestamp of last auto-advance
 }
+
+// Backward-compatible type aliases (deprecated - use new names)
+/** @deprecated Use PlanWorkout instead */
+export type ProgramWorkout = PlanWorkout;
+/** @deprecated Use PlanMetadata instead */
+export type ProgramMetadata = PlanMetadata;
+/** @deprecated Use PremadePlan instead */
+export type PremadeProgram = PremadePlan;
+/** @deprecated Use UserPlan instead */
+export type UserProgram = UserPlan;
