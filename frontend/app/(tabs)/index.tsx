@@ -492,7 +492,7 @@ const DashboardScreen: React.FC = () => {
   const hydrateSchedules = useSchedulesStore((state: SchedulesState) => state.hydrateSchedules);
   const plans = usePlansStore((state: PlansState) => state.plans);
   const hydratePlans = usePlansStore((state: PlansState) => state.hydratePlans);
-  const { activeRotation, getCurrentRotationWorkout, hydratePrograms, userPrograms } = useProgramsStore();
+  const { activeRotation, getCurrentRotationWorkout, hydratePrograms, userPrograms, getTodayWorkout, activePlanId } = useProgramsStore();
   const hydrateWorkouts = useWorkoutSessionsStore((state: WorkoutSessionsState) => state.hydrateWorkouts);
   const startSession = useSessionStore((state) => state.startSession);
   const setCompletionOverlayVisible = useSessionStore((state) => state.setCompletionOverlayVisible);
@@ -555,26 +555,38 @@ const DashboardScreen: React.FC = () => {
         const bTime = b.endTime ?? b.startTime ?? new Date(b.date).getTime();
         return bTime - aTime;
       })[0];
-      
+
       return { variant: 'completed', workout: latestWorkout };
     }
 
-    // Check for active rotation
-    if (activeRotation) {
-      const nextWorkoutId = getCurrentRotationWorkout();
-      if (nextWorkoutId) {
-        // Find program
-        const program = userPrograms.find(p => p.id === activeRotation.programId);
-        if (program) {
-          const nextWorkout = program.workouts.find(w => w.id === nextWorkoutId);
-          if (nextWorkout) {
-            return { 
-              variant: 'rotation', 
-              programName: program.name, 
-              workout: nextWorkout,
-              programId: program.id
-            };
-          }
+    // Check for active rotation or active plan (New System)
+    const todayProgramWorkout = getTodayWorkout();
+
+    // Check if there's an active plan
+    const activePlan = userPrograms.find(p => p.id === activePlanId);
+
+    // If we have an active plan but no workout (e.g., future start date or rest day)
+    if (activePlan && activePlan.schedule) {
+      if (todayProgramWorkout) {
+        return {
+          variant: 'rotation',
+          programName: activePlan.name,
+          workout: todayProgramWorkout,
+          programId: activePlan.id
+        };
+      }
+
+      // Active plan exists but no workout today (future start date or rest day in rotation)
+      if (activePlan.schedule.type === 'rotation' && activePlan.schedule.rotation?.startDate) {
+        const now = new Date();
+        const start = new Date(activePlan.schedule.rotation.startDate);
+        now.setHours(0, 0, 0, 0);
+        start.setHours(0, 0, 0, 0);
+        const diffDays = Math.floor((now.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+
+        if (diffDays < 0) {
+          // Plan starts in the future
+          return { variant: 'rest', dayLabel: todayLabel };
         }
       }
     }
@@ -600,7 +612,7 @@ const DashboardScreen: React.FC = () => {
     }
 
     return { variant: 'plan', dayLabel: todayLabel, plan };
-  }, [activeSchedule, activeRotation, getCurrentRotationWorkout, planNameLookup, plans.length, todayKey, todayLabel, userPrograms, workouts]);
+  }, [activeSchedule, activeRotation, getTodayWorkout, planNameLookup, plans.length, todayKey, todayLabel, userPrograms, workouts, activePlanId]);
 
   const todaysPlan = todaysCardState.variant === 'plan' ? todaysCardState.plan : null;
   const rotationWorkout = todaysCardState.variant === 'rotation' ? todaysCardState.workout : null;
@@ -711,308 +723,308 @@ const DashboardScreen: React.FC = () => {
           <View style={styles.contentContainer}>
             <ScreenHeader title="Dashboard" subtitle="Stay on top of your training journey." />
 
-          <Animated.View style={weeklyTrackerAnimatedStyle}>
-            <Pressable style={styles.pressableStretch}>
-              <SurfaceCard tone="card" padding="lg" style={{ borderWidth: 0 }}>
-                <View style={styles.streakHeader}>
-                  <View style={styles.streakTitle}>
-                    <Text variant="heading3" color="primary">
-                      Your Week
-                    </Text>
+            <Animated.View style={weeklyTrackerAnimatedStyle}>
+              <Pressable style={styles.pressableStretch}>
+                <SurfaceCard tone="card" padding="lg" style={{ borderWidth: 0 }}>
+                  <View style={styles.streakHeader}>
+                    <View style={styles.streakTitle}>
+                      <Text variant="heading3" color="primary">
+                        Your Week
+                      </Text>
+                    </View>
                   </View>
-                </View>
 
-                <View style={styles.weekRow}>
-                  {weekTracker.map((day, index) => {
-                    const variant = getDayVariant(day);
-                    const isWorkoutDay = variant === 'workout';
-                    const isToday = day.isToday;
-                    const borderStyle = isWorkoutDay
-                      ? [styles.dayBubbleBorder, styles.dayBubbleBorderWorkout]
-                      : styles.dayBubbleBorder;
-                    const contentStyle = [
-                      styles.dayBubbleContent,
-                      isWorkoutDay ? styles.dayBubbleContentWorkout : styles.dayBubbleContentRest,
-                    ];
-                    const dayNumberColor: 'primary' | 'onAccent' = isWorkoutDay ? 'onAccent' : 'primary';
+                  <View style={styles.weekRow}>
+                    {weekTracker.map((day, index) => {
+                      const variant = getDayVariant(day);
+                      const isWorkoutDay = variant === 'workout';
+                      const isToday = day.isToday;
+                      const borderStyle = isWorkoutDay
+                        ? [styles.dayBubbleBorder, styles.dayBubbleBorderWorkout]
+                        : styles.dayBubbleBorder;
+                      const contentStyle = [
+                        styles.dayBubbleContent,
+                        isWorkoutDay ? styles.dayBubbleContentWorkout : styles.dayBubbleContentRest,
+                      ];
+                      const dayNumberColor: 'primary' | 'onAccent' = isWorkoutDay ? 'onAccent' : 'primary';
 
-                    return (
-                      <View key={day.id} style={styles.dayBubbleWrapper}>
-                        <Animated.View style={[styles.dayBubbleBase, dayAnimatedStyles[index]]}>
-                          <View style={borderStyle}>
-                            <View style={contentStyle}>
-                              <Text variant="bodySemibold" color={dayNumberColor}>
-                                {day.date}
+                      return (
+                        <View key={day.id} style={styles.dayBubbleWrapper}>
+                          <Animated.View style={[styles.dayBubbleBase, dayAnimatedStyles[index]]}>
+                            <View style={borderStyle}>
+                              <View style={contentStyle}>
+                                <Text variant="bodySemibold" color={dayNumberColor}>
+                                  {day.date}
+                                </Text>
+                              </View>
+                            </View>
+                          </Animated.View>
+                          {isToday ? (
+                            <GradientText variant="caption" style={styles.dayLabelToday}>
+                              {day.label}
+                            </GradientText>
+                          ) : (
+                            <Text variant="caption" color="secondary" style={styles.dayLabel}>
+                              {day.label}
+                            </Text>
+                          )}
+                        </View>
+                      );
+                    })}
+                  </View>
+                </SurfaceCard>
+              </Pressable>
+            </Animated.View>
+
+            <Animated.View style={todaysPlanAnimatedStyle}>
+              <Pressable
+                style={styles.pressableStretch}
+                onPress={() => {
+                  if (todaysPlan) {
+                    return;
+                  }
+
+                  handleTodaysCardPress();
+                }}
+              >
+                <Animated.View style={styles.todaysPlanCard}>
+                  <LinearGradient
+                    colors={[colors.accent.gradientStart, colors.accent.gradientEnd]}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 0, y: 1 }}
+                    style={styles.todaysPlanAccentStripe}
+                    pointerEvents="none"
+                  />
+                  <View style={styles.todaysPlanContent}>
+                    <Text variant="heading3" color="primary">
+                      Today's Workout
+                    </Text>
+                    {todaysCardState.variant === 'plan' || todaysCardState.variant === 'rotation' ? (
+                      <SurfaceCard
+                        tone="neutral"
+                        padding="lg"
+                        showAccentStripe={false}
+                        style={[styles.inlineCard, styles.todaysPlanSubCard]}
+                      >
+                        <View style={styles.quickLinkRow}>
+                          <View style={styles.quickLinkInfo}>
+                            <Text variant="bodySemibold" color="primary">
+                              {todaysCardState.variant === 'rotation'
+                                ? `${todaysCardState.programName}: ${todaysCardState.workout.name}`
+                                : todaysCardState.plan.name}
+                            </Text>
+                            <Text variant="body" color="secondary">
+                              {todaysCardState.variant === 'rotation'
+                                ? `${todaysCardState.workout.exercises.length} exercises`
+                                : `${todaysCardState.plan.exercises.length} exercises`}
+                            </Text>
+                          </View>
+                          <Pressable
+                            style={styles.planStartButton}
+                            onPress={handlePlanActionStart}
+                            accessibilityRole="button"
+                            accessibilityLabel="Start today's workout"
+                          >
+                            <View style={styles.quickLinkButton}>
+                              <LinearGradient
+                                colors={[colors.accent.gradientStart, colors.accent.gradientEnd]}
+                                start={{ x: 0, y: 0 }}
+                                end={{ x: 1, y: 1 }}
+                                style={styles.planStartButtonGradient}
+                              />
+                              <Text variant="bodySemibold" color="onAccent">
+                                →
                               </Text>
                             </View>
-                          </View>
-                        </Animated.View>
-                        {isToday ? (
-                          <GradientText variant="caption" style={styles.dayLabelToday}>
-                            {day.label}
-                          </GradientText>
-                        ) : (
-                          <Text variant="caption" color="secondary" style={styles.dayLabel}>
-                            {day.label}
-                          </Text>
-                        )}
-                      </View>
-                    );
-                  })}
-                </View>
-              </SurfaceCard>
-            </Pressable>
-          </Animated.View>
-
-          <Animated.View style={todaysPlanAnimatedStyle}>
-            <Pressable
-              style={styles.pressableStretch}
-              onPress={() => {
-                if (todaysPlan) {
-                  return;
-                }
-
-                handleTodaysCardPress();
-              }}
-            >
-              <Animated.View style={styles.todaysPlanCard}>
-                <LinearGradient
-                  colors={[colors.accent.gradientStart, colors.accent.gradientEnd]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 0, y: 1 }}
-                  style={styles.todaysPlanAccentStripe}
-                  pointerEvents="none"
-                />
-                <View style={styles.todaysPlanContent}>
-                  <Text variant="heading3" color="primary">
-                    Today's Workout
-                  </Text>
-                  {todaysCardState.variant === 'plan' || todaysCardState.variant === 'rotation' ? (
-                    <SurfaceCard
-                      tone="neutral"
-                      padding="lg"
-                      showAccentStripe={false}
-                      style={[styles.inlineCard, styles.todaysPlanSubCard]}
-                    >
-                      <View style={styles.quickLinkRow}>
-                        <View style={styles.quickLinkInfo}>
+                          </Pressable>
+                        </View>
+                      </SurfaceCard>
+                    ) : todaysCardState.variant === 'completed' ? (
+                      <SurfaceCard
+                        tone="neutral"
+                        padding="lg"
+                        showAccentStripe={false}
+                        style={[styles.inlineCard, styles.todaysPlanSubCard]}
+                      >
+                        <View style={styles.recentCardHeader}>
                           <Text variant="bodySemibold" color="primary">
-                            {todaysCardState.variant === 'rotation' 
-                              ? `${todaysCardState.programName}: ${todaysCardState.workout.name}`
-                              : todaysCardState.plan.name}
+                            {todaysCardState.workout.planId
+                              ? planNameLookup[todaysCardState.workout.planId]?.name ?? `${formatWorkoutDateLabel(todaysCardState.workout)} Session`
+                              : `${formatWorkoutDateLabel(todaysCardState.workout)} Session`}
                           </Text>
                           <Text variant="body" color="secondary">
-                            {todaysCardState.variant === 'rotation'
-                              ? `${todaysCardState.workout.exercises.length} exercises`
-                              : `${todaysCardState.plan.exercises.length} exercises`}
+                            {formatWorkoutDateLabel(todaysCardState.workout)}
                           </Text>
                         </View>
-                        <Pressable
-                          style={styles.planStartButton}
-                          onPress={handlePlanActionStart}
-                          accessibilityRole="button"
-                          accessibilityLabel="Start today's workout"
-                        >
+                        <Text variant="body" color="secondary">
+                          {formatWorkoutSubtitle(todaysCardState.workout)}
+                        </Text>
+                      </SurfaceCard>
+                    ) : todaysCardState.variant === 'rest' ? (
+                      <>
+                        <Text variant="heading2" color="primary">
+                          Rest Day
+                        </Text>
+                        <Text variant="body" color="secondary">
+                          Recharge and get ready for your next workout.
+                        </Text>
+                      </>
+                    ) : todaysCardState.variant === 'noPlans' ? (
+                      <SurfaceCard
+                        tone="neutral"
+                        padding="lg"
+                        showAccentStripe={false}
+                        style={[styles.inlineCard, styles.todaysPlanSubCard]}
+                      >
+                        <View style={styles.todaysPlanEmptyContent}>
+                          <Text variant="bodySemibold" color="primary">
+                            Create a workout plan
+                          </Text>
+                          <Text variant="body" color="secondary">
+                            No workout plans yet. Build one to see it here.
+                          </Text>
+                          <View style={styles.todaysPlanActions}>
+                            <Button label="Create Workout Plan" size="md" onPress={handleCreatePlanPress} />
+                          </View>
+                        </View>
+                      </SurfaceCard>
+                    ) : (
+                      <>
+                        <Text variant="heading2" color="primary">
+                          Add Your Schedule
+                        </Text>
+                        <Text variant="body" color="secondary">
+                          Assign workouts to your week to see them here.
+                        </Text>
+                      </>
+                    )}
+                  </View>
+                </Animated.View>
+              </Pressable>
+            </Animated.View>
+
+            <Animated.View style={quickLinksAnimatedStyle}>
+              <SurfaceCard tone="card" padding="xl" style={{ borderWidth: 0 }}>
+                <Text variant="heading3" color="primary" style={styles.sectionHeading}>
+                  Quick Links
+                </Text>
+                <View style={styles.quickLinksList}>
+                  {QUICK_LINKS.map((link, index) => (
+                    <Pressable
+                      key={link.id}
+                      style={styles.pressableStretch}
+                      onPressIn={quickLinkLifts[index].onPressIn}
+                      onPressOut={quickLinkLifts[index].onPressOut}
+                      onPress={() => {
+                        quickLinkLifts[index].onPressOut();
+                        router.push(TAB_ROUTE_PATHS[link.route]);
+                      }}
+                    >
+                      <SurfaceCard
+                        tone="neutral"
+                        padding="lg"
+                        showAccentStripe={false}
+                        style={[styles.inlineCard, quickLinkLifts[index].animatedStyle]}
+                      >
+                        <View style={styles.quickLinkRow}>
+                          <View style={styles.quickLinkInfo}>
+                            <Text variant="bodySemibold" color="primary">
+                              {link.title}
+                            </Text>
+                            <Text variant="body" color="secondary">
+                              {link.description}
+                            </Text>
+                          </View>
                           <View style={styles.quickLinkButton}>
                             <LinearGradient
                               colors={[colors.accent.gradientStart, colors.accent.gradientEnd]}
                               start={{ x: 0, y: 0 }}
                               end={{ x: 1, y: 1 }}
-                              style={styles.planStartButtonGradient}
+                              style={{
+                                width: '100%',
+                                height: '100%',
+                                borderRadius: radius.full,
+                                opacity: link.variant === 'primary' ? 1 : 0.12,
+                                position: 'absolute',
+                              }}
                             />
-                            <Text variant="bodySemibold" color="onAccent">
+                            <Text variant="bodySemibold" color={link.variant === 'primary' ? 'onAccent' : 'orange'}>
                               →
                             </Text>
                           </View>
-                        </Pressable>
-                      </View>
-                    </SurfaceCard>
-                  ) : todaysCardState.variant === 'completed' ? (
-                    <SurfaceCard
-                      tone="neutral"
-                      padding="lg"
-                      showAccentStripe={false}
-                      style={[styles.inlineCard, styles.todaysPlanSubCard]}
-                    >
-                      <View style={styles.recentCardHeader}>
-                        <Text variant="bodySemibold" color="primary">
-                          {todaysCardState.workout.planId
-                            ? planNameLookup[todaysCardState.workout.planId]?.name ?? `${formatWorkoutDateLabel(todaysCardState.workout)} Session`
-                            : `${formatWorkoutDateLabel(todaysCardState.workout)} Session`}
-                        </Text>
-                        <Text variant="body" color="secondary">
-                          {formatWorkoutDateLabel(todaysCardState.workout)}
-                        </Text>
-                      </View>
-                      <Text variant="body" color="secondary">
-                        {formatWorkoutSubtitle(todaysCardState.workout)}
-                      </Text>
-                    </SurfaceCard>
-                  ) : todaysCardState.variant === 'rest' ? (
-                    <>
-                      <Text variant="heading2" color="primary">
-                        Rest Day
-                      </Text>
-                      <Text variant="body" color="secondary">
-                        Recharge and get ready for your next workout.
-                      </Text>
-                    </>
-                  ) : todaysCardState.variant === 'noPlans' ? (
-                    <SurfaceCard
-                      tone="neutral"
-                      padding="lg"
-                      showAccentStripe={false}
-                      style={[styles.inlineCard, styles.todaysPlanSubCard]}
-                    >
-                      <View style={styles.todaysPlanEmptyContent}>
-                        <Text variant="bodySemibold" color="primary">
-                          Create a workout plan
-                        </Text>
-                        <Text variant="body" color="secondary">
-                          No workout plans yet. Build one to see it here.
-                        </Text>
-                        <View style={styles.todaysPlanActions}>
-                          <Button label="Create Workout Plan" size="md" onPress={handleCreatePlanPress} />
                         </View>
-                      </View>
-                    </SurfaceCard>
+                      </SurfaceCard>
+                    </Pressable>
+                  ))}
+                </View>
+              </SurfaceCard>
+            </Animated.View>
+
+            <Animated.View style={recentWorkoutsAnimatedStyle}>
+              <SurfaceCard tone="card" padding="xl" style={{ borderWidth: 0 }}>
+                <Text variant="heading3" color="primary" style={styles.sectionHeading}>
+                  Recent Workouts
+                </Text>
+                <View style={styles.recentWorkoutsList}>
+                  {recentWorkouts.length > 0 ? (
+                    recentWorkouts.map((workout, index) => {
+                      const lift = recentWorkoutLifts[index];
+                      const planTitle = workout.planId ? planNameLookup[workout.planId]?.name : null;
+                      const workoutTitle = planTitle ?? `${formatWorkoutDateLabel(workout)} Session`;
+
+                      return (
+                        <Pressable
+                          key={workout.id}
+                          style={styles.pressableStretch}
+                          onPressIn={lift?.onPressIn}
+                          onPressOut={lift?.onPressOut}
+                          onPress={() => {
+                            lift?.onPressOut?.();
+                            void Haptics.selectionAsync();
+                            router.push({ pathname: '/workout-detail', params: { workoutId: workout.id } });
+                          }}
+                        >
+                          <SurfaceCard
+                            tone="neutral"
+                            padding="lg"
+                            showAccentStripe={false}
+                            style={[styles.inlineCard, lift?.animatedStyle]}
+                          >
+                            <View style={styles.recentCardHeader}>
+                              <Text variant="bodySemibold" color="primary">
+                                {workoutTitle}
+                              </Text>
+                              <Text variant="body" color="secondary">
+                                {formatWorkoutDateLabel(workout)}
+                              </Text>
+                            </View>
+                            <Text variant="body" color="secondary">
+                              {formatWorkoutSubtitle(workout)}
+                            </Text>
+                          </SurfaceCard>
+                        </Pressable>
+                      );
+                    })
                   ) : (
-                    <>
-                      <Text variant="heading2" color="primary">
-                        Add Your Schedule
+                    <SurfaceCard
+                      tone="neutral"
+                      padding="lg"
+                      showAccentStripe={false}
+                      style={[styles.inlineCard, styles.recentEmptyCard]}
+                    >
+                      <Text variant="bodySemibold" color="primary">
+                        No workouts yet
                       </Text>
                       <Text variant="body" color="secondary">
-                        Assign workouts to your week to see them here.
+                        Complete a workout session and it will appear here.
                       </Text>
-                    </>
+                    </SurfaceCard>
                   )}
                 </View>
-              </Animated.View>
-            </Pressable>
-          </Animated.View>
+              </SurfaceCard>
+            </Animated.View>
 
-          <Animated.View style={quickLinksAnimatedStyle}>
-            <SurfaceCard tone="card" padding="xl" style={{ borderWidth: 0 }}>
-              <Text variant="heading3" color="primary" style={styles.sectionHeading}>
-                Quick Links
-              </Text>
-              <View style={styles.quickLinksList}>
-                {QUICK_LINKS.map((link, index) => (
-                  <Pressable
-                    key={link.id}
-                    style={styles.pressableStretch}
-                    onPressIn={quickLinkLifts[index].onPressIn}
-                    onPressOut={quickLinkLifts[index].onPressOut}
-                    onPress={() => {
-                      quickLinkLifts[index].onPressOut();
-                      router.push(TAB_ROUTE_PATHS[link.route]);
-                    }}
-                  >
-                    <SurfaceCard
-                      tone="neutral"
-                      padding="lg"
-                      showAccentStripe={false}
-                      style={[styles.inlineCard, quickLinkLifts[index].animatedStyle]}
-                    >
-                      <View style={styles.quickLinkRow}>
-                        <View style={styles.quickLinkInfo}>
-                          <Text variant="bodySemibold" color="primary">
-                            {link.title}
-                          </Text>
-                          <Text variant="body" color="secondary">
-                            {link.description}
-                          </Text>
-                        </View>
-                        <View style={styles.quickLinkButton}>
-                          <LinearGradient
-                            colors={[colors.accent.gradientStart, colors.accent.gradientEnd]}
-                            start={{ x: 0, y: 0 }}
-                            end={{ x: 1, y: 1 }}
-                            style={{
-                              width: '100%',
-                              height: '100%',
-                              borderRadius: radius.full,
-                              opacity: link.variant === 'primary' ? 1 : 0.12,
-                              position: 'absolute',
-                            }}
-                          />
-                          <Text variant="bodySemibold" color={link.variant === 'primary' ? 'onAccent' : 'orange'}>
-                            →
-                          </Text>
-                        </View>
-                      </View>
-                    </SurfaceCard>
-                  </Pressable>
-                ))}
-              </View>
-            </SurfaceCard>
-          </Animated.View>
 
-          <Animated.View style={recentWorkoutsAnimatedStyle}>
-            <SurfaceCard tone="card" padding="xl" style={{ borderWidth: 0 }}>
-              <Text variant="heading3" color="primary" style={styles.sectionHeading}>
-                Recent Workouts
-              </Text>
-              <View style={styles.recentWorkoutsList}>
-                {recentWorkouts.length > 0 ? (
-                  recentWorkouts.map((workout, index) => {
-                    const lift = recentWorkoutLifts[index];
-                    const planTitle = workout.planId ? planNameLookup[workout.planId]?.name : null;
-                    const workoutTitle = planTitle ?? `${formatWorkoutDateLabel(workout)} Session`;
-
-                    return (
-                      <Pressable
-                        key={workout.id}
-                        style={styles.pressableStretch}
-                        onPressIn={lift?.onPressIn}
-                        onPressOut={lift?.onPressOut}
-                        onPress={() => {
-                          lift?.onPressOut?.();
-                          void Haptics.selectionAsync();
-                          router.push({ pathname: '/workout-detail', params: { workoutId: workout.id } });
-                        }}
-                      >
-                        <SurfaceCard
-                          tone="neutral"
-                          padding="lg"
-                          showAccentStripe={false}
-                          style={[styles.inlineCard, lift?.animatedStyle]}
-                        >
-                          <View style={styles.recentCardHeader}>
-                            <Text variant="bodySemibold" color="primary">
-                              {workoutTitle}
-                            </Text>
-                            <Text variant="body" color="secondary">
-                              {formatWorkoutDateLabel(workout)}
-                            </Text>
-                          </View>
-                          <Text variant="body" color="secondary">
-                            {formatWorkoutSubtitle(workout)}
-                          </Text>
-                        </SurfaceCard>
-                      </Pressable>
-                    );
-                  })
-                ) : (
-                  <SurfaceCard
-                    tone="neutral"
-                    padding="lg"
-                    showAccentStripe={false}
-                    style={[styles.inlineCard, styles.recentEmptyCard]}
-                  >
-                    <Text variant="bodySemibold" color="primary">
-                      No workouts yet
-                    </Text>
-                    <Text variant="body" color="secondary">
-                      Complete a workout session and it will appear here.
-                    </Text>
-                  </SurfaceCard>
-                )}
-              </View>
-            </SurfaceCard>
-          </Animated.View>
-
-          
           </View>
         </View>
       </LinearGradient>

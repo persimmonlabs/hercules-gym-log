@@ -24,6 +24,27 @@ export type TrainingGoal = 'build-muscle' | 'lose-fat' | 'strength' | 'general-f
 /** Schedule type - weekly or rotation */
 export type ScheduleType = 'weekly' | 'rotation';
 
+/** Days of the week */
+export type Weekday = 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday';
+
+/** Weekly schedule configuration - maps days to workout IDs or null (rest day) */
+export interface WeeklyScheduleConfig {
+  monday: string | null;
+  tuesday: string | null;
+  wednesday: string | null;
+  thursday: string | null;
+  friday: string | null;
+  saturday: string | null;
+  sunday: string | null;
+}
+
+/** Rotation schedule configuration */
+export interface RotationScheduleConfig {
+  workoutOrder: string[]; // Ordered list of workout IDs
+  cycleLengthDays?: number; // Optional: for fixed-length cycles (e.g., 5-day rotation)
+  startDate?: number; // Timestamp of when the rotation starts (Day 1 = startDate)
+}
+
 /** A single workout template within a plan */
 export interface PlanWorkout {
   id: string;
@@ -58,6 +79,17 @@ export interface PremadePlan {
   isPremade: true;
 }
 
+/** Schedule configuration stored with user plans */
+export interface PlanScheduleConfig {
+  type: ScheduleType;
+  weekly?: WeeklyScheduleConfig;
+  rotation?: RotationScheduleConfig;
+  /** For rotation: index of next workout */
+  currentRotationIndex?: number;
+  /** Timestamp of when the schedule was last used */
+  lastUsedAt?: number;
+}
+
 /** A standalone premade workout (not part of a plan) */
 export interface PremadeWorkout extends PlanWorkout {
   metadata: Omit<PlanMetadata, 'daysPerWeek' | 'durationWeeks'> & {
@@ -72,6 +104,8 @@ export interface UserPlan extends Omit<PremadePlan, 'isPremade'> {
   sourceId?: string; // Original premade program ID if cloned
   createdAt: number;
   modifiedAt: number;
+  /** User's configured schedule for this plan */
+  schedule?: PlanScheduleConfig;
 }
 
 /** Rotation schedule state */

@@ -92,7 +92,7 @@ const styles = StyleSheet.create({
 const CreateWorkoutScreen: React.FC = () => {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { planId, premadeWorkoutId } = useLocalSearchParams<{ planId?: string; premadeWorkoutId?: string }>();
+  const { planId, premadeWorkoutId, returnTo } = useLocalSearchParams<{ planId?: string; premadeWorkoutId?: string; returnTo?: string }>();
   const editingPlanId = useMemo(() => {
     // Prioritize planId (Edit Mode) over premadeWorkoutId (Review/Create Mode)
     // This fixes an issue where residual params might trigger Review mode when Edit is intended
@@ -144,12 +144,35 @@ const CreateWorkoutScreen: React.FC = () => {
 
   const isPremadeReview = Boolean(premadeWorkoutId);
 
+  // Decode returnTo if provided
+  const decodedReturnTo = useMemo(() => {
+    if (!returnTo) return null;
+    const rawReturnTo = Array.isArray(returnTo) ? returnTo[0] : returnTo;
+    try {
+      return decodeURIComponent(rawReturnTo);
+    } catch {
+      return rawReturnTo;
+    }
+  }, [returnTo]);
+
   const handleBackPress = useCallback(() => {
     void Haptics.selectionAsync();
-
+    
+    // If returnTo is specified, use it for navigation
+    if (decodedReturnTo) {
+      router.replace(decodedReturnTo as any);
+      return;
+    }
+    
     if (planId) {
+      // If this is a nested program workout (e.g. from Edit Plan screen), just go back
+      const idStr = Array.isArray(planId) ? planId[0] : planId;
+      if (idStr && (idStr.startsWith('program:') || idStr.includes('%3A'))) {
+        router.back();
+        return;
+      }
+
       // If editing, go explicitly to My Programs (Plans tab)
-      // router.back() can default to Dashboard if CreateWorkout is treated as a sibling tab
       router.push('/(tabs)/plans');
     } else {
       // If creating, go back to Add Workout
@@ -158,18 +181,30 @@ const CreateWorkoutScreen: React.FC = () => {
         params: { mode: 'workout' }
       });
     }
-  }, [router, planId]);
+  }, [router, planId, decodedReturnTo]);
 
   const handleSavePlanPress = useCallback(() => {
     void (async () => {
       const result = await handleSavePlan();
 
       if (result === 'success') {
-        router.push('/(tabs)/plans');
+        // If returnTo is specified, use it for navigation
+        if (decodedReturnTo) {
+          router.replace(decodedReturnTo as any);
+          return;
+        }
+        
+        // Check if we are in a nested stack context (e.g. from Edit Plan)
+        const idStr = Array.isArray(planId) ? planId[0] : planId;
+        if (idStr && (idStr.startsWith('program:') || idStr.includes('%3A'))) {
+           router.back();
+        } else {
+           router.push('/(tabs)/plans');
+        }
       }
       // Note: 'duplicate-name' no longer returned - system auto-renames duplicates
     })();
-  }, [handleSavePlan, router]);
+  }, [handleSavePlan, router, planId, decodedReturnTo]);
 
   const handleAddExercisesPress = useCallback(() => {
     void Haptics.selectionAsync();

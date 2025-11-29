@@ -311,13 +311,10 @@ const CreatePlanScreen: React.FC = () => {
                 <Text variant="bodySemibold" color="primary">
                   {selectedWorkouts.length} {selectedWorkouts.length === 1 ? 'Workout' : 'Workouts'}
                 </Text>
-                <Text variant="caption" color="secondary">
-                  Tap to remove, drag to reorder
-                </Text>
               </View>
               <Button 
                 label="Add more" 
-                variant="secondary" 
+                variant="ghost" 
                 size="sm" 
                 onPress={handleAddWorkoutsPress} 
               />

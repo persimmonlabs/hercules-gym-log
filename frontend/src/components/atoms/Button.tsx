@@ -297,9 +297,9 @@ const styles = StyleSheet.create({
     ...shadows.sm,
   },
   ghostButton: {
-    backgroundColor: 'transparent',
+    backgroundColor: colors.surface.card,
     borderWidth: 1.5,
-    borderColor: colors.accent.primary,
+    borderColor: colors.accent.orange,
     borderRadius: radius.lg,
   },
   dangerButton: {
@@ -329,7 +329,7 @@ const styles = StyleSheet.create({
     color: colors.text.primary,
   },
   ghostText: {
-    color: colors.accent.primary,
+    color: colors.accent.orange,
   },
   dangerText: {
     color: colors.text.onAccent,

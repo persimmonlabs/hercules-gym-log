@@ -125,6 +125,13 @@ const RootLayout: React.FC = () => {
                   animation: 'none',
                 }}
               />
+              <Stack.Screen
+                name="edit-plan"
+                options={{
+                  animation: 'slide_from_right',
+                  headerShown: false,
+                }}
+              />
 
               <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
             </Stack>

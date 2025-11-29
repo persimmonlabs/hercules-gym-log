@@ -19,7 +19,56 @@ import { useSessionStore } from '@/store/sessionStore';
 import { ProgramCard } from '@/components/molecules/ProgramCard';
 import type { WorkoutExercise } from '@/types/workout';
 import type { Schedule } from '@/types/schedule';
-import type { PremadeProgram } from '@/types/premadePlan';
+import type { PremadeProgram, WeeklyScheduleConfig, Weekday, UserProgram } from '@/types/premadePlan';
+
+const getPlanSummary = (program: UserProgram) => {
+  // If no schedule, fallback to basic count
+  if (!program.schedule) {
+    return `${program.workouts.length} workouts`;
+  }
+
+  if (program.schedule.type === 'rotation' && program.schedule.rotation) {
+    const order = program.schedule.rotation.workoutOrder;
+    let workoutCount = 0;
+    let restCount = 0;
+
+    order.forEach(id => {
+      const workout = program.workouts.find(w => w.id === id);
+      if (workout) {
+        if (workout.exercises.length > 0) {
+          workoutCount++;
+        } else {
+          restCount++;
+        }
+      }
+    });
+
+    const totalDays = workoutCount + restCount;
+    return `${workoutCount} workouts • ${restCount} rest days • ${totalDays} day plan`;
+  }
+
+  if (program.schedule.type === 'weekly' && program.schedule.weekly) {
+    const weekly = program.schedule.weekly;
+    const days: Weekday[] = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+    let workoutCount = 0;
+
+    days.forEach(day => {
+      const workoutId = weekly[day];
+      if (workoutId) {
+        const workout = program.workouts.find(w => w.id === workoutId);
+        if (workout && workout.exercises.length > 0) {
+          workoutCount++;
+        }
+      }
+    });
+
+    const restCount = 7 - workoutCount;
+    return `${workoutCount} workouts • ${restCount} rest days • 7 day plan`;
+  }
+
+  // Fallback
+  return `${program.workouts.length} workouts • ${program.metadata?.daysPerWeek || 3} days/week`;
+};
 
 const CARD_LIFT_TRANSLATE = -2;
 const CARD_LIFT_DURATION_MS = 200;
@@ -257,7 +306,7 @@ const PlansScreen: React.FC = () => {
   const schedules = useSchedulesStore((state: SchedulesState) => state.schedules);
   const hydrateSchedules = useSchedulesStore((state: SchedulesState) => state.hydrateSchedules);
   const updateSchedule = useSchedulesStore((state: SchedulesState) => state.updateSchedule);
-  const { userPrograms, deleteUserProgram, deleteWorkoutFromProgram } = useProgramsStore();
+  const { userPrograms, deleteUserProgram, deleteWorkoutFromProgram, activePlanId } = useProgramsStore();
   const startSession = useSessionStore((state) => state.startSession);
   const setCompletionOverlayVisible = useSessionStore((state) => state.setCompletionOverlayVisible);
   const [expandedPlanId, setExpandedPlanId] = useState<string | null>(null);
@@ -283,9 +332,10 @@ const PlansScreen: React.FC = () => {
     setExpandedPlanId((prev) => (prev === program.id ? null : program.id));
   }, []);
 
-  const handleViewProgram = useCallback((program: any) => {
+  const handleEditProgram = useCallback((program: any) => {
     void Haptics.selectionAsync();
-    router.push({ pathname: '/program-details', params: { programId: program.id } });
+    setExpandedPlanId(null);
+    router.push({ pathname: '/edit-plan', params: { planId: program.id } });
   }, [router]);
 
   const executeDelete = useCallback(async (item: any) => {
@@ -299,6 +349,14 @@ const PlansScreen: React.FC = () => {
       } else {
         // It's a workout being deleted from a program
         await deleteWorkoutFromProgram(item.programId, item.id);
+
+        // FIX: Also delete the custom workout if it exists with the same name.
+        // This prevents the "shadowing" issue where deleting a program workout
+        // reveals an older custom workout of the same name.
+        const customPlan = plans.find(p => p.name === item.name);
+        if (customPlan) {
+          removePlan(customPlan.id);
+        }
 
         // Check if the program is now empty and remove it if so
         const updatedPrograms = useProgramsStore.getState().userPrograms;
@@ -328,7 +386,7 @@ const PlansScreen: React.FC = () => {
     }
 
     setExpandedPlanId((prev) => (prev === item.id ? null : prev));
-  }, [removePlan, schedules, updateSchedule, deleteWorkoutFromProgram, deleteUserProgram]);
+  }, [removePlan, schedules, updateSchedule, deleteWorkoutFromProgram, deleteUserProgram, plans]);
 
   const handleDeleteProgram = useCallback((program: any) => {
     void Haptics.selectionAsync();
@@ -394,8 +452,16 @@ const PlansScreen: React.FC = () => {
 
   const handleEditSchedulePress = useCallback(() => {
     void Haptics.selectionAsync();
-    router.push('/schedule-editor');
-  }, [router]);
+
+    // If there's an active plan, go to edit-plan to edit the schedule
+    // This works for both weekly and rotation schedules
+    if (activePlanId) {
+      router.push({ pathname: '/edit-plan', params: { planId: activePlanId } });
+    } else {
+      // Fall back to the legacy schedule editor for standalone weekly schedules
+      router.push('/schedule-editor');
+    }
+  }, [router, activePlanId]);
 
   useEffect(() => {
     void hydrateSchedules();
@@ -411,31 +477,45 @@ const PlansScreen: React.FC = () => {
   }, [plans]);
 
   const myWorkouts = useMemo(() => {
-    const customWorkouts = plans.map(p => ({
-      ...p,
-      type: 'custom' as const,
-      uniqueId: p.id,
-      subtitle: p.exercises.length === 1 ? '1 exercise' : `${p.exercises.length} exercises`
-    }));
+    // Build a set of workout names that are in programs (for deduplication)
+    const programWorkoutNames = new Set<string>();
+    userPrograms.forEach(prog => {
+      prog.workouts.forEach(w => {
+        // Only track non-rest-day workouts
+        if (w.exercises.length > 0) {
+          programWorkoutNames.add(w.name);
+        }
+      });
+    });
 
+    // Custom workouts - exclude if they're already in a program (by name)
+    // This prevents duplicates when a workout exists both standalone AND in a plan
+    const customWorkouts = plans
+      .filter(p => !programWorkoutNames.has(p.name))
+      .map(p => ({
+        ...p,
+        type: 'custom' as const,
+        uniqueId: p.id,
+        subtitle: p.exercises.length === 1 ? '1 exercise' : `${p.exercises.length} exercises`
+      }));
+
+    // Program workouts - filter out rest days (workouts with 0 exercises)
     const programWorkouts = userPrograms.flatMap(prog =>
-      prog.workouts.map(w => ({
-        id: w.id,
-        name: w.name,
-        exercises: w.exercises,
-        type: 'program' as const,
-        programName: prog.name,
-        programId: prog.id,
-        uniqueId: `${prog.id}-${w.id}`,
-        subtitle: `${prog.name} • ${w.exercises.length} exercises`
-      }))
+      prog.workouts
+        .filter(w => w.exercises.length > 0) // Filter out rest days
+        .map(w => ({
+          id: w.id,
+          name: w.name,
+          exercises: w.exercises,
+          type: 'program' as const,
+          programName: prog.name,
+          programId: prog.id,
+          uniqueId: `${prog.id}-${w.id}`,
+          subtitle: `${prog.name} • ${w.exercises.length} exercises`
+        }))
     );
 
     const allWorkouts = [...customWorkouts, ...programWorkouts];
-
-    // We used to filter by unique names here, but that caused issues where deleting a workout
-    // would reveal a hidden duplicate (zombie workout). It's better to show all workouts
-    // so the user can manage/delete duplicates if they exist.
 
     return allWorkouts.sort((a, b) => a.name.localeCompare(b.name));
   }, [plans, userPrograms]);
@@ -599,13 +679,13 @@ const PlansScreen: React.FC = () => {
                           style={styles.planActionButton}
                           onPress={(event) => {
                             event.stopPropagation();
-                            handleViewProgram(program);
+                            handleEditProgram(program);
                           }}
                         >
                           <View style={styles.planActionIconWrapper}>
-                            <IconSymbol name="visibility" color={colors.accent.primary} size={sizing.iconMD} />
+                            <IconSymbol name="edit" color={colors.accent.primary} size={sizing.iconMD} />
                           </View>
-                          <Text variant="caption" color="primary" style={styles.planActionLabel}>View</Text>
+                          <Text variant="caption" color="primary" style={styles.planActionLabel}>Edit</Text>
                         </Pressable>
                         <Pressable
                           style={styles.planActionButton}
@@ -641,7 +721,7 @@ const PlansScreen: React.FC = () => {
                         </Text>
                       </View>
                       <Text variant="labelMedium" color="secondary">
-                        {program.workouts.length} workouts • {program.metadata?.daysPerWeek || 3} days/week
+                        {getPlanSummary(program)}
                       </Text>
                     </View>
                   )}
@@ -672,29 +752,196 @@ const PlansScreen: React.FC = () => {
           </Text>
 
           <View style={styles.scheduleSubCard}>
-            {activeSchedule ? (
-              <View style={styles.scheduleRows}>
-                {WEEKDAY_LABELS.map(({ key, label }) => {
-                  const assignedPlanId = activeSchedule.weekdays[key];
-                  const assignedName = assignedPlanId ? planNameLookup[assignedPlanId] : null;
+            {(() => {
+              // Find active plan directly from userPrograms to ensure reactivity
+              const activePlan = activePlanId ? userPrograms.find(p => p.id === activePlanId) : null;
+
+              // Show active plan schedule if available
+              if (activePlan && activePlan.schedule) {
+                const schedule = activePlan.schedule;
+
+                if (schedule.type === 'weekly' && schedule.weekly) {
+                  // Weekly schedule view
+                  const weekdays: { key: Weekday; label: string }[] = [
+                    { key: 'monday', label: 'Monday' },
+                    { key: 'tuesday', label: 'Tuesday' },
+                    { key: 'wednesday', label: 'Wednesday' },
+                    { key: 'thursday', label: 'Thursday' },
+                    { key: 'friday', label: 'Friday' },
+                    { key: 'saturday', label: 'Saturday' },
+                    { key: 'sunday', label: 'Sunday' },
+                  ];
 
                   return (
-                    <View key={key} style={styles.scheduleRow}>
-                      <Text variant="bodySemibold" color="primary" style={styles.scheduleDayLabel}>
-                        {label}
-                      </Text>
-                      <Text variant="body" color="secondary" style={styles.schedulePlanLabel}>
-                        {assignedName ?? 'Rest Day'}
-                      </Text>
+                    <View style={styles.scheduleRows}>
+                      <View style={styles.scheduleRow}>
+                        <Text variant="caption" color="secondary">
+                          Active Plan: {activePlan.name}
+                        </Text>
+                      </View>
+                      {weekdays.map(({ key, label }) => {
+                        const workoutId = schedule.weekly![key];
+                        const workout = workoutId
+                          ? activePlan.workouts.find(w => w.id === workoutId)
+                          : null;
+
+                        return (
+                          <View key={key} style={styles.scheduleRow}>
+                            <Text variant="bodySemibold" color="primary" style={styles.scheduleDayLabel}>
+                              {label}
+                            </Text>
+                            <Text variant="body" color="secondary" style={styles.schedulePlanLabel}>
+                              {workout?.name ?? 'Rest Day'}
+                            </Text>
+                          </View>
+                        );
+                      })}
                     </View>
                   );
-                })}
-              </View>
-            ) : (
-              <Text variant="body" color="secondary" style={styles.scheduleEmptyText}>
-                No schedule yet. Assign plans to your week to see them here.
-              </Text>
-            )}
+                }
+
+                if (schedule.type === 'rotation' && schedule.rotation) {
+                  // Rotation schedule view
+                  let currentIndex = schedule.currentRotationIndex || 0;
+                  let isBeforeStart = false;
+
+                  if (schedule.rotation.startDate) {
+                    const now = new Date();
+                    const start = new Date(schedule.rotation.startDate);
+                    now.setHours(0, 0, 0, 0);
+                    start.setHours(0, 0, 0, 0);
+                    const diffTime = now.getTime() - start.getTime();
+                    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+                    if (diffDays < 0) {
+                      // Start date is in the future
+                      isBeforeStart = true;
+                    } else {
+                      // Calculate which day of the rotation we're on
+                      currentIndex = diffDays % schedule.rotation.workoutOrder.length;
+                    }
+                  }
+
+                  if (isBeforeStart) {
+                    const startDate = new Date(schedule.rotation.startDate!);
+                    const formattedDate = startDate.toLocaleDateString('en-US', {
+                      month: 'short',
+                      day: 'numeric',
+                      year: 'numeric',
+                    });
+
+                    return (
+                      <View style={styles.scheduleRows}>
+                        <View style={styles.scheduleRow}>
+                          <Text variant="caption" color="secondary">
+                            Active Plan: {activePlan.name} (Rotation)
+                          </Text>
+                        </View>
+                        <View style={[styles.scheduleRow, { marginTop: spacing.sm }]}>
+                          <Text variant="bodySemibold" color="primary">
+                            Rest Day
+                          </Text>
+                        </View>
+                        <View style={styles.scheduleRow}>
+                          <Text variant="body" color="tertiary">
+                            Plan starts on {formattedDate}
+                          </Text>
+                        </View>
+                      </View>
+                    );
+                  }
+
+                  const totalWorkouts = schedule.rotation.workoutOrder.length;
+                  const currentWorkoutId = schedule.rotation.workoutOrder[currentIndex];
+                  const currentWorkout = activePlan.workouts.find(w => w.id === currentWorkoutId);
+
+                  // Calculate the date for today's workout
+                  let workoutDateLabel = 'Today';
+                  if (schedule.rotation.startDate) {
+                    // Get the actual number of days elapsed since start
+                    const now = new Date();
+                    now.setHours(0, 0, 0, 0);
+                    const startDate = new Date(schedule.rotation.startDate);
+                    startDate.setHours(0, 0, 0, 0);
+                    const diffDays = Math.floor((now.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+
+                    // The workout date is start date + diffDays
+                    const workoutDate = new Date(startDate);
+                    workoutDate.setDate(startDate.getDate() + diffDays);
+
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    const tomorrow = new Date(today);
+                    tomorrow.setDate(today.getDate() + 1);
+
+                    if (workoutDate.getTime() === today.getTime()) {
+                      workoutDateLabel = 'Today';
+                    } else if (workoutDate.getTime() === tomorrow.getTime()) {
+                      workoutDateLabel = 'Tomorrow';
+                    } else {
+                      workoutDateLabel = workoutDate.toLocaleDateString('en-US', {
+                        month: 'numeric',
+                        day: 'numeric',
+                      });
+                    }
+                  }
+
+                  return (
+                    <View style={styles.scheduleRows}>
+                      <View style={styles.scheduleRow}>
+                        <Text variant="caption" color="secondary">
+                          Active Plan: {activePlan.name} (Rotation)
+                        </Text>
+                      </View>
+                      <View style={[styles.scheduleRow, { marginTop: spacing.sm }]}>
+                        <Text variant="bodySemibold" color="primary">
+                          {currentWorkout?.exercises.length === 0 ? 'Rest Day' : 'Next Workout'}
+                        </Text>
+                        <Text variant="body" color="secondary" style={styles.schedulePlanLabel}>
+                          {currentWorkout?.name ?? 'None'}
+                        </Text>
+                      </View>
+                      <View style={styles.scheduleRow}>
+                        <Text variant="body" color="tertiary">
+                          {workoutDateLabel} • Day {currentIndex + 1} of {totalWorkouts}
+                          {currentWorkout?.exercises.length === 0 && ' (Rest)'}
+                        </Text>
+                      </View>
+                    </View>
+                  );
+                }
+              }
+
+              // Fallback to old schedule system
+              if (activeSchedule) {
+                return (
+                  <View style={styles.scheduleRows}>
+                    {WEEKDAY_LABELS.map(({ key, label }) => {
+                      const assignedPlanId = activeSchedule.weekdays[key];
+                      const assignedName = assignedPlanId ? planNameLookup[assignedPlanId] : null;
+
+                      return (
+                        <View key={key} style={styles.scheduleRow}>
+                          <Text variant="bodySemibold" color="primary" style={styles.scheduleDayLabel}>
+                            {label}
+                          </Text>
+                          <Text variant="body" color="secondary" style={styles.schedulePlanLabel}>
+                            {assignedName ?? 'Rest Day'}
+                          </Text>
+                        </View>
+                      );
+                    })}
+                  </View>
+                );
+              }
+
+              // No schedule
+              return (
+                <Text variant="body" color="secondary" style={styles.scheduleEmptyText}>
+                  No active plan. Set a plan as active from My Plans to see your schedule here.
+                </Text>
+              );
+            })()}
           </View>
 
           <View style={styles.scheduleButtonWrapper}>
