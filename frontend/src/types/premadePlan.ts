@@ -29,6 +29,7 @@ export interface PlanWorkout {
   id: string;
   name: string; // e.g., "Push Day", "Day 1"
   exercises: PlanExercise[];
+  sourceWorkoutId?: string; // Reference to original premade workout ID (for cloned workouts)
 }
 
 /** Metadata for filtering/recommendations */

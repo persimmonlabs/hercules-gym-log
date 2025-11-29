@@ -48,31 +48,60 @@ export const usePlanSaveHandler = ({
   const persistPlan = usePlansStore((state) => state.addPlan);
   const updatePlan = usePlansStore((state) => state.updatePlan);
   const plans = usePlansStore((state) => state.plans);
-  const { updateWorkoutInProgram } = useProgramsStore();
+  const { updateWorkoutInProgram, userPrograms } = useProgramsStore();
 
   const isEditing = Boolean(editingPlanId);
-  const isPremadeReview = Boolean(editingPlanId?.startsWith('premade:'));
+  const isPremadeReview = useMemo(() => {
+    if (!editingPlanId?.startsWith('premade:')) {
+      return false;
+    }
+    const existsInPlans = plans.some(p => p.id === editingPlanId);
+    return !existsInPlans;
+  }, [editingPlanId, plans]);
+
+  /**
+   * Generate a unique workout name by checking both custom workouts and program workouts.
+   * If name already exists, appends (2), (3), etc.
+   */
+  const generateUniqueName = useCallback((baseName: string, excludeId?: string): string => {
+    // Collect all existing workout names (case-insensitive)
+    const existingNames = new Set<string>();
+    
+    // Add custom workout names
+    plans.forEach(p => {
+      if (p.id !== excludeId) {
+        existingNames.add(p.name.trim().toLowerCase());
+      }
+    });
+    
+    // Add program workout names
+    userPrograms.forEach(prog => {
+      prog.workouts.forEach(w => {
+        existingNames.add(w.name.trim().toLowerCase());
+      });
+    });
+
+    const trimmedBase = baseName.trim();
+    if (!existingNames.has(trimmedBase.toLowerCase())) {
+      return trimmedBase;
+    }
+
+    // Find unique suffix
+    let counter = 2;
+    let uniqueName = `${trimmedBase} (${counter})`;
+    while (existingNames.has(uniqueName.toLowerCase())) {
+      counter++;
+      uniqueName = `${trimmedBase} (${counter})`;
+    }
+    
+    return uniqueName;
+  }, [plans, userPrograms]);
 
   const handleSavePlan = useCallback(async (): Promise<SubmitPlanResult> => {
     const trimmedName = planName.trim();
 
     if (!trimmedName) {
       return 'missing-name';
-    }
-
-    const isProgramWorkout = editingPlanId?.startsWith('program:');
-
-    // Check for duplicate names only for regular Plans
-    if (!isProgramWorkout) {
-      const duplicate = plans.find(
-        (p) =>
-          p.name.trim().toLowerCase() === trimmedName.toLowerCase() &&
-          p.id !== editingPlanId
-      );
-
-      if (duplicate) {
-        return 'duplicate-name';
-      }
     }
 
     if (selectedExercises.length === 0) {
@@ -85,6 +114,26 @@ export const usePlanSaveHandler = ({
 
     setIsSaving(true);
 
+    const isProgramWorkout = editingPlanId?.startsWith('program:');
+
+    // For program workouts, allow the name change without auto-renaming
+    // (the user is editing their own copy)
+    let finalName = trimmedName;
+    
+    // For new workouts or premade reviews, auto-generate unique name if needed
+    if (!isProgramWorkout && (!isEditing || isPremadeReview)) {
+      finalName = generateUniqueName(trimmedName);
+    } else if (!isProgramWorkout && isEditing) {
+      // For editing existing custom workouts, check if name changed and needs uniqueness
+      const originalPlan = plans.find(p => p.id === editingPlanId);
+      const originalName = originalPlan?.name.trim().toLowerCase();
+      
+      // Only auto-rename if the name was actually changed to something that conflicts
+      if (originalName !== trimmedName.toLowerCase()) {
+        finalName = generateUniqueName(trimmedName, editingPlanId ?? undefined);
+      }
+    }
+
     const normalizedExercises: PlanExercise[] = selectedExercises.map((exercise) => ({
       id: exercise.id,
       name: exercise.name,
@@ -95,7 +144,7 @@ export const usePlanSaveHandler = ({
       if (isProgramWorkout && editingPlanId) {
         const [_, programId, workoutId] = editingPlanId.split(':');
         await updateWorkoutInProgram(programId, workoutId, {
-          name: trimmedName,
+          name: finalName,
           exercises: normalizedExercises,
         });
 
@@ -104,12 +153,12 @@ export const usePlanSaveHandler = ({
         return 'success';
       }
 
-      const planIdentifier = editingPlanId ?? createPlanIdentifier();
-      const createdAtTimestamp = editingPlanCreatedAt ?? Date.now();
+      const planIdentifier = (!isEditing || isPremadeReview) ? createPlanIdentifier() : editingPlanId!;
+      const createdAtTimestamp = (!isEditing || isPremadeReview) ? Date.now() : (editingPlanCreatedAt ?? Date.now());
 
       const payload: WorkoutPlan = {
         id: planIdentifier,
-        name: trimmedName,
+        name: finalName,
         exercises: normalizedExercises,
         createdAt: new Date(createdAtTimestamp).toISOString(),
       };
@@ -119,38 +168,18 @@ export const usePlanSaveHandler = ({
       if (isEditing && !isPremadeReview) {
         updatePlan({
           id: planIdentifier,
-          name: trimmedName,
+          name: finalName,
           exercises: selectedExercises,
           createdAt: createdAtTimestamp,
         });
       } else {
-        // If premade review, we are creating a NEW plan, so use persistPlan
-        // and ensure we use the new ID generated above (if editingPlanId was premade:...)
-        const finalId = isPremadeReview ? createPlanIdentifier() : planIdentifier;
-
-        // If it was premade review, we need to save the payload with the NEW ID, not the premade ID
-        if (isPremadeReview) {
-          const newPayload: WorkoutPlan = {
-            ...payload,
-            id: finalId,
-            createdAt: new Date().toISOString(),
-          };
-          await savePlan(newPayload);
-
-          persistPlan({
-            id: finalId,
-            name: trimmedName,
-            exercises: selectedExercises,
-            createdAt: Date.now(),
-          });
-        } else {
-          persistPlan({
-            id: planIdentifier,
-            name: trimmedName,
-            exercises: selectedExercises,
-            createdAt: createdAtTimestamp,
-          });
-        }
+        // Creating a new plan (from scratch or from premade review)
+        persistPlan({
+          id: planIdentifier,
+          name: finalName,
+          exercises: selectedExercises,
+          createdAt: createdAtTimestamp,
+        });
       }
 
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -167,14 +196,10 @@ export const usePlanSaveHandler = ({
     } finally {
       setIsSaving(false);
     }
-  }, [editingPlanCreatedAt, editingPlanId, isEditing, isSaving, onSuccess, persistPlan, planName, plans, resetBuilder, selectedExercises, updatePlan, updateWorkoutInProgram]);
+  }, [editingPlanCreatedAt, editingPlanId, generateUniqueName, isEditing, isPremadeReview, isSaving, onSuccess, persistPlan, planName, plans, resetBuilder, selectedExercises, updatePlan, updateWorkoutInProgram]);
 
-  let saveLabel = 'Save Workout';
-  if (isEditing && !isPremadeReview) {
-    saveLabel = 'Update Workout';
-  } else if (isPremadeReview) {
-    saveLabel = 'Add Workout';
-  }
+  // Always use "Save Workout" for consistency across all modes
+  const saveLabel = 'Save Workout';
   const selectedListTitle = 'Exercises';
   const selectedListSubtitle = '';
   const saveCtaLabel = 'Save Workout';

@@ -49,9 +49,14 @@ export const useProgramsStore = create<ProgramsState>((set, get) => ({
   activeRotation: null,
   
   loadPremadePrograms: () => {
+    // Deep clone premade data to prevent accidental mutations
+    // The premade library should ALWAYS show the original, unmodified versions
+    const clonedPrograms = JSON.parse(JSON.stringify(premadeData.programs)) as PremadeProgram[];
+    const clonedWorkouts = JSON.parse(JSON.stringify(premadeWorkoutsData.workouts)) as PremadeWorkout[];
+    
     set({ 
-      premadePrograms: premadeData.programs as PremadeProgram[],
-      premadeWorkouts: premadeWorkoutsData.workouts as PremadeWorkout[]
+      premadePrograms: clonedPrograms,
+      premadeWorkouts: clonedWorkouts
     });
   },
 
@@ -88,7 +93,7 @@ export const useProgramsStore = create<ProgramsState>((set, get) => ({
     const premade = get().premadePrograms.find(p => p.id === premadeId);
     if (!premade) return null;
     
-    // Auto-rename if duplicate
+    // Auto-rename if duplicate program name
     const existingNames = new Set(get().userPrograms.map(p => p.name));
     let newName = premade.name;
     let suffix = '';
@@ -99,9 +104,13 @@ export const useProgramsStore = create<ProgramsState>((set, get) => ({
       counter++;
     }
     
+    // Generate unique IDs for each workout to prevent ID collisions
+    // This ensures each cloned workout is independent from the premade source
     const workouts = premade.workouts.map(w => ({
       ...w,
-      name: suffix ? `${w.name}${suffix}` : w.name
+      id: `workout-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      name: suffix ? `${w.name}${suffix}` : w.name,
+      sourceWorkoutId: w.id, // Keep reference to original for potential "reset" feature
     }));
     
     const userProgram: UserProgram = {

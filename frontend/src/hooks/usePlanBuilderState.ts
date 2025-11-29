@@ -82,8 +82,12 @@ export const usePlanBuilderState = (editingPlanId: string | null): PlanBuilderSt
       const workout = program?.workouts.find(w => w.id === workoutId);
 
       if (workout) {
+        // Create fresh copies of exercises to prevent mutations affecting the program data
         const mappedExercises = workout.exercises
-          .map(ex => exercises.find(e => e.name === ex.name) || null)
+          .map(ex => {
+            const found = exercises.find(e => e.name === ex.name);
+            return found ? { ...found } : null;
+          })
           .filter((e): e is ExerciseCatalogItem => e !== null);
 
         return {
@@ -101,8 +105,12 @@ export const usePlanBuilderState = (editingPlanId: string | null): PlanBuilderSt
       const workout = premadeWorkouts.find(w => w.id === premadeId);
 
       if (workout) {
+        // Create fresh copies of exercises to prevent mutations affecting the original premade data
         const mappedExercises = workout.exercises
-          .map(ex => exercises.find(e => e.id === ex.id) || null)
+          .map(ex => {
+            const found = exercises.find(e => e.id === ex.id);
+            return found ? { ...found } : null;
+          })
           .filter((e): e is ExerciseCatalogItem => e !== null);
 
         return {
@@ -119,7 +127,13 @@ export const usePlanBuilderState = (editingPlanId: string | null): PlanBuilderSt
   }, [editingPlanId, plans, userPrograms, premadeWorkouts]);
 
   const isEditing = Boolean(editingPlanId);
-  const isPremadeReview = Boolean(editingPlanId?.startsWith('premade:'));
+  const isPremadeReview = useMemo(() => {
+    if (!editingPlanId?.startsWith('premade:')) {
+      return false;
+    }
+    const existsInPlans = plans.some(p => p.id === editingPlanId);
+    return !existsInPlans;
+  }, [editingPlanId, plans]);
 
   const hasActiveFilters = useMemo<boolean>(() => countActiveFilters(filters) > 0, [filters]);
 

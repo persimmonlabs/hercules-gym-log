@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo } from 'react';
-import { Alert, Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -97,12 +97,13 @@ const CreateWorkoutScreen: React.FC = () => {
     // Prioritize planId (Edit Mode) over premadeWorkoutId (Review/Create Mode)
     // This fixes an issue where residual params might trigger Review mode when Edit is intended
     if (planId) {
-      return Array.isArray(planId) ? planId[0] ?? null : planId;
+      const id = Array.isArray(planId) ? planId[0] : planId;
+      if (id) return id;
     }
 
     if (premadeWorkoutId) {
       const id = Array.isArray(premadeWorkoutId) ? premadeWorkoutId[0] : premadeWorkoutId;
-      return `premade:${id}`;
+      if (id) return `premade:${id}`;
     }
 
     return null;
@@ -145,7 +146,7 @@ const CreateWorkoutScreen: React.FC = () => {
 
   const handleBackPress = useCallback(() => {
     void Haptics.selectionAsync();
-    
+
     if (planId) {
       // If editing, go explicitly to My Programs (Plans tab)
       // router.back() can default to Dashboard if CreateWorkout is treated as a sibling tab
@@ -165,14 +166,8 @@ const CreateWorkoutScreen: React.FC = () => {
 
       if (result === 'success') {
         router.push('/(tabs)/plans');
-      } else if (result === 'duplicate-name') {
-        void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-        Alert.alert(
-          'Plan Name Taken',
-          'A workout plan with this name already exists. Please choose a different name.',
-          [{ text: 'OK' }]
-        );
       }
+      // Note: 'duplicate-name' no longer returned - system auto-renames duplicates
     })();
   }, [handleSavePlan, router]);
 

@@ -337,8 +337,8 @@ const PlansScreen: React.FC = () => {
       `Are you sure you want to delete "${program.name}"? This cannot be undone.`,
       [
         { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Delete', 
+        {
+          text: 'Delete',
           style: 'destructive',
           onPress: () => executeDelete({ ...program, type: 'program' })
         }
@@ -362,8 +362,8 @@ const PlansScreen: React.FC = () => {
         `Are you sure you want to remove "${item.name}"?`,
         [
           { text: 'Cancel', style: 'cancel' },
-          { 
-            text: 'Remove', 
+          {
+            text: 'Remove',
             style: 'destructive',
             onPress: () => executeDelete(item)
           }
@@ -383,10 +383,10 @@ const PlansScreen: React.FC = () => {
       setExpandedPlanId(null);
 
       if (item.type === 'program') {
-        const compositeId = `program:${item.programId}:${item.id}`;
-        router.push({ pathname: '/(tabs)/create-workout', params: { planId: compositeId } });
+        const compositeId = encodeURIComponent(`program:${item.programId}:${item.id}`);
+        router.push(`/(tabs)/create-workout?planId=${compositeId}&premadeWorkoutId=`);
       } else {
-        router.push({ pathname: '/(tabs)/create-workout', params: { planId: item.id } });
+        router.push(`/(tabs)/create-workout?planId=${encodeURIComponent(item.id)}&premadeWorkoutId=`);
       }
     },
     [router],
@@ -432,18 +432,12 @@ const PlansScreen: React.FC = () => {
     );
 
     const allWorkouts = [...customWorkouts, ...programWorkouts];
-    const seenNames = new Set<string>();
-    
-    const uniqueWorkouts = allWorkouts.filter(workout => {
-      const normalizedName = workout.name.trim().toLowerCase();
-      if (seenNames.has(normalizedName)) {
-        return false;
-      }
-      seenNames.add(normalizedName);
-      return true;
-    });
 
-    return uniqueWorkouts.sort((a, b) => a.name.localeCompare(b.name));
+    // We used to filter by unique names here, but that caused issues where deleting a workout
+    // would reveal a hidden duplicate (zombie workout). It's better to show all workouts
+    // so the user can manage/delete duplicates if they exist.
+
+    return allWorkouts.sort((a, b) => a.name.localeCompare(b.name));
   }, [plans, userPrograms]);
 
   const myPlans = useMemo(() => {
