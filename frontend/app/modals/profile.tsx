@@ -70,44 +70,32 @@ const ProfileModal: React.FC = () => {
     );
   };
 
-  // Fetch user profile data - prefer metadata, fallback to DB
+  // Fetch user profile data from profiles table (primary source)
   useEffect(() => {
     const syncProfile = async () => {
       if (!user) return;
-      
-      const meta = user.user_metadata;
-      
-      // If we have names in metadata, use them (Source of Truth)
-      if (meta?.first_name || meta?.last_name || meta?.full_name) {
-        setUserProfile({
-          first_name: meta.first_name || '',
-          last_name: meta.last_name || '',
-          full_name: meta.full_name || `${meta.first_name || ''} ${meta.last_name || ''}`.trim()
-        });
-        return;
-      }
 
-      // Fallback to DB only if metadata is missing
       try {
         const { data, error } = await supabaseClient
           .from('profiles')
           .select('first_name, last_name, full_name')
           .eq('id', user.id)
           .single();
-          
+
         if (error) {
-          console.error('Error fetching profile:', error);
+          console.error('[Profile] Error fetching profile:', error);
           return;
         }
-        
+
         if (data) {
           setUserProfile(data);
+          console.log('[Profile] Profile loaded from DB:', data);
         }
       } catch (error) {
-        console.error('Error fetching profile:', error);
+        console.error('[Profile] Error fetching profile:', error);
       }
     };
-    
+
     syncProfile();
   }, [user]);
 
@@ -130,7 +118,7 @@ const ProfileModal: React.FC = () => {
     if (userProfile?.first_name || userProfile?.last_name) {
       return `${userProfile.first_name || ''} ${userProfile.last_name || ''}`.trim();
     }
-    
+
     // 2. Fallback to auth metadata
     const meta = user?.user_metadata;
     if (meta?.full_name) return meta.full_name;
@@ -149,27 +137,44 @@ const ProfileModal: React.FC = () => {
     setIsNameModalVisible(true);
   };
 
-  const handleCloseNameModal = useCallback(() => {
+  const handleCloseNameModal = useCallback(async () => {
     setIsNameModalVisible(false);
+
+    // Refetch profile data from DB after modal closes
+    try {
+      const { data: { user: refreshedUser } } = await supabaseClient.auth.getUser();
+      if (refreshedUser) {
+        const { data, error } = await supabaseClient
+          .from('profiles')
+          .select('first_name, last_name, full_name')
+          .eq('id', refreshedUser.id)
+          .single();
+
+        if (!error && data) {
+          setUserProfile(data);
+          console.log('[Profile] Profile refreshed from DB after modal close');
+        }
+      }
+    } catch (error) {
+      console.error('[Profile] Error refreshing profile:', error);
+      // Non-fatal - local state is already updated
+    }
   }, []);
 
   // Get current first/last name for modal prepopulation
   const getCurrentFirstName = () => {
-    // Prefer metadata first as it's the most reliable source of truth
-    if (user?.user_metadata?.first_name) return user.user_metadata.first_name;
-    if (userProfile?.first_name) return userProfile.first_name;
-    return '';
+    // Use profiles table as source of truth
+    return userProfile?.first_name || '';
   };
 
   const getCurrentLastName = () => {
-    // Prefer metadata first as it's the most reliable source of truth
-    if (user?.user_metadata?.last_name) return user.user_metadata.last_name;
-    if (userProfile?.last_name) return userProfile.last_name;
-    return '';
+    // Use profiles table as source of truth
+    return userProfile?.last_name || '';
   };
 
   const handleNameSave = (firstName: string, lastName: string) => {
     // Update local state immediately for responsive UI
+    // The modal already handles the Supabase auth update
     setUserProfile({
       first_name: firstName,
       last_name: lastName,
@@ -230,106 +235,102 @@ const ProfileModal: React.FC = () => {
         </SurfaceCard>
 
         {/* Account Preferences */}
-        <View style={styles.section}>
-          <Text variant="heading3" color="primary" style={styles.sectionTitle}>
-            Account Preferences
-          </Text>
+        <SurfaceCard tone="neutral" padding="lg" showAccentStripe={true}>
+          <View style={styles.section}>
+            <Text variant="heading3" color="primary" style={styles.sectionTitle}>
+              Account Preferences
+            </Text>
 
-          <View style={styles.preferencesList}>
-            <PreferenceItem
-              icon="person"
-              title="Name"
-              subtitle={getUserDisplayName()}
-              onPress={handleNameEdit}
-            />
-            <PreferenceItem
-              icon="notifications"
-              title="Notifications"
-              subtitle="Manage your notification preferences"
-              onPress={handlePreferencePress}
-            />
-            <PreferenceItem
-              icon="lock"
-              title="Privacy & Security"
-              subtitle="Control your privacy settings"
-              onPress={handlePreferencePress}
-            />
-            <PreferenceItem
-              icon="palette"
-              title="Appearance"
-              subtitle="Customize app theme and display"
-              onPress={handlePreferencePress}
-            />
-            <PreferenceItem
-              icon="language"
-              title="Language & Region"
-              subtitle="Set your language and regional preferences"
-              onPress={handlePreferencePress}
-            />
+            <View style={styles.preferencesList}>
+              <PreferenceItem
+                icon="person"
+                title="Name"
+                subtitle={getUserDisplayName()}
+                onPress={handleNameEdit}
+              />
+              <PreferenceItem
+                icon="notifications"
+                title="Notifications"
+                subtitle="Manage your notification preferences"
+                onPress={handlePreferencePress}
+              />
+
+              <PreferenceItem
+                icon="palette"
+                title="Appearance"
+                subtitle="Customize app theme and display"
+                onPress={handlePreferencePress}
+              />
+              <PreferenceItem
+                icon="language"
+                title="Language & Region"
+                subtitle="Set your language and regional preferences"
+                onPress={handlePreferencePress}
+              />
+            </View>
           </View>
-        </View>
+        </SurfaceCard>
 
         {/* Workout Preferences */}
-        <View style={styles.section}>
-          <Text variant="heading3" color="primary" style={styles.sectionTitle}>
-            Workout Preferences
-          </Text>
+        <SurfaceCard tone="neutral" padding="lg" showAccentStripe={true}>
+          <View style={styles.section}>
+            <Text variant="heading3" color="primary" style={styles.sectionTitle}>
+              Workout Preferences
+            </Text>
 
-          <View style={styles.preferencesList}>
-            <PreferenceItem
-              icon="fitness-center"
-              title="Units of Measurement"
-              subtitle="Metric (kg, cm) or Imperial (lbs, ft)"
-              onPress={handlePreferencePress}
-            />
-            <PreferenceItem
-              icon="timer"
-              title="Rest Timer Defaults"
-              subtitle="Set default rest periods between sets"
-              onPress={handlePreferencePress}
-            />
-            <PreferenceItem
-              icon="trending-up"
-              title="Progress Tracking"
-              subtitle="Configure how your progress is calculated"
-              onPress={handlePreferencePress}
-            />
-            <PreferenceItem
-              icon="event"
-              title="Workout Reminders"
-              subtitle="Set schedule and reminder preferences"
-              onPress={handlePreferencePress}
-            />
+            <View style={styles.preferencesList}>
+              <PreferenceItem
+                icon="fitness-center"
+                title="Units of Measurement"
+                subtitle="Metric (kg, cm) or Imperial (lbs, ft)"
+                onPress={handlePreferencePress}
+              />
+
+              <PreferenceItem
+                icon="trending-up"
+                title="Progress Tracking"
+                subtitle="Configure how your progress is calculated"
+                onPress={handlePreferencePress}
+              />
+              <PreferenceItem
+                icon="event"
+                title="Workout Reminders"
+                subtitle="Set schedule and reminder preferences"
+                onPress={handlePreferencePress}
+              />
+            </View>
           </View>
-        </View>
+        </SurfaceCard>
 
         {/* Support */}
-        <View style={styles.section}>
-          <Text variant="heading3" color="primary" style={styles.sectionTitle}>
-            Support
-          </Text>
+        <SurfaceCard tone="neutral" padding="lg" showAccentStripe={true}>
+          <View style={styles.section}>
+            <Text variant="heading3" color="primary" style={styles.sectionTitle}>
+              Support
+            </Text>
 
-          <View style={styles.preferencesList}>
-            <PreferenceItem
-              icon="help"
-              title="Help Center"
-              subtitle="Get help and frequently asked questions"
-              onPress={handlePreferencePress}
-            />
-            <PreferenceItem
-              icon="feedback"
-              title="Send Feedback"
-              subtitle="Help us improve the app"
-              onPress={handlePreferencePress}
-            />
-            <PreferenceItem
-              icon="info"
-              title="About"
-              subtitle="App version and legal information"
-              onPress={handlePreferencePress}
-            />
+            <View style={styles.preferencesList}>
+              <PreferenceItem
+                icon="help"
+                title="Help Center"
+                subtitle="Get help and frequently asked questions"
+                onPress={handlePreferencePress}
+              />
+              <PreferenceItem
+                icon="feedback"
+                title="Send Feedback"
+                subtitle="Help us improve the app"
+                onPress={handlePreferencePress}
+              />
+              <PreferenceItem
+                icon="info"
+                title="About"
+                subtitle="App version and legal information"
+                onPress={handlePreferencePress}
+              />
+            </View>
           </View>
-        </View>
+        </SurfaceCard>
 
         {/* Sign Out Button */}
         <View style={styles.signOutSection}>
@@ -359,7 +360,7 @@ const ProfileModal: React.FC = () => {
           </SurfaceCard>
         </View>
       </ScrollView>
-      
+
       <NameEditModal
         visible={isNameModalVisible}
         firstName={getCurrentFirstName()}
@@ -399,7 +400,7 @@ const PreferenceItem: React.FC<PreferenceItemProps> = ({ icon, title, subtitle, 
         <View style={styles.preferenceIcon}>
           <IconSymbol
             name={icon}
-            color={colors.text.secondary}
+            color={colors.accent.orange}
             size={24}
           />
         </View>
@@ -454,8 +455,8 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     paddingHorizontal: spacing.md,
-    paddingBottom: spacing.xl,
-    gap: spacing.xl,
+    paddingBottom: spacing.xl + spacing.lg,
+    gap: spacing.xl + spacing.lg,
   },
   profileCard: {
     alignItems: 'center',
@@ -482,36 +483,34 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   sectionTitle: {
+    marginBottom: spacing.xs,
     paddingHorizontal: spacing.sm,
   },
   preferencesList: {
-    gap: spacing.xs,
+    gap: spacing.md,
   },
   preferenceItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: spacing.md,
+    padding: spacing.lg,
     backgroundColor: colors.surface.card,
     borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: colors.accent.orangeLight,
-    ...shadows.sm,
   },
   preferenceIcon: {
-    width: spacing.lg,
-    height: spacing.lg,
-    borderRadius: radius.md,
-    backgroundColor: colors.neutral.gray200,
+    width: spacing.xl,
+    height: spacing.xl,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: spacing.md,
+    marginRight: spacing.lg,
   },
   preferenceContent: {
     flex: 1,
-    gap: spacing.xs,
+    gap: spacing.xxs,
   },
   signOutSection: {
-    marginTop: spacing.lg,
+    marginTop: spacing.md,
   },
   signOutCard: {
     borderWidth: 1,

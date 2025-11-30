@@ -383,7 +383,7 @@ const WorkoutSessionScreen: React.FC = () => {
       // Navigate to success screen to show confirmation message before redirecting home
       // Session clearing is handled here to ensure it happens reliably before navigation
       endSession();
-      router.replace('/(tabs)/workout-success');
+      router.replace('/workout-success');
       // Reset isFinishingWorkout is not strictly needed since we are navigating away,
       // but good for cleanup if component stays mounted for any reason
       setIsFinishingWorkout(false);

@@ -11,6 +11,7 @@ import {
   TouchableOpacity,
   View,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import * as Haptics from 'expo-haptics';
 
@@ -36,52 +37,52 @@ export const NameEditModal: React.FC<NameEditModalProps> = ({
 }) => {
   const [tempFirstName, setTempFirstName] = useState(firstName);
   const [tempLastName, setTempLastName] = useState(lastName);
+  const [isSaving, setIsSaving] = useState(false);
 
   // Reset form when modal opens
   useEffect(() => {
     if (visible) {
       setTempFirstName(firstName);
       setTempLastName(lastName);
+      setIsSaving(false); // Reset saving state when modal opens
     }
   }, [visible, firstName, lastName]);
 
   const handleCancel = () => {
+    if (isSaving) return; // Prevent closing while saving
     void Haptics.selectionAsync();
     onClose();
   };
 
   const handleSave = async () => {
+    if (isSaving) return; // Prevent multiple saves
+
     void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    
+
     const trimmedFirst = tempFirstName.trim();
     const trimmedLast = tempLastName.trim();
-    
+
     // Validate input
     if (!trimmedFirst && !trimmedLast) {
       Alert.alert('Invalid Name', 'Please enter at least a first name or last name.');
       return;
     }
 
-    // 1. Set loading state
-    // We need to wait for the auth update to ensure persistence
-    const { data: { user }, error: authError } = await supabaseClient.auth.updateUser({
-      data: {
-        first_name: trimmedFirst,
-        last_name: trimmedLast,
-        full_name: `${trimmedFirst} ${trimmedLast}`.trim(),
-      },
-    });
+    setIsSaving(true);
+    console.log('[NameEditModal] Starting save...', { trimmedFirst, trimmedLast });
 
-    if (authError) {
-      console.error('Auth update failed:', authError);
-      Alert.alert('Error', 'Failed to save name. Please try again.');
-      return;
-    }
+    try {
+      // Get current user
+      const { data: { user } } = await supabaseClient.auth.getUser();
 
-    // 2. Update profiles table in background (Fire & Forget)
-    // Using upsert to handle both insert/update cases gracefully
-    if (user) {
-      supabaseClient
+      if (!user) {
+        throw new Error('No authenticated user');
+      }
+
+      console.log('[NameEditModal] Updating profiles table...');
+
+      // Update profiles table directly (skip auth.updateUser which is problematic)
+      const { error: profileError } = await supabaseClient
         .from('profiles')
         .upsert({
           id: user.id,
@@ -90,15 +91,28 @@ export const NameEditModal: React.FC<NameEditModalProps> = ({
           last_name: trimmedLast,
           full_name: `${trimmedFirst} ${trimmedLast}`.trim(),
           updated_at: new Date().toISOString(),
-        })
-        .then(({ error }) => {
-          if (error) console.warn('Profile DB update failed (non-fatal):', error);
         });
-    }
 
-    // 3. Update UI and close
-    onSave(trimmedFirst, trimmedLast);
-    onClose();
+      if (profileError) {
+        throw profileError;
+      }
+
+      console.log('[NameEditModal] Profile updated successfully');
+
+      // Update parent component state
+      console.log('[NameEditModal] Calling onSave callback');
+      onSave(trimmedFirst, trimmedLast);
+
+      // Close modal
+      console.log('[NameEditModal] Closing modal');
+      onClose();
+
+    } catch (error: any) {
+      console.error('[NameEditModal] Error saving name:', error);
+      Alert.alert('Error', error.message || 'Failed to save name. Please try again.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -115,7 +129,7 @@ export const NameEditModal: React.FC<NameEditModalProps> = ({
               <Text variant="heading2" color="primary" style={styles.title}>
                 Edit Name
               </Text>
-              
+
               <View style={styles.form}>
                 <InputField
                   label="First Name"
@@ -124,8 +138,9 @@ export const NameEditModal: React.FC<NameEditModalProps> = ({
                   placeholder="Enter your first name"
                   autoCapitalize="words"
                   returnKeyType="next"
+                  editable={!isSaving}
                 />
-                
+
                 <InputField
                   label="Last Name"
                   value={tempLastName}
@@ -133,28 +148,35 @@ export const NameEditModal: React.FC<NameEditModalProps> = ({
                   placeholder="Enter your last name"
                   autoCapitalize="words"
                   returnKeyType="done"
+                  editable={!isSaving}
                 />
               </View>
 
               <View style={styles.actions}>
                 <TouchableOpacity
-                  style={styles.cancelButton}
+                  style={[styles.cancelButton, isSaving && styles.disabledButton]}
                   onPress={handleCancel}
                   activeOpacity={0.7}
+                  disabled={isSaving}
                 >
-                  <Text variant="bodySemibold" color="secondary">
+                  <Text variant="bodySemibold" color={isSaving ? "tertiary" : "secondary"}>
                     Cancel
                   </Text>
                 </TouchableOpacity>
-                
+
                 <TouchableOpacity
-                  style={styles.saveButton}
+                  style={[styles.saveButton, isSaving && styles.disabledButton]}
                   onPress={handleSave}
                   activeOpacity={0.7}
+                  disabled={isSaving}
                 >
-                  <Text variant="bodySemibold" style={styles.saveButtonText}>
-                    Save
-                  </Text>
+                  {isSaving ? (
+                    <ActivityIndicator color={colors.text.onAccent} size="small" />
+                  ) : (
+                    <Text variant="bodySemibold" style={styles.saveButtonText}>
+                      Save
+                    </Text>
+                  )}
                 </TouchableOpacity>
               </View>
             </View>
@@ -207,5 +229,8 @@ const styles = StyleSheet.create({
   },
   saveButtonText: {
     color: colors.text.onAccent,
+  },
+  disabledButton: {
+    opacity: 0.5,
   },
 });

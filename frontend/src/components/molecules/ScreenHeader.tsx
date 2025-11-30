@@ -5,7 +5,7 @@
 
 import React from 'react';
 import { StyleSheet, View, Pressable } from 'react-native';
-import Animated, { useSharedValue, withSpring } from 'react-native-reanimated';
+import Animated, { useSharedValue, withSpring, useAnimatedStyle } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 
 import { Text } from '@/components/atoms/Text';
@@ -23,6 +23,10 @@ interface ScreenHeaderProps {
 
 export const ScreenHeader: React.FC<ScreenHeaderProps> = ({ title, subtitle, onProfilePress }) => {
   const scale = useSharedValue(1);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
 
   const handleProfilePress = () => {
     scale.value = withSpring(0.9, { damping: 15, stiffness: 300 });
@@ -47,7 +51,7 @@ export const ScreenHeader: React.FC<ScreenHeaderProps> = ({ title, subtitle, onP
           ) : null}
         </View>
         {onProfilePress && (
-          <Animated.View style={{ transform: [{ scale: scale.value }] }}>
+          <Animated.View style={animatedStyle}>
             <Pressable
               style={styles.profileButton}
               onPress={handleProfilePress}

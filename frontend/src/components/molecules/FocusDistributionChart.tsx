@@ -11,12 +11,6 @@ import { useWorkoutSessionsStore } from '@/store/workoutSessionsStore';
 import exercisesData from '@/data/exercises.json';
 import hierarchyData from '@/data/hierarchy.json';
 
-if (Platform.OS === 'android') {
-  if (UIManager.setLayoutAnimationEnabledExperimental) {
-    UIManager.setLayoutAnimationEnabledExperimental(true);
-  }
-}
-
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const CHART_WIDTH = SCREEN_WIDTH - spacing.xl * 2;
 const PIE_SIZE = 220; // Reduced size

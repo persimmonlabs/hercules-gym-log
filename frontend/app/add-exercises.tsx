@@ -14,6 +14,7 @@ import { IconSymbol } from '@/components/ui/icon-symbol';
 import { ExerciseSelectionRow } from '@/components/molecules/ExerciseSelectionRow';
 import { FilterBottomSheet } from '@/components/molecules/FilterBottomSheet';
 import type { Exercise } from '@/constants/exercises';
+import type { ExerciseFilters } from '@/types/exercise';
 import { colors, radius, spacing, sizing, shadows } from '@/constants/theme';
 import { usePlanBuilderContext } from '@/providers/PlanBuilderProvider';
 import { countActiveFilters, getActiveFilterLabels } from '@/utils/exerciseFilters';
@@ -235,10 +236,11 @@ const AddExercisesScreen: React.FC = () => {
     setIsFilterSheetVisible(false);
   }, []);
 
-  const handleApplyFilters = useCallback(() => {
+  const handleApplyFilters = useCallback((newFilters: ExerciseFilters) => {
     void Haptics.selectionAsync();
+    updateFilters(newFilters);
     setIsFilterSheetVisible(false);
-  }, []);
+  }, [updateFilters]);
 
   const handleRemoveFilter = useCallback(
     (label: string) => {

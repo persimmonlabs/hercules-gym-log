@@ -395,10 +395,8 @@ const DashboardScreen: React.FC = () => {
   const workouts = useWorkoutSessionsStore((state: WorkoutSessionsState) => state.workouts);
 
   useEffect(() => {
-    if (user?.user_metadata?.first_name) {
-      setFirstName(user.user_metadata.first_name);
-    } else if (user?.id) {
-      // Fallback check if metadata is missing but profile exists
+    if (user?.id) {
+      // Fetch from profiles table (primary source of truth)
       supabaseClient
         .from('profiles')
         .select('first_name')
@@ -407,6 +405,8 @@ const DashboardScreen: React.FC = () => {
         .then(({ data }) => {
           if (data?.first_name) {
             setFirstName(data.first_name);
+          } else {
+            setFirstName(null);
           }
         });
     } else {
@@ -418,25 +418,24 @@ const DashboardScreen: React.FC = () => {
   useFocusEffect(
     useCallback(() => {
       const refreshName = async () => {
-        // Fetch fresh user object to get latest metadata
         const { data: { user: freshUser } } = await supabaseClient.auth.getUser();
-        
-        if (freshUser?.user_metadata?.first_name) {
-          setFirstName(freshUser.user_metadata.first_name);
-        } else if (freshUser?.id) {
-           // Fallback to profile table
-           const { data } = await supabaseClient
-             .from('profiles')
-             .select('first_name')
-             .eq('id', freshUser.id)
-             .single();
-             
-           if (data?.first_name) {
-             setFirstName(data.first_name);
-           }
+
+        if (freshUser?.id) {
+          // Fetch from profiles table
+          const { data } = await supabaseClient
+            .from('profiles')
+            .select('first_name')
+            .eq('id', freshUser.id)
+            .single();
+
+          if (data?.first_name) {
+            setFirstName(data.first_name);
+          } else {
+            setFirstName(null);
+          }
         }
       };
-      
+
       void refreshName();
     }, [])
   );
@@ -772,7 +771,7 @@ const DashboardScreen: React.FC = () => {
       >
         <View style={styles.container}>
           <View style={styles.contentContainer}>
-            <ScreenHeader 
+            <ScreenHeader
               title={firstName ? `Welcome, ${firstName}!` : 'Welcome!'}
               subtitle="Stay on top of your training journey."
               onProfilePress={() => router.push('/modals/profile')}

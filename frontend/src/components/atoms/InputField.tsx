@@ -30,6 +30,7 @@ interface InputFieldProps {
   inputRef?: RefObject<TextInput | null> | MutableRefObject<TextInput | null>;
   keyboardType?: 'default' | 'email-address' | 'numeric' | 'phone-pad' | 'decimal-pad';
   autoCapitalize?: 'none' | 'sentences' | 'words' | 'characters';
+  editable?: boolean;
 }
 
 export const InputField: React.FC<InputFieldProps> = ({
@@ -48,6 +49,7 @@ export const InputField: React.FC<InputFieldProps> = ({
   inputRef,
   keyboardType = 'default',
   autoCapitalize = 'sentences',
+  editable = true,
 }) => {
   const [isFocused, setIsFocused] = useState<boolean>(false);
   const focusProgress = useSharedValue(0);
@@ -102,6 +104,7 @@ export const InputField: React.FC<InputFieldProps> = ({
           onSubmitEditing={onSubmitEditing}
           keyboardType={keyboardType}
           autoCapitalize={autoCapitalize}
+          editable={editable}
         />
       </Animated.View>
     </View>

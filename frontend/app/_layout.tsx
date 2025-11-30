@@ -73,8 +73,27 @@ const RootLayout: React.FC = () => {
       return;
     }
 
-    void NavigationBar.setBackgroundColorAsync(colors.primary.bg);
-    void NavigationBar.setButtonStyleAsync('dark');
+    const configureNavigationBar = async () => {
+      const androidVersion = typeof Platform.Version === 'number'
+        ? Platform.Version
+        : Number.parseInt(String(Platform.Version), 10);
+
+      try {
+        if (!Number.isNaN(androidVersion) && androidVersion < 29) {
+          await NavigationBar.setBackgroundColorAsync(colors.primary.bg);
+        }
+      } catch (error) {
+        console.warn('[NavigationBar] Unable to set background color', error);
+      }
+
+      try {
+        await NavigationBar.setButtonStyleAsync('dark');
+      } catch (error) {
+        console.warn('[NavigationBar] Unable to set button style', error);
+      }
+    };
+
+    void configureNavigationBar();
   }, [colorScheme]);
 
   return (
