@@ -129,7 +129,7 @@ export default function QuizScreen() {
   const isWorkoutMode = mode === 'workout';
   const STEPS = isWorkoutMode ? WORKOUT_STEPS : PLAN_STEPS;
   const totalQuestions = isWorkoutMode ? 3 : 4;
-  
+
   const { getRecommendations, getWorkoutRecommendations } = useProgramRecommendation();
 
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
@@ -163,7 +163,7 @@ export default function QuizScreen() {
   // Update progress animation when answeredCount changes
   React.useEffect(() => {
     const newProgress = answeredCount / totalQuestions;
-    
+
     if (answeredCount > prevCountRef.current) {
       // Moving forward - animate
       progressValue.value = withSpring(newProgress, {
@@ -174,7 +174,7 @@ export default function QuizScreen() {
       // Moving backward - instant update
       progressValue.value = newProgress;
     }
-    
+
     prevCountRef.current = answeredCount;
   }, [answeredCount, progressValue]);
 
@@ -208,7 +208,7 @@ export default function QuizScreen() {
       router.back();
       return;
     }
-    
+
     // Clear the current page's selection when going back
     const stepToClear = STEPS[currentStepIndex];
     switch (stepToClear) {
@@ -227,7 +227,7 @@ export default function QuizScreen() {
       default:
         break;
     }
-    
+
     setCurrentStepIndex((prev) => Math.max(prev - 1, 0));
   }, [currentStepIndex, router]);
 
@@ -239,8 +239,8 @@ export default function QuizScreen() {
     if ('workouts' in program) {
       // It's a PremadeProgram
       router.push({
-        pathname: '/program-details',
-        params: { programId: program.id }
+        pathname: '/(tabs)/program-details',
+        params: { programId: program.id, from: 'quiz' }
       });
     } else {
       // It's a PremadeWorkout
@@ -285,7 +285,7 @@ export default function QuizScreen() {
                 {isWorkoutMode ? 'Personalized Workouts' : 'Personalized Plans'}
               </Text>
               <Text variant="body" color="secondary" style={{ textAlign: 'center' }}>
-                {isWorkoutMode 
+                {isWorkoutMode
                   ? "Answer 3 quick questions and we'll recommend the perfect workouts for you."
                   : "Answer 4 quick questions and we'll recommend the perfect workout plans for you."}
               </Text>
@@ -346,12 +346,12 @@ export default function QuizScreen() {
       case 'results':
         const resultsData = isWorkoutMode ? workoutRecommendations : recommendations;
         const resultsTitle = isWorkoutMode ? 'Recommended Workouts' : 'Recommended Plans';
-        const emptyMessage = isWorkoutMode 
+        const emptyMessage = isWorkoutMode
           ? 'Try adjusting your filters to see more results. We are adding new workouts weekly!'
           : 'Try adjusting your filters to see more results. We are adding new plans weekly!';
         const browseLabel = isWorkoutMode ? 'Browse All Workouts' : 'Browse All Plans';
         const browsePath = isWorkoutMode ? '/(tabs)/browse-programs?mode=workout' : '/(tabs)/browse-programs?mode=program';
-        
+
         return (
           <ScrollView contentContainerStyle={styles.resultsList}>
             <View style={{ marginBottom: spacing.lg }}>
@@ -445,7 +445,7 @@ export default function QuizScreen() {
             />
           </Svg>
           {answeredCount === 4 && (
-            <Animated.View 
+            <Animated.View
               entering={FadeInRight.springify()}
               style={[StyleSheet.absoluteFill, { alignItems: 'center', justifyContent: 'center' }]}
             >

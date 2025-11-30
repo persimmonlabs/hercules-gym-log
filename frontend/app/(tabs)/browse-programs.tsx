@@ -100,8 +100,8 @@ export default function BrowseProgramsScreen() {
       });
     } else {
       router.push({
-        pathname: '/program-details',
-        params: { programId: item.id }
+        pathname: '/(tabs)/program-details',
+        params: { programId: item.id, from: 'browse' }
       });
     }
   }, [router, isWorkoutMode]);

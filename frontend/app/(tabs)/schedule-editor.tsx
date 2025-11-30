@@ -16,25 +16,29 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.primary.bg,
+  },
+  contentContainer: {
     paddingHorizontal: spacing.md,
     paddingBottom: spacing.lg,
     gap: spacing['2xl'],
+    flex: 1,
   },
-  headerSection: {
-    gap: spacing.md,
-  },
-  headerRow: {
+  header: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.md,
+    paddingTop: spacing.xl,
+    paddingBottom: spacing.lg,
+    gap: spacing.sm,
   },
   backButton: {
-    borderRadius: radius.lg,
-    overflow: 'hidden',
-    padding: spacing.xs,
+    padding: spacing.sm,
+    paddingTop: spacing.xs,
+    borderRadius: radius.full,
   },
-  headerText: {
-    gap: spacing.xs,
+  titleContainer: {
+    flex: 1,
   },
   scheduleCardContent: { gap: spacing.md },
   dayRows: { gap: spacing.sm + 2 },
@@ -92,14 +96,14 @@ const ScheduleEditorScreen: React.FC = () => {
 
   const handleBack = useCallback(() => {
     void Haptics.selectionAsync();
-    router.back();
+    router.push('/(tabs)/plans');
   }, [router]);
 
   const handleSave = useCallback(async () => {
     const success = await saveSchedule();
 
     if (success) {
-      router.back();
+      router.push('/(tabs)/plans');
     }
   }, [router, saveSchedule]);
 
@@ -107,54 +111,55 @@ const ScheduleEditorScreen: React.FC = () => {
   const headerSubtitle = 'Assign plans to each day or mark rest days.';
 
   return (
-    <View style={[styles.container, { paddingTop: spacing['2xl'] + insets.top }]}>
-      <View style={styles.headerSection}>
-        <View style={styles.headerRow}>
-          <View style={styles.headerText}>
-            <Text variant="heading1" color="primary">
-              {headerTitle}
-            </Text>
-            <Text variant="body" color="secondary">
-              {headerSubtitle}
-            </Text>
-          </View>
-          <Pressable
-            style={({ pressed }) => [styles.backButton, pressed ? { opacity: opacity.hover } : null]}
-            accessibilityRole="button"
-            accessibilityLabel="Go back"
-            onPress={handleBack}
-          >
-            <IconSymbol name="arrow-back" color={colors.text.primary} size={24} />
-          </Pressable>
+    <View style={[styles.container, { paddingTop: insets.top }]}>
+      <View style={styles.header}>
+        <View style={styles.titleContainer}>
+          <Text variant="heading2" color="primary">
+            {headerTitle}
+          </Text>
+          <Text variant="body" color="secondary">
+            {headerSubtitle}
+          </Text>
         </View>
+        <Pressable
+          style={({ pressed }) => [styles.backButton, pressed ? { opacity: opacity.hover } : null]}
+          accessibilityRole="button"
+          accessibilityLabel="Go back"
+          onPress={handleBack}
+          hitSlop={8}
+        >
+          <IconSymbol name="arrow-back" color={colors.text.primary} size={24} />
+        </Pressable>
       </View>
 
-      <SurfaceCard padding="xl" tone="neutral" showAccentStripe={false}>
-        <View style={styles.scheduleCardContent}>
-          <View style={styles.dayRows}>
-            {WEEKDAY_LABELS.map(({ key, label }) => {
-              const assignedPlanId = draftWeekdays[key];
-              const assignedName = assignedPlanId ? planNameLookup[assignedPlanId] : null;
+      <View style={styles.contentContainer}>
+        <SurfaceCard padding="xl" tone="neutral" showAccentStripe={false}>
+          <View style={styles.scheduleCardContent}>
+            <View style={styles.dayRows}>
+              {WEEKDAY_LABELS.map(({ key, label }) => {
+                const assignedPlanId = draftWeekdays[key];
+                const assignedName = assignedPlanId ? planNameLookup[assignedPlanId] : null;
 
-              return (
-                <Pressable
-                  key={key}
-                  style={({ pressed }) => [styles.dayPressable, pressed ? styles.dayPressablePressed : null]}
-                  accessibilityRole="button"
-                  accessibilityLabel={`Assign plan to ${label}`}
-                  onPress={() => selectDay(key)}
-                >
-                  <Text variant="bodySemibold" color="primary" style={styles.dayLabel}>{label}</Text>
-                  <Text variant="body" color="secondary" style={styles.dayPlanName}>{assignedName ?? 'Rest Day'}</Text>
-                </Pressable>
-              );
-            })}
+                return (
+                  <Pressable
+                    key={key}
+                    style={({ pressed }) => [styles.dayPressable, pressed ? styles.dayPressablePressed : null]}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Assign plan to ${label}`}
+                    onPress={() => selectDay(key)}
+                  >
+                    <Text variant="bodySemibold" color="primary" style={styles.dayLabel}>{label}</Text>
+                    <Text variant="body" color="secondary" style={styles.dayPlanName}>{assignedName ?? 'Rest Day'}</Text>
+                  </Pressable>
+                );
+              })}
+            </View>
           </View>
-        </View>
-      </SurfaceCard>
+        </SurfaceCard>
 
-      <View style={styles.saveButtonWrapper}>
-        <Button label="Save Schedule" onPress={handleSave} size="lg" loading={isSaving} />
+        <View style={styles.saveButtonWrapper}>
+          <Button label="Save Schedule" onPress={handleSave} size="lg" loading={isSaving} />
+        </View>
       </View>
 
       <Modal

@@ -174,6 +174,13 @@ const CreateWorkoutScreen: React.FC = () => {
 
       // If editing, go explicitly to My Programs (Plans tab)
       router.push('/(tabs)/plans');
+    } else if (premadeWorkoutId) {
+      // If reviewing a premade workout, go back to Browse Workouts
+      // Using explicit push instead of back() because back() was navigating to dashboard in Tabs layout
+      router.push({
+        pathname: '/(tabs)/browse-programs',
+        params: { mode: 'workout' }
+      });
     } else {
       // If creating, go back to Add Workout
       router.replace({
@@ -181,7 +188,7 @@ const CreateWorkoutScreen: React.FC = () => {
         params: { mode: 'workout' }
       });
     }
-  }, [router, planId, decodedReturnTo]);
+  }, [router, planId, decodedReturnTo, premadeWorkoutId]);
 
   const handleSavePlanPress = useCallback(() => {
     void (async () => {

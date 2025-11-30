@@ -145,8 +145,11 @@ export const CustomTabBar: React.FC<BottomTabBarProps> = ({ state, navigation })
                   const isCreateProgramScreen = currentRouteName === 'create-program';
                   const isBrowseProgramsScreen = currentRouteName === 'browse-programs';
                   const isAddWorkoutScreen = currentRouteName === 'add-workout';
+                  const isProgramDetailsScreen = currentRouteName === 'program-details';
+                  const isEditPlanScreen = currentRouteName === 'edit-plan';
+                  const isEditScheduleScreen = currentRouteName === 'schedule-editor';
                   const isPlansTab = route.name === 'plans';
-                  const isFocused = state.index === index || (isCreateWorkoutScreen && isPlansTab) || (isCreateProgramScreen && isPlansTab) || (isBrowseProgramsScreen && isPlansTab) || (isAddWorkoutScreen && isPlansTab);
+                  const isFocused = state.index === index || (isCreateWorkoutScreen && isPlansTab) || (isCreateProgramScreen && isPlansTab) || (isBrowseProgramsScreen && isPlansTab) || (isAddWorkoutScreen && isPlansTab) || (isProgramDetailsScreen && isPlansTab) || (isEditPlanScreen && isPlansTab) || (isEditScheduleScreen && isPlansTab);
                   const isWorkoutRoute = route.name === 'workout';
                   const showActiveSessionGlow = isWorkoutRoute && isSessionActive;
                   const animatedStyle = useAnimatedStyle(() => ({

@@ -65,83 +65,64 @@ const RootLayout: React.FC = () => {
           <GestureHandlerRootView
             style={[styles.root, isDarkMode ? styles.rootDark : styles.rootLight]}
           >
-          <ThemeProvider value={navigationTheme}>
-            <Stack
-              screenOptions={{
-                headerShown: false,
-                animation: 'slide_from_bottom',
-              }}
-            >
-              <Stack.Screen name="(tabs)" options={{ headerShown: false, animation: 'none' }} />
-              <Stack.Screen
-                name="plan-detail"
-                options={{
-                  animation: 'none',
+            <ThemeProvider value={navigationTheme}>
+              <Stack
+                screenOptions={{
                   headerShown: false,
-                  presentation: 'transparentModal',
-                  contentStyle: {
-                    backgroundColor: 'transparent',
-                  },
+                  animation: 'slide_from_bottom',
                 }}
+              >
+                <Stack.Screen name="(tabs)" options={{ headerShown: false, animation: 'none' }} />
+                <Stack.Screen
+                  name="plan-detail"
+                  options={{
+                    animation: 'none',
+                    headerShown: false,
+                    presentation: 'transparentModal',
+                    contentStyle: {
+                      backgroundColor: 'transparent',
+                    },
+                  }}
+                />
+                <Stack.Screen
+                  name="workout-edit"
+                  options={{
+                    animation: 'slide_from_right',
+                    headerShown: false,
+                  }}
+                />
+                <Stack.Screen
+                  name="workout-success"
+                  options={{
+                    headerShown: false,
+                    animation: 'none',
+                  }}
+                />
+                <Stack.Screen
+                  name="add-exercises"
+                  options={{
+                    presentation: 'card',
+                    headerShown: false,
+                    animation: 'none',
+                  }}
+                />
+                <Stack.Screen
+                  name="quiz"
+                  options={{
+                    headerShown: false,
+                    presentation: 'transparentModal',
+                    animation: 'none',
+                  }}
+                />
+                <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
+              </Stack>
+              <StatusBar
+                animated
+                backgroundColor={statusBarBackgroundColor}
+                style={Platform.OS === 'android' ? androidStatusBarStyle : statusBarStyle}
               />
-              <Stack.Screen
-                name="workout-edit"
-                options={{
-                  animation: 'slide_from_right',
-                  headerShown: false,
-                }}
-              />
-              <Stack.Screen
-                name="schedule-editor"
-                options={{
-                  animation: 'none',
-                  headerShown: false,
-                  presentation: 'transparentModal',
-                  contentStyle: {
-                    backgroundColor: 'transparent',
-                  },
-                }}
-              />
-              <Stack.Screen
-                name="workout-success"
-                options={{
-                  headerShown: false,
-                  animation: 'none',
-                }}
-              />
-              <Stack.Screen
-                name="add-exercises"
-                options={{
-                  presentation: 'card',
-                  headerShown: false,
-                  animation: 'none',
-                }}
-              />
-              <Stack.Screen
-                name="quiz"
-                options={{
-                  headerShown: false,
-                  presentation: 'transparentModal',
-                  animation: 'none',
-                }}
-              />
-              <Stack.Screen
-                name="edit-plan"
-                options={{
-                  animation: 'slide_from_right',
-                  headerShown: false,
-                }}
-              />
-
-              <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
-            </Stack>
-            <StatusBar
-              animated
-              backgroundColor={statusBarBackgroundColor}
-              style={Platform.OS === 'android' ? androidStatusBarStyle : statusBarStyle}
-            />
-          </ThemeProvider>
-        </GestureHandlerRootView>
+            </ThemeProvider>
+          </GestureHandlerRootView>
         </ProgramBuilderProvider>
       </PlanBuilderProvider>
     </AuthProvider>

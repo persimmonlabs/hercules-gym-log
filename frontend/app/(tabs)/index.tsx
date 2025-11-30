@@ -629,7 +629,7 @@ const DashboardScreen: React.FC = () => {
       return;
     }
 
-    router.push('/schedule-editor');
+    router.push('/(tabs)/schedule-editor');
   }, [router, todaysCardState]);
 
   const handleCreatePlanPress = useCallback(() => {
@@ -721,7 +721,11 @@ const DashboardScreen: React.FC = () => {
       >
         <View style={styles.container}>
           <View style={styles.contentContainer}>
-            <ScreenHeader title="Dashboard" subtitle="Stay on top of your training journey." />
+            <ScreenHeader 
+              title="Dashboard" 
+              subtitle="Stay on top of your training journey."
+              onProfilePress={() => router.push('/modals/profile')}
+            />
 
             <Animated.View style={weeklyTrackerAnimatedStyle}>
               <Pressable style={styles.pressableStretch}>
@@ -930,9 +934,6 @@ const DashboardScreen: React.FC = () => {
                           <View style={styles.quickLinkInfo}>
                             <Text variant="bodySemibold" color="primary">
                               {link.title}
-                            </Text>
-                            <Text variant="body" color="secondary">
-                              {link.description}
                             </Text>
                           </View>
                           <View style={styles.quickLinkButton}>

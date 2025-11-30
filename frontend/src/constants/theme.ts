@@ -201,6 +201,9 @@ export const sizing = {
   iconLG: 32,
   iconXL: 48,
 
+  // Avatar and profile
+  avatar: 80,
+
   // Calendar bubbles
   weekBubble: 40,
   exerciseBadge: 40,

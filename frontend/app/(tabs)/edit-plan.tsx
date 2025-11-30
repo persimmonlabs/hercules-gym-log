@@ -63,18 +63,22 @@ const styles = StyleSheet.create({
     gap: spacing.lg,
     paddingTop: spacing.xl,
     paddingHorizontal: spacing.md,
-    paddingBottom: spacing['2xl'] * 2,
   },
-  topSection: {
-    width: '100%',
-    gap: spacing.md,
+  header: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     justifyContent: 'space-between',
-  },
-  headerContent: {
+    paddingHorizontal: spacing.md,
+    paddingTop: spacing.xl,
+    paddingBottom: spacing.lg,
     gap: spacing.sm,
-    alignItems: 'flex-start',
+  },
+  backButton: {
+    padding: spacing.sm,
+    paddingTop: spacing.xs,
+    borderRadius: radius.full,
+  },
+  titleContainer: {
     flex: 1,
   },
   nameCardContainer: {
@@ -215,7 +219,7 @@ export default function EditPlanScreen() {
 
   const handleBackPress = useCallback(() => {
     void Haptics.selectionAsync();
-    router.back();
+    router.push('/(tabs)/plans');
   }, [router]);
 
   const saveChanges = useCallback(async () => {
@@ -250,7 +254,7 @@ export default function EditPlanScreen() {
       const success = await saveChanges();
       if (success) {
         void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        router.back();
+        router.push('/(tabs)/plans');
       }
     } catch (error) {
       console.error('[EditPlanScreen] Failed to save:', error);
@@ -319,7 +323,7 @@ export default function EditPlanScreen() {
 
     // Navigate to edit workout screen with returnTo parameter
     const compositeId = encodeURIComponent(`program:${planId}:${workout.id}`);
-    const returnTo = encodeURIComponent(`/edit-plan?planId=${planId}`);
+    const returnTo = encodeURIComponent(`/(tabs)/edit-plan?planId=${planId}`);
     router.push(`/(tabs)/create-workout?planId=${compositeId}&premadeWorkoutId=&returnTo=${returnTo}`);
   }, [router, planId, saveChanges, planName]);
 
@@ -380,16 +384,19 @@ export default function EditPlanScreen() {
 
   const isSaveDisabled = !planName.trim();
 
+  // Bottom padding to account for tab bar
+  const scrollBottomPadding = spacing['2xl'] * 2 + insets.bottom;
+
   if (!program) {
     return (
       <View style={[styles.container, { paddingTop: insets.top }]}>
-        <ScrollView contentContainerStyle={styles.scrollContent}>
-          <View style={styles.topSection}>
-            <View style={styles.headerContent}>
+        <ScrollView contentContainerStyle={[styles.scrollContent, { paddingBottom: scrollBottomPadding }]}>
+          <View style={styles.header}>
+            <View style={styles.titleContainer}>
               <Text variant="heading2" color="primary">Edit Plan</Text>
             </View>
-            <Pressable onPress={handleBackPress} style={{ padding: spacing.sm }}>
-              <IconSymbol name="arrow-back" size={sizing.iconMD} color={colors.text.primary} />
+            <Pressable onPress={handleBackPress} style={styles.backButton} hitSlop={8}>
+              <IconSymbol name="arrow-back" size={24} color={colors.text.primary} />
             </Pressable>
           </View>
           
@@ -409,17 +416,17 @@ export default function EditPlanScreen() {
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <ScrollView 
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: scrollBottomPadding }]}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
         {/* Header */}
-        <View style={styles.topSection}>
-          <View style={styles.headerContent}>
-            <Text variant="heading2" color="primary" fadeIn>
+        <View style={styles.header}>
+          <View style={styles.titleContainer}>
+            <Text variant="heading2" color="primary">
               Edit Plan
             </Text>
-            <Text variant="body" color="secondary" fadeIn>
+            <Text variant="body" color="secondary">
               Customize your training schedule
             </Text>
           </View>
@@ -427,9 +434,10 @@ export default function EditPlanScreen() {
             accessibilityRole="button"
             accessibilityLabel="Go Back"
             onPress={handleBackPress}
-            style={{ padding: spacing.sm, paddingTop: spacing.xs, borderRadius: radius.full }}
+            style={styles.backButton}
+            hitSlop={8}
           >
-            <IconSymbol name="arrow-back" size={sizing.iconMD} color={colors.text.primary} />
+            <IconSymbol name="arrow-back" size={24} color={colors.text.primary} />
           </Pressable>
         </View>
 

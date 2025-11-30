@@ -335,7 +335,7 @@ const PlansScreen: React.FC = () => {
   const handleEditProgram = useCallback((program: any) => {
     void Haptics.selectionAsync();
     setExpandedPlanId(null);
-    router.push({ pathname: '/edit-plan', params: { planId: program.id } });
+    router.push({ pathname: '/(tabs)/edit-plan', params: { planId: program.id } });
   }, [router]);
 
   const executeDelete = useCallback(async (item: any) => {
@@ -456,10 +456,10 @@ const PlansScreen: React.FC = () => {
     // If there's an active plan, go to edit-plan to edit the schedule
     // This works for both weekly and rotation schedules
     if (activePlanId) {
-      router.push({ pathname: '/edit-plan', params: { planId: activePlanId } });
+      router.push({ pathname: '/(tabs)/edit-plan', params: { planId: activePlanId } });
     } else {
       // Fall back to the legacy schedule editor for standalone weekly schedules
-      router.push('/schedule-editor');
+      router.push('/(tabs)/schedule-editor');
     }
   }, [router, activePlanId]);
 

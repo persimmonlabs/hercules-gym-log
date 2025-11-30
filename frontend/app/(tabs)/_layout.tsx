@@ -77,6 +77,27 @@ export default function TabLayout() {
             title: 'Create Plan',
           }}
         />
+        <Tabs.Screen
+          name="program-details"
+          options={{
+            href: null,
+            title: 'Program Details',
+          }}
+        />
+        <Tabs.Screen
+          name="edit-plan"
+          options={{
+            href: null,
+            title: 'Edit Plan',
+          }}
+        />
+        <Tabs.Screen
+          name="schedule-editor"
+          options={{
+            href: null,
+            title: 'Edit Schedule',
+          }}
+        />
       </Tabs>
     </View>
   );
