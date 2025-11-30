@@ -126,7 +126,6 @@ export default function ProgramDetailsScreen() {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => { });
 
       // Navigate back to Plans tab
-      router.dismissAll();
       router.replace('/(tabs)/plans');
     } catch (error) {
       console.error('Failed to add program:', error);
@@ -166,7 +165,6 @@ export default function ProgramDetailsScreen() {
         'This program is now your active rotation schedule. Check the Dashboard for your next workout.',
         [{
           text: 'OK', onPress: () => {
-            router.dismissAll();
             router.replace('/(tabs)');
           }
         }]

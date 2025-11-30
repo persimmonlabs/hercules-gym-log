@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo } from 'react';
 import { View, StyleSheet, Pressable } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import type { Href } from 'expo-router';
 import type { ViewStyle } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -34,6 +34,8 @@ import { useWorkoutSessionsStore, type WorkoutSessionsState } from '@/store/work
 import type { Workout, WorkoutExercise, SetLog } from '@/types/workout';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { useSessionStore } from '@/store/sessionStore';
+import { useAuth } from '@/providers/AuthProvider';
+import { supabaseClient } from '@/lib/supabaseClient';
 import type { Schedule } from '@/types/schedule';
 import type { UserProgram, RotationSchedule, ProgramWorkout } from '@/types/premadePlan';
 
@@ -388,7 +390,56 @@ const styles = StyleSheet.create({
 });
 
 const DashboardScreen: React.FC = () => {
+  const { user } = useAuth();
+  const [firstName, setFirstName] = React.useState<string | null>(null);
   const workouts = useWorkoutSessionsStore((state: WorkoutSessionsState) => state.workouts);
+
+  useEffect(() => {
+    if (user?.user_metadata?.first_name) {
+      setFirstName(user.user_metadata.first_name);
+    } else if (user?.id) {
+      // Fallback check if metadata is missing but profile exists
+      supabaseClient
+        .from('profiles')
+        .select('first_name')
+        .eq('id', user.id)
+        .single()
+        .then(({ data }) => {
+          if (data?.first_name) {
+            setFirstName(data.first_name);
+          }
+        });
+    } else {
+      setFirstName(null);
+    }
+  }, [user]);
+
+  // Force refresh when screen comes into focus (e.g. returning from profile modal)
+  useFocusEffect(
+    useCallback(() => {
+      const refreshName = async () => {
+        // Fetch fresh user object to get latest metadata
+        const { data: { user: freshUser } } = await supabaseClient.auth.getUser();
+        
+        if (freshUser?.user_metadata?.first_name) {
+          setFirstName(freshUser.user_metadata.first_name);
+        } else if (freshUser?.id) {
+           // Fallback to profile table
+           const { data } = await supabaseClient
+             .from('profiles')
+             .select('first_name')
+             .eq('id', freshUser.id)
+             .single();
+             
+           if (data?.first_name) {
+             setFirstName(data.first_name);
+           }
+        }
+      };
+      
+      void refreshName();
+    }, [])
+  );
 
   const weekTracker = useMemo<WeekDayTracker[]>(() => {
     return createWeekTracker(workouts);
@@ -722,7 +773,7 @@ const DashboardScreen: React.FC = () => {
         <View style={styles.container}>
           <View style={styles.contentContainer}>
             <ScreenHeader 
-              title="Dashboard" 
+              title={firstName ? `Welcome, ${firstName}!` : 'Welcome!'}
               subtitle="Stay on top of your training journey."
               onProfilePress={() => router.push('/modals/profile')}
             />

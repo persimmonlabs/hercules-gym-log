@@ -81,14 +81,13 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
   },
   profileButton: {
-    width: spacing.xl,
-    height: spacing.xl,
+    width: 40,
+    height: 40,
     borderRadius: radius.full,
     backgroundColor: colors.surface.card,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
     borderColor: colors.accent.orangeLight,
-    ...shadows.sm,
   },
 });

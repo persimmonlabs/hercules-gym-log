@@ -29,18 +29,13 @@ import { PlanSelectedExerciseList } from '@/components/molecules/PlanSelectedExe
 import { useSemanticExerciseSearch } from '@/hooks/useSemanticExerciseSearch';
 import { type Plan, type PlansState, usePlansStore } from '@/store/plansStore';
 import { useProgramsStore } from '@/store/programsStore';
-import type { PlanExercise, WorkoutPlan } from '@/types/plan';
-import { savePlan } from '@/utils/storage';
 import { exercises, type Exercise, type ExerciseCatalogItem } from '@/constants/exercises';
 import { timingSlow } from '@/constants/animations';
 import { colors, radius, spacing, sizing, zIndex } from '@/constants/theme';
 
 const SCREEN_HEIGHT = Dimensions.get('window').height;
-const DEFAULT_PLAN_SET_COUNT = 3;
 
 type SubmitPlanResult = 'success' | 'missing-name' | 'no-exercises' | 'error';
-
-const createPlanIdentifier = (): string => `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
 const styles = StyleSheet.create({
   container: {
@@ -291,37 +286,24 @@ const CreatePlanScreen: React.FC = () => {
     }
 
     const isEditingPlan = Boolean(editingPlanId);
-    const planIdentifier = isEditingPlan ? (editingPlanId as string) : createPlanIdentifier();
     const createdAtTimestamp = isEditingPlan && editingPlanCreatedAt
       ? editingPlanCreatedAt
       : Date.now();
-    const planExercises: PlanExercise[] = selectedExercises.map((exercise) => ({
-      id: exercise.id,
-      name: exercise.name,
-      sets: DEFAULT_PLAN_SET_COUNT,
-    }));
-
-    const payload: WorkoutPlan = {
-      id: planIdentifier,
-      name: trimmedName,
-      exercises: planExercises,
-      createdAt: new Date(createdAtTimestamp).toISOString(),
-    };
 
     try {
-      console.log('[create-plan] Submitting plan payload', payload);
-      await savePlan(payload);
+      console.log('[create-plan] Submitting plan', { name: trimmedName, exerciseCount: selectedExercises.length });
 
       if (isEditingPlan) {
-        updatePlanStore({
-          id: planIdentifier,
+        // Update existing plan - the store handles Supabase sync
+        await updatePlanStore({
+          id: editingPlanId as string,
           name: trimmedName,
           exercises: selectedExercises,
           createdAt: createdAtTimestamp,
         });
       } else {
-        persistPlan({
-          id: planIdentifier,
+        // Create new plan - the store handles Supabase sync
+        await persistPlan({
           name: trimmedName,
           exercises: selectedExercises,
           createdAt: createdAtTimestamp,

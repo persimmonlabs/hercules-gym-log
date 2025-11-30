@@ -11,7 +11,6 @@
  * Both refer to a collection of workouts.
  */
 import { create } from 'zustand';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import type {
   PremadeProgram,
   UserProgram,
@@ -23,20 +22,27 @@ import type {
 } from '@/types/premadePlan';
 import premadeData from '@/data/premadePrograms.json';
 import premadeWorkoutsData from '@/data/premadeWorkouts.json';
-
-const USER_PROGRAMS_KEY = '@hercules/user-programs';
-const ACTIVE_ROTATION_KEY = '@hercules/active-rotation';
-const ACTIVE_PLAN_KEY = '@hercules/active-plan';
+import { supabaseClient } from '@/lib/supabaseClient';
+import {
+  fetchUserPlans,
+  createUserPlan,
+  updateUserPlan,
+  deleteUserPlan,
+  setActivePlan as setActivePlanInDB,
+  updateRotationState,
+  type RotationStateDB,
+} from '@/lib/supabaseQueries';
 
 interface ProgramsState {
   premadePrograms: PremadeProgram[];
   premadeWorkouts: PremadeWorkout[];
   userPrograms: UserProgram[];
   activeRotation: RotationSchedule | null;
+  isLoading: boolean;
 
   // Actions
   loadPremadePrograms: () => void;
-  addUserProgram: (program: UserProgram) => Promise<void>;
+  addUserProgram: (program: UserProgram) => Promise<string | null>;
   clonePremadeProgram: (premadeId: string) => Promise<UserProgram | null>;
   updateUserProgram: (program: UserProgram) => Promise<void>;
   deleteUserProgram: (id: string) => Promise<void>;
@@ -68,6 +74,7 @@ export const useProgramsStore = create<ProgramsState>((set, get) => ({
   userPrograms: [],
   activeRotation: null,
   activePlanId: null,
+  isLoading: false,
 
   loadPremadePrograms: () => {
     // Deep clone premade data to prevent accidental mutations
@@ -83,37 +90,79 @@ export const useProgramsStore = create<ProgramsState>((set, get) => ({
 
   hydratePrograms: async () => {
     try {
+      set({ isLoading: true });
+
       // Load Premade
       get().loadPremadePrograms();
 
-      // Load User Programs
-      const storedPrograms = await AsyncStorage.getItem(USER_PROGRAMS_KEY);
-      if (storedPrograms) {
-        set({ userPrograms: JSON.parse(storedPrograms) });
+      // Load User Programs from Supabase
+      const { data: { user } } = await supabaseClient.auth.getUser();
+
+      if (!user) {
+        console.log('[programsStore] No authenticated user, skipping user programs');
+        set({ userPrograms: [], activePlanId: null, isLoading: false });
+        return;
       }
 
-      // Load Active Rotation
-      const storedRotation = await AsyncStorage.getItem(ACTIVE_ROTATION_KEY);
-      if (storedRotation) {
-        set({ activeRotation: JSON.parse(storedRotation) });
+      const userPrograms = await fetchUserPlans(user.id);
+
+      // Find active plan
+      const activePlan = userPrograms.find(p => (p as any).is_active);
+      const activePlanId = activePlan?.id || null;
+
+      // Load Active Rotation from the active plan's rotation_state
+      let activeRotation: RotationSchedule | null = null;
+      if (activePlan && (activePlan as any).rotation_state) {
+        const rotState = (activePlan as any).rotation_state as RotationStateDB;
+        activeRotation = {
+          id: `rot-${activePlan.id}`,
+          name: activePlan.name,
+          programId: activePlan.id,
+          workoutSequence: rotState.workoutSequence || [],
+          currentIndex: rotState.currentIndex || 0,
+          lastAdvancedAt: rotState.lastAdvancedAt,
+        };
       }
 
-      // Load Active Plan ID
-      const storedActivePlanId = await AsyncStorage.getItem(ACTIVE_PLAN_KEY);
-      if (storedActivePlanId) {
-        set({ activePlanId: storedActivePlanId });
-      }
+      set({
+        userPrograms,
+        activePlanId,
+        activeRotation,
+        isLoading: false
+      });
 
-      console.log('[programsStore] Hydrated successfully');
+      console.log('[programsStore] Hydrated successfully from Supabase');
     } catch (error) {
       console.error('[programsStore] Failed to hydrate:', error);
+      set({ isLoading: false });
     }
   },
 
-  addUserProgram: async (program) => {
-    const nextPrograms = [program, ...get().userPrograms];
-    set({ userPrograms: nextPrograms });
-    await AsyncStorage.setItem(USER_PROGRAMS_KEY, JSON.stringify(nextPrograms));
+  addUserProgram: async (program): Promise<string | null> => {
+    try {
+      const { data: { user } } = await supabaseClient.auth.getUser();
+      if (!user) {
+        console.error('[programsStore] No authenticated user');
+        return null;
+      }
+
+      // Create in Supabase and get the generated UUID
+      const newPlanId = await createUserPlan(user.id, program);
+
+      // Update the program with the Supabase-generated ID
+      const programWithId = { ...program, id: newPlanId };
+
+      // Update local state
+      const nextPrograms = [programWithId, ...get().userPrograms];
+      set({ userPrograms: nextPrograms });
+
+      console.log('[programsStore] Program added to Supabase with ID:', newPlanId);
+      return newPlanId;
+    } catch (error) {
+      console.error('[programsStore] Failed to add program', error);
+      await get().hydratePrograms();
+      return null;
+    }
   },
 
   clonePremadeProgram: async (premadeId) => {
@@ -196,7 +245,7 @@ export const useProgramsStore = create<ProgramsState>((set, get) => ({
       ...premade,
       name: newName,
       workouts,
-      id: programId,
+      id: programId, // Temporary - will be replaced
       isPremade: false,
       sourceId: premade.id,
       createdAt: Date.now(),
@@ -204,32 +253,80 @@ export const useProgramsStore = create<ProgramsState>((set, get) => ({
       schedule: schedule,
     };
 
-    await get().addUserProgram(userProgram);
-    await get().setActivePlan(programId);
-    return userProgram;
+    // Add to Supabase and get the real UUID
+    const realProgramId = await get().addUserProgram(userProgram);
+
+    // Set as active using the real ID from Supabase
+    if (realProgramId) {
+      await get().setActivePlan(realProgramId);
+
+      // Set rotation with real ID if needed
+      if (premade.scheduleType === 'rotation' && premade.suggestedSchedule?.rotation && schedule) {
+        const rotationSchedule: RotationSchedule = {
+          id: `rot-${Date.now()}`,
+          name: newName,
+          programId: realProgramId,
+          workoutSequence: schedule.rotation?.workoutOrder || [],
+          currentIndex: 0,
+          lastAdvancedAt: Date.now(),
+        };
+        await get().setActiveRotation(rotationSchedule);
+      }
+
+      return { ...userProgram, id: realProgramId };
+    }
+
+    return null;
   },
 
   updateUserProgram: async (program) => {
-    const nextPrograms = get().userPrograms.map(p =>
-      p.id === program.id ? { ...program, modifiedAt: Date.now() } : p
-    );
-    set({ userPrograms: nextPrograms });
-    await AsyncStorage.setItem(USER_PROGRAMS_KEY, JSON.stringify(nextPrograms));
+    try {
+      const { data: { user } } = await supabaseClient.auth.getUser();
+      if (!user) {
+        console.error('[programsStore] No authenticated user');
+        return;
+      }
+
+      const updatedProgram = { ...program, modifiedAt: Date.now() };
+      const nextPrograms = get().userPrograms.map(p =>
+        p.id === program.id ? updatedProgram : p
+      );
+      set({ userPrograms: nextPrograms });
+
+      await updateUserPlan(user.id, updatedProgram);
+      console.log('[programsStore] Program updated in Supabase');
+    } catch (error) {
+      console.error('[programsStore] Failed to update program', error);
+      await get().hydratePrograms();
+    }
   },
 
   deleteUserProgram: async (id) => {
-    const nextPrograms = get().userPrograms.filter(p => p.id !== id);
-    set({ userPrograms: nextPrograms });
-    await AsyncStorage.setItem(USER_PROGRAMS_KEY, JSON.stringify(nextPrograms));
+    try {
+      const { data: { user } } = await supabaseClient.auth.getUser();
+      if (!user) {
+        console.error('[programsStore] No authenticated user');
+        return;
+      }
 
-    // Clear active plan if it was the deleted one
-    if (get().activePlanId === id) {
-      await get().setActivePlan(null);
-    }
+      const nextPrograms = get().userPrograms.filter(p => p.id !== id);
+      set({ userPrograms: nextPrograms });
 
-    // Clear active rotation if it was the deleted one
-    if (get().activeRotation?.programId === id) {
-      await get().setActiveRotation(null);
+      // Clear active plan if it was the deleted one
+      if (get().activePlanId === id) {
+        await get().setActivePlan(null);
+      }
+
+      // Clear active rotation if it was the deleted one
+      if (get().activeRotation?.programId === id) {
+        await get().setActiveRotation(null);
+      }
+
+      await deleteUserPlan(user.id, id);
+      console.log('[programsStore] Program deleted from Supabase');
+    } catch (error) {
+      console.error('[programsStore] Failed to delete program', error);
+      await get().hydratePrograms();
     }
   },
 
@@ -330,11 +427,18 @@ export const useProgramsStore = create<ProgramsState>((set, get) => ({
   },
 
   setActivePlan: async (programId) => {
-    set({ activePlanId: programId });
-    if (programId) {
-      await AsyncStorage.setItem(ACTIVE_PLAN_KEY, programId);
-    } else {
-      await AsyncStorage.removeItem(ACTIVE_PLAN_KEY);
+    try {
+      const { data: { user } } = await supabaseClient.auth.getUser();
+      if (!user) {
+        console.error('[programsStore] No authenticated user');
+        return;
+      }
+
+      set({ activePlanId: programId });
+      await setActivePlanInDB(user.id, programId);
+      console.log('[programsStore] Active plan set in Supabase');
+    } catch (error) {
+      console.error('[programsStore] Failed to set active plan', error);
     }
   },
 
@@ -393,10 +497,33 @@ export const useProgramsStore = create<ProgramsState>((set, get) => ({
 
   setActiveRotation: async (rotation) => {
     set({ activeRotation: rotation });
-    if (rotation) {
-      await AsyncStorage.setItem(ACTIVE_ROTATION_KEY, JSON.stringify(rotation));
-    } else {
-      await AsyncStorage.removeItem(ACTIVE_ROTATION_KEY);
+
+    try {
+      const { data: { user } } = await supabaseClient.auth.getUser();
+      if (!user) {
+        console.error('[programsStore] No authenticated user for rotation update');
+        return;
+      }
+
+      if (rotation) {
+        // Save rotation state to the plan's rotation_state column
+        const rotationState: RotationStateDB = {
+          workoutSequence: rotation.workoutSequence,
+          currentIndex: rotation.currentIndex,
+          lastAdvancedAt: rotation.lastAdvancedAt || Date.now(),
+        };
+        await updateRotationState(user.id, rotation.programId, rotationState);
+        console.log('[programsStore] Rotation state saved to Supabase');
+      } else {
+        // Clear rotation state from the active plan
+        const activePlanId = get().activePlanId;
+        if (activePlanId) {
+          await updateRotationState(user.id, activePlanId, null);
+          console.log('[programsStore] Rotation state cleared in Supabase');
+        }
+      }
+    } catch (error) {
+      console.error('[programsStore] Failed to save rotation state:', error);
     }
   },
 
@@ -421,10 +548,5 @@ export const useProgramsStore = create<ProgramsState>((set, get) => ({
   }
 }));
 
-// Auto-hydration
-const hydrateProgramsOnStartup = () => {
-  void useProgramsStore.getState().hydratePrograms();
-};
-
-// Execute immediately
-hydrateProgramsOnStartup();
+// Note: Hydration is now triggered by auth state changes in _layout.tsx
+// This prevents hydration before the user is authenticated

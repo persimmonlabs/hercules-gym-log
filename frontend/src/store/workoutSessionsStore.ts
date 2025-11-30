@@ -1,14 +1,17 @@
 import { create } from 'zustand';
 
 import type { Workout } from '@/types/workout';
+import { supabaseClient } from '@/lib/supabaseClient';
 import {
-  clearStoredWorkoutSessions,
-  loadStoredWorkoutSessions,
-  persistStoredWorkoutSessions,
-} from '@/utils/workoutSessionStorage';
+  fetchWorkoutSessions,
+  createWorkoutSession,
+  updateWorkoutSession,
+  deleteWorkoutSession,
+} from '@/lib/supabaseQueries';
 
 interface WorkoutSessionsState {
   workouts: Workout[];
+  isLoading: boolean;
   addWorkout: (workout: Workout) => Promise<void>;
   updateWorkout: (workout: Workout) => Promise<void>;
   deleteWorkout: (id: string) => Promise<void>;
@@ -19,70 +22,103 @@ interface WorkoutSessionsState {
 
 export const useWorkoutSessionsStore = create<WorkoutSessionsState>((set, get) => ({
   workouts: [],
+  isLoading: false,
+
   addWorkout: async (workout) => {
-    const next = [workout, ...get().workouts];
-    set({ workouts: next });
-
     try {
-      await persistStoredWorkoutSessions(next);
+      const { data: { user } } = await supabaseClient.auth.getUser();
+      if (!user) {
+        console.error('[workoutSessionsStore] No authenticated user');
+        return;
+      }
+
+      // Create in Supabase and get the generated UUID
+      const newId = await createWorkoutSession(user.id, workout);
+
+      // Update the workout with the Supabase-generated ID
+      const workoutWithId = { ...workout, id: newId };
+
+      // Update local state
+      const next = [workoutWithId, ...get().workouts];
+      set({ workouts: next });
+
+      console.log('[workoutSessionsStore] Workout added to Supabase with ID:', newId);
     } catch (error) {
-      console.error('[workoutSessionsStore] Failed to persist workouts after add', error);
+      console.error('[workoutSessionsStore] Failed to add workout', error);
+      // Revert optimistic update on error
+      await get().hydrateWorkouts();
     }
   },
+
   updateWorkout: async (workout) => {
-    const next = get().workouts.map((existing) => (existing.id === workout.id ? workout : existing));
-    set({ workouts: next });
-
     try {
-      await persistStoredWorkoutSessions(next);
+      const { data: { user } } = await supabaseClient.auth.getUser();
+      if (!user) {
+        console.error('[workoutSessionsStore] No authenticated user');
+        return;
+      }
+
+      // Optimistic update
+      const next = get().workouts.map((existing) => (existing.id === workout.id ? workout : existing));
+      set({ workouts: next });
+
+      // Sync to Supabase
+      await updateWorkoutSession(user.id, workout);
+      console.log('[workoutSessionsStore] Workout updated in Supabase');
     } catch (error) {
-      console.error('[workoutSessionsStore] Failed to persist workouts after update', error);
+      console.error('[workoutSessionsStore] Failed to update workout', error);
+      // Revert optimistic update on error
+      await get().hydrateWorkouts();
     }
   },
+
   deleteWorkout: async (id) => {
-    const next = get().workouts.filter((workout) => workout.id !== id);
-    set({ workouts: next });
-
     try {
-      await persistStoredWorkoutSessions(next);
+      const { data: { user } } = await supabaseClient.auth.getUser();
+      if (!user) {
+        console.error('[workoutSessionsStore] No authenticated user');
+        return;
+      }
+
+      // Optimistic update
+      const next = get().workouts.filter((workout) => workout.id !== id);
+      set({ workouts: next });
+
+      // Sync to Supabase
+      await deleteWorkoutSession(user.id, id);
+      console.log('[workoutSessionsStore] Workout deleted from Supabase');
     } catch (error) {
-      console.error('[workoutSessionsStore] Failed to persist workouts after delete', error);
+      console.error('[workoutSessionsStore] Failed to delete workout', error);
+      // Revert optimistic update on error
+      await get().hydrateWorkouts();
     }
   },
+
   getWorkouts: () => {
     return get().workouts;
   },
+
   clearWorkouts: async () => {
     set({ workouts: [] });
-
-    try {
-      await clearStoredWorkoutSessions();
-    } catch (error) {
-      console.error('[workoutSessionsStore] Failed to clear stored workouts', error);
-    }
   },
+
   hydrateWorkouts: async () => {
     try {
-      const stored = await loadStoredWorkoutSessions();
-      const normalized = stored.map((workout) => ({
-        ...workout,
-        exercises: Array.isArray(workout.exercises)
-          ? workout.exercises.map((exercise) => ({
-              ...exercise,
-              sets: Array.isArray(exercise.sets)
-                ? exercise.sets.map((set) => ({
-                    reps: typeof set.reps === 'number' ? set.reps : 0,
-                    weight: typeof set.weight === 'number' ? set.weight : 0,
-                    completed: Boolean(set.completed),
-                  }))
-                : [],
-            }))
-          : [],
-      }));
+      set({ isLoading: true });
+      const { data: { user } } = await supabaseClient.auth.getUser();
 
-      set({ workouts: normalized });
+      if (!user) {
+        console.log('[workoutSessionsStore] No authenticated user, skipping hydration');
+        set({ workouts: [], isLoading: false });
+        return;
+      }
+
+      const workouts = await fetchWorkoutSessions(user.id);
+      set({ workouts, isLoading: false });
+      console.log('[workoutSessionsStore] Hydrated', workouts.length, 'workouts from Supabase');
     } catch (error) {
       console.error('[workoutSessionsStore] Failed to hydrate workouts', error);
+      set({ workouts: [], isLoading: false });
     }
   },
 }));

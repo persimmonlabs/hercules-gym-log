@@ -10,6 +10,10 @@ import * as Linking from 'expo-linking';
 import { Session, User } from '@supabase/supabase-js';
 
 import { supabaseClient } from '@/lib/supabaseClient';
+import { usePlansStore } from '@/store/plansStore';
+import { useSchedulesStore } from '@/store/schedulesStore';
+import { useProgramsStore } from '@/store/programsStore';
+import { useWorkoutSessionsStore } from '@/store/workoutSessionsStore';
 
 interface AuthProviderProps {
   children: React.ReactNode;
@@ -49,15 +53,40 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
 
       setSession(data.session ?? null);
+
+      // Hydrate stores if user is already logged in
+      if (data.session?.user) {
+        console.log('[AuthProvider] Existing session found, hydrating stores...');
+        await Promise.all([
+          usePlansStore.getState().hydratePlans(),
+          useSchedulesStore.getState().hydrateSchedules(),
+          useProgramsStore.getState().hydratePrograms(),
+          useWorkoutSessionsStore.getState().hydrateWorkouts(),
+        ]);
+        console.log('[AuthProvider] All stores hydrated');
+      }
+
       setIsLoading(false);
     };
 
     void initializeAuth();
 
     const { data: listener } = supabaseClient.auth.onAuthStateChange(
-      (_event, nextSession) => {
+      async (_event, nextSession) => {
         console.log('Supabase auth state changed', nextSession);
         setSession(nextSession);
+
+        // Hydrate all stores when user logs in
+        if (nextSession?.user) {
+          console.log('[AuthProvider] User authenticated, hydrating stores...');
+          await Promise.all([
+            usePlansStore.getState().hydratePlans(),
+            useSchedulesStore.getState().hydrateSchedules(),
+            useProgramsStore.getState().hydratePrograms(),
+            useWorkoutSessionsStore.getState().hydrateWorkouts(),
+          ]);
+          console.log('[AuthProvider] All stores hydrated');
+        }
       },
     );
 

@@ -3,8 +3,9 @@
  * A modal screen for displaying user profile and account preferences
  */
 
-import React from 'react';
-import { StyleSheet, View, Pressable, ScrollView } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import { StyleSheet, View, Pressable, ScrollView, Alert, ActivityIndicator } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import Animated, { useSharedValue, withSpring } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
@@ -12,10 +13,17 @@ import * as Haptics from 'expo-haptics';
 import { Text } from '@/components/atoms/Text';
 import { SurfaceCard } from '@/components/atoms/SurfaceCard';
 import { IconSymbol } from '@/components/ui/icon-symbol';
+import { NameEditModal } from '@/components/molecules/NameEditModal';
 import { colors, spacing, radius, shadows, sizing } from '@/constants/theme';
+import { useAuth } from '@/providers/AuthProvider';
+import { supabaseClient } from '@/lib/supabaseClient';
 
 const ProfileModal: React.FC = () => {
   const router = useRouter();
+  const { user, signOut } = useAuth();
+  const [isSigningOut, setIsSigningOut] = useState(false);
+  const [isNameModalVisible, setIsNameModalVisible] = useState(false);
+  const [userProfile, setUserProfile] = useState<{ first_name: string; last_name: string; full_name: string } | null>(null);
   const backScale = useSharedValue(1);
 
   const handleBackPress = () => {
@@ -29,10 +37,148 @@ const ProfileModal: React.FC = () => {
 
   const handlePreferencePress = () => {
     void Haptics.selectionAsync();
+    // TODO: Navigate to preference screens when implemented
+  };
+
+  const handleSignOut = async () => {
+    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+
+    Alert.alert(
+      'Sign Out',
+      'Are you sure you want to sign out?',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Sign Out',
+          style: 'destructive',
+          onPress: async () => {
+            setIsSigningOut(true);
+            try {
+              await signOut();
+              // Navigation will be handled automatically by the auth state change
+            } catch (error) {
+              console.error('Sign out error:', error);
+              Alert.alert('Error', 'Failed to sign out. Please try again.');
+              setIsSigningOut(false);
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  // Fetch user profile data - prefer metadata, fallback to DB
+  useEffect(() => {
+    const syncProfile = async () => {
+      if (!user) return;
+      
+      const meta = user.user_metadata;
+      
+      // If we have names in metadata, use them (Source of Truth)
+      if (meta?.first_name || meta?.last_name || meta?.full_name) {
+        setUserProfile({
+          first_name: meta.first_name || '',
+          last_name: meta.last_name || '',
+          full_name: meta.full_name || `${meta.first_name || ''} ${meta.last_name || ''}`.trim()
+        });
+        return;
+      }
+
+      // Fallback to DB only if metadata is missing
+      try {
+        const { data, error } = await supabaseClient
+          .from('profiles')
+          .select('first_name, last_name, full_name')
+          .eq('id', user.id)
+          .single();
+          
+        if (error) {
+          console.error('Error fetching profile:', error);
+          return;
+        }
+        
+        if (data) {
+          setUserProfile(data);
+        }
+      } catch (error) {
+        console.error('Error fetching profile:', error);
+      }
+    };
+    
+    syncProfile();
+  }, [user]);
+
+  // Format the account creation date
+  const formatMemberSince = (createdAt: string | undefined) => {
+    if (!createdAt) return 'Member';
+
+    const date = new Date(createdAt);
+    const month = date.toLocaleDateString('en-US', { month: 'long' });
+    const year = date.getFullYear();
+    return `Member since ${month} ${year}`;
+  };
+
+  // Get user's display name
+  const getUserDisplayName = () => {
+    // 1. Prefer local state (optimistic updates + synced data)
+    if (userProfile?.full_name) {
+      return userProfile.full_name;
+    }
+    if (userProfile?.first_name || userProfile?.last_name) {
+      return `${userProfile.first_name || ''} ${userProfile.last_name || ''}`.trim();
+    }
+    
+    // 2. Fallback to auth metadata
+    const meta = user?.user_metadata;
+    if (meta?.full_name) return meta.full_name;
+    if (meta?.first_name || meta?.last_name) {
+      return `${meta.first_name || ''} ${meta.last_name || ''}`.trim();
+    }
+
+    // 3. Fallback to email-based name
+    if (!user?.email) return 'User';
+    const emailName = user.email.split('@')[0];
+    return emailName.charAt(0).toUpperCase() + emailName.slice(1);
+  };
+
+  const handleNameEdit = () => {
+    void Haptics.selectionAsync();
+    setIsNameModalVisible(true);
+  };
+
+  const handleCloseNameModal = useCallback(() => {
+    setIsNameModalVisible(false);
+  }, []);
+
+  // Get current first/last name for modal prepopulation
+  const getCurrentFirstName = () => {
+    // Prefer metadata first as it's the most reliable source of truth
+    if (user?.user_metadata?.first_name) return user.user_metadata.first_name;
+    if (userProfile?.first_name) return userProfile.first_name;
+    return '';
+  };
+
+  const getCurrentLastName = () => {
+    // Prefer metadata first as it's the most reliable source of truth
+    if (user?.user_metadata?.last_name) return user.user_metadata.last_name;
+    if (userProfile?.last_name) return userProfile.last_name;
+    return '';
+  };
+
+  const handleNameSave = (firstName: string, lastName: string) => {
+    // Update local state immediately for responsive UI
+    setUserProfile({
+      first_name: firstName,
+      last_name: lastName,
+      full_name: `${firstName} ${lastName}`.trim(),
+    });
   };
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <Animated.View style={{ transform: [{ scale: backScale.value }] }}>
           <Pressable
@@ -54,7 +200,7 @@ const ProfileModal: React.FC = () => {
         <View style={styles.headerSpacer} />
       </View>
 
-      <ScrollView 
+      <ScrollView
         style={styles.content}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.contentContainer}
@@ -71,13 +217,13 @@ const ProfileModal: React.FC = () => {
             </View>
             <View style={styles.profileInfo}>
               <Text variant="heading2" color="primary">
-                John Doe
+                {getUserDisplayName()}
               </Text>
               <Text variant="body" color="secondary">
-                john.doe@example.com
+                {user?.email || 'No email'}
               </Text>
               <Text variant="caption" color="secondary">
-                Member since November 2024
+                {formatMemberSince(user?.created_at)}
               </Text>
             </View>
           </View>
@@ -88,8 +234,14 @@ const ProfileModal: React.FC = () => {
           <Text variant="heading3" color="primary" style={styles.sectionTitle}>
             Account Preferences
           </Text>
-          
+
           <View style={styles.preferencesList}>
+            <PreferenceItem
+              icon="person"
+              title="Name"
+              subtitle={getUserDisplayName()}
+              onPress={handleNameEdit}
+            />
             <PreferenceItem
               icon="notifications"
               title="Notifications"
@@ -122,7 +274,7 @@ const ProfileModal: React.FC = () => {
           <Text variant="heading3" color="primary" style={styles.sectionTitle}>
             Workout Preferences
           </Text>
-          
+
           <View style={styles.preferencesList}>
             <PreferenceItem
               icon="fitness-center"
@@ -156,7 +308,7 @@ const ProfileModal: React.FC = () => {
           <Text variant="heading3" color="primary" style={styles.sectionTitle}>
             Support
           </Text>
-          
+
           <View style={styles.preferencesList}>
             <PreferenceItem
               icon="help"
@@ -184,23 +336,38 @@ const ProfileModal: React.FC = () => {
           <SurfaceCard tone="neutral" padding="lg" style={styles.signOutCard}>
             <Pressable
               style={styles.signOutButton}
-              onPress={handlePreferencePress}
+              onPress={handleSignOut}
+              disabled={isSigningOut}
               accessibilityRole="button"
               accessibilityLabel="Sign Out"
             >
-              <IconSymbol
-                name="logout"
-                color={colors.accent.red}
-                size={24}
-              />
-              <Text variant="bodySemibold" color="red">
-                Sign Out
-              </Text>
+              {isSigningOut ? (
+                <ActivityIndicator color={colors.accent.red} />
+              ) : (
+                <>
+                  <IconSymbol
+                    name="logout"
+                    color={colors.accent.red}
+                    size={24}
+                  />
+                  <Text variant="bodySemibold" color="red">
+                    Sign Out
+                  </Text>
+                </>
+              )}
             </Pressable>
           </SurfaceCard>
         </View>
       </ScrollView>
-    </View>
+      
+      <NameEditModal
+        visible={isNameModalVisible}
+        firstName={getCurrentFirstName()}
+        lastName={getCurrentLastName()}
+        onClose={handleCloseNameModal}
+        onSave={handleNameSave}
+      />
+    </SafeAreaView>
   );
 };
 
@@ -214,21 +381,18 @@ interface PreferenceItemProps {
 const PreferenceItem: React.FC<PreferenceItemProps> = ({ icon, title, subtitle, onPress }) => {
   const scale = useSharedValue(1);
 
-  const handlePressIn = () => {
-    scale.value = withSpring(0.98, { damping: 15, stiffness: 300 });
-  };
-
-  const handlePressOut = () => {
-    scale.value = withSpring(1, { damping: 15, stiffness: 300 });
-    onPress();
-  };
-
   return (
     <Animated.View style={{ transform: [{ scale: scale.value }] }}>
       <Pressable
         style={styles.preferenceItem}
-        onPressIn={handlePressIn}
-        onPressOut={handlePressOut}
+        onPress={() => {
+          scale.value = withSpring(0.95, { damping: 15, stiffness: 300 });
+          void Haptics.selectionAsync();
+          setTimeout(() => {
+            scale.value = withSpring(1, { damping: 15, stiffness: 300 });
+            onPress();
+          }, 100);
+        }}
         accessibilityRole="button"
         accessibilityLabel={title}
       >
@@ -267,7 +431,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: spacing.md,
-    paddingTop: spacing.xl,
+    paddingTop: spacing.xl + spacing.sm,
     paddingBottom: spacing.lg,
     backgroundColor: colors.primary.bg,
   },
@@ -309,7 +473,6 @@ const styles = StyleSheet.create({
     borderColor: colors.accent.orange,
     justifyContent: 'center',
     alignItems: 'center',
-    ...shadows.md,
   },
   profileInfo: {
     alignItems: 'center',

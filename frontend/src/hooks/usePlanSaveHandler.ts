@@ -8,9 +8,7 @@ import * as Haptics from 'expo-haptics';
 import type { Exercise } from '@/constants/exercises';
 import { usePlansStore } from '@/store/plansStore';
 import { useProgramsStore } from '@/store/programsStore';
-import { savePlan } from '@/utils/storage';
-import type { PlanExercise, WorkoutPlan } from '@/types/plan';
-import type { ProgramWorkout } from '@/types/premadePlan';
+import type { PlanExercise } from '@/types/plan';
 
 const DEFAULT_PLAN_SET_COUNT = 3;
 
@@ -153,29 +151,20 @@ export const usePlanSaveHandler = ({
         return 'success';
       }
 
-      const planIdentifier = (!isEditing || isPremadeReview) ? createPlanIdentifier() : editingPlanId!;
       const createdAtTimestamp = (!isEditing || isPremadeReview) ? Date.now() : (editingPlanCreatedAt ?? Date.now());
 
-      const payload: WorkoutPlan = {
-        id: planIdentifier,
-        name: finalName,
-        exercises: normalizedExercises,
-        createdAt: new Date(createdAtTimestamp).toISOString(),
-      };
-
-      await savePlan(payload);
-
       if (isEditing && !isPremadeReview) {
-        updatePlan({
-          id: planIdentifier,
+        // Update existing plan - the store handles Supabase sync
+        await updatePlan({
+          id: editingPlanId!,
           name: finalName,
           exercises: selectedExercises,
           createdAt: createdAtTimestamp,
         });
       } else {
         // Creating a new plan (from scratch or from premade review)
-        persistPlan({
-          id: planIdentifier,
+        // The store will create in Supabase and get the generated ID
+        await persistPlan({
           name: finalName,
           exercises: selectedExercises,
           createdAt: createdAtTimestamp,

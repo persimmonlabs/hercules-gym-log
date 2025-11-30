@@ -2,11 +2,10 @@ import { useCallback, useMemo, useState } from 'react';
 import * as Haptics from 'expo-haptics';
 
 import { exercises, type Exercise } from '@/constants/exercises';
-import type { PlanExercise, WorkoutPlan } from '@/types/plan';
-import { savePlan } from '@/utils/storage';
+import type { PlanExercise } from '@/types/plan';
+import { usePlansStore } from '@/store/plansStore';
 
 const DEFAULT_SET_COUNT = 3;
-const createPlanId = (): string => `${Date.now()}-${Math.round(Math.random() * 1000)}`;
 
 type AddExerciseResult = 'success' | 'invalid';
 type SavePlanResult = 'success' | 'missing-name' | 'no-exercises' | 'error';
@@ -113,16 +112,19 @@ export const usePlanBuilder = (): UsePlanBuilderReturn => {
 
     setIsSaving(true);
 
-    const payload: WorkoutPlan = {
-      id: createPlanId(),
-      name: trimmedName,
-      exercises: selectedExercises,
-      createdAt: new Date().toISOString(),
-    };
-
     try {
-      console.log('[usePlanBuilder] Calling savePlan with:', payload);
-      await savePlan(payload);
+      // Convert PlanExercise[] to Exercise[] for the store
+      const exerciseObjects = selectedExercises.map(pe => {
+        const fullExercise = exercises.find(e => e.id === pe.id);
+        return fullExercise!;
+      }).filter(Boolean);
+
+      // Use the store to save - it handles Supabase sync
+      await usePlansStore.getState().addPlan({
+        name: trimmedName,
+        exercises: exerciseObjects,
+      });
+
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       return 'success';
     } catch (error) {

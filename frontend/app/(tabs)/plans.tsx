@@ -291,6 +291,10 @@ const styles = StyleSheet.create({
   dialogCancelButton: {
     borderColor: colors.accent.gradientStart,
   },
+  dialogCardPressable: {
+    borderRadius: radius.lg,
+    overflow: 'hidden',
+  },
   browseCard: {
     alignItems: 'center',
     justifyContent: 'center',
@@ -310,6 +314,8 @@ const PlansScreen: React.FC = () => {
   const startSession = useSessionStore((state) => state.startSession);
   const setCompletionOverlayVisible = useSessionStore((state) => state.setCompletionOverlayVisible);
   const [expandedPlanId, setExpandedPlanId] = useState<string | null>(null);
+  const [isDeleteDialogVisible, setIsDeleteDialogVisible] = useState<boolean>(false);
+  const [itemToDelete, setItemToDelete] = useState<any>(null);
 
   const handleAddPlanPress = useCallback(() => {
     void Haptics.selectionAsync();
@@ -415,21 +421,23 @@ const PlansScreen: React.FC = () => {
   const handleDeleteWorkoutItem = useCallback(
     (item: any) => {
       void Haptics.selectionAsync();
-      Alert.alert(
-        'Remove Workout',
-        `Are you sure you want to remove "${item.name}"?`,
-        [
-          { text: 'Cancel', style: 'cancel' },
-          {
-            text: 'Remove',
-            style: 'destructive',
-            onPress: () => executeDelete(item)
-          }
-        ]
-      );
+      setItemToDelete(item);
+      setIsDeleteDialogVisible(true);
     },
-    [executeDelete],
+    [],
   );
+
+  const handleConfirmDelete = useCallback(async () => {
+    if (!itemToDelete) return;
+    await executeDelete(itemToDelete);
+    setIsDeleteDialogVisible(false);
+    setItemToDelete(null);
+  }, [executeDelete, itemToDelete]);
+
+  const handleDismissDeleteDialog = useCallback(() => {
+    setIsDeleteDialogVisible(false);
+    setItemToDelete(null);
+  }, []);
 
   const createDefaultSetLogs = useCallback(() => {
     return Array.from({ length: 3 }, () => ({ reps: 8, weight: 0, completed: false }));
@@ -949,6 +957,47 @@ const PlansScreen: React.FC = () => {
           </View>
         </View>
       </SurfaceCard>
+
+      <Modal
+        transparent
+        visible={isDeleteDialogVisible}
+        onRequestClose={handleDismissDeleteDialog}
+      >
+        <Pressable style={styles.dialogOverlay} onPress={handleDismissDeleteDialog}>
+          <Pressable
+            style={styles.dialogCardPressable}
+            onPress={(event) => event.stopPropagation()}
+          >
+            <SurfaceCard tone="neutral" padding="lg" showAccentStripe={false} style={styles.dialogCard}>
+              <View style={styles.dialogContent}>
+                <Text variant="heading3" color="primary">
+                  Remove Workout
+                </Text>
+                <Text variant="body" color="secondary">
+                  Are you sure you want to remove "{itemToDelete?.name}"?
+                </Text>
+              </View>
+              <View style={styles.dialogActions}>
+                <Button
+                  label="Cancel"
+                  variant="ghost"
+                  onPress={handleDismissDeleteDialog}
+                  size="md"
+                  textColor={colors.accent.orange}
+                  style={[styles.dialogActionButton, styles.dialogCancelButton]}
+                />
+                <Button
+                  label="Remove"
+                  variant="primary"
+                  onPress={handleConfirmDelete}
+                  size="md"
+                  style={styles.dialogActionButton}
+                />
+              </View>
+            </SurfaceCard>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </TabSwipeContainer>
   );
 };

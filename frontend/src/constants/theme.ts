@@ -187,7 +187,7 @@ export const typography = {
     fontWeight: '500',
     lineHeight: 14,
   },
-};
+} as const;
 
 // ============================================================================
 // SIZING (Common dimensions)
