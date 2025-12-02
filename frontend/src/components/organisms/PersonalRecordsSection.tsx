@@ -136,11 +136,10 @@ export const PersonalRecordsSection: React.FC = () => {
   return (
     <SurfaceCard tone="neutral" padding="xl" showAccentStripe={false}>
       <View style={styles.cardContent}>
-        <View>
+        <View style={styles.headerContainer}>
           <Text variant="heading3" color="primary">
             Personal Records
           </Text>
-          <View style={styles.headerStripe} />
         </View>
 
         <View style={styles.list}>
@@ -211,17 +210,13 @@ export const PersonalRecordsSection: React.FC = () => {
 
 const styles = StyleSheet.create({
   cardContent: {
-    gap: spacing.md,
+    gap: spacing.lg,
   },
-  headerStripe: {
-    height: 4,
-    width: '100%',
-    backgroundColor: colors.accent.orange,
-    borderRadius: 2,
-    marginTop: spacing.xs,
+  headerContainer: {
+    alignItems: 'center',
   },
   list: {
-    gap: spacing.sm,
+    gap: spacing.lg,
   },
   modalOverlay: {
     flex: 1,

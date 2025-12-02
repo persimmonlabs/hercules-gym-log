@@ -1,14 +1,19 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
+import { useRouter } from 'expo-router';
 
-import { SurfaceCard } from '@/components/atoms/SurfaceCard';
-import { Text } from '@/components/atoms/Text';
 import { ScreenHeader } from '@/components/molecules/ScreenHeader';
 import { TabSwipeContainer } from '@/components/templates/TabSwipeContainer';
-import { FocusDistributionChart } from '@/components/molecules/FocusDistributionChart';
-import { WeeklyVolumeChart } from '@/components/molecules/WeeklyVolumeChart';
 import { PersonalRecordsSection } from '@/components/organisms/PersonalRecordsSection';
+import { AnalyticsCard } from '@/components/atoms/AnalyticsCard';
+import { SimpleDistributionChart } from '@/components/molecules/SimpleDistributionChart';
+import { SimpleVolumeChart } from '@/components/molecules/SimpleVolumeChart';
+import { TrainingBalanceCard } from '@/components/molecules/TrainingBalanceCard';
+import { VolumeComparisonCard } from '@/components/molecules/VolumeComparisonCard';
+import { TimeRangeSelector } from '@/components/atoms/TimeRangeSelector';
+import { useAnalyticsData } from '@/hooks/useAnalyticsData';
 import { colors, spacing } from '@/constants/theme';
+import { TimeRange } from '@/types/analytics';
 
 const styles = StyleSheet.create({
   contentContainer: {
@@ -17,54 +22,59 @@ const styles = StyleSheet.create({
     paddingTop: spacing.xl,
     paddingHorizontal: spacing.md,
     paddingBottom: spacing.sm,
-    gap: spacing.xl,
-  },
-  cardContent: {
-    gap: spacing.md,
-  },
-  headerContent: {
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-  },
-  headerStripe: {
-    height: 4,
-    width: '100%',
-    backgroundColor: colors.accent.orange,
-    borderRadius: 2,
-    marginTop: spacing.xs,
+    gap: spacing['2xl'],
   },
 });
 
 const StatsScreen: React.FC = () => {
+  const router = useRouter();
+  const [volumeTimeRange, setVolumeTimeRange] = useState<TimeRange>('week');
+  const { hasFilteredData } = useAnalyticsData({ timeRange: volumeTimeRange });
+
+  const handleDistributionPress = () => {
+    router.push('/(tabs)/distribution-analytics');
+  };
+
+  const handleVolumePress = () => {
+    router.push('/(tabs)/volume-analytics');
+  };
+
   return (
     <TabSwipeContainer contentContainerStyle={styles.contentContainer}>
-      <ScreenHeader title="Performance" subtitle="View your training metrics and personal records." />
+      <ScreenHeader
+        title="Performance"
+        subtitle="View your training metrics and personal records."
+      />
 
-      <PersonalRecordsSection />
+      <View style={{ marginTop: -spacing.lg }}>
+        <PersonalRecordsSection />
+      </View>
 
-      <SurfaceCard tone="neutral" padding="md" showAccentStripe={false}>
-        <View style={styles.cardContent}>
-          <View style={styles.headerContent}>
-            <Text variant="heading3" color="primary">
-              Set Distribution
-            </Text>
-            <View style={styles.headerStripe} />
-          </View>
-          <FocusDistributionChart />
-        </View>
-      </SurfaceCard>
+      <AnalyticsCard
+        title="Set Distribution"
+        onPress={handleDistributionPress}
+        showAccentStripe={false}
+        titleCentered={true}
+      >
+        <SimpleDistributionChart />
+      </AnalyticsCard>
 
-      <SurfaceCard tone="neutral" padding="md" showAccentStripe={false}>
-        <View style={styles.cardContent}>
-          <View style={styles.headerContent}>
-            <Text variant="heading3" color="primary">
-              Weekly Volume
-            </Text>
-            <View style={styles.headerStripe} />
-          </View>
-          <WeeklyVolumeChart />
-        </View>
-      </SurfaceCard>
+      <AnalyticsCard
+        title="Volume"
+        onPress={handleVolumePress}
+        headerRight={
+          <TimeRangeSelector value={volumeTimeRange} onChange={setVolumeTimeRange} />
+        }
+        isEmpty={!hasFilteredData}
+        showAccentStripe={false}
+        titleCentered={true}
+      >
+        <SimpleVolumeChart timeRange={volumeTimeRange} />
+      </AnalyticsCard>
+
+      <TrainingBalanceCard />
+
+      <VolumeComparisonCard />
     </TabSwipeContainer>
   );
 };

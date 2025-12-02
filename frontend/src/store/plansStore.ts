@@ -45,7 +45,7 @@ export interface PlansState {
   addPlan: (input: { id?: string; name: string; exercises: Exercise[]; createdAt?: number }) => Promise<void>;
   updatePlan: (plan: Plan) => Promise<void>;
   removePlan: (id: string) => Promise<void>;
-  hydratePlans: () => Promise<void>;
+  hydratePlans: (userId?: string) => Promise<void>;
 }
 
 export const usePlansStore = create<PlansState>((set, get) => ({
@@ -156,18 +156,24 @@ export const usePlansStore = create<PlansState>((set, get) => ({
     }
   },
 
-  hydratePlans: async () => {
+  hydratePlans: async (userId?: string) => {
     try {
       set({ isLoading: true });
 
-      const { data: { user } } = await supabaseClient.auth.getUser();
-      if (!user) {
+      // Use provided userId or fetch from auth
+      let uid = userId;
+      if (!uid) {
+        const { data: { user } } = await supabaseClient.auth.getUser();
+        uid = user?.id;
+      }
+      
+      if (!uid) {
         console.log('[plansStore] No authenticated user, skipping hydration');
         set({ plans: [], isLoading: false });
         return;
       }
 
-      const templates = await fetchWorkoutTemplates(user.id);
+      const templates = await fetchWorkoutTemplates(uid);
       console.log('[plansStore] HYDRATING PLANS from Supabase', templates);
 
       const exerciseLookup = exercises.reduce<Record<string, Exercise>>((acc, exercise) => {

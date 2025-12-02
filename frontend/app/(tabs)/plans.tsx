@@ -165,7 +165,7 @@ const styles = StyleSheet.create({
     paddingTop: spacing.xl,
     paddingHorizontal: spacing.md,
     paddingBottom: spacing.sm,
-    gap: spacing.xl,
+    gap: spacing['2xl'],
   },
   outerCardContent: {
     gap: spacing.lg,
@@ -308,7 +308,6 @@ const PlansScreen: React.FC = () => {
   const plans = usePlansStore((state: PlansState) => state.plans);
   const removePlan = usePlansStore((state: PlansState) => state.removePlan);
   const schedules = useSchedulesStore((state: SchedulesState) => state.schedules);
-  const hydrateSchedules = useSchedulesStore((state: SchedulesState) => state.hydrateSchedules);
   const updateSchedule = useSchedulesStore((state: SchedulesState) => state.updateSchedule);
   const { userPrograms, deleteUserProgram, deleteWorkoutFromProgram, activePlanId } = useProgramsStore();
   const startSession = useSessionStore((state) => state.startSession);
@@ -471,9 +470,6 @@ const PlansScreen: React.FC = () => {
     }
   }, [router, activePlanId]);
 
-  useEffect(() => {
-    void hydrateSchedules();
-  }, [hydrateSchedules]);
 
   const activeSchedule = schedules[0] ?? null;
 
@@ -553,7 +549,7 @@ const PlansScreen: React.FC = () => {
     <TabSwipeContainer contentContainerStyle={styles.contentContainer}>
       <ScreenHeader title="My Programs" subtitle="Create and manage your workout plans." />
 
-      <SurfaceCard padding="xl" tone="neutral">
+      <SurfaceCard padding="xl" tone="neutral" style={{ marginTop: -spacing.md }}>
         <View style={styles.outerCardContent}>
           <Text variant="heading3" color="primary">
             My Workouts

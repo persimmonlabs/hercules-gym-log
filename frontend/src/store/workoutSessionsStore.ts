@@ -17,7 +17,7 @@ interface WorkoutSessionsState {
   deleteWorkout: (id: string) => Promise<void>;
   getWorkouts: () => Workout[];
   clearWorkouts: () => Promise<void>;
-  hydrateWorkouts: () => Promise<void>;
+  hydrateWorkouts: (userId?: string) => Promise<void>;
 }
 
 export const useWorkoutSessionsStore = create<WorkoutSessionsState>((set, get) => ({
@@ -102,18 +102,24 @@ export const useWorkoutSessionsStore = create<WorkoutSessionsState>((set, get) =
     set({ workouts: [] });
   },
 
-  hydrateWorkouts: async () => {
+  hydrateWorkouts: async (userId?: string) => {
     try {
       set({ isLoading: true });
-      const { data: { user } } = await supabaseClient.auth.getUser();
+      
+      // Use provided userId or fetch from auth
+      let uid = userId;
+      if (!uid) {
+        const { data: { user } } = await supabaseClient.auth.getUser();
+        uid = user?.id;
+      }
 
-      if (!user) {
+      if (!uid) {
         console.log('[workoutSessionsStore] No authenticated user, skipping hydration');
         set({ workouts: [], isLoading: false });
         return;
       }
 
-      const workouts = await fetchWorkoutSessions(user.id);
+      const workouts = await fetchWorkoutSessions(uid);
       set({ workouts, isLoading: false });
       console.log('[workoutSessionsStore] Hydrated', workouts.length, 'workouts from Supabase');
     } catch (error) {

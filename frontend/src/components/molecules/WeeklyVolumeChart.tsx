@@ -19,7 +19,7 @@ const CHART_CONTENT_HEIGHT = 250; // VictoryChart height
 const TITLE_HEIGHT = 30; // Approximate title height
 const CHART_CONTAINER_HEIGHT = CHART_CONTENT_HEIGHT + TITLE_HEIGHT + spacing.sm * 2;
 
-// Build Maps
+// Build Maps - handles up to 4 levels (high -> mid -> low -> detailed)
 const buildMaps = () => {
     const leafToL1: Record<string, string> = {}; // Specific -> Body Part (Upper/Lower/Core)
     const leafToL2: Record<string, string> = {}; // Specific -> Muscle Group (Chest/Back/etc)
@@ -29,16 +29,25 @@ const buildMaps = () => {
 
     Object.entries(hierarchy).forEach(([l1, l1Data]) => {
         if (l1Data?.muscles) {
-            Object.entries(l1Data.muscles).forEach(([l2, l2Data]) => {
-                // l2 is "Chest", l2Data contains the low-level muscles
+            Object.entries(l1Data.muscles).forEach(([l2, l2Data]: [string, any]) => {
+                // l2 is "Chest", "Arms", "Calves", etc.
                 leafToL1[l2] = l1;
                 leafToL2[l2] = l2;
                 l2ToL1[l2] = l1;
 
                 if (l2Data?.muscles) {
-                    Object.keys(l2Data.muscles).forEach(l3 => {
+                    Object.entries(l2Data.muscles).forEach(([l3, l3Data]: [string, any]) => {
+                        // l3 could be "Upper Chest" (low), "Biceps" (low with children), or "Medial Head" (detailed under Calves)
                         leafToL1[l3] = l1;
                         leafToL2[l3] = l2;
+                        
+                        // Handle L4 (detailed level, e.g., Long Head under Biceps)
+                        if (l3Data?.muscles) {
+                            Object.keys(l3Data.muscles).forEach(l4 => {
+                                leafToL1[l4] = l1;
+                                leafToL2[l4] = l2;
+                            });
+                        }
                     });
                 }
             });

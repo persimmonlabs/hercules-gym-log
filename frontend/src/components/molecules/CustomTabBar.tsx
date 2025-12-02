@@ -38,6 +38,10 @@ const ACTIVE_GRADIENT: readonly [ColorValue, ColorValue] = [
   colors.accent.gradientEnd,
 ];
 const SCALE_ACTIVE = 1.1;
+const PROFILE_CHILD_ROUTES = ['profile', 'distribution-analytics', 'volume-analytics', 'muscle-detail'] as const;
+type ProfileChildRoute = typeof PROFILE_CHILD_ROUTES[number];
+const isProfileChildRoute = (routeName?: string): routeName is ProfileChildRoute =>
+  Boolean(routeName && PROFILE_CHILD_ROUTES.includes(routeName as ProfileChildRoute));
 
 const createGradientIcon = (iconName: keyof typeof Ionicons.glyphMap) => (
   <MaskedView
@@ -141,6 +145,7 @@ export const CustomTabBar: React.FC<BottomTabBarProps> = ({ state, navigation })
                   }
 
                   const currentRouteName = state.routes[state.index]?.name;
+                  const isProfileChildScreen = isProfileChildRoute(currentRouteName);
                   const isCreateWorkoutScreen = currentRouteName === 'create-workout' || currentRouteName === 'create-plan';
                   const isCreateProgramScreen = currentRouteName === 'create-program';
                   const isBrowseProgramsScreen = currentRouteName === 'browse-programs';
@@ -149,7 +154,17 @@ export const CustomTabBar: React.FC<BottomTabBarProps> = ({ state, navigation })
                   const isEditPlanScreen = currentRouteName === 'edit-plan';
                   const isEditScheduleScreen = currentRouteName === 'schedule-editor';
                   const isPlansTab = route.name === 'plans';
-                  const isFocused = state.index === index || (isCreateWorkoutScreen && isPlansTab) || (isCreateProgramScreen && isPlansTab) || (isBrowseProgramsScreen && isPlansTab) || (isAddWorkoutScreen && isPlansTab) || (isProgramDetailsScreen && isPlansTab) || (isEditPlanScreen && isPlansTab) || (isEditScheduleScreen && isPlansTab);
+                  const isProfileTab = route.name === 'profile';
+                  const isFocused =
+                    state.index === index
+                    || (isCreateWorkoutScreen && isPlansTab)
+                    || (isCreateProgramScreen && isPlansTab)
+                    || (isBrowseProgramsScreen && isPlansTab)
+                    || (isAddWorkoutScreen && isPlansTab)
+                    || (isProgramDetailsScreen && isPlansTab)
+                    || (isEditPlanScreen && isPlansTab)
+                    || (isEditScheduleScreen && isPlansTab)
+                    || (isProfileChildScreen && isProfileTab);
                   const isWorkoutRoute = route.name === 'workout';
                   const showActiveSessionGlow = isWorkoutRoute && isSessionActive;
                   const animatedStyle = useAnimatedStyle(() => ({

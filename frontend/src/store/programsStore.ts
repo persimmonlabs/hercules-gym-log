@@ -65,7 +65,7 @@ interface ProgramsState {
   advanceRotation: () => Promise<void>;
   getCurrentRotationWorkout: () => string | null; // Returns workout ID
 
-  hydratePrograms: () => Promise<void>;
+  hydratePrograms: (userId?: string) => Promise<void>;
 }
 
 export const useProgramsStore = create<ProgramsState>((set, get) => ({
@@ -88,23 +88,27 @@ export const useProgramsStore = create<ProgramsState>((set, get) => ({
     });
   },
 
-  hydratePrograms: async () => {
+  hydratePrograms: async (userId?: string) => {
     try {
       set({ isLoading: true });
 
       // Load Premade
       get().loadPremadePrograms();
 
-      // Load User Programs from Supabase
-      const { data: { user } } = await supabaseClient.auth.getUser();
+      // Use provided userId or fetch from auth
+      let uid = userId;
+      if (!uid) {
+        const { data: { user } } = await supabaseClient.auth.getUser();
+        uid = user?.id;
+      }
 
-      if (!user) {
+      if (!uid) {
         console.log('[programsStore] No authenticated user, skipping user programs');
         set({ userPrograms: [], activePlanId: null, isLoading: false });
         return;
       }
 
-      const userPrograms = await fetchUserPlans(user.id);
+      const userPrograms = await fetchUserPlans(uid);
 
       // Find active plan
       const activePlan = userPrograms.find(p => (p as any).is_active);

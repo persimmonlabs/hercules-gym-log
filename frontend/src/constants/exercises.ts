@@ -39,12 +39,17 @@ const MAP_L2_TO_MUSCLE_GROUP: Record<string, MuscleGroup> = {
   Hamstrings: 'Legs',
   Calves: 'Legs',
   Glutes: 'Glutes',
+  'Hip Stabilizers': 'Legs',
   Adductors: 'Legs',
   Abductors: 'Legs',
   Abs: 'Core',
   Obliques: 'Core',
   'Lower Back': 'Core',
 };
+
+// Map for muscles that exist at mid level but have detailed children (no low level)
+// These muscles should be treated as valid leaf nodes in exercises.json
+const MID_LEVEL_LEAF_MUSCLES = ['Calves'];
 
 interface MuscleMeta {
   muscleGroup: MuscleGroup;
@@ -62,13 +67,20 @@ const buildMuscleMetaMap = (): Record<string, MuscleMeta> => {
       Object.entries(l1Data.muscles).forEach(([l2Name, l2Data]: [string, any]) => {
         const muscleGroup = MAP_L2_TO_MUSCLE_GROUP[l2Name] || ('Full Body' as MuscleGroup); // Fallback
         
-        // Map L2 itself
+        // Map L2 itself (e.g., Chest, Back, Arms, Calves)
         map[l2Name] = { muscleGroup, filterGroup };
 
-        // Map L3s
+        // Map L3s (e.g., Upper Chest, Biceps, Medial Head for Calves)
         if (l2Data.muscles) {
-          Object.keys(l2Data.muscles).forEach((l3Name) => {
+          Object.entries(l2Data.muscles).forEach(([l3Name, l3Data]: [string, any]) => {
             map[l3Name] = { muscleGroup, filterGroup };
+            
+            // Map L4s (detailed level, e.g., Long Head under Biceps)
+            if (l3Data.muscles) {
+              Object.keys(l3Data.muscles).forEach((l4Name) => {
+                map[l4Name] = { muscleGroup, filterGroup };
+              });
+            }
           });
         }
       });

@@ -97,19 +97,19 @@ type ShadowConfig = {
 
 const shadowConfigs: Record<'sm' | 'md' | 'lg', ShadowConfig> = {
   sm: {
-    shadowOpacity: shadows.sm.shadowOpacity,
-    shadowRadius: shadows.sm.shadowRadius,
-    elevation: shadows.sm.elevation,
+    shadowOpacity: 0,
+    shadowRadius: 0,
+    elevation: 0,
   },
   md: {
-    shadowOpacity: shadows.md.shadowOpacity,
-    shadowRadius: shadows.md.shadowRadius,
-    elevation: shadows.md.elevation,
+    shadowOpacity: 0,
+    shadowRadius: 0,
+    elevation: 0,
   },
   lg: {
-    shadowOpacity: shadows.lg.shadowOpacity,
-    shadowRadius: shadows.lg.shadowRadius,
-    elevation: shadows.lg.elevation,
+    shadowOpacity: 0,
+    shadowRadius: 0,
+    elevation: 0,
   },
 };
 
@@ -174,7 +174,7 @@ const styles = StyleSheet.create({
     paddingTop: spacing.xl,
     paddingBottom: SCROLL_BOTTOM_PADDING,
     paddingHorizontal: spacing.md,
-    gap: spacing.xl,
+    gap: spacing['2xl'],
   },
   pressableStretch: {
     width: '100%',
@@ -779,7 +779,7 @@ const DashboardScreen: React.FC = () => {
 
             <Animated.View style={weeklyTrackerAnimatedStyle}>
               <Pressable style={styles.pressableStretch}>
-                <SurfaceCard tone="card" padding="lg" style={{ borderWidth: 0 }}>
+                <SurfaceCard tone="card" padding="lg" style={{ borderWidth: 0, marginTop: -spacing.md }}>
                   <View style={styles.streakHeader}>
                     <View style={styles.streakTitle}>
                       <Text variant="heading3" color="primary">

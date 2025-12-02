@@ -91,6 +91,27 @@ export default function TabLayout() {
             title: 'Edit Schedule',
           }}
         />
+        <Tabs.Screen
+          name="distribution-analytics"
+          options={{
+            href: null,
+            title: 'Set Distribution',
+          }}
+        />
+        <Tabs.Screen
+          name="volume-analytics"
+          options={{
+            href: null,
+            title: 'Weekly Volume',
+          }}
+        />
+        <Tabs.Screen
+          name="muscle-detail"
+          options={{
+            href: null,
+            title: 'Muscle Detail',
+          }}
+        />
       </Tabs>
     </View>
   );

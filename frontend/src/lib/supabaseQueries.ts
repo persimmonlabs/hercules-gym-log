@@ -8,39 +8,120 @@ import type { Workout } from '@/types/workout';
 import type { UserPlan, PlanWorkout } from '@/types/premadePlan';
 
 // ============================================================================
+// RETRY UTILITY
+// ============================================================================
+
+interface RetryOptions {
+  maxAttempts?: number;
+  initialDelayMs?: number;
+  maxDelayMs?: number;
+  backoffMultiplier?: number;
+}
+
+const DEFAULT_RETRY_OPTIONS: Required<RetryOptions> = {
+  maxAttempts: 3,
+  initialDelayMs: 500,
+  maxDelayMs: 5000,
+  backoffMultiplier: 2,
+};
+
+/**
+ * Retries an async function with exponential backoff
+ * @param fn The async function to retry
+ * @param options Retry configuration options
+ * @returns The result of the function
+ */
+async function withRetry<T>(
+  fn: () => Promise<T>,
+  options: RetryOptions = {}
+): Promise<T> {
+  const opts = { ...DEFAULT_RETRY_OPTIONS, ...options };
+  let lastError: unknown;
+  let delay = opts.initialDelayMs;
+
+  for (let attempt = 1; attempt <= opts.maxAttempts; attempt++) {
+    try {
+      return await fn();
+    } catch (error) {
+      lastError = error;
+      
+      // Don't retry on auth errors or if it's the last attempt
+      const isAuthError = error instanceof Error && 
+        (error.message.includes('JWT') || error.message.includes('auth'));
+      
+      if (isAuthError || attempt === opts.maxAttempts) {
+        throw error;
+      }
+
+      console.log(`[Supabase] Attempt ${attempt}/${opts.maxAttempts} failed, retrying in ${delay}ms...`);
+      
+      // Wait before retrying
+      await new Promise(resolve => setTimeout(resolve, delay));
+      
+      // Increase delay for next attempt
+      delay = Math.min(delay * opts.backoffMultiplier, opts.maxDelayMs);
+    }
+  }
+
+  throw lastError;
+}
+
+// ============================================================================
 // WORKOUT SESSIONS
 // ============================================================================
 
 export async function fetchWorkoutSessions(userId: string): Promise<Workout[]> {
-    const { data, error } = await supabaseClient
-        .from('workout_sessions')
-        .select('*')
-        .eq('user_id', userId)
-        .order('date', { ascending: false });
+    console.log('[Supabase] Fetching workout sessions for user:', userId);
+    
+    return withRetry(async () => {
+        const { data, error } = await supabaseClient
+            .from('workout_sessions')
+            .select('*')
+            .eq('user_id', userId)
+            .order('date', { ascending: false });
 
-    if (error) {
-        console.error('[Supabase] Error fetching workout sessions:', error);
-        throw error;
-    }
+        if (error) {
+            console.error('[Supabase] Error fetching workout sessions:', error);
+            throw error;
+        }
 
-    // Transform from DB format to app format
-    return (data || []).map((row) => ({
-        id: row.id,
-        planId: row.plan_id,
-        date: row.date,
-        startTime: row.start_time,
-        endTime: row.end_time,
-        duration: row.duration,
-        exercises: row.exercises || [],
-    }));
+        console.log('[Supabase] Successfully fetched', data?.length ?? 0, 'workout sessions');
+
+        // Transform from DB format to app format
+        return (data || []).map((row) => ({
+            id: row.id,
+            planId: row.plan_id,
+            date: row.date,
+            startTime: row.start_time,
+            endTime: row.end_time,
+            duration: row.duration,
+            exercises: row.exercises || [],
+        }));
+    });
 }
 
 export async function createWorkoutSession(userId: string, workout: Workout): Promise<string> {
+    // Validate planId exists in the plans table before inserting
+    // planId could be a workout_templates.id which would violate the foreign key constraint
+    let validPlanId: string | null = null;
+    
+    if (workout.planId) {
+        const { data: planExists } = await supabaseClient
+            .from('plans')
+            .select('id')
+            .eq('id', workout.planId)
+            .single();
+        
+        if (planExists) {
+            validPlanId = workout.planId;
+        }
+    }
+
     const { data, error } = await supabaseClient
         .from('workout_sessions')
         .insert({
             user_id: userId,
-            plan_id: workout.planId,
+            plan_id: validPlanId,
             date: workout.date,
             start_time: workout.startTime,
             end_time: workout.endTime,
@@ -59,10 +140,25 @@ export async function createWorkoutSession(userId: string, workout: Workout): Pr
 }
 
 export async function updateWorkoutSession(userId: string, workout: Workout): Promise<void> {
+    // Validate planId exists in the plans table before updating
+    let validPlanId: string | null = null;
+    
+    if (workout.planId) {
+        const { data: planExists } = await supabaseClient
+            .from('plans')
+            .select('id')
+            .eq('id', workout.planId)
+            .single();
+        
+        if (planExists) {
+            validPlanId = workout.planId;
+        }
+    }
+
     const { error } = await supabaseClient
         .from('workout_sessions')
         .update({
-            plan_id: workout.planId,
+            plan_id: validPlanId,
             date: workout.date,
             start_time: workout.startTime,
             end_time: workout.endTime,
@@ -96,63 +192,72 @@ export async function deleteWorkoutSession(userId: string, workoutId: string): P
 // ============================================================================
 
 export async function fetchUserPlans(userId: string): Promise<UserPlan[]> {
-    const { data: plansData, error: plansError } = await supabaseClient
-        .from('plans')
-        .select('*')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false });
+    console.log('[Supabase] Fetching user plans for user:', userId);
+    
+    return withRetry(async () => {
+        const { data: plansData, error: plansError } = await supabaseClient
+            .from('plans')
+            .select('*')
+            .eq('user_id', userId)
+            .order('created_at', { ascending: false });
 
-    if (plansError) {
-        console.error('[Supabase] Error fetching plans:', plansError);
-        throw plansError;
-    }
-
-    if (!plansData || plansData.length === 0) {
-        return [];
-    }
-
-    // Fetch workouts for all plans
-    const planIds = plansData.map((p) => p.id);
-    const { data: workoutsData, error: workoutsError } = await supabaseClient
-        .from('plan_workouts')
-        .select('*')
-        .in('plan_id', planIds)
-        .order('order_index', { ascending: true });
-
-    if (workoutsError) {
-        console.error('[Supabase] Error fetching plan workouts:', workoutsError);
-        throw workoutsError;
-    }
-
-    // Group workouts by plan_id
-    const workoutsByPlan = (workoutsData || []).reduce((acc, workout) => {
-        if (!acc[workout.plan_id]) {
-            acc[workout.plan_id] = [];
+        if (plansError) {
+            console.error('[Supabase] Error fetching plans:', plansError);
+            throw plansError;
         }
-        acc[workout.plan_id].push({
-            id: workout.id,
-            name: workout.name,
-            exercises: workout.exercises || [],
-            sourceWorkoutId: workout.source_workout_id,
-        });
-        return acc;
-    }, {} as Record<string, PlanWorkout[]>);
 
-    // Combine plans with their workouts
-    return plansData.map((plan) => ({
-        id: plan.id,
-        name: plan.name,
-        workouts: workoutsByPlan[plan.id] || [],
-        metadata: plan.metadata || {},
-        scheduleType: plan.schedule_type,
-        schedule: plan.schedule_config,
-        isPremade: false,
-        sourceId: plan.source_id,
-        createdAt: plan.created_at,
-        modifiedAt: plan.updated_at,
-        is_active: plan.is_active || false,
-        rotation_state: plan.rotation_state || null,
-    }));
+        if (!plansData || plansData.length === 0) {
+            console.log('[Supabase] No plans found for user');
+            return [];
+        }
+
+        console.log('[Supabase] Found', plansData.length, 'plans, fetching workouts...');
+
+        // Fetch workouts for all plans
+        const planIds = plansData.map((p) => p.id);
+        const { data: workoutsData, error: workoutsError } = await supabaseClient
+            .from('plan_workouts')
+            .select('*')
+            .in('plan_id', planIds)
+            .order('order_index', { ascending: true });
+
+        if (workoutsError) {
+            console.error('[Supabase] Error fetching plan workouts:', workoutsError);
+            throw workoutsError;
+        }
+
+        console.log('[Supabase] Successfully fetched', workoutsData?.length ?? 0, 'plan workouts');
+
+        // Group workouts by plan_id
+        const workoutsByPlan = (workoutsData || []).reduce((acc, workout) => {
+            if (!acc[workout.plan_id]) {
+                acc[workout.plan_id] = [];
+            }
+            acc[workout.plan_id].push({
+                id: workout.id,
+                name: workout.name,
+                exercises: workout.exercises || [],
+                sourceWorkoutId: workout.source_workout_id,
+            });
+            return acc;
+        }, {} as Record<string, PlanWorkout[]>);
+
+        // Combine plans with their workouts
+        return plansData.map((plan) => ({
+            id: plan.id,
+            name: plan.name,
+            workouts: workoutsByPlan[plan.id] || [],
+            metadata: plan.metadata || {},
+            scheduleType: plan.schedule_type,
+            schedule: plan.schedule_config,
+            isPremade: false,
+            sourceId: plan.source_id,
+            createdAt: plan.created_at,
+            modifiedAt: plan.updated_at,
+            is_active: plan.is_active || false,
+            rotation_state: plan.rotation_state || null,
+        }));
+    });
 }
 
 export async function createUserPlan(userId: string, plan: UserPlan): Promise<string> {
@@ -298,24 +403,30 @@ export interface WorkoutTemplateDB {
 }
 
 export async function fetchWorkoutTemplates(userId: string): Promise<WorkoutTemplateDB[]> {
-    const { data, error } = await supabaseClient
-        .from('workout_templates')
-        .select('*')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false });
+    console.log('[Supabase] Fetching workout templates for user:', userId);
+    
+    return withRetry(async () => {
+        const { data, error } = await supabaseClient
+            .from('workout_templates')
+            .select('*')
+            .eq('user_id', userId)
+            .order('created_at', { ascending: false });
 
-    if (error) {
-        console.error('[Supabase] Error fetching workout templates:', error);
-        throw error;
-    }
+        if (error) {
+            console.error('[Supabase] Error fetching workout templates:', error);
+            throw error;
+        }
 
-    return (data || []).map((row) => ({
-        id: row.id,
-        name: row.name,
-        exercises: row.exercises || [],
-        created_at: row.created_at,
-        updated_at: row.updated_at,
-    }));
+        console.log('[Supabase] Successfully fetched', data?.length ?? 0, 'workout templates');
+
+        return (data || []).map((row) => ({
+            id: row.id,
+            name: row.name,
+            exercises: row.exercises || [],
+            created_at: row.created_at,
+            updated_at: row.updated_at,
+        }));
+    });
 }
 
 export async function createWorkoutTemplate(
@@ -395,25 +506,31 @@ export interface ScheduleDB {
 }
 
 export async function fetchSchedules(userId: string): Promise<ScheduleDB[]> {
-    const { data, error } = await supabaseClient
-        .from('schedules')
-        .select('*')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false });
+    console.log('[Supabase] Fetching schedules for user:', userId);
+    
+    return withRetry(async () => {
+        const { data, error } = await supabaseClient
+            .from('schedules')
+            .select('*')
+            .eq('user_id', userId)
+            .order('created_at', { ascending: false });
 
-    if (error) {
-        console.error('[Supabase] Error fetching schedules:', error);
-        throw error;
-    }
+        if (error) {
+            console.error('[Supabase] Error fetching schedules:', error);
+            throw error;
+        }
 
-    return (data || []).map((row) => ({
-        id: row.id,
-        name: row.name,
-        schedule_data: row.schedule_data || {},
-        is_active: row.is_active || false,
-        created_at: row.created_at,
-        updated_at: row.updated_at,
-    }));
+        console.log('[Supabase] Successfully fetched', data?.length ?? 0, 'schedules');
+
+        return (data || []).map((row) => ({
+            id: row.id,
+            name: row.name,
+            schedule_data: row.schedule_data || {},
+            is_active: row.is_active || false,
+            created_at: row.created_at,
+            updated_at: row.updated_at,
+        }));
+    });
 }
 
 export async function createSchedule(

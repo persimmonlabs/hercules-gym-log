@@ -22,7 +22,7 @@ interface SchedulesState {
   deleteSchedule: (id: string) => Promise<void>;
   updateSchedule: (schedule: Schedule) => Promise<void>;
   getSchedules: () => Schedule[];
-  hydrateSchedules: () => Promise<void>;
+  hydrateSchedules: (userId?: string) => Promise<void>;
 }
 
 export const useSchedulesStore = create<SchedulesState>((set, get) => ({
@@ -114,19 +114,25 @@ export const useSchedulesStore = create<SchedulesState>((set, get) => ({
     return get().schedules;
   },
 
-  hydrateSchedules: async () => {
+  hydrateSchedules: async (userId?: string) => {
     try {
       set({ isLoading: true });
 
-      const { data: { user } } = await supabaseClient.auth.getUser();
-      if (!user) {
+      // Use provided userId or fetch from auth
+      let uid = userId;
+      if (!uid) {
+        const { data: { user } } = await supabaseClient.auth.getUser();
+        uid = user?.id;
+      }
+      
+      if (!uid) {
         console.log('[schedulesStore] No authenticated user, skipping hydration');
         set({ schedules: [], isLoading: false });
         return;
       }
 
       console.log('[schedulesStore] HYDRATING SCHEDULES from Supabase');
-      const dbSchedules = await fetchSchedules(user.id);
+      const dbSchedules = await fetchSchedules(uid);
 
       const schedules: Schedule[] = dbSchedules.map((s) => ({
         id: s.id,
