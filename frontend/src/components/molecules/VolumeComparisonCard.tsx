@@ -89,8 +89,8 @@ export const VolumeComparisonCard: React.FC = () => {
             if (!weights) return;
 
             exercise.sets.forEach((set) => {
-              if (!set.completed || set.weight <= 0) return;
-              const vol = set.weight * set.reps;
+              if (!set.completed || (set.weight ?? 0) <= 0) return;
+              const vol = (set.weight ?? 0) * (set.reps ?? 0);
               total += vol;
 
               // Simplified body part attribution

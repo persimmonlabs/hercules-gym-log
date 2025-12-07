@@ -12,6 +12,7 @@ import { Text } from '@/components/atoms/Text';
 import { springGentle } from '@/constants/animations';
 import { colors, radius, shadows, sizing, spacing, zIndex } from '@/constants/theme';
 import type { SetLog } from '@/types/workout';
+import type { ExerciseType } from '@/types/exercise';
 
 interface ExerciseSetEditorProps {
   isExpanded: boolean;
@@ -20,6 +21,8 @@ interface ExerciseSetEditorProps {
   onSetsChange: (sets: SetLog[]) => void;
   onProgressChange?: (progress: { completedSets: number; totalSets: number }) => void;
   embedded?: boolean;
+  exerciseType?: ExerciseType;
+  distanceUnit?: 'miles' | 'meters' | 'floors';
 }
 
 const DEFAULT_NEW_SET: SetLog = {
@@ -31,6 +34,9 @@ const DEFAULT_NEW_SET: SetLog = {
 interface SetDraft extends SetLog {
   weightInput: string;
   repsInput: string;
+  durationInput: string;      // For cardio (minutes) and duration (seconds)
+  distanceInput: string;      // For cardio
+  assistanceWeightInput: string; // For assisted
 }
 
 type ActiveSelectionTarget = {
@@ -42,10 +48,28 @@ const formatWeightInputValue = (value: number): string => {
   return value.toFixed(1);
 };
 
+const formatDuration = (seconds: number): string => {
+  const mins = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  return `${mins}:${secs.toString().padStart(2, '0')}`;
+};
+
+const parseDuration = (input: string): number => {
+  // Handle mm:ss format or just seconds
+  if (input.includes(':')) {
+    const [mins, secs] = input.split(':').map(Number);
+    return (mins || 0) * 60 + (secs || 0);
+  }
+  return parseInt(input, 10) || 0;
+};
+
 const createDraftFromSet = (set: SetLog): SetDraft => ({
   ...set,
   weightInput: formatWeightInputValue(set.weight ?? 0),
   repsInput: String(set.reps ?? 0),
+  durationInput: set.duration ? formatDuration(set.duration) : '0:00',
+  distanceInput: String(set.distance ?? 0),
+  assistanceWeightInput: formatWeightInputValue(set.assistanceWeight ?? 0),
 });
 
 const sanitizeWeightInput = (value: string): string => {
@@ -87,9 +111,15 @@ const AUTO_SAVE_DEBOUNCE_MS = 120;
 
 const mapDraftsToSetLogs = (drafts: SetDraft[]): SetLog[] =>
   drafts.map((draft) => ({
-    reps: Number.isFinite(draft.reps) ? Math.max(draft.reps ?? 0, 0) : 0,
-    weight: Number.isFinite(draft.weight) ? Math.max(draft.weight ?? 0, 0) : 0,
     completed: Boolean(draft.completed),
+    // Weight exercises
+    reps: draft.reps !== undefined ? Math.max(draft.reps, 0) : undefined,
+    weight: draft.weight !== undefined ? Math.max(draft.weight, 0) : undefined,
+    // Cardio exercises
+    duration: draft.duration !== undefined ? Math.max(draft.duration, 0) : undefined,
+    distance: draft.distance !== undefined ? Math.max(draft.distance, 0) : undefined,
+    // Assisted exercises
+    assistanceWeight: draft.assistanceWeight !== undefined ? Math.max(draft.assistanceWeight, 0) : undefined,
   }));
 
 export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
@@ -99,6 +129,8 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
   onSetsChange,
   onProgressChange,
   embedded = false,
+  exerciseType = 'weight',
+  distanceUnit = 'miles',
 }) => {
   const [sets, setSets] = useState<SetDraft[]>(() => initialSets.map((set) => createDraftFromSet(set)));
   const [openMenuIndex, setOpenMenuIndex] = useState<number | null>(null);
@@ -236,18 +268,27 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
       // Find the last completed set to use its values
       const lastCompletedSet = [...prev].reverse().find((set) => set.completed);
 
-      const newSetValues = lastCompletedSet
+      const newSetValues: SetDraft = lastCompletedSet
         ? {
-          weight: lastCompletedSet.weight,
-          reps: lastCompletedSet.reps,
+          weight: lastCompletedSet.weight ?? 0,
+          reps: lastCompletedSet.reps ?? 8,
+          duration: lastCompletedSet.duration ?? 0,
+          distance: lastCompletedSet.distance ?? 0,
+          assistanceWeight: lastCompletedSet.assistanceWeight ?? 0,
           completed: false,
-          weightInput: formatWeightInputValue(lastCompletedSet.weight),
-          repsInput: String(lastCompletedSet.reps),
+          weightInput: formatWeightInputValue(lastCompletedSet.weight ?? 0),
+          repsInput: String(lastCompletedSet.reps ?? 8),
+          durationInput: lastCompletedSet.durationInput ?? '0:00',
+          distanceInput: lastCompletedSet.distanceInput ?? '0',
+          assistanceWeightInput: lastCompletedSet.assistanceWeightInput ?? '0.0',
         }
         : {
           ...DEFAULT_NEW_SET,
-          weightInput: formatWeightInputValue(DEFAULT_NEW_SET.weight),
-          repsInput: String(DEFAULT_NEW_SET.reps),
+          weightInput: formatWeightInputValue(DEFAULT_NEW_SET.weight ?? 0),
+          repsInput: String(DEFAULT_NEW_SET.reps ?? 8),
+          durationInput: '0:00',
+          distanceInput: '0',
+          assistanceWeightInput: '0.0',
         };
 
       return [...prev, newSetValues];
@@ -337,13 +378,13 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
           const nextSet = updatedSets[nextUncompletedIndex];
 
           // Only update if the next set has default values (0 weight and 8 reps)
-          if (nextSet.weight === 0 && nextSet.reps === 8) {
+          if ((nextSet.weight ?? 0) === 0 && (nextSet.reps ?? 8) === 8) {
             updatedSets[nextUncompletedIndex] = {
               ...nextSet,
-              weight: completedSet.weight,
-              reps: completedSet.reps,
-              weightInput: formatWeightInputValue(completedSet.weight),
-              repsInput: String(completedSet.reps),
+              weight: completedSet.weight ?? 0,
+              reps: completedSet.reps ?? 8,
+              weightInput: formatWeightInputValue(completedSet.weight ?? 0),
+              repsInput: String(completedSet.reps ?? 8),
             };
           }
         }
@@ -388,7 +429,31 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
         {hasSets ? (
           sets.map((set, index) => {
             const isCompleted = set.completed;
-            const summaryText = `${String(set.weight ?? 0)} lbs × ${String(set.reps ?? 0)} reps`;
+            
+            // Generate summary text based on exercise type
+            let summaryText = '';
+            switch (exerciseType) {
+              case 'cardio':
+                const mins = Math.floor((set.duration ?? 0) / 60);
+                const secs = (set.duration ?? 0) % 60;
+                summaryText = `${mins}:${secs.toString().padStart(2, '0')} • ${set.distance ?? 0} ${distanceUnit}`;
+                break;
+              case 'bodyweight':
+              case 'reps_only':
+                summaryText = `${set.reps ?? 0} reps`;
+                break;
+              case 'assisted':
+                summaryText = `${set.assistanceWeight ?? 0} lbs assist × ${set.reps ?? 0} reps`;
+                break;
+              case 'duration':
+                const dMins = Math.floor((set.duration ?? 0) / 60);
+                const dSecs = (set.duration ?? 0) % 60;
+                summaryText = dMins > 0 ? `${dMins}:${dSecs.toString().padStart(2, '0')}` : `${dSecs}s`;
+                break;
+              case 'weight':
+              default:
+                summaryText = `${String(set.weight ?? 0)} lbs × ${String(set.reps ?? 0)} reps`;
+            }
 
             return (
               <View
@@ -447,90 +512,218 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
                       ) : null}
                     </View>
 
-                    <View style={styles.metricSection} pointerEvents="box-none">
-                      <Text variant="label" color="neutral" style={styles.metricLabel}>
-                        Weight (lbs)
-                      </Text>
-                      <View style={styles.metricControls}>
-                        <Pressable
-                          style={styles.adjustButton}
-                          onPressIn={() => adjustSetValue(index, 'weight', -2.5)}
-                          accessibilityRole="button"
-                          accessibilityLabel={`Decrease weight for set ${index + 1}`}
-                        >
-                          <MaterialCommunityIcons
-                            name="minus"
-                            size={sizing.iconMD}
-                            color={colors.text.primary}
+                    {/* Type-specific input fields */}
+                    {(exerciseType === 'weight' || exerciseType === 'assisted') && (
+                      <View style={styles.metricSection} pointerEvents="box-none">
+                        <Text variant="label" color="neutral" style={styles.metricLabel}>
+                          {exerciseType === 'assisted' ? 'Assistance (lbs)' : 'Weight (lbs)'}
+                        </Text>
+                        <View style={styles.metricControls}>
+                          <Pressable
+                            style={styles.adjustButton}
+                            onPressIn={() => adjustSetValue(index, 'weight', exerciseType === 'assisted' ? -5 : -2.5)}
+                            accessibilityRole="button"
+                            accessibilityLabel={`Decrease weight for set ${index + 1}`}
+                          >
+                            <MaterialCommunityIcons
+                              name="minus"
+                              size={sizing.iconMD}
+                              color={colors.text.primary}
+                            />
+                          </Pressable>
+                          <TextInput
+                            value={exerciseType === 'assisted' ? set.assistanceWeightInput : set.weightInput}
+                            onChangeText={(value) => handleWeightInput(index, value)}
+                            keyboardType="decimal-pad"
+                            style={styles.metricValue}
+                            textAlign="center"
+                            placeholder="0"
+                            placeholderTextColor={colors.text.tertiary}
+                            cursorColor={colors.accent.primary}
+                            selectionColor={colors.accent.orangeLight}
+                            selection={
+                              activeSelection?.type === 'weight' && activeSelection.index === index
+                                ? { start: 0, end: (exerciseType === 'assisted' ? set.assistanceWeightInput : set.weightInput).length }
+                                : undefined
+                            }
+                            onFocus={() => handleWeightFocus(index)}
+                            onBlur={() => handleWeightBlur(index)}
                           />
-                        </Pressable>
-                        <TextInput
-                          value={set.weightInput}
-                          onChangeText={(value) => handleWeightInput(index, value)}
-                          keyboardType="decimal-pad"
-                          style={styles.metricValue}
-                          textAlign="center"
-                          placeholder="0"
-                          placeholderTextColor={colors.text.tertiary}
-                          cursorColor={colors.accent.primary}
-                          selectionColor={colors.accent.orangeLight}
-                          selection={
-                            activeSelection?.type === 'weight' && activeSelection.index === index
-                              ? { start: 0, end: set.weightInput.length }
-                              : undefined
-                          }
-                          onFocus={() => handleWeightFocus(index)}
-                          onBlur={() => handleWeightBlur(index)}
-                        />
-                        <Pressable
-                          style={styles.adjustButton}
-                          onPressIn={() => adjustSetValue(index, 'weight', 2.5)}
-                          accessibilityRole="button"
-                          accessibilityLabel={`Increase weight for set ${index + 1}`}
-                        >
-                          <MaterialCommunityIcons
-                            name="plus"
-                            size={sizing.iconMD}
-                            color={colors.text.primary}
-                          />
-                        </Pressable>
+                          <Pressable
+                            style={styles.adjustButton}
+                            onPressIn={() => adjustSetValue(index, 'weight', exerciseType === 'assisted' ? 5 : 2.5)}
+                            accessibilityRole="button"
+                            accessibilityLabel={`Increase weight for set ${index + 1}`}
+                          >
+                            <MaterialCommunityIcons
+                              name="plus"
+                              size={sizing.iconMD}
+                              color={colors.text.primary}
+                            />
+                          </Pressable>
+                        </View>
                       </View>
-                    </View>
+                    )}
 
-                    <View style={styles.metricSection} pointerEvents="box-none">
-                      <Text variant="label" color="neutral" style={styles.metricLabel}>
-                        Reps
-                      </Text>
-                      <View style={styles.metricControls}>
-                        <Pressable
-                          style={styles.adjustButton}
-                          onPressIn={() => adjustSetValue(index, 'reps', -1)}
-                          accessibilityRole="button"
-                          accessibilityLabel={`Decrease reps for set ${index + 1}`}
-                        >
-                          <MaterialCommunityIcons
-                            name="minus"
-                            size={sizing.iconMD}
-                            color={colors.text.primary}
+                    {exerciseType === 'cardio' && (
+                      <View style={styles.metricSection} pointerEvents="box-none">
+                        <Text variant="label" color="neutral" style={styles.metricLabel}>
+                          Distance (mi)
+                        </Text>
+                        <View style={styles.metricControls}>
+                          <Pressable
+                            style={styles.adjustButton}
+                            onPressIn={() => {
+                              const decrement = distanceUnit === 'meters' ? -100 : -0.1;
+                              updateSet(index, { distance: Math.max(0, (set.distance ?? 0) + decrement) });
+                            }}
+                            accessibilityRole="button"
+                            accessibilityLabel={`Decrease distance for set ${index + 1}`}
+                          >
+                            <MaterialCommunityIcons
+                              name="minus"
+                              size={sizing.iconMD}
+                              color={colors.text.primary}
+                            />
+                          </Pressable>
+                          <TextInput
+                            value={set.distanceInput}
+                            onChangeText={(value) => {
+                              const sanitized = sanitizeWeightInput(value);
+                              const distance = parseFloat(sanitized) || 0;
+                              updateSet(index, { 
+                                distanceInput: sanitized,
+                                distance 
+                              });
+                            }}
+                            keyboardType="decimal-pad"
+                            style={styles.metricValue}
+                            textAlign="center"
+                            placeholder="0"
+                            placeholderTextColor={colors.text.tertiary}
+                            cursorColor={colors.accent.primary}
+                            selectionColor={colors.accent.orangeLight}
                           />
-                        </Pressable>
-                        <TextInput
-                          value={set.repsInput}
-                          onChangeText={(value) => handleRepsInput(index, value)}
-                          keyboardType="numeric"
-                          style={styles.metricValue}
-                          textAlign="center"
-                          placeholder="0"
-                          placeholderTextColor={colors.text.tertiary}
-                          cursorColor={colors.accent.primary}
-                          selectionColor={colors.accent.orangeLight}
-                          selection={
-                            activeSelection?.type === 'reps' && activeSelection.index === index
-                              ? { start: 0, end: set.repsInput.length }
-                              : undefined
-                          }
-                          onFocus={() => handleRepsFocus(index)}
-                          onBlur={() => handleRepsBlur(index)}
+                          <Pressable
+                            style={styles.adjustButton}
+                            onPressIn={() => {
+                              const increment = distanceUnit === 'meters' ? 100 : 0.1;
+                              const newDistance = Math.round(((set.distance ?? 0) + increment) * 10) / 10;
+                              updateSet(index, { 
+                                distance: newDistance,
+                                distanceInput: String(newDistance)
+                              });
+                            }}
+                            accessibilityRole="button"
+                            accessibilityLabel={`Increase distance for set ${index + 1}`}
+                          >
+                            <MaterialCommunityIcons
+                              name="plus"
+                              size={sizing.iconMD}
+                              color={colors.text.primary}
+                            />
+                          </Pressable>
+                        </View>
+                      </View>
+                    )}
+
+                    {(exerciseType === 'cardio' || exerciseType === 'duration') && (
+                      <View style={styles.metricSection} pointerEvents="box-none">
+                        <Text variant="label" color="neutral" style={styles.metricLabel}>
+                          {exerciseType === 'cardio' ? 'Time (min:sec)' : 'Time (sec)'}
+                        </Text>
+                        <View style={styles.metricControls}>
+                          <Pressable
+                            style={styles.adjustButton}
+                            onPressIn={() => {
+                              const decrement = exerciseType === 'cardio' ? -60 : -5; // 1 min or 5 sec
+                              updateSet(index, { duration: Math.max(0, (set.duration ?? 0) + decrement) });
+                            }}
+                            accessibilityRole="button"
+                            accessibilityLabel={`Decrease duration for set ${index + 1}`}
+                          >
+                            <MaterialCommunityIcons
+                              name="minus"
+                              size={sizing.iconMD}
+                              color={colors.text.primary}
+                            />
+                          </Pressable>
+                          <TextInput
+                            value={set.durationInput}
+                            onChangeText={(value) => {
+                              const sanitized = value.replace(/[^0-9:]/g, '');
+                              const seconds = parseDuration(sanitized);
+                              updateSet(index, { 
+                                durationInput: sanitized,
+                                duration: seconds 
+                              });
+                            }}
+                            keyboardType="numeric"
+                            style={styles.metricValue}
+                            textAlign="center"
+                            placeholder={exerciseType === 'cardio' ? '0:00' : '0'}
+                            placeholderTextColor={colors.text.tertiary}
+                            cursorColor={colors.accent.primary}
+                            selectionColor={colors.accent.orangeLight}
+                          />
+                          <Pressable
+                            style={styles.adjustButton}
+                            onPressIn={() => {
+                              const increment = exerciseType === 'cardio' ? 60 : 5; // 1 min or 5 sec
+                              const newDuration = (set.duration ?? 0) + increment;
+                              updateSet(index, { 
+                                duration: newDuration,
+                                durationInput: formatDuration(newDuration)
+                              });
+                            }}
+                            accessibilityRole="button"
+                            accessibilityLabel={`Increase duration for set ${index + 1}`}
+                          >
+                            <MaterialCommunityIcons
+                              name="plus"
+                              size={sizing.iconMD}
+                              color={colors.text.primary}
+                            />
+                          </Pressable>
+                        </View>
+                      </View>
+                    )}
+
+                    {(exerciseType === 'weight' || exerciseType === 'bodyweight' || exerciseType === 'assisted' || exerciseType === 'reps_only') && (
+                      <View style={styles.metricSection} pointerEvents="box-none">
+                        <Text variant="label" color="neutral" style={styles.metricLabel}>
+                          Reps
+                        </Text>
+                        <View style={styles.metricControls}>
+                          <Pressable
+                            style={styles.adjustButton}
+                            onPressIn={() => adjustSetValue(index, 'reps', -1)}
+                            accessibilityRole="button"
+                            accessibilityLabel={`Decrease reps for set ${index + 1}`}
+                          >
+                            <MaterialCommunityIcons
+                              name="minus"
+                              size={sizing.iconMD}
+                              color={colors.text.primary}
+                            />
+                          </Pressable>
+                          <TextInput
+                            value={set.repsInput}
+                            onChangeText={(value) => handleRepsInput(index, value)}
+                            keyboardType="numeric"
+                            style={styles.metricValue}
+                            textAlign="center"
+                            placeholder="0"
+                            placeholderTextColor={colors.text.tertiary}
+                            cursorColor={colors.accent.primary}
+                            selectionColor={colors.accent.orangeLight}
+                            selection={
+                              activeSelection?.type === 'reps' && activeSelection.index === index
+                                ? { start: 0, end: set.repsInput.length }
+                                : undefined
+                            }
+                            onFocus={() => handleRepsFocus(index)}
+                            onBlur={() => handleRepsBlur(index)}
                         />
                         <Pressable
                           style={styles.adjustButton}
@@ -543,9 +736,10 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
                             size={sizing.iconMD}
                             color={colors.text.primary}
                           />
-                        </Pressable>
+                          </Pressable>
+                        </View>
                       </View>
-                    </View>
+                    )}
 
                     <Pressable
                       style={[styles.setActionButton, styles.setActionButtonPressable]}

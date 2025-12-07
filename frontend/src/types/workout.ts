@@ -1,7 +1,13 @@
 export interface SetLog {
-  reps: number;
-  weight: number;
   completed: boolean;
+  // Weight exercises
+  weight?: number;
+  reps?: number;
+  // Cardio exercises
+  duration?: number;      // stored as seconds
+  distance?: number;      // miles, meters, or floors based on exercise
+  // Assisted exercises (also uses reps)
+  assistanceWeight?: number;
 }
 
 export interface WorkoutExercise {

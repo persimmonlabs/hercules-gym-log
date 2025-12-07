@@ -7,6 +7,8 @@
 import { useMemo } from 'react';
 
 import { useWorkoutSessionsStore } from '@/store/workoutSessionsStore';
+import { useUserProfileStore } from '@/store/userProfileStore';
+import { exercises as exerciseCatalog } from '@/constants/exercises';
 import exercisesData from '@/data/exercises.json';
 import hierarchyData from '@/data/hierarchy.json';
 import { colors } from '@/constants/theme';
@@ -15,11 +17,19 @@ import type {
   TieredSetData,
   WeeklyVolumeData,
   StreakData,
+  CardioStats,
   ChartSlice,
   BarChartData,
   TimeRange,
   HierarchicalSetData,
 } from '@/types/analytics';
+import type { ExerciseType } from '@/types/exercise';
+
+// Build exercise type lookup map
+const EXERCISE_TYPE_MAP = exerciseCatalog.reduce((acc, ex) => {
+  acc[ex.name] = ex.exerciseType;
+  return acc;
+}, {} as Record<string, ExerciseType>);
 
 // Build muscle hierarchy maps once at module load
 const buildMaps = () => {
@@ -112,13 +122,41 @@ interface UseAnalyticsDataOptions {
 export const useAnalyticsData = (options: UseAnalyticsDataOptions = {}) => {
   const { timeRange = 'week' } = options;
   const workouts = useWorkoutSessionsStore((state) => state.workouts);
+  const userBodyWeight = useUserProfileStore((state) => state.profile?.weightLbs);
 
   // Filter workouts based on time range
   const filteredWorkouts = useMemo(() => {
     return filterByTimeRange(workouts, timeRange);
   }, [workouts, timeRange]);
 
-  // Calculate tiered volume data (weight × reps)
+  // Calculate cardio statistics
+  const cardioStats = useMemo((): CardioStats => {
+    let totalDuration = 0;
+    const totalDistanceByType: Record<string, number> = {};
+    let sessionCount = 0;
+
+    filteredWorkouts.forEach((workout) => {
+      let hasCardio = false;
+      workout.exercises.forEach((exercise: any) => {
+        const exerciseType = EXERCISE_TYPE_MAP[exercise.name];
+        if (exerciseType !== 'cardio') return;
+        
+        hasCardio = true;
+        exercise.sets.forEach((set: any) => {
+          if (!set.completed) return;
+          totalDuration += set.duration || 0;
+          if (set.distance) {
+            totalDistanceByType[exercise.name] = (totalDistanceByType[exercise.name] || 0) + set.distance;
+          }
+        });
+      });
+      if (hasCardio) sessionCount++;
+    });
+
+    return { totalDuration, totalDistanceByType, sessionCount };
+  }, [filteredWorkouts]);
+
+  // Calculate tiered volume data (weight × reps, with body weight for bodyweight/assisted)
   const tieredVolume = useMemo((): TieredVolumeData => {
     const high: Record<string, number> = { 'Upper Body': 0, 'Lower Body': 0, 'Core': 0 };
     const mid: Record<string, number> = {};
@@ -129,10 +167,46 @@ export const useAnalyticsData = (options: UseAnalyticsDataOptions = {}) => {
         const weights = EXERCISE_MUSCLES[exercise.name];
         if (!weights) return;
 
-        exercise.sets.forEach((set: any) => {
-          if (!set.completed || set.weight <= 0 || set.reps <= 0) return;
+        const exerciseType = EXERCISE_TYPE_MAP[exercise.name] || 'weight';
+        
+        // Skip cardio and duration exercises for volume calculations
+        if (exerciseType === 'cardio' || exerciseType === 'duration') return;
 
-          const setVolume = set.weight * set.reps;
+        exercise.sets.forEach((set: any) => {
+          if (!set.completed) return;
+          
+          // Calculate set volume based on exercise type
+          let setVolume = 0;
+          const reps = set.reps ?? 0;
+          
+          switch (exerciseType) {
+            case 'bodyweight':
+              // Use body weight if available, otherwise skip
+              if (userBodyWeight && reps > 0) {
+                setVolume = userBodyWeight * reps;
+              }
+              break;
+            case 'assisted':
+              // Effective weight = body weight - assistance weight
+              if (userBodyWeight && reps > 0) {
+                const effectiveWeight = Math.max(0, userBodyWeight - (set.assistanceWeight ?? 0));
+                setVolume = effectiveWeight * reps;
+              }
+              break;
+            case 'reps_only':
+              // Resistance bands - just count reps (no weight volume)
+              // Skip for volume calculations
+              return;
+            case 'weight':
+            default:
+              // Standard weight × reps
+              if ((set.weight ?? 0) > 0 && reps > 0) {
+                setVolume = set.weight * reps;
+              }
+              break;
+          }
+          
+          if (setVolume <= 0) return;
 
           Object.entries(weights).forEach(([muscle, weight]) => {
             const contribution = setVolume * weight;
@@ -157,7 +231,7 @@ export const useAnalyticsData = (options: UseAnalyticsDataOptions = {}) => {
     });
 
     return { high, mid, low };
-  }, [filteredWorkouts]);
+  }, [filteredWorkouts, userBodyWeight]);
 
   // Calculate tiered set distribution (weighted sets)
   const tieredSets = useMemo((): TieredSetData => {
@@ -171,9 +245,25 @@ export const useAnalyticsData = (options: UseAnalyticsDataOptions = {}) => {
         const weights = EXERCISE_MUSCLES[exercise.name];
         if (!weights) return;
 
-        const completedSets = exercise.sets.filter(
-          (s: any) => s.completed && s.weight > 0
-        ).length;
+        const exerciseType = EXERCISE_TYPE_MAP[exercise.name] || 'weight';
+        
+        // Skip cardio and duration exercises for set distribution
+        if (exerciseType === 'cardio' || exerciseType === 'duration') return;
+
+        // Count completed sets based on exercise type
+        const completedSets = exercise.sets.filter((s: any) => {
+          if (!s.completed) return false;
+          switch (exerciseType) {
+            case 'bodyweight':
+            case 'reps_only':
+              return (s.reps ?? 0) > 0;
+            case 'assisted':
+              return (s.reps ?? 0) > 0;
+            case 'weight':
+            default:
+              return (s.weight ?? 0) > 0;
+          }
+        }).length;
         if (completedSets === 0) return;
 
         totalSets += completedSets;
@@ -441,6 +531,7 @@ export const useAnalyticsData = (options: UseAnalyticsDataOptions = {}) => {
     hierarchicalSets,
     weeklyVolume,
     streakData,
+    cardioStats,
     
     // State
     hasData,
@@ -455,4 +546,4 @@ export const useAnalyticsData = (options: UseAnalyticsDataOptions = {}) => {
   };
 };
 
-export type { TieredVolumeData, TieredSetData, HierarchicalSetData, WeeklyVolumeData, StreakData };
+export type { TieredVolumeData, TieredSetData, HierarchicalSetData, WeeklyVolumeData, StreakData, CardioStats };

@@ -202,7 +202,7 @@ export const FocusDistributionChart: React.FC = () => {
         if (!weights) return;
 
         // Exclude sets with 0 weight
-        const completedSets = exercise.sets.filter(s => s.completed && s.weight > 0).length;
+        const completedSets = exercise.sets.filter(s => s.completed && (s.weight ?? 0) > 0).length;
         if (completedSets === 0) return;
 
         totalSets += completedSets;

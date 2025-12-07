@@ -3065,7 +3065,524 @@
   "movement_pattern": "Horizontal Push",
   "difficulty": "Beginner",
   "is_compound": true
-}
+},
 
+{
+  "id": "cardio_001",
+  "name": "Treadmill",
+  "exercise_type": "cardio",
+  "distance_unit": "miles",
+  "muscles": {},
+  "equipment": ["Cardio Machine"],
+  "movement_pattern": "Cardio",
+  "difficulty": "Beginner",
+  "is_compound": false
+},
+{
+  "id": "cardio_002",
+  "name": "Stationary Bike",
+  "exercise_type": "cardio",
+  "distance_unit": "miles",
+  "muscles": {},
+  "equipment": ["Cardio Machine"],
+  "movement_pattern": "Cardio",
+  "difficulty": "Beginner",
+  "is_compound": false
+},
+{
+  "id": "cardio_003",
+  "name": "Rowing Machine",
+  "exercise_type": "cardio",
+  "distance_unit": "meters",
+  "muscles": {
+    "Lats": 0.25,
+    "Mid Back": 0.20,
+    "Biceps": 0.15,
+    "Quads": 0.15,
+    "Glutes": 0.10,
+    "Hamstrings": 0.10,
+    "Lower Back": 0.05
+  },
+  "equipment": ["Cardio Machine"],
+  "movement_pattern": "Cardio",
+  "difficulty": "Beginner",
+  "is_compound": true
+},
+{
+  "id": "cardio_004",
+  "name": "Elliptical",
+  "exercise_type": "cardio",
+  "distance_unit": "miles",
+  "muscles": {},
+  "equipment": ["Cardio Machine"],
+  "movement_pattern": "Cardio",
+  "difficulty": "Beginner",
+  "is_compound": false
+},
+{
+  "id": "cardio_005",
+  "name": "Stair Climber",
+  "exercise_type": "cardio",
+  "distance_unit": "floors",
+  "muscles": {
+    "Quads": 0.35,
+    "Glutes": 0.35,
+    "Hamstrings": 0.20,
+    "Calves": 0.10
+  },
+  "equipment": ["Cardio Machine"],
+  "movement_pattern": "Cardio",
+  "difficulty": "Beginner",
+  "is_compound": true
+},
+{
+  "id": "cardio_006",
+  "name": "Outdoor Run",
+  "exercise_type": "cardio",
+  "distance_unit": "miles",
+  "muscles": {},
+  "equipment": ["Bodyweight"],
+  "movement_pattern": "Cardio",
+  "difficulty": "Beginner",
+  "is_compound": false
+},
+{
+  "id": "cardio_007",
+  "name": "Outdoor Walk",
+  "exercise_type": "cardio",
+  "distance_unit": "miles",
+  "muscles": {},
+  "equipment": ["Bodyweight"],
+  "movement_pattern": "Cardio",
+  "difficulty": "Beginner",
+  "is_compound": false
+},
+{
+  "id": "cardio_008",
+  "name": "Sprint Intervals",
+  "exercise_type": "cardio",
+  "distance_unit": "meters",
+  "muscles": {
+    "Quads": 0.30,
+    "Hamstrings": 0.25,
+    "Glutes": 0.25,
+    "Calves": 0.20
+  },
+  "equipment": ["Bodyweight"],
+  "movement_pattern": "Cardio",
+  "difficulty": "Intermediate",
+  "is_compound": true
+},
+
+{
+  "id": "bodyweight_001",
+  "name": "Push-ups",
+  "exercise_type": "bodyweight",
+  "muscles": {
+    "Mid Chest": 0.30,
+    "Upper Chest": 0.20,
+    "Front Delts": 0.20,
+    "Triceps": 0.25,
+    "Upper Abs": 0.05
+  },
+  "equipment": ["Bodyweight"],
+  "movement_pattern": "Horizontal Push",
+  "difficulty": "Beginner",
+  "is_compound": true
+},
+{
+  "id": "bodyweight_002",
+  "name": "Pull-ups",
+  "exercise_type": "bodyweight",
+  "muscles": {
+    "Lats": 0.40,
+    "Biceps": 0.25,
+    "Mid Back": 0.15,
+    "Rear Delts": 0.10,
+    "Forearms": 0.10
+  },
+  "equipment": ["Bodyweight"],
+  "movement_pattern": "Vertical Pull",
+  "difficulty": "Intermediate",
+  "is_compound": true
+},
+{
+  "id": "bodyweight_003",
+  "name": "Chin-ups",
+  "exercise_type": "bodyweight",
+  "muscles": {
+    "Biceps": 0.35,
+    "Lats": 0.35,
+    "Mid Back": 0.15,
+    "Rear Delts": 0.10,
+    "Forearms": 0.05
+  },
+  "equipment": ["Bodyweight"],
+  "movement_pattern": "Vertical Pull",
+  "difficulty": "Intermediate",
+  "is_compound": true
+},
+{
+  "id": "bodyweight_004",
+  "name": "Dips",
+  "exercise_type": "bodyweight",
+  "muscles": {
+    "Triceps": 0.40,
+    "Lower Chest": 0.25,
+    "Mid Chest": 0.15,
+    "Front Delts": 0.20
+  },
+  "equipment": ["Bodyweight"],
+  "movement_pattern": "Vertical Push",
+  "difficulty": "Intermediate",
+  "is_compound": true
+},
+{
+  "id": "bodyweight_005",
+  "name": "Crunches",
+  "exercise_type": "bodyweight",
+  "muscles": {
+    "Upper Abs": 0.60,
+    "Lower Abs": 0.30,
+    "Obliques": 0.10
+  },
+  "equipment": ["Bodyweight"],
+  "movement_pattern": "Flexion",
+  "difficulty": "Beginner",
+  "is_compound": false
+},
+{
+  "id": "bodyweight_006",
+  "name": "Sit-ups",
+  "exercise_type": "bodyweight",
+  "muscles": {
+    "Upper Abs": 0.45,
+    "Lower Abs": 0.35,
+    "Obliques": 0.10,
+    "Quads": 0.10
+  },
+  "equipment": ["Bodyweight"],
+  "movement_pattern": "Flexion",
+  "difficulty": "Beginner",
+  "is_compound": false
+},
+{
+  "id": "bodyweight_007",
+  "name": "Leg Raises",
+  "exercise_type": "bodyweight",
+  "muscles": {
+    "Lower Abs": 0.60,
+    "Upper Abs": 0.25,
+    "Quads": 0.15
+  },
+  "equipment": ["Bodyweight"],
+  "movement_pattern": "Flexion",
+  "difficulty": "Intermediate",
+  "is_compound": false
+},
+{
+  "id": "bodyweight_008",
+  "name": "Air Squats",
+  "exercise_type": "bodyweight",
+  "muscles": {
+    "Quads": 0.40,
+    "Glutes": 0.35,
+    "Hamstrings": 0.15,
+    "Calves": 0.05,
+    "Lower Back": 0.05
+  },
+  "equipment": ["Bodyweight"],
+  "movement_pattern": "Squat",
+  "difficulty": "Beginner",
+  "is_compound": true
+},
+{
+  "id": "bodyweight_009",
+  "name": "Lunges",
+  "exercise_type": "bodyweight",
+  "muscles": {
+    "Quads": 0.35,
+    "Glutes": 0.35,
+    "Hamstrings": 0.20,
+    "Calves": 0.10
+  },
+  "equipment": ["Bodyweight"],
+  "movement_pattern": "Lunge",
+  "difficulty": "Beginner",
+  "is_compound": true
+},
+{
+  "id": "bodyweight_010",
+  "name": "Mountain Climbers",
+  "exercise_type": "bodyweight",
+  "muscles": {
+    "Upper Abs": 0.25,
+    "Lower Abs": 0.25,
+    "Quads": 0.20,
+    "Front Delts": 0.15,
+    "Triceps": 0.15
+  },
+  "equipment": ["Bodyweight"],
+  "movement_pattern": "Cardio",
+  "difficulty": "Beginner",
+  "is_compound": true
+},
+{
+  "id": "bodyweight_011",
+  "name": "Burpees",
+  "exercise_type": "bodyweight",
+  "muscles": {
+    "Quads": 0.20,
+    "Glutes": 0.15,
+    "Mid Chest": 0.15,
+    "Triceps": 0.15,
+    "Front Delts": 0.15,
+    "Upper Abs": 0.10,
+    "Lower Abs": 0.10
+  },
+  "equipment": ["Bodyweight"],
+  "movement_pattern": "Cardio",
+  "difficulty": "Intermediate",
+  "is_compound": true
+},
+{
+  "id": "bodyweight_012",
+  "name": "Inverted Rows",
+  "exercise_type": "bodyweight",
+  "muscles": {
+    "Mid Back": 0.35,
+    "Lats": 0.25,
+    "Biceps": 0.20,
+    "Rear Delts": 0.15,
+    "Forearms": 0.05
+  },
+  "equipment": ["Bodyweight"],
+  "movement_pattern": "Horizontal Pull",
+  "difficulty": "Beginner",
+  "is_compound": true
+},
+
+{
+  "id": "assisted_001",
+  "name": "Assisted Pull-ups",
+  "exercise_type": "assisted",
+  "muscles": {
+    "Lats": 0.40,
+    "Biceps": 0.25,
+    "Mid Back": 0.15,
+    "Rear Delts": 0.10,
+    "Forearms": 0.10
+  },
+  "equipment": ["Machine"],
+  "movement_pattern": "Vertical Pull",
+  "difficulty": "Beginner",
+  "is_compound": true
+},
+{
+  "id": "assisted_002",
+  "name": "Assisted Dips",
+  "exercise_type": "assisted",
+  "muscles": {
+    "Triceps": 0.40,
+    "Lower Chest": 0.25,
+    "Mid Chest": 0.15,
+    "Front Delts": 0.20
+  },
+  "equipment": ["Machine"],
+  "movement_pattern": "Vertical Push",
+  "difficulty": "Beginner",
+  "is_compound": true
+},
+{
+  "id": "assisted_003",
+  "name": "Assisted Chin-ups",
+  "exercise_type": "assisted",
+  "muscles": {
+    "Biceps": 0.35,
+    "Lats": 0.35,
+    "Mid Back": 0.15,
+    "Rear Delts": 0.10,
+    "Forearms": 0.05
+  },
+  "equipment": ["Machine"],
+  "movement_pattern": "Vertical Pull",
+  "difficulty": "Beginner",
+  "is_compound": true
+},
+
+{
+  "id": "band_001",
+  "name": "Band Pull-aparts",
+  "exercise_type": "reps_only",
+  "muscles": {
+    "Rear Delts": 0.50,
+    "Mid Back": 0.30,
+    "Traps": 0.20
+  },
+  "equipment": ["Bands"],
+  "movement_pattern": "Horizontal Pull",
+  "difficulty": "Beginner",
+  "is_compound": false
+},
+{
+  "id": "band_002",
+  "name": "Band Rows",
+  "exercise_type": "reps_only",
+  "muscles": {
+    "Mid Back": 0.40,
+    "Lats": 0.25,
+    "Biceps": 0.20,
+    "Rear Delts": 0.15
+  },
+  "equipment": ["Bands"],
+  "movement_pattern": "Horizontal Pull",
+  "difficulty": "Beginner",
+  "is_compound": true
+},
+{
+  "id": "band_003",
+  "name": "Band Bicep Curls",
+  "exercise_type": "reps_only",
+  "muscles": {
+    "Biceps": 0.85,
+    "Forearms": 0.15
+  },
+  "equipment": ["Bands"],
+  "movement_pattern": "Vertical Pull",
+  "difficulty": "Beginner",
+  "is_compound": false
+},
+{
+  "id": "band_004",
+  "name": "Band Tricep Pushdowns",
+  "exercise_type": "reps_only",
+  "muscles": {
+    "Triceps": 0.90,
+    "Forearms": 0.10
+  },
+  "equipment": ["Bands"],
+  "movement_pattern": "Vertical Push",
+  "difficulty": "Beginner",
+  "is_compound": false
+},
+{
+  "id": "band_005",
+  "name": "Band Face Pulls",
+  "exercise_type": "reps_only",
+  "muscles": {
+    "Rear Delts": 0.40,
+    "Mid Back": 0.30,
+    "Traps": 0.20,
+    "Biceps": 0.10
+  },
+  "equipment": ["Bands"],
+  "movement_pattern": "Horizontal Pull",
+  "difficulty": "Beginner",
+  "is_compound": false
+},
+{
+  "id": "band_006",
+  "name": "Band Lateral Walks",
+  "exercise_type": "reps_only",
+  "muscles": {
+    "Abductors": 0.50,
+    "Glutes": 0.40,
+    "Quads": 0.10
+  },
+  "equipment": ["Bands"],
+  "movement_pattern": "Lateral",
+  "difficulty": "Beginner",
+  "is_compound": false
+},
+
+{
+  "id": "duration_001",
+  "name": "Plank",
+  "exercise_type": "duration",
+  "muscles": {
+    "Upper Abs": 0.35,
+    "Lower Abs": 0.30,
+    "Obliques": 0.20,
+    "Lower Back": 0.10,
+    "Front Delts": 0.05
+  },
+  "equipment": ["Bodyweight"],
+  "movement_pattern": "Isometric",
+  "difficulty": "Beginner",
+  "is_compound": true
+},
+{
+  "id": "duration_002",
+  "name": "Side Plank",
+  "exercise_type": "duration",
+  "muscles": {
+    "Obliques": 0.60,
+    "Upper Abs": 0.20,
+    "Lower Abs": 0.10,
+    "Glutes": 0.10
+  },
+  "equipment": ["Bodyweight"],
+  "movement_pattern": "Isometric",
+  "difficulty": "Beginner",
+  "is_compound": false
+},
+{
+  "id": "duration_003",
+  "name": "Wall Sit",
+  "exercise_type": "duration",
+  "muscles": {
+    "Quads": 0.70,
+    "Glutes": 0.20,
+    "Calves": 0.10
+  },
+  "equipment": ["Bodyweight"],
+  "movement_pattern": "Isometric",
+  "difficulty": "Beginner",
+  "is_compound": false
+},
+{
+  "id": "duration_004",
+  "name": "Dead Hang",
+  "exercise_type": "duration",
+  "muscles": {
+    "Forearms": 0.50,
+    "Lats": 0.25,
+    "Biceps": 0.15,
+    "Rear Delts": 0.10
+  },
+  "equipment": ["Bodyweight"],
+  "movement_pattern": "Isometric",
+  "difficulty": "Beginner",
+  "is_compound": false
+},
+{
+  "id": "duration_005",
+  "name": "Glute Bridge Hold",
+  "exercise_type": "duration",
+  "muscles": {
+    "Glutes": 0.60,
+    "Hamstrings": 0.25,
+    "Lower Back": 0.15
+  },
+  "equipment": ["Bodyweight"],
+  "movement_pattern": "Isometric",
+  "difficulty": "Beginner",
+  "is_compound": false
+},
+{
+  "id": "duration_006",
+  "name": "Hollow Body Hold",
+  "exercise_type": "duration",
+  "muscles": {
+    "Upper Abs": 0.40,
+    "Lower Abs": 0.40,
+    "Obliques": 0.10,
+    "Quads": 0.10
+  },
+  "equipment": ["Bodyweight"],
+  "movement_pattern": "Isometric",
+  "difficulty": "Intermediate",
+  "is_compound": true
+}
 
 ]

@@ -9,11 +9,13 @@ import type {
   EquipmentType,
   Exercise,
   ExerciseFilters,
+  ExerciseType,
   FilterDifficulty,
   FilterEquipment,
   FilterMuscleGroup,
   MuscleGroup,
 } from '@/types/exercise';
+import { EXERCISE_TYPE_LABELS } from '@/types/exercise';
 
 const MUSCLE_HIERARCHY = hierarchyData.muscle_hierarchy as unknown as Record<string, { muscles: Record<string, any> }>;
 
@@ -24,6 +26,7 @@ export const createDefaultExerciseFilters = (): ExerciseFilters => ({
   difficulty: [],
   bodyweightOnly: false,
   compoundOnly: false,
+  exerciseTypes: [],
 });
 
 export const toggleFilterValue = <T extends string>(values: T[], value: T): T[] => {
@@ -108,6 +111,11 @@ const matchesDifficulty = (exercise: Exercise, selected: FilterDifficulty[]): bo
   return matchesArrayFilter(selected, () => selected.includes(exercise.difficulty as FilterDifficulty));
 };
 
+const matchesExerciseType = (exercise: Exercise, selected: ExerciseType[]): boolean => {
+  if (selected.length === 0) return true;
+  return selected.includes(exercise.exerciseType);
+};
+
 export const matchesExerciseFilters = (exercise: Exercise, filters: ExerciseFilters): boolean => {
   if (filters.bodyweightOnly && !exercise.isBodyweight) {
     return false;
@@ -129,6 +137,10 @@ export const matchesExerciseFilters = (exercise: Exercise, filters: ExerciseFilt
     return false;
   }
 
+  if (!matchesExerciseType(exercise, filters.exerciseTypes)) {
+    return false;
+  }
+
   return true;
 };
 
@@ -137,6 +149,7 @@ export const countActiveFilters = (filters: ExerciseFilters): number => {
   count += filters.muscleGroups.length;
   count += filters.equipment.length;
   count += filters.difficulty.length;
+  count += filters.exerciseTypes.length;
   if (filters.bodyweightOnly) count += 1;
   if (filters.compoundOnly) count += 1;
   return count;
@@ -148,6 +161,7 @@ export const getActiveFilterLabels = (filters: ExerciseFilters): string[] => {
   labels.push(...filters.specificMuscles);
   labels.push(...filters.equipment);
   labels.push(...filters.difficulty);
+  labels.push(...filters.exerciseTypes.map(t => EXERCISE_TYPE_LABELS[t]));
   if (filters.bodyweightOnly) labels.push('Bodyweight');
   if (filters.compoundOnly) labels.push('Compound');
   return labels;

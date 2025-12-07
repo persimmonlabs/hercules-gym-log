@@ -38,6 +38,7 @@ import { useUserProfileStore } from '@/store/userProfileStore';
 import { useAuth } from '@/providers/AuthProvider';
 import type { Schedule } from '@/types/schedule';
 import type { UserProgram, RotationSchedule, ProgramWorkout } from '@/types/premadePlan';
+import { createDefaultSetsForExercise } from '@/utils/workout';
 
 const QUICK_LINKS: QuickLinkItem[] = [
   { id: 'link-workout', title: 'Start Workout', description: 'Log a new workout session.', icon: 'flash-outline', route: 'workout', variant: 'primary' },
@@ -80,14 +81,6 @@ const scaleUpSpringConfig = {
   stiffness: 300,
 };
 
-const DEFAULT_PLAN_SET_COUNT = 3;
-
-const createDefaultSetLogs = (): SetLog[] =>
-  Array.from({ length: DEFAULT_PLAN_SET_COUNT }, () => ({
-    reps: 8,
-    weight: 0,
-    completed: false,
-  }));
 
 type ShadowConfig = {
   shadowOpacity: number;
@@ -660,7 +653,7 @@ const DashboardScreen: React.FC = () => {
 
     const workoutExercises: WorkoutExercise[] = target.exercises.map((exercise) => ({
       name: exercise.name,
-      sets: createDefaultSetLogs(),
+      sets: createDefaultSetsForExercise(exercise.name),
     }));
 
     const planId = todaysCardState.variant === 'rotation' ? todaysCardState.programId : (todaysPlan?.id ?? '');

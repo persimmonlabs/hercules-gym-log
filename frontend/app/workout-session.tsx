@@ -55,6 +55,10 @@ interface ExerciseProgressSnapshot {
 }
 
 const createDefaultSetLogs = (exerciseName: string, allWorkouts: any[], currentSessionId?: string): WorkoutExercise['sets'] => {
+  // Get exercise type from catalog
+  const exercise = exerciseCatalog.find(e => e.name === exerciseName);
+  const exerciseType = exercise?.exerciseType || 'weight';
+  
   // Filter out the current session to avoid using incomplete data
   const historicalWorkouts = currentSessionId
     ? allWorkouts.filter((w) => w.id !== currentSessionId)
@@ -65,14 +69,26 @@ const createDefaultSetLogs = (exerciseName: string, allWorkouts: any[], currentS
 
   if (lastSets && lastSets.length > 0) {
     // Use the historical sets, but mark them as not completed
-    return lastSets.map((set) => ({
-      reps: set.reps,
-      weight: set.weight,
-      completed: false,
-    }));
+    return lastSets.map((set) => ({ ...set, completed: false }));
   }
 
-  return Array.from({ length: DEFAULT_SET_COUNT }, () => ({ reps: 8, weight: 0, completed: false }));
+  // Create type-appropriate default sets
+  switch (exerciseType) {
+    case 'cardio':
+      // Single set for cardio (users can add intervals)
+      return [{ duration: 0, distance: 0, completed: false }];
+    case 'bodyweight':
+    case 'reps_only':
+      return Array.from({ length: DEFAULT_SET_COUNT }, () => ({ reps: 10, completed: false }));
+    case 'assisted':
+      return Array.from({ length: DEFAULT_SET_COUNT }, () => ({ assistanceWeight: 0, reps: 8, completed: false }));
+    case 'duration':
+      // Single set for timed exercises
+      return [{ duration: 30, completed: false }];
+    case 'weight':
+    default:
+      return Array.from({ length: DEFAULT_SET_COUNT }, () => ({ reps: 8, weight: 0, completed: false }));
+  }
 };
 
 const formatElapsed = (seconds: number): string => {
@@ -785,6 +801,8 @@ const WorkoutSessionScreen: React.FC = () => {
                         initialSets={item.sets}
                         onSetsChange={(updatedSets) => handleExerciseSetsChange(item.name, updatedSets)}
                         onProgressChange={(progress) => handleExerciseProgressChange(item.name, progress)}
+                        exerciseType={exerciseCatalog.find(e => e.name === item.name)?.exerciseType || 'weight'}
+                        distanceUnit={exerciseCatalog.find(e => e.name === item.name)?.distanceUnit}
                       />
                     </View>
                   ) : null}

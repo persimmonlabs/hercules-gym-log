@@ -117,6 +117,13 @@ export interface StreakData {
   averagePerWeek: number;
 }
 
+// Cardio statistics
+export interface CardioStats {
+  totalDuration: number;              // Total seconds across all cardio
+  totalDistanceByType: Record<string, number>;  // exerciseName -> total distance
+  sessionCount: number;               // Number of workouts containing cardio
+}
+
 // Muscle detail for drill-down
 export interface MuscleDetail {
   name: string;

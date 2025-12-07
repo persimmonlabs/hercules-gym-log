@@ -87,15 +87,17 @@ export const PersonalRecordsSection: React.FC = () => {
         const exercise = workout.exercises.find((e) => e.name === exerciseName);
         if (exercise) {
           exercise.sets.forEach((set) => {
+            const setWeight = set.weight ?? 0;
+            const setReps = set.reps ?? 0;
             // Check if set is valid (weight > 0)
-            if (set.weight > maxWeight) {
-              maxWeight = set.weight;
-              associatedReps = set.reps;
+            if (setWeight > maxWeight) {
+              maxWeight = setWeight;
+              associatedReps = setReps;
               recordDate = workout.date;
-            } else if (set.weight === maxWeight && set.weight > 0) {
+            } else if (setWeight === maxWeight && setWeight > 0) {
               // Tie breaker: more reps
-              if (set.reps > associatedReps) {
-                associatedReps = set.reps;
+              if (setReps > associatedReps) {
+                associatedReps = setReps;
                 recordDate = workout.date;
               }
             }

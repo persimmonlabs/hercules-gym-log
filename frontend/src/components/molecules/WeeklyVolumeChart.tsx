@@ -297,9 +297,9 @@ export const WeeklyVolumeChart: React.FC = () => {
                 if (!weights) return;
 
                 exercise.sets.forEach(set => {
-                    if (!set.completed || set.weight <= 0 || set.reps <= 0) return;
+                    if (!set.completed || (set.weight ?? 0) <= 0 || (set.reps ?? 0) <= 0) return;
 
-                    const setVolume = set.weight * set.reps;
+                    const setVolume = (set.weight ?? 0) * (set.reps ?? 0);
 
                     Object.entries(weights).forEach(([muscle, weight]) => {
                         const contribution = setVolume * weight;

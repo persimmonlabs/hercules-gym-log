@@ -14,6 +14,7 @@ import { Text } from '@/components/atoms/Text';
 import { SurfaceCard } from '@/components/atoms/SurfaceCard';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { NameEditModal } from '@/components/molecules/NameEditModal';
+import { BodyMetricsModal } from '@/components/molecules/BodyMetricsModal';
 import { colors, spacing, radius, shadows, sizing } from '@/constants/theme';
 import { useAuth } from '@/providers/AuthProvider';
 import { supabaseClient } from '@/lib/supabaseClient';
@@ -22,9 +23,10 @@ import { useUserProfileStore } from '@/store/userProfileStore';
 const ProfileModal: React.FC = () => {
   const router = useRouter();
   const { user, signOut } = useAuth();
-  const { profile, fetchProfile, updateProfile } = useUserProfileStore();
+  const { profile, fetchProfile, updateProfile, updateBodyMetrics } = useUserProfileStore();
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [isNameModalVisible, setIsNameModalVisible] = useState(false);
+  const [isBodyMetricsModalVisible, setIsBodyMetricsModalVisible] = useState(false);
   const backScale = useSharedValue(1);
 
   const handleBackPress = () => {
@@ -134,6 +136,18 @@ const ProfileModal: React.FC = () => {
   const handleNameSave = (firstName: string, lastName: string) => {
     // Update the centralized store for real-time updates across the app
     updateProfile(firstName, lastName);
+  };
+
+  const getBodyMetricsSubtitle = () => {
+    if (profile?.heightFeet && profile?.weightLbs) {
+      return `${profile.heightFeet}'${profile.heightInches || 0}" • ${profile.weightLbs} lbs`;
+    }
+    return 'Set height and weight for accurate stats';
+  };
+
+  const handleBodyMetricsSave = (heightFeet: number, heightInches: number, weightLbs: number) => {
+    updateBodyMetrics(heightFeet, heightInches, weightLbs);
+    setIsBodyMetricsModalVisible(false);
   };
 
   return (
@@ -247,6 +261,16 @@ const ProfileModal: React.FC = () => {
               />
 
               <PreferenceItem
+                icon="straighten"
+                title="Body Metrics"
+                subtitle={getBodyMetricsSubtitle()}
+                onPress={() => {
+                  void Haptics.selectionAsync();
+                  setIsBodyMetricsModalVisible(true);
+                }}
+              />
+
+              <PreferenceItem
                 icon="trending-up"
                 title="Progress Tracking"
                 subtitle="Configure how your progress is calculated"
@@ -327,6 +351,15 @@ const ProfileModal: React.FC = () => {
         lastName={getCurrentLastName()}
         onClose={handleCloseNameModal}
         onSave={handleNameSave}
+      />
+
+      <BodyMetricsModal
+        visible={isBodyMetricsModalVisible}
+        heightFeet={profile?.heightFeet || 5}
+        heightInches={profile?.heightInches || 9}
+        weightLbs={profile?.weightLbs || 0}
+        onClose={() => setIsBodyMetricsModalVisible(false)}
+        onSave={handleBodyMetricsSave}
       />
     </SafeAreaView>
   );
@@ -430,7 +463,7 @@ const styles = StyleSheet.create({
     height: sizing.avatar,
     borderRadius: radius.full,
     backgroundColor: colors.surface.card,
-    borderWidth: 2,
+    borderWidth: 3,
     borderColor: colors.accent.orange,
     justifyContent: 'center',
     alignItems: 'center',
@@ -439,12 +472,14 @@ const styles = StyleSheet.create({
     width: sizing.avatar,
     height: sizing.avatar,
     borderRadius: radius.full,
-    backgroundColor: colors.accent.orange,
+    backgroundColor: colors.surface.card,
+    borderWidth: 3,
+    borderColor: colors.accent.orange,
     justifyContent: 'center',
     alignItems: 'center',
   },
   avatarInitialText: {
-    color: colors.text.onAccent,
+    color: colors.accent.orange,
     fontSize: 40,
     fontWeight: '600',
   },

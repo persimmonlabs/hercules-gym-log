@@ -3,7 +3,37 @@
  * Formatting helpers for workout session data.
  */
 
-import type { Workout } from '@/types/workout';
+import type { Workout, SetLog } from '@/types/workout';
+import type { ExerciseType } from '@/types/exercise';
+import { exercises as exerciseCatalog } from '@/constants/exercises';
+
+const DEFAULT_SET_COUNT = 3;
+
+/**
+ * Creates default sets for an exercise based on its type.
+ * Cardio and duration exercises default to 1 set, others default to 3.
+ */
+export const createDefaultSetsForExercise = (exerciseName: string): SetLog[] => {
+  const exercise = exerciseCatalog.find(e => e.name === exerciseName);
+  const exerciseType: ExerciseType = exercise?.exerciseType || 'weight';
+
+  switch (exerciseType) {
+    case 'cardio':
+      // Single set for cardio
+      return [{ duration: 0, distance: 0, completed: false }];
+    case 'duration':
+      // Single set for timed exercises
+      return [{ duration: 30, completed: false }];
+    case 'bodyweight':
+    case 'reps_only':
+      return Array.from({ length: DEFAULT_SET_COUNT }, () => ({ reps: 10, completed: false }));
+    case 'assisted':
+      return Array.from({ length: DEFAULT_SET_COUNT }, () => ({ assistanceWeight: 0, reps: 8, completed: false }));
+    case 'weight':
+    default:
+      return Array.from({ length: DEFAULT_SET_COUNT }, () => ({ reps: 8, weight: 0, completed: false }));
+  }
+};
 
 /**
  * Formats a workout session title, prioritizing the linked plan name when available.

@@ -6,6 +6,7 @@ import {
   type EquipmentType,
   type Exercise,
   type ExerciseCatalogItem,
+  type ExerciseType,
   type MovementPattern,
   type MuscleGroup,
   type FilterMuscleGroup,
@@ -26,6 +27,9 @@ interface RawExercise {
   movement_pattern: MovementPattern;
   difficulty: DifficultyLevel;
   is_compound: boolean;
+  // New fields for exercise types
+  exercise_type?: ExerciseType;
+  distance_unit?: 'miles' | 'meters' | 'floors';
 }
 
 // --- Hierarchy Mapping Logic ---
@@ -146,6 +150,11 @@ const buildSearchIndex = (
     parts.push('bodyweight');
   }
 
+  // Add exercise type to search index
+  if (exercise.exercise_type) {
+    parts.push(exercise.exercise_type);
+  }
+
   return normalizeSearchText(parts.join(' '));
 };
 
@@ -188,6 +197,8 @@ const toExercise = (exercise: RawExercise): ExerciseCatalogItem => {
     difficulty: exercise.difficulty,
     isCompound: exercise.is_compound,
     isBodyweight,
+    exerciseType: exercise.exercise_type || 'weight',
+    distanceUnit: exercise.distance_unit,
     searchIndex: buildSearchIndex(exercise, primaryMuscleName, muscleGroup, filterMuscleGroup, secondaryMuscleGroups),
   };
 };

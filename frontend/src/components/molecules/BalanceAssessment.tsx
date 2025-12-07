@@ -109,7 +109,7 @@ export const BalanceAssessment: React.FC = () => {
           const muscles = EXERCISE_MUSCLES[exercise.name];
           if (!muscles) return;
 
-          const completedSets = exercise.sets.filter((s) => s.completed && s.weight > 0).length;
+          const completedSets = exercise.sets.filter((s) => s.completed && (s.weight ?? 0) > 0).length;
           if (completedSets === 0) return;
 
           Object.keys(muscles).forEach((muscle) => {

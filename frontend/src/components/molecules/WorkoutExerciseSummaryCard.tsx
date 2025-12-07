@@ -10,12 +10,63 @@ import Animated, { Layout } from 'react-native-reanimated';
 import { Text } from '@/components/atoms/Text';
 import { SurfaceCard } from '@/components/atoms/SurfaceCard';
 import { colors, radius, spacing } from '@/constants/theme';
-import type { WorkoutExercise } from '@/types/workout';
+import { exercises as exerciseCatalog } from '@/constants/exercises';
+import type { WorkoutExercise, SetLog } from '@/types/workout';
+import type { ExerciseType } from '@/types/exercise';
 
 interface WorkoutExerciseSummaryCardProps {
   exercise: WorkoutExercise;
   index: number;
 }
+
+/**
+ * Format duration in seconds to a readable string
+ * Uses hr, min, s for clarity (not m which could be confused with meters)
+ */
+const formatDuration = (seconds: number): string => {
+  if (seconds >= 3600) {
+    const hrs = Math.floor(seconds / 3600);
+    const mins = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+    if (mins === 0 && secs === 0) return `${hrs} hr`;
+    if (secs === 0) return `${hrs} hr ${mins} min`;
+    return `${hrs} hr ${mins} min ${secs} s`;
+  }
+  if (seconds >= 60) {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return secs > 0 ? `${mins} min ${secs} s` : `${mins} min`;
+  }
+  return `${seconds} s`;
+};
+
+/**
+ * Get the effort label for a set based on exercise type
+ * For cardio: distance on left, time on right
+ */
+const getSetEffortLabel = (set: SetLog, exerciseType: ExerciseType): string => {
+  switch (exerciseType) {
+    case 'cardio':
+      const distance = set.distance ? `${set.distance.toFixed(1)} mi` : '0 mi';
+      const duration = set.duration ? formatDuration(set.duration) : '0min';
+      return `${distance} • ${duration}`;
+    
+    case 'duration':
+      return formatDuration(set.duration ?? 0);
+    
+    case 'bodyweight':
+    case 'reps_only':
+      return `${set.reps ?? 0} reps`;
+    
+    case 'assisted':
+      const assistance = set.assistanceWeight ?? 0;
+      return `${assistance} lbs assist • ${set.reps ?? 0} reps`;
+    
+    case 'weight':
+    default:
+      return `${set.weight ?? 0} lbs × ${set.reps ?? 0} reps`;
+  }
+};
 
 /**
  * WorkoutExerciseSummaryCard
@@ -28,6 +79,10 @@ export const WorkoutExerciseSummaryCard: React.FC<WorkoutExerciseSummaryCardProp
   exercise,
   index,
 }) => {
+  // Look up exercise type from catalog
+  const catalogEntry = exerciseCatalog.find(e => e.name === exercise.name);
+  const exerciseType: ExerciseType = catalogEntry?.exerciseType || 'weight';
+
   return (
     <Animated.View layout={Layout.springify()} style={styles.wrapper}>
       <SurfaceCard tone="card" padding="lg" style={styles.card}>
@@ -41,7 +96,7 @@ export const WorkoutExerciseSummaryCard: React.FC<WorkoutExerciseSummaryCardProp
 
         <View style={styles.setList}>
           {exercise.sets.map((set, setIndex) => {
-            const effortLabel = `${set.weight ?? 0} lbs × ${set.reps ?? 0} reps`;
+            const effortLabel = getSetEffortLabel(set, exerciseType);
 
             return (
               <View key={`${exercise.name}-${setIndex}`} style={styles.setRow}>

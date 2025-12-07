@@ -11,6 +11,7 @@ import { colors, radius, sizing, spacing } from '@/constants/theme';
 import { usePlansStore, type Plan, type PlansState } from '@/store/plansStore';
 import { useSessionStore } from '@/store/sessionStore';
 import type { WorkoutExercise } from '@/types/workout';
+import { createDefaultSetsForExercise } from '@/utils/workout';
 import WorkoutSessionScreen from '../workout-session';
 import { WorkoutCompletionOverlay } from '@/components/organisms';
 
@@ -82,10 +83,6 @@ const WorkoutScreen: React.FC = () => {
     setShowPlansList(true);
   };
 
-  const createDefaultSetLogs = useCallback((): WorkoutExercise['sets'] => {
-    return Array.from({ length: 3 }, () => ({ reps: 8, weight: 0, completed: false }));
-  }, []);
-
   const handlePlanSelect = useCallback(
     (plan: Plan) => {
       void Haptics.selectionAsync();
@@ -95,13 +92,13 @@ const WorkoutScreen: React.FC = () => {
 
       const mappedExercises: WorkoutExercise[] = plan.exercises.map((exercise) => ({
         name: exercise.name,
-        sets: createDefaultSetLogs(),
+        sets: createDefaultSetsForExercise(exercise.name),
       }));
 
       startSession(plan.id, mappedExercises);
       setShowPlansList(false);
     },
-    [createDefaultSetLogs, startSession, setCompletionOverlayVisible],
+    [startSession, setCompletionOverlayVisible],
   );
 
   const handleStartFromScratch = useCallback(() => {

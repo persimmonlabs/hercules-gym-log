@@ -18,6 +18,7 @@ import { IconSymbol } from '@/components/ui/icon-symbol';
 import { useSessionStore } from '@/store/sessionStore';
 import { ProgramCard } from '@/components/molecules/ProgramCard';
 import type { WorkoutExercise } from '@/types/workout';
+import { createDefaultSetsForExercise } from '@/utils/workout';
 import type { Schedule } from '@/types/schedule';
 import type { PremadeProgram, WeeklyScheduleConfig, Weekday, UserProgram } from '@/types/premadePlan';
 
@@ -438,9 +439,6 @@ const PlansScreen: React.FC = () => {
     setItemToDelete(null);
   }, []);
 
-  const createDefaultSetLogs = useCallback(() => {
-    return Array.from({ length: 3 }, () => ({ reps: 8, weight: 0, completed: false }));
-  }, []);
 
   const handleEditWorkoutItem = useCallback(
     (item: any) => {
@@ -534,7 +532,7 @@ const PlansScreen: React.FC = () => {
 
     const workoutExercises: WorkoutExercise[] = item.exercises.map((exercise: any) => ({
       name: exercise.name,
-      sets: createDefaultSetLogs(),
+      sets: createDefaultSetsForExercise(exercise.name),
     }));
 
     // Use program ID if it's a program workout, otherwise the plan ID
@@ -543,7 +541,7 @@ const PlansScreen: React.FC = () => {
     startSession(planId, workoutExercises);
     setExpandedPlanId(null);
     router.push('/(tabs)/workout');
-  }, [createDefaultSetLogs, router, startSession, setCompletionOverlayVisible]);
+  }, [router, startSession, setCompletionOverlayVisible]);
 
   return (
     <TabSwipeContainer contentContainerStyle={styles.contentContainer}>

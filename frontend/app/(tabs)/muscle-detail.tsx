@@ -59,11 +59,11 @@ const MuscleDetailScreen: React.FC = () => {
 
         if (!weight) return;
 
-        const completedSets = exercise.sets.filter((s) => s.completed && s.weight > 0);
+        const completedSets = exercise.sets.filter((s) => s.completed && (s.weight ?? 0) > 0);
         if (completedSets.length === 0) return;
 
         const volume = completedSets.reduce(
-          (sum, s) => sum + s.weight * s.reps * weight,
+          (sum, s) => sum + (s.weight ?? 0) * (s.reps ?? 0) * weight,
           0
         );
 

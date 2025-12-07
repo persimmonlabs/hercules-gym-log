@@ -11,7 +11,8 @@ import { Text } from '@/components/atoms/Text';
 import { QuickFilterChip } from '@/components/atoms/QuickFilterChip';
 import { ExerciseFilterGroup } from '@/components/molecules/ExerciseFilterGroup';
 import { colors, radius, spacing, shadows } from '@/constants/theme';
-import type { ExerciseFilters, FilterDifficulty, FilterEquipment, FilterMuscleGroup, MuscleGroup } from '@/types/exercise';
+import type { ExerciseFilters, ExerciseType, FilterDifficulty, FilterEquipment, FilterMuscleGroup, MuscleGroup } from '@/types/exercise';
+import { EXERCISE_TYPES, EXERCISE_TYPE_LABELS } from '@/types/exercise';
 import type { exerciseFilterOptions } from '@/constants/exercises';
 import hierarchyData from '@/data/hierarchy.json';
 import { toggleFilterValue } from '@/utils/exerciseFilters';
@@ -248,6 +249,24 @@ export const FilterBottomSheet: React.FC<FilterBottomSheetProps> = ({
                 selected={localFilters.difficulty}
                 onToggle={handleToggleDifficulty}
                 testIDPrefix="filter-difficulty"
+              />
+
+              <ExerciseFilterGroup
+                title="Exercise Type"
+                values={EXERCISE_TYPES.map(t => EXERCISE_TYPE_LABELS[t])}
+                selected={localFilters.exerciseTypes.map(t => EXERCISE_TYPE_LABELS[t])}
+                onToggle={(label) => {
+                  const type = (Object.keys(EXERCISE_TYPE_LABELS) as ExerciseType[]).find(
+                    t => EXERCISE_TYPE_LABELS[t] === label
+                  );
+                  if (type) {
+                    setLocalFilters((prev) => ({
+                      ...prev,
+                      exerciseTypes: toggleFilterValue(prev.exerciseTypes, type),
+                    }));
+                  }
+                }}
+                testIDPrefix="filter-exercisetype"
               />
 
               <View style={styles.toggleSection}>

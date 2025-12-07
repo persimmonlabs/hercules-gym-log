@@ -101,6 +101,148 @@
         "tags": ["legs", "hypertrophy", "high-volume"]
       },
       "isPremade": true
+    },
+    {
+      "id": "cardio-strength-combo",
+      "name": "Cardio + Strength Combo",
+      "exercises": [
+        { "id": "cardio_001", "name": "Treadmill", "sets": 1 },
+        { "id": "exercise_019", "name": "Barbell Squat", "sets": 3 },
+        { "id": "exercise_001", "name": "Barbell Bench Press", "sets": 3 },
+        { "id": "exercise_052", "name": "Barbell Bent-Over Row", "sets": 3 },
+        { "id": "cardio_002", "name": "Stationary Bike", "sets": 1 }
+      ],
+      "metadata": {
+        "goal": "general-fitness",
+        "experienceLevel": "intermediate",
+        "equipment": "full-gym",
+        "durationMinutes": 60,
+        "description": "Balanced workout combining cardio warm-up/cooldown with compound lifts.",
+        "tags": ["cardio", "strength", "full-body", "balanced"]
+      },
+      "isPremade": true
+    },
+    {
+      "id": "bodyweight-basics",
+      "name": "Bodyweight Basics",
+      "exercises": [
+        { "id": "bodyweight_001", "name": "Push-ups", "sets": 3 },
+        { "id": "bodyweight_002", "name": "Pull-ups", "sets": 3 },
+        { "id": "bodyweight_008", "name": "Air Squats", "sets": 3 },
+        { "id": "bodyweight_009", "name": "Lunges", "sets": 3 },
+        { "id": "duration_001", "name": "Plank", "sets": 3 },
+        { "id": "bodyweight_005", "name": "Crunches", "sets": 3 }
+      ],
+      "metadata": {
+        "goal": "general-fitness",
+        "experienceLevel": "beginner",
+        "equipment": "none",
+        "durationMinutes": 30,
+        "description": "No equipment needed - great for home or travel.",
+        "tags": ["bodyweight", "home", "beginner", "no-equipment"]
+      },
+      "isPremade": true
+    },
+    {
+      "id": "beginner-assisted",
+      "name": "Beginner Pull Training",
+      "exercises": [
+        { "id": "assisted_001", "name": "Assisted Pull-ups", "sets": 3 },
+        { "id": "assisted_003", "name": "Assisted Chin-ups", "sets": 3 },
+        { "id": "assisted_002", "name": "Assisted Dips", "sets": 3 },
+        { "id": "band_002", "name": "Band Rows", "sets": 3 },
+        { "id": "band_001", "name": "Band Pull-aparts", "sets": 3 }
+      ],
+      "metadata": {
+        "goal": "build-muscle",
+        "experienceLevel": "beginner",
+        "equipment": "full-gym",
+        "durationMinutes": 40,
+        "description": "Build pulling strength with assistance to progress toward unassisted reps.",
+        "tags": ["assisted", "beginner", "pull", "progression"]
+      },
+      "isPremade": true
+    },
+    {
+      "id": "hiit-cardio-blast",
+      "name": "HIIT Cardio Blast",
+      "exercises": [
+        { "id": "cardio_008", "name": "Sprint Intervals", "sets": 5 },
+        { "id": "bodyweight_011", "name": "Burpees", "sets": 3 },
+        { "id": "bodyweight_010", "name": "Mountain Climbers", "sets": 3 },
+        { "id": "cardio_003", "name": "Rowing Machine", "sets": 3 },
+        { "id": "duration_003", "name": "Wall Sit", "sets": 3 }
+      ],
+      "metadata": {
+        "goal": "fat-loss",
+        "experienceLevel": "intermediate",
+        "equipment": "cardio-machines",
+        "durationMinutes": 35,
+        "description": "High intensity interval training for maximum calorie burn.",
+        "tags": ["hiit", "cardio", "fat-loss", "intense"]
+      },
+      "isPremade": true
+    },
+    {
+      "id": "core-crusher",
+      "name": "Core Crusher",
+      "exercises": [
+        { "id": "duration_001", "name": "Plank", "sets": 3 },
+        { "id": "duration_002", "name": "Side Plank", "sets": 2 },
+        { "id": "bodyweight_005", "name": "Crunches", "sets": 3 },
+        { "id": "bodyweight_007", "name": "Leg Raises", "sets": 3 },
+        { "id": "duration_006", "name": "Hollow Body Hold", "sets": 3 },
+        { "id": "bodyweight_010", "name": "Mountain Climbers", "sets": 3 }
+      ],
+      "metadata": {
+        "goal": "build-muscle",
+        "experienceLevel": "intermediate",
+        "equipment": "none",
+        "durationMinutes": 25,
+        "description": "Focused core workout combining timed holds and reps.",
+        "tags": ["core", "abs", "bodyweight", "home"]
+      },
+      "isPremade": true
+    },
+    {
+      "id": "band-full-body",
+      "name": "Resistance Band Full Body",
+      "exercises": [
+        { "id": "band_002", "name": "Band Rows", "sets": 3 },
+        { "id": "band_005", "name": "Band Face Pulls", "sets": 3 },
+        { "id": "band_003", "name": "Band Bicep Curls", "sets": 3 },
+        { "id": "band_004", "name": "Band Tricep Pushdowns", "sets": 3 },
+        { "id": "band_006", "name": "Band Lateral Walks", "sets": 3 },
+        { "id": "band_001", "name": "Band Pull-aparts", "sets": 3 }
+      ],
+      "metadata": {
+        "goal": "general-fitness",
+        "experienceLevel": "beginner",
+        "equipment": "bands",
+        "durationMinutes": 30,
+        "description": "Travel-friendly workout using only resistance bands.",
+        "tags": ["bands", "travel", "home", "full-body"]
+      },
+      "isPremade": true
+    },
+    {
+      "id": "cardio-endurance",
+      "name": "Endurance Builder",
+      "exercises": [
+        { "id": "cardio_006", "name": "Outdoor Run", "sets": 1 },
+        { "id": "cardio_005", "name": "Stair Climber", "sets": 1 },
+        { "id": "cardio_004", "name": "Elliptical", "sets": 1 },
+        { "id": "cardio_003", "name": "Rowing Machine", "sets": 1 }
+      ],
+      "metadata": {
+        "goal": "fat-loss",
+        "experienceLevel": "beginner",
+        "equipment": "cardio-machines",
+        "durationMinutes": 45,
+        "description": "Pure cardio session for building cardiovascular endurance.",
+        "tags": ["cardio", "endurance", "fat-loss", "steady-state"]
+      },
+      "isPremade": true
     }
   ]
 }

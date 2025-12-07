@@ -60,7 +60,7 @@ export const getDefaultSetValues = (
 
     // Use the first set's values as the default
     return {
-        weight: lastSets[0].weight,
-        reps: lastSets[0].reps,
+        weight: lastSets[0].weight ?? defaultWeight,
+        reps: lastSets[0].reps ?? defaultReps,
     };
 };

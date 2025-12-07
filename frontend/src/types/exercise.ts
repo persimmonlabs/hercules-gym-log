@@ -33,7 +33,8 @@ export type EquipmentType =
   | 'Bands'
   | 'Smith Machine'
   | 'Trap Bar'
-  | 'Bench';
+  | 'Bench'
+  | 'Cardio Machine';
 
 export const EQUIPMENT_TYPES: EquipmentType[] = [
   'Barbell',
@@ -46,6 +47,7 @@ export const EQUIPMENT_TYPES: EquipmentType[] = [
   'Smith Machine',
   'Trap Bar',
   'Bench',
+  'Cardio Machine',
 ];
 
 export type MovementPattern =
@@ -58,7 +60,11 @@ export type MovementPattern =
   | 'Lunge'
   | 'Carry'
   | 'Rotation'
-  | 'Anti-Rotation';
+  | 'Anti-Rotation'
+  | 'Cardio'
+  | 'Flexion'
+  | 'Isometric'
+  | 'Lateral';
 
 export const MOVEMENT_PATTERNS: MovementPattern[] = [
   'Horizontal Push',
@@ -71,11 +77,36 @@ export const MOVEMENT_PATTERNS: MovementPattern[] = [
   'Carry',
   'Rotation',
   'Anti-Rotation',
+  'Cardio',
+  'Flexion',
+  'Isometric',
+  'Lateral',
 ];
 
 export type DifficultyLevel = 'Beginner' | 'Intermediate' | 'Advanced';
 
 export const DIFFICULTY_LEVELS: DifficultyLevel[] = ['Beginner', 'Intermediate', 'Advanced'];
+
+// Exercise input types - determines what fields are shown in set editor
+export type ExerciseType = 'weight' | 'cardio' | 'bodyweight' | 'assisted' | 'reps_only' | 'duration';
+
+export const EXERCISE_TYPES: ExerciseType[] = [
+  'weight',
+  'cardio',
+  'bodyweight',
+  'assisted',
+  'reps_only',
+  'duration',
+];
+
+export const EXERCISE_TYPE_LABELS: Record<ExerciseType, string> = {
+  weight: 'Weight',
+  cardio: 'Cardio',
+  bodyweight: 'Bodyweight',
+  assisted: 'Assisted',
+  reps_only: 'Resistance Band',
+  duration: 'Timed',
+};
 
 export type FilterMuscleGroup = 'Upper Body' | 'Lower Body' | 'Core';
 
@@ -118,6 +149,10 @@ export interface Exercise {
   difficulty: DifficultyLevel;
   isCompound: boolean;
   isBodyweight: boolean;
+  // Exercise type determines input fields in set editor
+  exerciseType: ExerciseType;
+  // For cardio exercises - unit for distance tracking
+  distanceUnit?: 'miles' | 'meters' | 'floors';
 }
 
 export interface ExerciseCatalogItem extends Exercise {
@@ -131,4 +166,5 @@ export interface ExerciseFilters {
   difficulty: FilterDifficulty[];
   bodyweightOnly: boolean;
   compoundOnly: boolean;
+  exerciseTypes: ExerciseType[];
 }
