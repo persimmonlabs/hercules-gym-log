@@ -17,13 +17,14 @@ import { NameEditModal } from '@/components/molecules/NameEditModal';
 import { colors, spacing, radius, shadows, sizing } from '@/constants/theme';
 import { useAuth } from '@/providers/AuthProvider';
 import { supabaseClient } from '@/lib/supabaseClient';
+import { useUserProfileStore } from '@/store/userProfileStore';
 
 const ProfileModal: React.FC = () => {
   const router = useRouter();
   const { user, signOut } = useAuth();
+  const { profile, fetchProfile, updateProfile } = useUserProfileStore();
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [isNameModalVisible, setIsNameModalVisible] = useState(false);
-  const [userProfile, setUserProfile] = useState<{ first_name: string; last_name: string; full_name: string } | null>(null);
   const backScale = useSharedValue(1);
 
   const handleBackPress = () => {
@@ -70,34 +71,12 @@ const ProfileModal: React.FC = () => {
     );
   };
 
-  // Fetch user profile data from profiles table (primary source)
+  // Fetch user profile data from store (which syncs with profiles table)
   useEffect(() => {
-    const syncProfile = async () => {
-      if (!user) return;
-
-      try {
-        const { data, error } = await supabaseClient
-          .from('profiles')
-          .select('first_name, last_name, full_name')
-          .eq('id', user.id)
-          .single();
-
-        if (error) {
-          console.error('[Profile] Error fetching profile:', error);
-          return;
-        }
-
-        if (data) {
-          setUserProfile(data);
-          console.log('[Profile] Profile loaded from DB:', data);
-        }
-      } catch (error) {
-        console.error('[Profile] Error fetching profile:', error);
-      }
-    };
-
-    syncProfile();
-  }, [user]);
+    if (user?.id) {
+      fetchProfile(user.id);
+    }
+  }, [user?.id, fetchProfile]);
 
   // Format the account creation date
   const formatMemberSince = (createdAt: string | undefined) => {
@@ -111,12 +90,12 @@ const ProfileModal: React.FC = () => {
 
   // Get user's display name
   const getUserDisplayName = () => {
-    // 1. Prefer local state (optimistic updates + synced data)
-    if (userProfile?.full_name) {
-      return userProfile.full_name;
+    // 1. Prefer store state (centralized, real-time updates)
+    if (profile?.fullName) {
+      return profile.fullName;
     }
-    if (userProfile?.first_name || userProfile?.last_name) {
-      return `${userProfile.first_name || ''} ${userProfile.last_name || ''}`.trim();
+    if (profile?.firstName || profile?.lastName) {
+      return `${profile.firstName || ''} ${profile.lastName || ''}`.trim();
     }
 
     // 2. Fallback to auth metadata
@@ -137,49 +116,24 @@ const ProfileModal: React.FC = () => {
     setIsNameModalVisible(true);
   };
 
-  const handleCloseNameModal = useCallback(async () => {
+  const handleCloseNameModal = useCallback(() => {
     setIsNameModalVisible(false);
-
-    // Refetch profile data from DB after modal closes
-    try {
-      const { data: { user: refreshedUser } } = await supabaseClient.auth.getUser();
-      if (refreshedUser) {
-        const { data, error } = await supabaseClient
-          .from('profiles')
-          .select('first_name, last_name, full_name')
-          .eq('id', refreshedUser.id)
-          .single();
-
-        if (!error && data) {
-          setUserProfile(data);
-          console.log('[Profile] Profile refreshed from DB after modal close');
-        }
-      }
-    } catch (error) {
-      console.error('[Profile] Error refreshing profile:', error);
-      // Non-fatal - local state is already updated
-    }
   }, []);
 
   // Get current first/last name for modal prepopulation
   const getCurrentFirstName = () => {
-    // Use profiles table as source of truth
-    return userProfile?.first_name || '';
+    // Use store as source of truth
+    return profile?.firstName || '';
   };
 
   const getCurrentLastName = () => {
-    // Use profiles table as source of truth
-    return userProfile?.last_name || '';
+    // Use store as source of truth
+    return profile?.lastName || '';
   };
 
   const handleNameSave = (firstName: string, lastName: string) => {
-    // Update local state immediately for responsive UI
-    // The modal already handles the Supabase auth update
-    setUserProfile({
-      first_name: firstName,
-      last_name: lastName,
-      full_name: `${firstName} ${lastName}`.trim(),
-    });
+    // Update the centralized store for real-time updates across the app
+    updateProfile(firstName, lastName);
   };
 
   return (
@@ -213,12 +167,18 @@ const ProfileModal: React.FC = () => {
         {/* Profile Info Card */}
         <SurfaceCard tone="card" padding="xl" style={styles.profileCard}>
           <View style={styles.profileHeader}>
-            <View style={styles.avatar}>
-              <IconSymbol
-                name="person"
-                color={colors.text.primary}
-                size={48}
-              />
+            <View style={profile?.firstName ? styles.avatarWithInitial : styles.avatar}>
+              {profile?.firstName ? (
+                <Text variant="heading1" style={styles.avatarInitialText}>
+                  {profile.firstName.charAt(0).toUpperCase()}
+                </Text>
+              ) : (
+                <IconSymbol
+                  name="person"
+                  color={colors.text.primary}
+                  size={48}
+                />
+              )}
             </View>
             <View style={styles.profileInfo}>
               <Text variant="heading2" color="primary">
@@ -474,6 +434,19 @@ const styles = StyleSheet.create({
     borderColor: colors.accent.orange,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  avatarWithInitial: {
+    width: sizing.avatar,
+    height: sizing.avatar,
+    borderRadius: radius.full,
+    backgroundColor: colors.accent.orange,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  avatarInitialText: {
+    color: colors.text.onAccent,
+    fontSize: 40,
+    fontWeight: '600',
   },
   profileInfo: {
     alignItems: 'center',

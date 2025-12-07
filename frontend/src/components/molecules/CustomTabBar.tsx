@@ -2,7 +2,7 @@
  * CustomTabBar
  * Floating, glassmorphism tab bar with animated interactions and haptics.
  */
-import React, { useEffect, useRef } from 'react';
+import React, { useRef } from 'react';
 import { Platform, StyleSheet, View, TouchableOpacity } from 'react-native';
 import type { ColorValue } from 'react-native';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
@@ -16,13 +16,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { BlurView, type ExperimentalBlurMethod } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import MaskedView from '@react-native-masked-view/masked-view';
-import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { colors, spacing, radius, sizing, zIndex, shadows } from '@/constants/theme';
 import { springBouncy } from '@/constants/animations';
 import { TAB_META } from '@/constants/navigation';
 import { useSessionStore } from '@/store/sessionStore';
+import { triggerHaptic } from '@/utils/haptics';
 
 const ICON_SIZE = sizing.iconLG;
 const BLUR_INTENSITY = 100;
@@ -84,7 +84,7 @@ export const CustomTabBar: React.FC<BottomTabBarProps> = ({ state, navigation })
 
     if (!event.defaultPrevented) navigation.navigate(routeName);
 
-    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    triggerHaptic('light');
 
     scalesRef.current[index].value = withSpring(SCALE_ACTIVE, springBouncy);
     setTimeout(() => { scalesRef.current[index].value = withSpring(1, springBouncy); }, 140);

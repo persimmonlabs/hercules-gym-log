@@ -8,7 +8,7 @@ import type { Workout } from '@/types/workout';
 import type { UserPlan, PlanWorkout } from '@/types/premadePlan';
 
 // ============================================================================
-// RETRY UTILITY
+// RETRY UTILITY & ERROR HANDLING
 // ============================================================================
 
 interface RetryOptions {
@@ -20,13 +20,50 @@ interface RetryOptions {
 
 const DEFAULT_RETRY_OPTIONS: Required<RetryOptions> = {
   maxAttempts: 3,
-  initialDelayMs: 500,
-  maxDelayMs: 5000,
+  initialDelayMs: 1000,
+  maxDelayMs: 10000,
   backoffMultiplier: 2,
 };
 
 /**
+ * Checks if an error is a network-related error that should be retried
+ */
+function isNetworkError(error: unknown): boolean {
+  if (!(error instanceof Error)) return false;
+  
+  const networkErrorPatterns = [
+    'network request failed',
+    'network error',
+    'failed to fetch',
+    'fetch failed',
+    'timeout',
+    'econnrefused',
+    'econnreset',
+    'enotfound',
+    'socket hang up',
+    'aborted',
+    'network is offline',
+    'internet connection',
+  ];
+  
+  const message = error.message.toLowerCase();
+  return networkErrorPatterns.some(pattern => message.includes(pattern));
+}
+
+/**
+ * Checks if an error is an auth error that should NOT be retried
+ */
+function isAuthError(error: unknown): boolean {
+  if (!(error instanceof Error)) return false;
+  
+  const authErrorPatterns = ['jwt', 'auth', 'unauthorized', '401', 'token'];
+  const message = error.message.toLowerCase();
+  return authErrorPatterns.some(pattern => message.includes(pattern));
+}
+
+/**
  * Retries an async function with exponential backoff
+ * Automatically retries on network errors, skips retry on auth errors
  * @param fn The async function to retry
  * @param options Retry configuration options
  * @returns The result of the function
@@ -45,15 +82,24 @@ async function withRetry<T>(
     } catch (error) {
       lastError = error;
       
-      // Don't retry on auth errors or if it's the last attempt
-      const isAuthError = error instanceof Error && 
-        (error.message.includes('JWT') || error.message.includes('auth'));
+      // Don't retry on auth errors
+      if (isAuthError(error)) {
+        console.warn('[Supabase] Auth error detected, not retrying:', error);
+        throw error;
+      }
       
-      if (isAuthError || attempt === opts.maxAttempts) {
+      // Last attempt - throw the error
+      if (attempt === opts.maxAttempts) {
+        console.error(`[Supabase] All ${opts.maxAttempts} attempts failed:`, error);
         throw error;
       }
 
-      console.log(`[Supabase] Attempt ${attempt}/${opts.maxAttempts} failed, retrying in ${delay}ms...`);
+      // Log retry attempt with more context
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      const isNetwork = isNetworkError(error);
+      console.log(
+        `[Supabase] Attempt ${attempt}/${opts.maxAttempts} failed (${isNetwork ? 'network' : 'other'} error: ${errorMessage}), retrying in ${delay}ms...`
+      );
       
       // Wait before retrying
       await new Promise(resolve => setTimeout(resolve, delay));
@@ -64,6 +110,24 @@ async function withRetry<T>(
   }
 
   throw lastError;
+}
+
+/**
+ * Wraps a Supabase operation with retry logic and graceful error handling
+ * Returns null/empty array on failure instead of throwing (for non-critical operations)
+ */
+async function withGracefulRetry<T>(
+  fn: () => Promise<T>,
+  fallback: T,
+  operationName: string,
+  options: RetryOptions = {}
+): Promise<T> {
+  try {
+    return await withRetry(fn, options);
+  } catch (error) {
+    console.error(`[Supabase] ${operationName} failed after retries:`, error);
+    return fallback;
+  }
 }
 
 // ============================================================================
@@ -101,90 +165,96 @@ export async function fetchWorkoutSessions(userId: string): Promise<Workout[]> {
 }
 
 export async function createWorkoutSession(userId: string, workout: Workout): Promise<string> {
-    // Validate planId exists in the plans table before inserting
-    // planId could be a workout_templates.id which would violate the foreign key constraint
-    let validPlanId: string | null = null;
-    
-    if (workout.planId) {
-        const { data: planExists } = await supabaseClient
-            .from('plans')
-            .select('id')
-            .eq('id', workout.planId)
-            .single();
+    return withRetry(async () => {
+        // Validate planId exists in the plans table before inserting
+        // planId could be a workout_templates.id which would violate the foreign key constraint
+        let validPlanId: string | null = null;
         
-        if (planExists) {
-            validPlanId = workout.planId;
+        if (workout.planId) {
+            const { data: planExists } = await supabaseClient
+                .from('plans')
+                .select('id')
+                .eq('id', workout.planId)
+                .single();
+            
+            if (planExists) {
+                validPlanId = workout.planId;
+            }
         }
-    }
 
-    const { data, error } = await supabaseClient
-        .from('workout_sessions')
-        .insert({
-            user_id: userId,
-            plan_id: validPlanId,
-            date: workout.date,
-            start_time: workout.startTime,
-            end_time: workout.endTime,
-            duration: workout.duration,
-            exercises: workout.exercises,
-        })
-        .select('id')
-        .single();
+        const { data, error } = await supabaseClient
+            .from('workout_sessions')
+            .insert({
+                user_id: userId,
+                plan_id: validPlanId,
+                date: workout.date,
+                start_time: workout.startTime,
+                end_time: workout.endTime,
+                duration: workout.duration,
+                exercises: workout.exercises,
+            })
+            .select('id')
+            .single();
 
-    if (error) {
-        console.error('[Supabase] Error creating workout session:', error);
-        throw error;
-    }
+        if (error) {
+            console.error('[Supabase] Error creating workout session:', error);
+            throw error;
+        }
 
-    return data.id;
+        return data.id;
+    });
 }
 
 export async function updateWorkoutSession(userId: string, workout: Workout): Promise<void> {
-    // Validate planId exists in the plans table before updating
-    let validPlanId: string | null = null;
-    
-    if (workout.planId) {
-        const { data: planExists } = await supabaseClient
-            .from('plans')
-            .select('id')
-            .eq('id', workout.planId)
-            .single();
+    return withRetry(async () => {
+        // Validate planId exists in the plans table before updating
+        let validPlanId: string | null = null;
         
-        if (planExists) {
-            validPlanId = workout.planId;
+        if (workout.planId) {
+            const { data: planExists } = await supabaseClient
+                .from('plans')
+                .select('id')
+                .eq('id', workout.planId)
+                .single();
+            
+            if (planExists) {
+                validPlanId = workout.planId;
+            }
         }
-    }
 
-    const { error } = await supabaseClient
-        .from('workout_sessions')
-        .update({
-            plan_id: validPlanId,
-            date: workout.date,
-            start_time: workout.startTime,
-            end_time: workout.endTime,
-            duration: workout.duration,
-            exercises: workout.exercises,
-        })
-        .eq('id', workout.id)
-        .eq('user_id', userId);
+        const { error } = await supabaseClient
+            .from('workout_sessions')
+            .update({
+                plan_id: validPlanId,
+                date: workout.date,
+                start_time: workout.startTime,
+                end_time: workout.endTime,
+                duration: workout.duration,
+                exercises: workout.exercises,
+            })
+            .eq('id', workout.id)
+            .eq('user_id', userId);
 
-    if (error) {
-        console.error('[Supabase] Error updating workout session:', error);
-        throw error;
-    }
+        if (error) {
+            console.error('[Supabase] Error updating workout session:', error);
+            throw error;
+        }
+    });
 }
 
 export async function deleteWorkoutSession(userId: string, workoutId: string): Promise<void> {
-    const { error } = await supabaseClient
-        .from('workout_sessions')
-        .delete()
-        .eq('id', workoutId)
-        .eq('user_id', userId);
+    return withRetry(async () => {
+        const { error } = await supabaseClient
+            .from('workout_sessions')
+            .delete()
+            .eq('id', workoutId)
+            .eq('user_id', userId);
 
-    if (error) {
-        console.error('[Supabase] Error deleting workout session:', error);
-        throw error;
-    }
+        if (error) {
+            console.error('[Supabase] Error deleting workout session:', error);
+            throw error;
+        }
+    });
 }
 
 // ============================================================================
@@ -261,106 +331,119 @@ export async function fetchUserPlans(userId: string): Promise<UserPlan[]> {
 }
 
 export async function createUserPlan(userId: string, plan: UserPlan): Promise<string> {
-    // Insert the plan (let Supabase generate UUID)
-    const { data: planData, error: planError } = await supabaseClient
-        .from('plans')
-        .insert({
-            user_id: userId,
-            name: plan.name,
-            metadata: plan.metadata,
-            schedule_type: plan.scheduleType,
-            schedule_config: plan.schedule,
-            is_active: false,
-            source_id: plan.sourceId,
-        })
-        .select('id')
-        .single();
+    return withRetry(async () => {
+        // Insert the plan (let Supabase generate UUID)
+        const { data: planData, error: planError } = await supabaseClient
+            .from('plans')
+            .insert({
+                user_id: userId,
+                name: plan.name,
+                metadata: plan.metadata,
+                schedule_type: plan.scheduleType,
+                schedule_config: plan.schedule,
+                is_active: false,
+                source_id: plan.sourceId,
+            })
+            .select('id')
+            .single();
 
-    if (planError) {
-        console.error('[Supabase] Error creating plan:', planError);
-        throw planError;
-    }
-
-    const newPlanId = planData.id;
-
-    // Insert workouts (let Supabase generate UUIDs)
-    if (plan.workouts && plan.workouts.length > 0) {
-        const workoutsToInsert = plan.workouts.map((workout, index) => ({
-            plan_id: newPlanId,
-            user_id: userId,
-            name: workout.name,
-            exercises: workout.exercises,
-            order_index: index,
-            source_workout_id: workout.sourceWorkoutId,
-        }));
-
-        const { error: workoutsError } = await supabaseClient
-            .from('plan_workouts')
-            .insert(workoutsToInsert);
-
-        if (workoutsError) {
-            console.error('[Supabase] Error creating plan workouts:', workoutsError);
-            throw workoutsError;
+        if (planError) {
+            console.error('[Supabase] Error creating plan:', planError);
+            throw planError;
         }
-    }
 
-    return newPlanId;
+        const newPlanId = planData.id;
+
+        // Insert workouts (let Supabase generate UUIDs)
+        if (plan.workouts && plan.workouts.length > 0) {
+            const workoutsToInsert = plan.workouts.map((workout, index) => ({
+                plan_id: newPlanId,
+                user_id: userId,
+                name: workout.name,
+                exercises: workout.exercises,
+                order_index: index,
+                source_workout_id: workout.sourceWorkoutId,
+            }));
+
+            const { error: workoutsError } = await supabaseClient
+                .from('plan_workouts')
+                .insert(workoutsToInsert);
+
+            if (workoutsError) {
+                console.error('[Supabase] Error creating plan workouts:', workoutsError);
+                throw workoutsError;
+            }
+        }
+
+        return newPlanId;
+    });
 }
 
 export async function updateUserPlan(userId: string, plan: UserPlan): Promise<void> {
-    const { error } = await supabaseClient
-        .from('plans')
-        .update({
-            name: plan.name,
-            metadata: plan.metadata,
-            schedule_type: plan.scheduleType,
-            schedule_config: plan.schedule,
-            source_id: plan.sourceId,
-            updated_at: new Date().toISOString(),
-        })
-        .eq('id', plan.id)
-        .eq('user_id', userId);
+    return withRetry(async () => {
+        const { error } = await supabaseClient
+            .from('plans')
+            .update({
+                name: plan.name,
+                metadata: plan.metadata,
+                schedule_type: plan.scheduleType,
+                schedule_config: plan.schedule,
+                source_id: plan.sourceId,
+                updated_at: new Date().toISOString(),
+            })
+            .eq('id', plan.id)
+            .eq('user_id', userId);
 
-    if (error) {
-        console.error('[Supabase] Error updating plan:', error);
-        throw error;
-    }
+        if (error) {
+            console.error('[Supabase] Error updating plan:', error);
+            throw error;
+        }
+    });
 }
 
 export async function deleteUserPlan(userId: string, planId: string): Promise<void> {
-    // Workouts will be deleted automatically due to CASCADE
-    const { error } = await supabaseClient
-        .from('plans')
-        .delete()
-        .eq('id', planId)
-        .eq('user_id', userId);
-
-    if (error) {
-        console.error('[Supabase] Error deleting plan:', error);
-        throw error;
-    }
-}
-
-export async function setActivePlan(userId: string, planId: string | null): Promise<void> {
-    // First, set all plans to inactive
-    await supabaseClient
-        .from('plans')
-        .update({ is_active: false })
-        .eq('user_id', userId);
-
-    // Then set the selected plan to active
-    if (planId) {
+    return withRetry(async () => {
+        // Workouts will be deleted automatically due to CASCADE
         const { error } = await supabaseClient
             .from('plans')
-            .update({ is_active: true })
+            .delete()
             .eq('id', planId)
             .eq('user_id', userId);
 
         if (error) {
-            console.error('[Supabase] Error setting active plan:', error);
+            console.error('[Supabase] Error deleting plan:', error);
             throw error;
         }
-    }
+    });
+}
+
+export async function setActivePlan(userId: string, planId: string | null): Promise<void> {
+    return withRetry(async () => {
+        // First, set all plans to inactive
+        const { error: deactivateError } = await supabaseClient
+            .from('plans')
+            .update({ is_active: false })
+            .eq('user_id', userId);
+
+        if (deactivateError) {
+            console.error('[Supabase] Error deactivating plans:', deactivateError);
+            throw deactivateError;
+        }
+
+        // Then set the selected plan to active
+        if (planId) {
+            const { error } = await supabaseClient
+                .from('plans')
+                .update({ is_active: true })
+                .eq('id', planId)
+                .eq('user_id', userId);
+
+            if (error) {
+                console.error('[Supabase] Error setting active plan:', error);
+                throw error;
+            }
+        }
+    });
 }
 
 // ============================================================================
@@ -378,16 +461,18 @@ export async function updateRotationState(
     planId: string,
     rotationState: RotationStateDB | null
 ): Promise<void> {
-    const { error } = await supabaseClient
-        .from('plans')
-        .update({ rotation_state: rotationState })
-        .eq('id', planId)
-        .eq('user_id', userId);
+    return withRetry(async () => {
+        const { error } = await supabaseClient
+            .from('plans')
+            .update({ rotation_state: rotationState })
+            .eq('id', planId)
+            .eq('user_id', userId);
 
-    if (error) {
-        console.error('[Supabase] Error updating rotation state:', error);
-        throw error;
-    }
+        if (error) {
+            console.error('[Supabase] Error updating rotation state:', error);
+            throw error;
+        }
+    });
 }
 
 // ============================================================================
@@ -433,22 +518,24 @@ export async function createWorkoutTemplate(
     userId: string,
     template: { name: string; exercises: Array<{ id: string; name: string; sets?: number }> }
 ): Promise<string> {
-    const { data, error } = await supabaseClient
-        .from('workout_templates')
-        .insert({
-            user_id: userId,
-            name: template.name,
-            exercises: template.exercises,
-        })
-        .select('id')
-        .single();
+    return withRetry(async () => {
+        const { data, error } = await supabaseClient
+            .from('workout_templates')
+            .insert({
+                user_id: userId,
+                name: template.name,
+                exercises: template.exercises,
+            })
+            .select('id')
+            .single();
 
-    if (error) {
-        console.error('[Supabase] Error creating workout template:', error);
-        throw error;
-    }
+        if (error) {
+            console.error('[Supabase] Error creating workout template:', error);
+            throw error;
+        }
 
-    return data.id;
+        return data.id;
+    });
 }
 
 export async function updateWorkoutTemplate(
@@ -456,32 +543,36 @@ export async function updateWorkoutTemplate(
     templateId: string,
     updates: { name?: string; exercises?: Array<{ id: string; name: string; sets?: number }> }
 ): Promise<void> {
-    const { error } = await supabaseClient
-        .from('workout_templates')
-        .update({
-            ...updates,
-            updated_at: new Date().toISOString(),
-        })
-        .eq('id', templateId)
-        .eq('user_id', userId);
+    return withRetry(async () => {
+        const { error } = await supabaseClient
+            .from('workout_templates')
+            .update({
+                ...updates,
+                updated_at: new Date().toISOString(),
+            })
+            .eq('id', templateId)
+            .eq('user_id', userId);
 
-    if (error) {
-        console.error('[Supabase] Error updating workout template:', error);
-        throw error;
-    }
+        if (error) {
+            console.error('[Supabase] Error updating workout template:', error);
+            throw error;
+        }
+    });
 }
 
 export async function deleteWorkoutTemplate(userId: string, templateId: string): Promise<void> {
-    const { error } = await supabaseClient
-        .from('workout_templates')
-        .delete()
-        .eq('id', templateId)
-        .eq('user_id', userId);
+    return withRetry(async () => {
+        const { error } = await supabaseClient
+            .from('workout_templates')
+            .delete()
+            .eq('id', templateId)
+            .eq('user_id', userId);
 
-    if (error) {
-        console.error('[Supabase] Error deleting workout template:', error);
-        throw error;
-    }
+        if (error) {
+            console.error('[Supabase] Error deleting workout template:', error);
+            throw error;
+        }
+    });
 }
 
 // ============================================================================
@@ -537,22 +628,24 @@ export async function createSchedule(
     userId: string,
     schedule: { name: string; weekdays: ScheduleDB['schedule_data'] }
 ): Promise<string> {
-    const { data, error } = await supabaseClient
-        .from('schedules')
-        .insert({
-            user_id: userId,
-            name: schedule.name,
-            schedule_data: schedule.weekdays,
-        })
-        .select('id')
-        .single();
+    return withRetry(async () => {
+        const { data, error } = await supabaseClient
+            .from('schedules')
+            .insert({
+                user_id: userId,
+                name: schedule.name,
+                schedule_data: schedule.weekdays,
+            })
+            .select('id')
+            .single();
 
-    if (error) {
-        console.error('[Supabase] Error creating schedule:', error);
-        throw error;
-    }
+        if (error) {
+            console.error('[Supabase] Error creating schedule:', error);
+            throw error;
+        }
 
-    return data.id;
+        return data.id;
+    });
 }
 
 export async function updateSchedule(
@@ -560,35 +653,39 @@ export async function updateSchedule(
     scheduleId: string,
     updates: { name?: string; weekdays?: ScheduleDB['schedule_data']; is_active?: boolean }
 ): Promise<void> {
-    const updateData: Record<string, unknown> = {
-        updated_at: new Date().toISOString(),
-    };
+    return withRetry(async () => {
+        const updateData: Record<string, unknown> = {
+            updated_at: new Date().toISOString(),
+        };
 
-    if (updates.name !== undefined) updateData.name = updates.name;
-    if (updates.weekdays !== undefined) updateData.schedule_data = updates.weekdays;
-    if (updates.is_active !== undefined) updateData.is_active = updates.is_active;
+        if (updates.name !== undefined) updateData.name = updates.name;
+        if (updates.weekdays !== undefined) updateData.schedule_data = updates.weekdays;
+        if (updates.is_active !== undefined) updateData.is_active = updates.is_active;
 
-    const { error } = await supabaseClient
-        .from('schedules')
-        .update(updateData)
-        .eq('id', scheduleId)
-        .eq('user_id', userId);
+        const { error } = await supabaseClient
+            .from('schedules')
+            .update(updateData)
+            .eq('id', scheduleId)
+            .eq('user_id', userId);
 
-    if (error) {
-        console.error('[Supabase] Error updating schedule:', error);
-        throw error;
-    }
+        if (error) {
+            console.error('[Supabase] Error updating schedule:', error);
+            throw error;
+        }
+    });
 }
 
 export async function deleteSchedule(userId: string, scheduleId: string): Promise<void> {
-    const { error } = await supabaseClient
-        .from('schedules')
-        .delete()
-        .eq('id', scheduleId)
-        .eq('user_id', userId);
+    return withRetry(async () => {
+        const { error } = await supabaseClient
+            .from('schedules')
+            .delete()
+            .eq('id', scheduleId)
+            .eq('user_id', userId);
 
-    if (error) {
-        console.error('[Supabase] Error deleting schedule:', error);
-        throw error;
-    }
+        if (error) {
+            console.error('[Supabase] Error deleting schedule:', error);
+            throw error;
+        }
+    });
 }

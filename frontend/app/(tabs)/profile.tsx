@@ -9,7 +9,6 @@ import { AnalyticsCard } from '@/components/atoms/AnalyticsCard';
 import { SimpleDistributionChart } from '@/components/molecules/SimpleDistributionChart';
 import { SimpleVolumeChart } from '@/components/molecules/SimpleVolumeChart';
 import { TrainingBalanceCard } from '@/components/molecules/TrainingBalanceCard';
-import { VolumeComparisonCard } from '@/components/molecules/VolumeComparisonCard';
 import { TimeRangeSelector } from '@/components/atoms/TimeRangeSelector';
 import { useAnalyticsData } from '@/hooks/useAnalyticsData';
 import { colors, spacing } from '@/constants/theme';
@@ -55,6 +54,7 @@ const StatsScreen: React.FC = () => {
         onPress={handleDistributionPress}
         showAccentStripe={false}
         titleCentered={true}
+        showHorizontalAccentBar={true}
       >
         <SimpleDistributionChart />
       </AnalyticsCard>
@@ -68,13 +68,12 @@ const StatsScreen: React.FC = () => {
         isEmpty={!hasFilteredData}
         showAccentStripe={false}
         titleCentered={true}
+        showHorizontalAccentBar={true}
       >
         <SimpleVolumeChart timeRange={volumeTimeRange} />
       </AnalyticsCard>
 
       <TrainingBalanceCard />
-
-      <VolumeComparisonCard />
     </TabSwipeContainer>
   );
 };

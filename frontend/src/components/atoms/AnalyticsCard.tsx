@@ -18,6 +18,7 @@ import * as Haptics from 'expo-haptics';
 
 import { Text } from '@/components/atoms/Text';
 import { SurfaceCard } from '@/components/atoms/SurfaceCard';
+import { HorizontalAccentBar } from '@/components/atoms/HorizontalAccentBar';
 import { colors, spacing, radius } from '@/constants/theme';
 
 interface AnalyticsCardProps {
@@ -30,6 +31,7 @@ interface AnalyticsCardProps {
   isEmpty?: boolean;
   showAccentStripe?: boolean;
   titleCentered?: boolean;
+  showHorizontalAccentBar?: boolean;
   children: React.ReactNode;
 }
 
@@ -45,6 +47,7 @@ export const AnalyticsCard: React.FC<AnalyticsCardProps> = ({
   isEmpty = false,
   showAccentStripe = true,
   titleCentered = false,
+  showHorizontalAccentBar = false,
   children,
 }) => {
   const scale = useSharedValue(1);
@@ -89,6 +92,7 @@ export const AnalyticsCard: React.FC<AnalyticsCardProps> = ({
               <Text variant="heading3" color="primary">
                 {title}
               </Text>
+              {showHorizontalAccentBar && <HorizontalAccentBar />}
             </View>
           </View>
 

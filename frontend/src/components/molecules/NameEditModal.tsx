@@ -19,6 +19,7 @@ import { Text } from '@/components/atoms/Text';
 import { InputField } from '@/components/atoms/InputField';
 import { colors, radius, spacing, shadows } from '@/constants/theme';
 import { supabaseClient } from '@/lib/supabaseClient';
+import { useUserProfileStore } from '@/store/userProfileStore';
 
 interface NameEditModalProps {
   visible: boolean;
@@ -35,6 +36,7 @@ export const NameEditModal: React.FC<NameEditModalProps> = ({
   onClose,
   onSave,
 }) => {
+  const { updateProfile } = useUserProfileStore();
   const [tempFirstName, setTempFirstName] = useState(firstName);
   const [tempLastName, setTempLastName] = useState(lastName);
   const [isSaving, setIsSaving] = useState(false);
@@ -99,7 +101,10 @@ export const NameEditModal: React.FC<NameEditModalProps> = ({
 
       console.log('[NameEditModal] Profile updated successfully');
 
-      // Update parent component state
+      // Update the centralized store for real-time updates across the app
+      updateProfile(trimmedFirst, trimmedLast);
+
+      // Update parent component state (for backwards compatibility)
       console.log('[NameEditModal] Calling onSave callback');
       onSave(trimmedFirst, trimmedLast);
 

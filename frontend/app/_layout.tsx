@@ -9,10 +9,11 @@ import 'react-native-reanimated';
 import { View } from 'react-native';
 
 import { colors, sizing } from '@/constants/theme';
-import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useColorScheme } from '@/hooks/useColorScheme';
 import { AuthProvider, useAuth } from '@/providers/AuthProvider';
 import { PlanBuilderProvider } from '@/providers/PlanBuilderProvider';
 import { ProgramBuilderProvider } from '@/providers/ProgramBuilderProvider';
+import { useUserProfileStore } from '@/store/userProfileStore';
 
 import './add-exercises';
 
@@ -121,8 +122,16 @@ const RootLayoutNav = ({
   statusBarStyle,
   androidStatusBarStyle
 }: any) => {
-  const { session, isLoading } = useAuth();
+  const { session, isLoading, user } = useAuth();
   const segments = useSegments();
+  const fetchProfile = useUserProfileStore((state) => state.fetchProfile);
+
+  // Fetch profile early when user session is established
+  useEffect(() => {
+    if (user?.id) {
+      fetchProfile(user.id);
+    }
+  }, [user?.id, fetchProfile]);
 
   useProtectedRoute(session, isLoading);
 
@@ -190,7 +199,6 @@ const RootLayoutNav = ({
               animation: 'none',
             }}
           />
-          <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
           <Stack.Screen
             name="modals"
             options={{

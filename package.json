@@ -6,7 +6,9 @@
     "react-native": "^0.81.5"
   },
   "devDependencies": {
-    "@supabase/mcp-server-supabase": "^0.5.9"
+    "@supabase/mcp-server-supabase": "^0.5.9",
+    "@types/react": "~19.1.10",
+    "typescript": "~5.9.2"
   },
   "name": "Hercules",
   "version": "1.0.0",

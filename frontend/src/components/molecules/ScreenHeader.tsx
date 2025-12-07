@@ -19,9 +19,11 @@ interface ScreenHeaderProps {
   subtitle?: string;
   /** Optional profile icon press handler */
   onProfilePress?: () => void;
+  /** Optional user initial to display in profile button (shows orange circle with letter) */
+  userInitial?: string | null;
 }
 
-export const ScreenHeader: React.FC<ScreenHeaderProps> = ({ title, subtitle, onProfilePress }) => {
+export const ScreenHeader: React.FC<ScreenHeaderProps> = ({ title, subtitle, onProfilePress, userInitial }) => {
   const scale = useSharedValue(1);
 
   const animatedStyle = useAnimatedStyle(() => ({
@@ -53,16 +55,22 @@ export const ScreenHeader: React.FC<ScreenHeaderProps> = ({ title, subtitle, onP
         {onProfilePress && (
           <Animated.View style={animatedStyle}>
             <Pressable
-              style={styles.profileButton}
+              style={userInitial ? styles.profileButtonWithInitial : styles.profileButton}
               onPress={handleProfilePress}
               accessibilityRole="button"
               accessibilityLabel="Profile"
             >
-              <IconSymbol
-                name="person"
-                color={colors.text.primary}
-                size={24}
-              />
+              {userInitial ? (
+                <Text variant="bodySemibold" style={styles.initialText}>
+                  {userInitial}
+                </Text>
+              ) : (
+                <IconSymbol
+                  name="person"
+                  color={colors.text.primary}
+                  size={24}
+                />
+              )}
             </Pressable>
           </Animated.View>
         )}
@@ -93,5 +101,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 1,
     borderColor: colors.accent.orange,
+  },
+  profileButtonWithInitial: {
+    width: 40,
+    height: 40,
+    borderRadius: radius.full,
+    backgroundColor: colors.accent.orange,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  initialText: {
+    color: colors.text.onAccent,
+    fontSize: 18,
+    fontWeight: '600',
   },
 });

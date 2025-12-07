@@ -107,11 +107,16 @@ export const PlanSelectedExerciseList: React.FC<PlanSelectedExerciseListProps> =
           const isFirst = index === 0;
           const isLast = index === exercises.length - 1;
           
-          // Get all muscle names from the exercise's muscles object
-          const muscleNames = Object.keys(exercise.muscles || {});
+          const muscles = exercise.muscles || {};
+          
+          // Sort muscles by weight (descending) and take top 3
+          const topMuscles = Object.entries(muscles)
+            .sort(([, weightA], [, weightB]) => weightB - weightA)
+            .slice(0, 3)
+            .map(([muscle]) => muscle);
           
           // Map each muscle to its mid-level parent group
-          const midLevelGroups = muscleNames.map(muscle => muscleToMidLevelMap[muscle]).filter(Boolean);
+          const midLevelGroups = topMuscles.map(muscle => muscleToMidLevelMap[muscle]).filter(Boolean);
           
           // Remove duplicates and sort for consistency
           const uniqueGroups = [...new Set(midLevelGroups)];

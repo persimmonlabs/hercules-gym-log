@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { SurfaceCard } from '@/components/atoms/SurfaceCard';
 import { Text } from '@/components/atoms/Text';
+import { HorizontalAccentBar } from '@/components/atoms/HorizontalAccentBar';
 import { PRCard } from '@/components/molecules/PRCard';
 import { colors, spacing, radius, shadows } from '@/constants/theme';
 import { useWorkoutSessionsStore } from '@/store/workoutSessionsStore';
@@ -140,6 +141,7 @@ export const PersonalRecordsSection: React.FC = () => {
           <Text variant="heading3" color="primary">
             Personal Records
           </Text>
+          <HorizontalAccentBar />
         </View>
 
         <View style={styles.list}>

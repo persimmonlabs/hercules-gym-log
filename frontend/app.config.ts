@@ -8,7 +8,8 @@ export default (_: ConfigContext): ExpoConfig => {
   const buildProfile = process.env.EAS_BUILD_PROFILE ?? '';
   const isPreviewBuild = buildProfile === PREVIEW_PROFILE;
 
-  const baseConfig = appJson.expo;
+  // Cast to ExpoConfig to handle runtimeVersion.policy type inference
+  const baseConfig = appJson.expo as ExpoConfig;
 
   const expoConfig: ExpoConfig = {
     ...baseConfig,

@@ -56,6 +56,8 @@ const hydrateAllStores = async (userId: string): Promise<void> => {
     try {
       // Use Promise.allSettled to ensure all stores attempt hydration
       // even if some fail - this prevents one failure from blocking others
+      // This is critical for network errors - we don't want one failed request
+      // to prevent the entire app from loading
       const results = await Promise.allSettled([
         usePlansStore.getState().hydratePlans(userId),
         useSchedulesStore.getState().hydrateSchedules(userId),
@@ -66,14 +68,23 @@ const hydrateAllStores = async (userId: string): Promise<void> => {
       // Log any failures but don't throw - app should still work with partial data
       const failures = results.filter(r => r.status === 'rejected');
       if (failures.length > 0) {
-        console.warn('[AuthProvider] Some stores failed to hydrate:', 
-          failures.map(f => (f as PromiseRejectedResult).reason));
+        console.warn('[AuthProvider] Some stores failed to hydrate (network issues?):', 
+          failures.map(f => {
+            const reason = (f as PromiseRejectedResult).reason;
+            return reason instanceof Error ? reason.message : String(reason);
+          }));
+        // Still mark as hydrated - the stores will have empty/default data
+        // User can retry by refreshing or the app will retry on next action
       }
 
       hydratedUserId = userId;
-      console.log('[AuthProvider] All stores hydrated successfully');
+      console.log('[AuthProvider] Store hydration complete (some may have failed)');
     } catch (error) {
-      console.error('[AuthProvider] Error hydrating stores:', error);
+      // This catch block handles unexpected errors in the hydration logic itself
+      // Individual store failures are handled by Promise.allSettled above
+      console.error('[AuthProvider] Unexpected error during hydration:', error);
+      // Still mark as hydrated to prevent infinite loading
+      hydratedUserId = userId;
     } finally {
       hydrationPromise = null;
     }
@@ -111,18 +122,29 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         }
 
         if (error) {
-          console.error('[AuthProvider] getSession error:', error);
+          // Log but don't throw - network errors during session fetch shouldn't crash the app
+          console.error('[AuthProvider] getSession error (may be network issue):', error);
+          // Continue with null session - user will need to sign in again
         }
 
-        setSession(data.session ?? null);
+        setSession(data?.session ?? null);
 
         // Hydrate stores if user is already logged in
         // The hydrateAllStores function handles deduplication internally
-        if (data.session?.user) {
-          await hydrateAllStores(data.session.user.id);
+        // and uses Promise.allSettled to handle individual failures gracefully
+        if (data?.session?.user) {
+          try {
+            await hydrateAllStores(data.session.user.id);
+          } catch (hydrateError) {
+            // Log but don't throw - partial data is better than no app
+            console.error('[AuthProvider] Hydration failed (network issue?):', hydrateError);
+          }
         }
       } catch (error) {
+        // Catch any unexpected errors to prevent app crash
         console.error('[AuthProvider] initializeAuth error:', error);
+        // Set session to null to trigger sign-in flow
+        setSession(null);
       } finally {
         if (isMounted) {
           setIsLoading(false);

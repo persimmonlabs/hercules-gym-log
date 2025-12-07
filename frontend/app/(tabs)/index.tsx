@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo } from 'react';
 import { View, StyleSheet, Pressable } from 'react-native';
-import { useRouter, useFocusEffect } from 'expo-router';
+import { useRouter } from 'expo-router';
 import type { Href } from 'expo-router';
 import type { ViewStyle } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -34,8 +34,8 @@ import { useWorkoutSessionsStore, type WorkoutSessionsState } from '@/store/work
 import type { Workout, WorkoutExercise, SetLog } from '@/types/workout';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { useSessionStore } from '@/store/sessionStore';
+import { useUserProfileStore } from '@/store/userProfileStore';
 import { useAuth } from '@/providers/AuthProvider';
-import { supabaseClient } from '@/lib/supabaseClient';
 import type { Schedule } from '@/types/schedule';
 import type { UserProgram, RotationSchedule, ProgramWorkout } from '@/types/premadePlan';
 
@@ -391,54 +391,12 @@ const styles = StyleSheet.create({
 
 const DashboardScreen: React.FC = () => {
   const { user } = useAuth();
-  const [firstName, setFirstName] = React.useState<string | null>(null);
   const workouts = useWorkoutSessionsStore((state: WorkoutSessionsState) => state.workouts);
+  const profile = useUserProfileStore((state) => state.profile);
 
-  useEffect(() => {
-    if (user?.id) {
-      // Fetch from profiles table (primary source of truth)
-      supabaseClient
-        .from('profiles')
-        .select('first_name')
-        .eq('id', user.id)
-        .single()
-        .then(({ data }) => {
-          if (data?.first_name) {
-            setFirstName(data.first_name);
-          } else {
-            setFirstName(null);
-          }
-        });
-    } else {
-      setFirstName(null);
-    }
-  }, [user]);
-
-  // Force refresh when screen comes into focus (e.g. returning from profile modal)
-  useFocusEffect(
-    useCallback(() => {
-      const refreshName = async () => {
-        const { data: { user: freshUser } } = await supabaseClient.auth.getUser();
-
-        if (freshUser?.id) {
-          // Fetch from profiles table
-          const { data } = await supabaseClient
-            .from('profiles')
-            .select('first_name')
-            .eq('id', freshUser.id)
-            .single();
-
-          if (data?.first_name) {
-            setFirstName(data.first_name);
-          } else {
-            setFirstName(null);
-          }
-        }
-      };
-
-      void refreshName();
-    }, [])
-  );
+  // Get firstName and userInitial reactively from store state
+  const firstName = profile?.firstName || null;
+  const userInitial = firstName ? firstName.charAt(0).toUpperCase() : null;
 
   const weekTracker = useMemo<WeekDayTracker[]>(() => {
     return createWeekTracker(workouts);
@@ -775,6 +733,7 @@ const DashboardScreen: React.FC = () => {
               title={firstName ? `Welcome, ${firstName}!` : 'Welcome!'}
               subtitle="Stay on top of your training journey."
               onProfilePress={() => router.push('/modals/profile')}
+              userInitial={userInitial}
             />
 
             <Animated.View style={weeklyTrackerAnimatedStyle}>
@@ -944,11 +903,8 @@ const DashboardScreen: React.FC = () => {
                       </SurfaceCard>
                     ) : (
                       <>
-                        <Text variant="heading2" color="primary">
-                          Add Your Schedule
-                        </Text>
                         <Text variant="body" color="secondary">
-                          Assign workouts to your week to see them here.
+                          Assign workouts to your schedule to see them here.
                         </Text>
                       </>
                     )}

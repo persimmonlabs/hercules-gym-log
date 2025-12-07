@@ -11,6 +11,7 @@ import * as Haptics from 'expo-haptics';
 
 import { Text } from '@/components/atoms/Text';
 import { SurfaceCard } from '@/components/atoms/SurfaceCard';
+import { HorizontalAccentBar } from '@/components/atoms/HorizontalAccentBar';
 import { TimeRangeSelector } from '@/components/atoms/TimeRangeSelector';
 import { colors, spacing, radius } from '@/constants/theme';
 import { useWorkoutSessionsStore } from '@/store/workoutSessionsStore';
@@ -280,6 +281,7 @@ export const TrainingBalanceCard: React.FC = () => {
       <SurfaceCard tone="neutral" padding="md" showAccentStripe={false}>
         <View style={[styles.header, styles.headerCentered]}>
           <Text variant="heading3" color="primary">Training Balance</Text>
+          <HorizontalAccentBar />
         </View>
         <View style={styles.emptyState}>
           <Text variant="body" color="tertiary" style={styles.emptyText}>
@@ -291,8 +293,8 @@ export const TrainingBalanceCard: React.FC = () => {
   }
 
   const pages = [
-    { key: 'volume', label: 'Volume', data: volumeData },
     { key: 'sets', label: 'Sets', data: setData },
+    { key: 'volume', label: 'Volume', data: volumeData },
   ];
 
   return (
@@ -300,8 +302,9 @@ export const TrainingBalanceCard: React.FC = () => {
       <View style={styles.container}>
         <View style={[styles.header, styles.headerCentered]}>
           <Text variant="heading3" color="primary">
-            Training Balance by {currentPage === 0 ? 'Volume' : 'Sets'}
+            Training Balance by {currentPage === 0 ? 'Sets' : 'Volume'}
           </Text>
+          <HorizontalAccentBar />
         </View>
 
         <View style={styles.timeRangeContainer}>
