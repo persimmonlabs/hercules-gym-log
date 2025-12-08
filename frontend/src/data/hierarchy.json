@@ -17,8 +17,7 @@
             "Lats": { "level": "low" },
             "Mid Back": { "level": "low" },
             "Upper Back": { "level": "low" },
-            "Lower Back": { "level": "low" },
-            "Traps": { "level": "low" }
+            "Lower Back": { "level": "low" }
           }
         },
         "Shoulders": {
@@ -35,17 +34,17 @@
             "Biceps": {
               "level": "low",
               "muscles": {
-                "Long Head": { "level": "detailed" },
-                "Short Head": { "level": "detailed" },
+                "Biceps - Long Head": { "level": "detailed" },
+                "Biceps - Short Head": { "level": "detailed" },
                 "Brachialis": { "level": "detailed" }
               }
             },
             "Triceps": {
               "level": "low",
               "muscles": {
-                "Long Head": { "level": "detailed" },
-                "Lateral Head": { "level": "detailed" },
-                "Medial Head": { "level": "detailed" }
+                "Triceps - Long Head": { "level": "detailed" },
+                "Triceps - Lateral Head": { "level": "detailed" },
+                "Triceps - Medial Head": { "level": "detailed" }
               }
             },
             "Forearms": {
@@ -83,12 +82,18 @@
         "Calves": {
           "level": "mid",
           "muscles": {
-            "Medial Head": { "level": "detailed" },
-            "Lateral Head": { "level": "detailed" },
-            "Soleus": { "level": "detailed" }
+            "Calves": {
+              "level": "low",
+              "muscles": {
+                "Calves - Medial Head": { "level": "detailed" },
+                "Calves - Lateral Head": { "level": "detailed" },
+                "Soleus": { "level": "detailed" }
+              }
+            }
           }
         },
-        "Hip Stabilizers": {
+        
+        "Hips": {
           "level": "mid",
           "muscles": {
             "Adductors": { "level": "low" },

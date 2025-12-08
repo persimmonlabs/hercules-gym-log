@@ -433,12 +433,8 @@ const styles = StyleSheet.create({
     width: spacing.xl,
     height: spacing.xl,
     borderRadius: radius.full,
-    backgroundColor: colors.surface.card,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: colors.accent.orangeLight,
-    ...shadows.sm,
   },
   headerSpacer: {
     width: spacing.xl,
@@ -479,7 +475,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   avatarInitialText: {
-    color: colors.accent.orange,
+    color: colors.text.primary,
     fontSize: 40,
     fontWeight: '600',
   },

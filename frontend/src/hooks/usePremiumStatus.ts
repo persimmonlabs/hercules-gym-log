@@ -18,7 +18,7 @@ const FREE_STATUS: PremiumStatus = {
 };
 
 // DEV MODE: Set to true to test premium features
-const DEV_PREMIUM_ENABLED = false;
+const DEV_PREMIUM_ENABLED = true;
 
 // Mock premium status for development/testing
 const MOCK_PREMIUM_STATUS: PremiumStatus = {

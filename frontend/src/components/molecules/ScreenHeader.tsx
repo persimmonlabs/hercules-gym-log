@@ -113,7 +113,7 @@ const styles = StyleSheet.create({
     borderColor: colors.accent.orange,
   },
   initialText: {
-    color: colors.accent.orange,
+    color: colors.text.primary,
     fontSize: 18,
     fontWeight: '600',
   },
