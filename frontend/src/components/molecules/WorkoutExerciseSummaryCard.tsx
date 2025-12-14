@@ -13,6 +13,7 @@ import { colors, radius, spacing } from '@/constants/theme';
 import { exercises as exerciseCatalog } from '@/constants/exercises';
 import type { WorkoutExercise, SetLog } from '@/types/workout';
 import type { ExerciseType } from '@/types/exercise';
+import { useSettingsStore } from '@/store/settingsStore';
 
 interface WorkoutExerciseSummaryCardProps {
   exercise: WorkoutExercise;
@@ -44,10 +45,15 @@ const formatDuration = (seconds: number): string => {
  * Get the effort label for a set based on exercise type
  * For cardio: distance on left, time on right
  */
-const getSetEffortLabel = (set: SetLog, exerciseType: ExerciseType): string => {
+const getSetEffortLabel = (
+  set: SetLog,
+  exerciseType: ExerciseType,
+  formatWeight: (lbs: number) => string,
+  formatDistance: (miles: number) => string
+): string => {
   switch (exerciseType) {
     case 'cardio':
-      const distance = set.distance ? `${set.distance.toFixed(1)} mi` : '0 mi';
+      const distance = formatDistance(set.distance ?? 0);
       const duration = set.duration ? formatDuration(set.duration) : '0min';
       return `${distance} • ${duration}`;
     
@@ -59,12 +65,11 @@ const getSetEffortLabel = (set: SetLog, exerciseType: ExerciseType): string => {
       return `${set.reps ?? 0} reps`;
     
     case 'assisted':
-      const assistance = set.assistanceWeight ?? 0;
-      return `${assistance} lbs assist • ${set.reps ?? 0} reps`;
+      return `${formatWeight(set.assistanceWeight ?? 0)} assist • ${set.reps ?? 0} reps`;
     
     case 'weight':
     default:
-      return `${set.weight ?? 0} lbs × ${set.reps ?? 0} reps`;
+      return `${formatWeight(set.weight ?? 0)} × ${set.reps ?? 0} reps`;
   }
 };
 
@@ -79,6 +84,7 @@ export const WorkoutExerciseSummaryCard: React.FC<WorkoutExerciseSummaryCardProp
   exercise,
   index,
 }) => {
+  const { formatWeight, formatDistance } = useSettingsStore();
   // Look up exercise type from catalog
   const catalogEntry = exerciseCatalog.find(e => e.name === exercise.name);
   const exerciseType: ExerciseType = catalogEntry?.exerciseType || 'weight';
@@ -96,7 +102,7 @@ export const WorkoutExerciseSummaryCard: React.FC<WorkoutExerciseSummaryCardProp
 
         <View style={styles.setList}>
           {exercise.sets.map((set, setIndex) => {
-            const effortLabel = getSetEffortLabel(set, exerciseType);
+            const effortLabel = getSetEffortLabel(set, exerciseType, formatWeight, formatDistance);
 
             return (
               <View key={`${exercise.name}-${setIndex}`} style={styles.setRow}>

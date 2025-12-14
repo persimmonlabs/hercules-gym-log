@@ -17,6 +17,7 @@ import { colors, spacing, radius } from '@/constants/theme';
 import { useWorkoutSessionsStore } from '@/store/workoutSessionsStore';
 import { usePremiumStatus } from '@/hooks/usePremiumStatus';
 import exercisesData from '@/data/exercises.json';
+import { useSettingsStore } from '@/store/settingsStore';
 
 interface ExerciseContribution {
   name: string;
@@ -31,6 +32,7 @@ const MuscleDetailScreen: React.FC = () => {
   const muscleName = params.muscle || 'Unknown';
   const workouts = useWorkoutSessionsStore((state) => state.workouts);
   const { isPremium } = usePremiumStatus();
+  const { formatWeight, formatWeightValue, getWeightUnit } = useSettingsStore();
 
   // Find exercises that target this muscle
   const muscleExercises = useMemo(() => {
@@ -135,9 +137,9 @@ const MuscleDetailScreen: React.FC = () => {
           <View style={styles.statDivider} />
           <View style={styles.statItem}>
             <Text variant="statValue" color="primary">
-              {Math.round(totalStats.totalVolume).toLocaleString()}
+              {formatWeightValue(totalStats.totalVolume)}
             </Text>
-            <Text variant="caption" color="secondary">Total Volume (lbs)</Text>
+            <Text variant="caption" color="secondary">Total Volume ({getWeightUnit()})</Text>
           </View>
         </View>
       </SurfaceCard>
@@ -166,7 +168,7 @@ const MuscleDetailScreen: React.FC = () => {
                     {exercise.name}
                   </Text>
                   <Text variant="caption" color="secondary">
-                    {exercise.sets} sets • {Math.round(exercise.volume).toLocaleString()} lbs
+                    {exercise.sets} sets • {formatWeight(exercise.volume)}
                   </Text>
                 </View>
                 <View style={styles.exerciseMeta}>

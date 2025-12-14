@@ -19,7 +19,8 @@ import * as Haptics from 'expo-haptics';
 import { Text } from '@/components/atoms/Text';
 import { SurfaceCard } from '@/components/atoms/SurfaceCard';
 import { HorizontalAccentBar } from '@/components/atoms/HorizontalAccentBar';
-import { colors, spacing, radius } from '@/constants/theme';
+import { spacing, radius } from '@/constants/theme';
+import { useTheme } from '@/hooks/useTheme';
 
 interface AnalyticsCardProps {
   title: string;
@@ -50,6 +51,7 @@ export const AnalyticsCard: React.FC<AnalyticsCardProps> = ({
   showHorizontalAccentBar = false,
   children,
 }) => {
+  const { theme } = useTheme();
   const scale = useSharedValue(1);
 
   const animatedStyle = useAnimatedStyle(() => ({
@@ -129,7 +131,7 @@ export const AnalyticsCard: React.FC<AnalyticsCardProps> = ({
               <Ionicons
                 name="chevron-forward"
                 size={16}
-                color={colors.text.tertiary}
+                color={theme.text.tertiary}
               />
             </View>
           )}
@@ -172,7 +174,7 @@ const styles = StyleSheet.create({
     paddingTop: spacing.sm,
     marginTop: spacing.sm,
     borderTopWidth: 1,
-    borderTopColor: colors.border.light,
+    borderTopColor: 'rgba(255, 107, 74, 0.12)',
   },
   headerRightContainer: {
     alignSelf: 'center',

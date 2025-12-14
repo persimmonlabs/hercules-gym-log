@@ -197,7 +197,8 @@ export const usePlansStore = create<PlansState>((set, get) => ({
       set({ plans: normalizedPlans, isLoading: false });
       console.log('[plansStore] Hydrated', normalizedPlans.length, 'workout templates from Supabase');
     } catch (error) {
-      console.error('[plansStore] Failed to hydrate plans', error);
+      // Silently handle hydration failures - network issues are expected during app startup
+      console.warn('[plansStore] Hydration failed, using empty state');
       set({ plans: [], isLoading: false });
     }
   },

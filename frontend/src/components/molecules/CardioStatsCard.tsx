@@ -10,6 +10,7 @@ import { Text } from '@/components/atoms/Text';
 import { SurfaceCard } from '@/components/atoms/SurfaceCard';
 import { colors, spacing, radius } from '@/constants/theme';
 import type { CardioStats } from '@/types/analytics';
+import { useSettingsStore } from '@/store/settingsStore';
 
 interface CardioStatsCardProps {
   stats: CardioStats;
@@ -30,6 +31,7 @@ export const CardioStatsCard: React.FC<CardioStatsCardProps> = ({
   stats,
   timeRangeLabel,
 }) => {
+  const { formatDistance } = useSettingsStore();
   const { totalDuration, totalDistanceByType, sessionCount } = stats;
   
   // Check if there's any cardio data
@@ -85,7 +87,7 @@ export const CardioStatsCard: React.FC<CardioStatsCardProps> = ({
                 {exerciseName}
               </Text>
               <Text variant="bodySemibold" color="primary">
-                {distance.toFixed(1)}
+                {formatDistance(distance)}
               </Text>
             </View>
           ))}

@@ -11,6 +11,7 @@ import { TabSwipeContainer } from '@/components/templates/TabSwipeContainer';
 import { Button } from '@/components/atoms/Button';
 import { WEEKDAY_LABELS } from '@/constants/schedule';
 import { colors, radius, shadows, sizing, spacing } from '@/constants/theme';
+import { useTheme } from '@/hooks/useTheme';
 import { usePlansStore, type Plan, type PlansState } from '@/store/plansStore';
 import { useSchedulesStore, type SchedulesState } from '@/store/schedulesStore';
 import { useProgramsStore } from '@/store/programsStore';
@@ -162,7 +163,6 @@ const useCardLiftAnimation = (initialShadow: ShadowConfig, activeShadow: ShadowC
 const styles = StyleSheet.create({
   contentContainer: {
     flexGrow: 1,
-    backgroundColor: colors.primary.bg,
     paddingTop: spacing.xl,
     paddingHorizontal: spacing.md,
     paddingBottom: spacing.sm,
@@ -305,6 +305,7 @@ const styles = StyleSheet.create({
 });
 
 const PlansScreen: React.FC = () => {
+  const { theme } = useTheme();
   const router = useRouter();
   const plans = usePlansStore((state: PlansState) => state.plans);
   const removePlan = usePlansStore((state: PlansState) => state.removePlan);
@@ -544,7 +545,7 @@ const PlansScreen: React.FC = () => {
   }, [router, startSession, setCompletionOverlayVisible]);
 
   return (
-    <TabSwipeContainer contentContainerStyle={styles.contentContainer}>
+    <TabSwipeContainer contentContainerStyle={[styles.contentContainer, { backgroundColor: theme.primary.bg }]}>
       <ScreenHeader title="My Programs" subtitle="Create and manage your workout plans." />
 
       <SurfaceCard padding="xl" tone="neutral" style={{ marginTop: -spacing.md }}>

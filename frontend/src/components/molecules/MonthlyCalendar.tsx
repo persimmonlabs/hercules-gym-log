@@ -13,7 +13,8 @@ import { CalendarDayCell } from '@/components/atoms/CalendarDayCell';
 import { SurfaceCard } from '@/components/atoms/SurfaceCard';
 import { Text } from '@/components/atoms/Text';
 import { buttonPressAnimation, springSmooth } from '@/constants/animations';
-import { colors, radius, spacing } from '@/constants/theme';
+import { radius, spacing } from '@/constants/theme';
+import { useTheme } from '@/hooks/useTheme';
 import { useMonthlyCalendar, type UseMonthlyCalendarOptions } from '@/hooks/useMonthlyCalendar';
 
 interface MonthlyCalendarProps extends UseMonthlyCalendarOptions {
@@ -21,6 +22,7 @@ interface MonthlyCalendarProps extends UseMonthlyCalendarOptions {
 }
 
 export const MonthlyCalendar: React.FC<MonthlyCalendarProps> = ({ onDayLongPress, ...hookOptions }) => {
+  const { theme } = useTheme();
   const { monthLabel, weekdayLabels, gridItems, goToPreviousMonth, goToNextMonth, selectDate } =
     useMonthlyCalendar(hookOptions);
 
@@ -68,7 +70,7 @@ export const MonthlyCalendar: React.FC<MonthlyCalendarProps> = ({ onDayLongPress
           onPressOut={() => animatePressOut(prevScale, 'prev')}
         >
           <Animated.View style={prevAnimatedStyle}>
-            <Ionicons name="chevron-back" size={spacing.xl} color={colors.text.primary} />
+            <Ionicons name="chevron-back" size={spacing.xl} color={theme.text.primary} />
           </Animated.View>
         </TouchableOpacity>
 
@@ -83,7 +85,7 @@ export const MonthlyCalendar: React.FC<MonthlyCalendarProps> = ({ onDayLongPress
           onPressOut={() => animatePressOut(nextScale, 'next')}
         >
           <Animated.View style={nextAnimatedStyle}>
-            <Ionicons name="chevron-forward" size={spacing.xl} color={colors.text.primary} />
+            <Ionicons name="chevron-forward" size={spacing.xl} color={theme.text.primary} />
           </Animated.View>
         </TouchableOpacity>
       </View>

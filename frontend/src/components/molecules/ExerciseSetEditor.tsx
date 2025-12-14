@@ -13,6 +13,7 @@ import { springGentle } from '@/constants/animations';
 import { colors, radius, shadows, sizing, spacing, zIndex } from '@/constants/theme';
 import type { SetLog } from '@/types/workout';
 import type { ExerciseType } from '@/types/exercise';
+import { useSettingsStore } from '@/store/settingsStore';
 
 interface ExerciseSetEditorProps {
   isExpanded: boolean;
@@ -132,6 +133,9 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
   exerciseType = 'weight',
   distanceUnit = 'miles',
 }) => {
+  const { getWeightUnit, formatWeight, getDistanceUnitShort, formatDistance, convertDistance, convertDistanceToMiles } = useSettingsStore();
+  const weightUnit = getWeightUnit();
+  const distanceUnitLabel = getDistanceUnitShort();
   const [sets, setSets] = useState<SetDraft[]>(() => initialSets.map((set) => createDraftFromSet(set)));
   const [openMenuIndex, setOpenMenuIndex] = useState<number | null>(null);
   const [activeSelection, setActiveSelection] = useState<ActiveSelectionTarget | null>(null);
@@ -436,14 +440,14 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
               case 'cardio':
                 const mins = Math.floor((set.duration ?? 0) / 60);
                 const secs = (set.duration ?? 0) % 60;
-                summaryText = `${mins}:${secs.toString().padStart(2, '0')} • ${set.distance ?? 0} ${distanceUnit}`;
+                summaryText = `${mins}:${secs.toString().padStart(2, '0')} • ${formatDistance(set.distance ?? 0)}`;
                 break;
               case 'bodyweight':
               case 'reps_only':
                 summaryText = `${set.reps ?? 0} reps`;
                 break;
               case 'assisted':
-                summaryText = `${set.assistanceWeight ?? 0} lbs assist × ${set.reps ?? 0} reps`;
+                summaryText = `${formatWeight(set.assistanceWeight ?? 0)} assist × ${set.reps ?? 0} reps`;
                 break;
               case 'duration':
                 const dMins = Math.floor((set.duration ?? 0) / 60);
@@ -452,7 +456,7 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
                 break;
               case 'weight':
               default:
-                summaryText = `${String(set.weight ?? 0)} lbs × ${String(set.reps ?? 0)} reps`;
+                summaryText = `${formatWeight(set.weight ?? 0)} × ${set.reps ?? 0} reps`;
             }
 
             return (
@@ -516,7 +520,7 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
                     {(exerciseType === 'weight' || exerciseType === 'assisted') && (
                       <View style={styles.metricSection} pointerEvents="box-none">
                         <Text variant="label" color="neutral" style={styles.metricLabel}>
-                          {exerciseType === 'assisted' ? 'Assistance (lbs)' : 'Weight (lbs)'}
+                          {exerciseType === 'assisted' ? `Assistance (${weightUnit})` : `Weight (${weightUnit})`}
                         </Text>
                         <View style={styles.metricControls}>
                           <Pressable
@@ -568,14 +572,21 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
                     {exerciseType === 'cardio' && (
                       <View style={styles.metricSection} pointerEvents="box-none">
                         <Text variant="label" color="neutral" style={styles.metricLabel}>
-                          Distance (mi)
+                          Distance ({distanceUnitLabel})
                         </Text>
                         <View style={styles.metricControls}>
                           <Pressable
                             style={styles.adjustButton}
                             onPressIn={() => {
-                              const decrement = distanceUnit === 'meters' ? -100 : -0.1;
-                              updateSet(index, { distance: Math.max(0, (set.distance ?? 0) + decrement) });
+                              // Decrement in display units, then convert back to miles for storage
+                              const currentDisplayValue = convertDistance(set.distance ?? 0);
+                              const decrement = distanceUnitLabel === 'km' ? 0.1 : 0.1;
+                              const newDisplayValue = Math.max(0, currentDisplayValue - decrement);
+                              const newMiles = convertDistanceToMiles(newDisplayValue);
+                              updateSet(index, { 
+                                distance: Math.round(newMiles * 100) / 100,
+                                distanceInput: newDisplayValue.toFixed(1)
+                              });
                             }}
                             accessibilityRole="button"
                             accessibilityLabel={`Decrease distance for set ${index + 1}`}
@@ -590,10 +601,12 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
                             value={set.distanceInput}
                             onChangeText={(value) => {
                               const sanitized = sanitizeWeightInput(value);
-                              const distance = parseFloat(sanitized) || 0;
+                              const displayValue = parseFloat(sanitized) || 0;
+                              // Convert from display unit to miles for storage
+                              const distanceInMiles = convertDistanceToMiles(displayValue);
                               updateSet(index, { 
                                 distanceInput: sanitized,
-                                distance 
+                                distance: Math.round(distanceInMiles * 100) / 100
                               });
                             }}
                             keyboardType="decimal-pad"
@@ -607,11 +620,14 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
                           <Pressable
                             style={styles.adjustButton}
                             onPressIn={() => {
-                              const increment = distanceUnit === 'meters' ? 100 : 0.1;
-                              const newDistance = Math.round(((set.distance ?? 0) + increment) * 10) / 10;
+                              // Increment in display units, then convert back to miles for storage
+                              const currentDisplayValue = convertDistance(set.distance ?? 0);
+                              const increment = distanceUnitLabel === 'km' ? 0.1 : 0.1;
+                              const newDisplayValue = Math.round((currentDisplayValue + increment) * 10) / 10;
+                              const newMiles = convertDistanceToMiles(newDisplayValue);
                               updateSet(index, { 
-                                distance: newDistance,
-                                distanceInput: String(newDistance)
+                                distance: Math.round(newMiles * 100) / 100,
+                                distanceInput: newDisplayValue.toFixed(1)
                               });
                             }}
                             accessibilityRole="button"

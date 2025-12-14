@@ -8,7 +8,8 @@ import React, { ReactNode, useMemo } from 'react';
 import { StyleProp, StyleSheet, ViewStyle } from 'react-native';
 import Animated, { type AnimatedStyle } from 'react-native-reanimated';
 
-import { colors, radius, shadows, spacing } from '@/constants/theme';
+import { radius, shadows, spacing } from '@/constants/theme';
+import { useTheme } from '@/hooks/useTheme';
 import { AnimatedAccentStripe } from '@/components/atoms/AnimatedAccentStripe';
 
 // =============================================================================
@@ -44,16 +45,18 @@ export const SurfaceCard: React.FC<SurfaceCardProps> = ({
   showAccentStripe = true,
   withShadow = true,
 }) => {
+  const { theme } = useTheme();
+  
   const containerStyle = useMemo<ViewStyle>(
     () => ({
       padding: spacing[padding],
       borderRadius: radius.lg,
       backgroundColor:
         tone === 'neutral'
-          ? colors.surface.card
-          : colors.surface[tone === 'tint' ? 'tint' : tone],
+          ? theme.surface.elevated  // Neutral cards use elevated (lighter) for nesting
+          : theme.surface[tone === 'tint' ? 'tint' : tone],
     }),
-    [padding, tone]
+    [padding, tone, theme]
   );
 
   const flattenedStyle = useMemo<ViewStyle | undefined>(() => {
@@ -108,9 +111,25 @@ export const SurfaceCard: React.FC<SurfaceCardProps> = ({
     };
   }, [flattenedStyle, marginKeys]);
 
+// =============================================================================
+// STYLES
+// =============================================================================
+
+  const dynamicCardInnerStyle = useMemo<ViewStyle>(
+    () => ({
+      width: '100%',
+      overflow: 'hidden',
+      borderRadius: radius.lg,
+      borderWidth: 1,
+      borderColor: theme.border.light,
+      position: 'relative',
+    }),
+    [theme]
+  );
+
   return (
     <Animated.View style={[styles.shadowWrapper, withShadow ? styles.cardShadow : null, outerStyle]}>
-      <Animated.View style={[styles.cardInner, containerStyle, innerStyle]}>
+      <Animated.View style={[dynamicCardInnerStyle, containerStyle, innerStyle]}>
         {showAccentStripe ? <AnimatedAccentStripe style={styles.accentStripe} /> : null}
         {children}
       </Animated.View>
@@ -129,14 +148,6 @@ const styles = StyleSheet.create({
   },
   cardShadow: {
     ...shadows.sm,
-  },
-  cardInner: {
-    width: '100%',
-    overflow: 'hidden',
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border.light,
-    position: 'relative',
   },
   accentStripe: {
     position: 'absolute',

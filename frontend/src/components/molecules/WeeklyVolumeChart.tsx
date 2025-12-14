@@ -6,6 +6,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { Text } from '@/components/atoms/Text';
 import { colors, spacing, radius } from '@/constants/theme';
 import { useWorkoutSessionsStore } from '@/store/workoutSessionsStore';
+import { useSettingsStore } from '@/store/settingsStore';
 
 // Import data
 import exercisesData from '@/data/exercises.json';
@@ -74,9 +75,10 @@ interface ChartPageProps {
     };
     selectedBar: { label: string; value: number } | null;
     setSelectedBar: (bar: { label: string; value: number } | null) => void;
+    formatWeight: (lbs: number) => string;
 }
 
-const ChartPage: React.FC<ChartPageProps> = ({ title, data, selectedBar, setSelectedBar }) => {
+const ChartPage: React.FC<ChartPageProps> = ({ title, data, selectedBar, setSelectedBar, formatWeight }) => {
     // Calculate Max Value and Y-axis ticks
     const rawMax = Math.max(...data.values, 0);
 
@@ -228,7 +230,7 @@ const ChartPage: React.FC<ChartPageProps> = ({ title, data, selectedBar, setSele
                 {selectedBar && (
                     <View style={[styles.tooltip, getTooltipPosition()]}>
                         <Text variant="caption" color="primary" style={styles.tooltipText}>
-                            {selectedBar.label}: {Math.round(selectedBar.value)} lbs
+                            {selectedBar.label}: {formatWeight(selectedBar.value)}
                         </Text>
                     </View>
                 )}
@@ -248,6 +250,7 @@ const ChartPage: React.FC<ChartPageProps> = ({ title, data, selectedBar, setSele
 
 export const WeeklyVolumeChart: React.FC = () => {
     const workouts = useWorkoutSessionsStore((state) => state.workouts);
+    const { formatWeight, getWeightUnit } = useSettingsStore();
     const [currentPage, setCurrentPage] = useState(0);
     // Per-page selected bar state to prevent cross-page artifacts
     const [selectedBars, setSelectedBars] = useState<Record<number, { label: string; value: number } | null>>({});
@@ -427,10 +430,10 @@ export const WeeklyVolumeChart: React.FC = () => {
                     style={{ width: CHART_WIDTH }}
                     contentContainerStyle={{ alignItems: 'flex-start' }}
                 >
-                    <ChartPage title="Total Volume (lbs)" data={dataL1} selectedBar={selectedBar} setSelectedBar={setSelectedBar} />
-                    <ChartPage title="Upper Body" data={dataUpper} selectedBar={selectedBar} setSelectedBar={setSelectedBar} />
-                    <ChartPage title="Lower Body" data={dataLower} selectedBar={selectedBar} setSelectedBar={setSelectedBar} />
-                    <ChartPage title="Core" data={dataCore} selectedBar={selectedBar} setSelectedBar={setSelectedBar} />
+                    <ChartPage title={`Total Volume (${getWeightUnit()})`} data={dataL1} selectedBar={selectedBar} setSelectedBar={setSelectedBar} formatWeight={formatWeight} />
+                    <ChartPage title="Upper Body" data={dataUpper} selectedBar={selectedBar} setSelectedBar={setSelectedBar} formatWeight={formatWeight} />
+                    <ChartPage title="Lower Body" data={dataLower} selectedBar={selectedBar} setSelectedBar={setSelectedBar} formatWeight={formatWeight} />
+                    <ChartPage title="Core" data={dataCore} selectedBar={selectedBar} setSelectedBar={setSelectedBar} formatWeight={formatWeight} />
                 </ScrollView>
             </View>
         </View>

@@ -82,7 +82,7 @@ const hydrateAllStores = async (userId: string): Promise<void> => {
     } catch (error) {
       // This catch block handles unexpected errors in the hydration logic itself
       // Individual store failures are handled by Promise.allSettled above
-      console.error('[AuthProvider] Unexpected error during hydration:', error);
+      console.warn('[AuthProvider] Unexpected error during hydration (network issue?):', error);
       // Still mark as hydrated to prevent infinite loading
       hydratedUserId = userId;
     } finally {
@@ -123,7 +123,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
         if (error) {
           // Log but don't throw - network errors during session fetch shouldn't crash the app
-          console.error('[AuthProvider] getSession error (may be network issue):', error);
+          console.warn('[AuthProvider] getSession error (may be network issue):', error);
           // Continue with null session - user will need to sign in again
         }
 
@@ -137,12 +137,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             await hydrateAllStores(data.session.user.id);
           } catch (hydrateError) {
             // Log but don't throw - partial data is better than no app
-            console.error('[AuthProvider] Hydration failed (network issue?):', hydrateError);
+            console.warn('[AuthProvider] Hydration failed (network issue?):', hydrateError);
           }
         }
       } catch (error) {
         // Catch any unexpected errors to prevent app crash
-        console.error('[AuthProvider] initializeAuth error:', error);
+        console.warn('[AuthProvider] initializeAuth error (network issue?):', error);
         // Set session to null to trigger sign-in flow
         setSession(null);
       } finally {

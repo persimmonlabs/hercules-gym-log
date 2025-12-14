@@ -15,18 +15,30 @@ import { SurfaceCard } from '@/components/atoms/SurfaceCard';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { NameEditModal } from '@/components/molecules/NameEditModal';
 import { BodyMetricsModal } from '@/components/molecules/BodyMetricsModal';
+import { UnitsModal } from '@/components/molecules/UnitsModal';
+import { NotificationsModal } from '@/components/molecules/NotificationsModal';
+import { AppearanceModal } from '@/components/molecules/AppearanceModal';
 import { colors, spacing, radius, shadows, sizing } from '@/constants/theme';
+import { useTheme } from '@/hooks/useTheme';
 import { useAuth } from '@/providers/AuthProvider';
 import { supabaseClient } from '@/lib/supabaseClient';
 import { useUserProfileStore } from '@/store/userProfileStore';
+import { useSettingsStore } from '@/store/settingsStore';
+import { useNotificationStore } from '@/store/notificationStore';
 
 const ProfileModal: React.FC = () => {
   const router = useRouter();
+  const { theme } = useTheme();
   const { user, signOut } = useAuth();
   const { profile, fetchProfile, updateProfile, updateBodyMetrics } = useUserProfileStore();
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [isNameModalVisible, setIsNameModalVisible] = useState(false);
   const [isBodyMetricsModalVisible, setIsBodyMetricsModalVisible] = useState(false);
+  const [isUnitsModalVisible, setIsUnitsModalVisible] = useState(false);
+  const [isNotificationsModalVisible, setIsNotificationsModalVisible] = useState(false);
+  const [isAppearanceModalVisible, setIsAppearanceModalVisible] = useState(false);
+  const { weightUnit, distanceUnit, sizeUnit, formatWeight } = useSettingsStore();
+  const { notificationsEnabled, configs } = useNotificationStore();
   const backScale = useSharedValue(1);
 
   const handleBackPress = () => {
@@ -138,10 +150,42 @@ const ProfileModal: React.FC = () => {
     updateProfile(firstName, lastName);
   };
 
-  const getBodyMetricsSubtitle = () => {
-    if (profile?.heightFeet && profile?.weightLbs) {
-      return `${profile.heightFeet}'${profile.heightInches || 0}" • ${profile.weightLbs} lbs`;
+  const getFormattedHeight = () => {
+    const hasHeightData =
+      typeof profile?.heightFeet === 'number' && typeof profile?.heightInches === 'number';
+
+    if (!hasHeightData) {
+      return null;
     }
+
+    const feet = profile?.heightFeet ?? 0;
+    const inches = profile?.heightInches ?? 0;
+    const totalInches = feet * 12 + inches;
+
+    if (sizeUnit === 'cm') {
+      const heightCm = Math.round(totalInches * 2.54);
+      return `${heightCm} cm`;
+    }
+
+    return `${totalInches} in`;
+  };
+
+  const getBodyMetricsSubtitle = () => {
+    const heightLabel = getFormattedHeight();
+    const weightLabel = profile?.weightLbs ? formatWeight(profile.weightLbs) : null;
+
+    if (heightLabel && weightLabel) {
+      return `${heightLabel} • ${weightLabel}`;
+    }
+
+    if (heightLabel) {
+      return heightLabel;
+    }
+
+    if (weightLabel) {
+      return weightLabel;
+    }
+
     return 'Set height and weight for accurate stats';
   };
 
@@ -151,8 +195,8 @@ const ProfileModal: React.FC = () => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.primary.bg }]}>
+      <View style={[styles.header, { backgroundColor: theme.primary.bg }]}>
         <Animated.View style={{ transform: [{ scale: backScale.value }] }}>
           <Pressable
             style={styles.backButton}
@@ -162,7 +206,7 @@ const ProfileModal: React.FC = () => {
           >
             <IconSymbol
               name="arrow-back"
-              color={colors.text.primary}
+              color={theme.text.primary}
               size={24}
             />
           </Pressable>
@@ -181,7 +225,10 @@ const ProfileModal: React.FC = () => {
         {/* Profile Info Card */}
         <SurfaceCard tone="card" padding="xl" style={styles.profileCard}>
           <View style={styles.profileHeader}>
-            <View style={profile?.firstName ? styles.avatarWithInitial : styles.avatar}>
+            <View style={[
+              profile?.firstName ? styles.avatarWithInitial : styles.avatar,
+              { backgroundColor: theme.surface.card, borderColor: theme.accent.orange }
+            ]}>
               {profile?.firstName ? (
                 <Text variant="heading1" style={styles.avatarInitialText}>
                   {profile.firstName.charAt(0).toUpperCase()}
@@ -189,7 +236,7 @@ const ProfileModal: React.FC = () => {
               ) : (
                 <IconSymbol
                   name="person"
-                  color={colors.text.primary}
+                  color={theme.text.primary}
                   size={48}
                 />
               )}
@@ -209,7 +256,7 @@ const ProfileModal: React.FC = () => {
         </SurfaceCard>
 
         {/* Account Preferences */}
-        <SurfaceCard tone="neutral" padding="lg" showAccentStripe={true}>
+        <SurfaceCard tone="card" padding="lg" style={{ borderWidth: 0 }}>
           <View style={styles.section}>
             <Text variant="heading3" color="primary" style={styles.sectionTitle}>
               Account Preferences
@@ -225,28 +272,28 @@ const ProfileModal: React.FC = () => {
               <PreferenceItem
                 icon="notifications"
                 title="Notifications"
-                subtitle="Manage your notification preferences"
-                onPress={handlePreferencePress}
+                subtitle={notificationsEnabled ? `${configs.length} reminder${configs.length !== 1 ? 's' : ''} active` : 'Set workout reminders'}
+                onPress={() => {
+                  void Haptics.selectionAsync();
+                  setIsNotificationsModalVisible(true);
+                }}
               />
 
               <PreferenceItem
                 icon="palette"
                 title="Appearance"
-                subtitle="Customize app theme and display"
-                onPress={handlePreferencePress}
+                subtitle="Customize app theme"
+                onPress={() => {
+                  void Haptics.selectionAsync();
+                  setIsAppearanceModalVisible(true);
+                }}
               />
-              <PreferenceItem
-                icon="language"
-                title="Language & Region"
-                subtitle="Set your language and regional preferences"
-                onPress={handlePreferencePress}
-              />
-            </View>
+                          </View>
           </View>
         </SurfaceCard>
 
         {/* Workout Preferences */}
-        <SurfaceCard tone="neutral" padding="lg" showAccentStripe={true}>
+        <SurfaceCard tone="card" padding="lg" style={{ borderWidth: 0 }}>
           <View style={styles.section}>
             <Text variant="heading3" color="primary" style={styles.sectionTitle}>
               Workout Preferences
@@ -256,8 +303,11 @@ const ProfileModal: React.FC = () => {
               <PreferenceItem
                 icon="fitness-center"
                 title="Units of Measurement"
-                subtitle="Metric (kg, cm) or Imperial (lbs, ft)"
-                onPress={handlePreferencePress}
+                subtitle={`${weightUnit === 'kg' ? 'kg' : 'lbs'} • ${distanceUnit === 'km' ? 'km' : 'mi'} • ${sizeUnit === 'cm' ? 'cm' : 'in'}`}
+                onPress={() => {
+                  void Haptics.selectionAsync();
+                  setIsUnitsModalVisible(true);
+                }}
               />
 
               <PreferenceItem
@@ -270,24 +320,12 @@ const ProfileModal: React.FC = () => {
                 }}
               />
 
-              <PreferenceItem
-                icon="trending-up"
-                title="Progress Tracking"
-                subtitle="Configure how your progress is calculated"
-                onPress={handlePreferencePress}
-              />
-              <PreferenceItem
-                icon="event"
-                title="Workout Reminders"
-                subtitle="Set schedule and reminder preferences"
-                onPress={handlePreferencePress}
-              />
-            </View>
+                                        </View>
           </View>
         </SurfaceCard>
 
         {/* Support */}
-        <SurfaceCard tone="neutral" padding="lg" showAccentStripe={true}>
+        <SurfaceCard tone="card" padding="lg" style={{ borderWidth: 0 }}>
           <View style={styles.section}>
             <Text variant="heading3" color="primary" style={styles.sectionTitle}>
               Support
@@ -327,12 +365,12 @@ const ProfileModal: React.FC = () => {
               accessibilityLabel="Sign Out"
             >
               {isSigningOut ? (
-                <ActivityIndicator color={colors.accent.red} />
+                <ActivityIndicator color={theme.accent.red} />
               ) : (
                 <>
                   <IconSymbol
                     name="logout"
-                    color={colors.accent.red}
+                    color={theme.accent.red}
                     size={24}
                   />
                   <Text variant="bodySemibold" color="red">
@@ -361,6 +399,21 @@ const ProfileModal: React.FC = () => {
         onClose={() => setIsBodyMetricsModalVisible(false)}
         onSave={handleBodyMetricsSave}
       />
+
+      <UnitsModal
+        visible={isUnitsModalVisible}
+        onClose={() => setIsUnitsModalVisible(false)}
+      />
+
+      <NotificationsModal
+        visible={isNotificationsModalVisible}
+        onClose={() => setIsNotificationsModalVisible(false)}
+      />
+
+      <AppearanceModal
+        visible={isAppearanceModalVisible}
+        onClose={() => setIsAppearanceModalVisible(false)}
+      />
     </SafeAreaView>
   );
 };
@@ -373,45 +426,52 @@ interface PreferenceItemProps {
 }
 
 const PreferenceItem: React.FC<PreferenceItemProps> = ({ icon, title, subtitle, onPress }) => {
+  const { theme } = useTheme();
   const scale = useSharedValue(1);
 
   return (
-    <Animated.View style={{ transform: [{ scale: scale.value }] }}>
-      <Pressable
-        style={styles.preferenceItem}
-        onPress={() => {
-          scale.value = withSpring(0.95, { damping: 15, stiffness: 300 });
-          void Haptics.selectionAsync();
-          setTimeout(() => {
-            scale.value = withSpring(1, { damping: 15, stiffness: 300 });
-            onPress();
-          }, 100);
-        }}
-        accessibilityRole="button"
-        accessibilityLabel={title}
+    <Pressable
+      onPress={() => {
+        scale.value = withSpring(0.95, { damping: 15, stiffness: 300 });
+        void Haptics.selectionAsync();
+        setTimeout(() => {
+          scale.value = withSpring(1, { damping: 15, stiffness: 300 });
+          onPress();
+        }, 100);
+      }}
+      accessibilityRole="button"
+      accessibilityLabel={title}
+    >
+      <SurfaceCard
+        tone="neutral"
+        padding="lg"
+        showAccentStripe={false}
+        style={{ transform: [{ scale: scale.value }], borderWidth: 0, height: 88 }}
       >
-        <View style={styles.preferenceIcon}>
+        <View style={styles.preferenceItemContent}>
+          <View style={styles.preferenceIcon}>
+            <IconSymbol
+              name={icon}
+              color={theme.accent.orange}
+              size={24}
+            />
+          </View>
+          <View style={styles.preferenceContent}>
+            <Text variant="bodySemibold" color="primary">
+              {title}
+            </Text>
+            <Text variant="caption" color="secondary">
+              {subtitle}
+            </Text>
+          </View>
           <IconSymbol
-            name={icon}
-            color={colors.accent.orange}
-            size={24}
+            name="chevron-right"
+            color={theme.text.tertiary}
+            size={20}
           />
         </View>
-        <View style={styles.preferenceContent}>
-          <Text variant="bodySemibold" color="primary">
-            {title}
-          </Text>
-          <Text variant="caption" color="secondary">
-            {subtitle}
-          </Text>
-        </View>
-        <IconSymbol
-          name="chevron-right"
-          color={colors.text.tertiary}
-          size={20}
-        />
-      </Pressable>
-    </Animated.View>
+      </SurfaceCard>
+    </Pressable>
   );
 };
 
@@ -425,8 +485,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: spacing.md,
-    paddingTop: spacing.xl + spacing.sm,
-    paddingBottom: spacing.lg,
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.md,
     backgroundColor: colors.primary.bg,
   },
   backButton: {
@@ -444,11 +504,13 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     paddingHorizontal: spacing.md,
+    paddingTop: spacing.lg,
     paddingBottom: spacing.xl + spacing.lg,
     gap: spacing.xl + spacing.lg,
   },
   profileCard: {
     alignItems: 'center',
+    borderWidth: 0,
   },
   profileHeader: {
     alignItems: 'center',
@@ -493,14 +555,11 @@ const styles = StyleSheet.create({
   preferencesList: {
     gap: spacing.md,
   },
-  preferenceItem: {
+  preferenceItemContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: spacing.lg,
-    backgroundColor: colors.surface.card,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.accent.orangeLight,
+    justifyContent: 'center',
+    flex: 1,
   },
   preferenceIcon: {
     width: spacing.xl,

@@ -151,7 +151,8 @@ export const useSchedulesStore = create<SchedulesState>((set, get) => ({
       set({ schedules, isLoading: false });
       console.log('[schedulesStore] Hydrated', schedules.length, 'schedules from Supabase');
     } catch (error) {
-      console.error('[schedulesStore] Failed to hydrate schedules', error);
+      // Silently handle hydration failures - network issues are expected during app startup
+      console.warn('[schedulesStore] Hydration failed, using empty state');
       set({ schedules: [], isLoading: false });
     }
   },

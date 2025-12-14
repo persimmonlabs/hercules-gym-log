@@ -12,6 +12,7 @@ import { Text } from '@/components/atoms/Text';
 import { SurfaceCard } from '@/components/atoms/SurfaceCard';
 import { colors, spacing, radius } from '@/constants/theme';
 import { useWorkoutSessionsStore } from '@/store/workoutSessionsStore';
+import { useSettingsStore } from '@/store/settingsStore';
 import exercisesData from '@/data/exercises.json';
 
 const EXERCISE_MUSCLES = exercisesData.reduce((acc, ex) => {
@@ -25,9 +26,10 @@ interface ComparisonItemProps {
   label: string;
   current: number;
   previous: number;
+  formatValue: (lbs: number) => string;
 }
 
-const ComparisonItem: React.FC<ComparisonItemProps> = ({ label, current, previous }) => {
+const ComparisonItem: React.FC<ComparisonItemProps> = ({ label, current, previous, formatValue }) => {
   const change = previous > 0 ? ((current - previous) / previous) * 100 : 0;
   const isPositive = change > 0;
   const isNeutral = Math.abs(change) < 1;
@@ -39,7 +41,7 @@ const ComparisonItem: React.FC<ComparisonItemProps> = ({ label, current, previou
       </Text>
       <View style={styles.itemValues}>
         <Text variant="bodySemibold" color="primary">
-          {Math.round(current).toLocaleString()}
+          {formatValue(current)}
         </Text>
         {!isNeutral && (
           <View style={[styles.changeBadge, isPositive ? styles.positive : styles.negative]}>
@@ -58,7 +60,7 @@ const ComparisonItem: React.FC<ComparisonItemProps> = ({ label, current, previou
         )}
       </View>
       <Text variant="captionSmall" color="tertiary">
-        vs {Math.round(previous).toLocaleString()} last week
+        vs {formatValue(previous)} last week
       </Text>
     </View>
   );
@@ -66,6 +68,7 @@ const ComparisonItem: React.FC<ComparisonItemProps> = ({ label, current, previou
 
 export const VolumeComparisonCard: React.FC = () => {
   const workouts = useWorkoutSessionsStore((state) => state.workouts);
+  const { formatWeight } = useSettingsStore();
 
   const { thisWeek, lastWeek } = useMemo(() => {
     const now = new Date();
@@ -149,10 +152,10 @@ export const VolumeComparisonCard: React.FC = () => {
           <View style={styles.headerStripe} />
         </View>
         <View style={styles.grid}>
-          <ComparisonItem label="Total Volume" current={thisWeek.total} previous={lastWeek.total} />
-          <ComparisonItem label="Upper Body" current={thisWeek.upper} previous={lastWeek.upper} />
-          <ComparisonItem label="Lower Body" current={thisWeek.lower} previous={lastWeek.lower} />
-          <ComparisonItem label="Core" current={thisWeek.core} previous={lastWeek.core} />
+          <ComparisonItem label="Total Volume" current={thisWeek.total} previous={lastWeek.total} formatValue={formatWeight} />
+          <ComparisonItem label="Upper Body" current={thisWeek.upper} previous={lastWeek.upper} formatValue={formatWeight} />
+          <ComparisonItem label="Lower Body" current={thisWeek.lower} previous={lastWeek.lower} formatValue={formatWeight} />
+          <ComparisonItem label="Core" current={thisWeek.core} previous={lastWeek.core} formatValue={formatWeight} />
         </View>
       </View>
     </SurfaceCard>

@@ -21,8 +21,8 @@ export const colors = {
   // Surface colors for cards and elevated elements
   surface: {
     card: '#FFFFFF',                       // Primary card surface
-    elevated: '#FFF7EF',                   // Slightly tinted elevation
-    subtle: '#FFF3EC',                     // Soft tinted panels
+    elevated: '#FFFFFF',                   // Same as card for light mode (nested cards stay white)
+    subtle: '#FFFFFF',                     // Same as card for light mode
     tint: 'rgba(255, 107, 74, 0.08)',      // Coral wash for accents
   },
 
@@ -77,6 +77,80 @@ export const colors = {
     scrim: 'rgba(45, 45, 45, 0.45)',
     navigation: '#000000',
     scrimTransparent: 'rgba(45, 45, 45, 0)',
+  },
+};
+
+// ============================================================================
+// DARK MODE COLORS
+// ============================================================================
+
+export const darkColors = {
+  // Primary background (true black base)
+  primary: {
+    bg: '#000000',         // True black background
+    light: '#1A1A1A',      // Slightly lighter for tab bar/elevated areas
+    dark: '#000000',       // Same as bg for consistency
+  },
+
+  // Surface colors for cards and elevated elements (progressively lighter)
+  surface: {
+    card: '#1C1C1E',                       // Dark gray for main cards (level 1)
+    elevated: '#2C2C2E',                   // Lighter gray for nested elements (level 2)
+    subtle: '#1C1C1E',                     // Same as card for subtle panels
+    tint: 'rgba(255, 107, 74, 0.15)',      // Coral wash for accents
+  },
+
+  // Neutral utility colors
+  neutral: {
+    charcoal: '#E5E5EA',   // Light gray for text
+    gray200: '#3A3A3C',    // Dark gray
+    gray400: '#48484A',    // Medium gray
+    gray600: '#8E8E93',    // Lighter gray
+    espresso: '#F2F2F7',   // Light cream (inverted)
+  },
+
+  // Vibrant accent system (kept similar for brand consistency)
+  accent: {
+    orange: '#FF6B4A',      // Primary orange energy
+    red: '#FF4581',         // Pink-red complement
+    orangeLight: '#FFB88C', // Lighter orange (hover, subtle)
+    success: '#30D158',     // Bright green for dark mode
+    warning: '#FF9F0A',     // Bright orange (caution)
+    info: '#64D2FF',        // Bright blue for dark mode
+    primary: '#FF6B4A',     // Primary CTA accent
+    gradientStart: '#FF6B4A', // Solid orange gradient start
+    gradientEnd: '#FF6B4A',   // Solid orange gradient end
+  },
+
+  // Glassmorphism effect colors (on dark background)
+  glass: {
+    light: 'rgba(255, 255, 255, 0.10)',    // Subtle glass effect
+    lighter: 'rgba(255, 255, 255, 0.06)',  // Very transparent
+    lightest: 'rgba(255, 255, 255, 0.04)', // Ultra subtle
+    dark: 'rgba(0, 0, 0, 0.4)',            // Dark overlay
+  },
+
+  // Text hierarchy (white/light on dark background)
+  text: {
+    primary: '#FFFFFF',    // Pure white for main text
+    secondary: '#8E8E93',  // Medium gray (secondary info)
+    tertiary: '#636366',   // Muted gray (captions, hints)
+    muted: '#48484A',      // Very muted for inactive states
+    onAccent: '#FFFFFF',   // High-contrast text on accent backgrounds
+  },
+
+  // Borders and dividers
+  border: {
+    light: 'rgba(255, 107, 74, 0.20)',     // Soft coral border
+    medium: 'rgba(255, 69, 129, 0.25)',    // Medium pink-orange border
+    dark: 'rgba(255, 255, 255, 0.15)',     // Light divider
+  },
+
+  // Scrims and overlays
+  overlay: {
+    scrim: 'rgba(0, 0, 0, 0.75)',
+    navigation: '#000000',
+    scrimTransparent: 'rgba(0, 0, 0, 0)',
   },
 };
 

@@ -123,7 +123,8 @@ export const useWorkoutSessionsStore = create<WorkoutSessionsState>((set, get) =
       set({ workouts, isLoading: false });
       console.log('[workoutSessionsStore] Hydrated', workouts.length, 'workouts from Supabase');
     } catch (error) {
-      console.error('[workoutSessionsStore] Failed to hydrate workouts', error);
+      // Silently handle hydration failures - network issues are expected during app startup
+      console.warn('[workoutSessionsStore] Hydration failed, using empty state');
       set({ workouts: [], isLoading: false });
     }
   },

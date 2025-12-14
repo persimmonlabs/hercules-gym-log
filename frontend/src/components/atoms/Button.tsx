@@ -23,6 +23,7 @@ import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 
 import { colors, spacing, radius, typography, sizing, opacity, shadows } from '@/constants/theme';
+import { useTheme } from '@/hooks/useTheme';
 import { springBouncy, buttonPressAnimation } from '@/constants/animations';
 
 const clamp = (value: number, min: number, max: number): number => {
@@ -108,6 +109,7 @@ export const Button: React.FC<ButtonProps> = ({
   loading = false,
   textColor,
 }) => {
+  const { theme } = useTheme();
   const scale = useSharedValue(1);
 
   // Animation styles
@@ -138,46 +140,70 @@ export const Button: React.FC<ButtonProps> = ({
     scale.value = withSpring(1, springBouncy);
   }, [disabled, loading, scale]);
 
-  const textVariantStyle = {
-    primary: styles.primaryText,
-    secondary: styles.secondaryText,
-    ghost: styles.ghostText,
-    danger: styles.dangerText,
-  }[variant as Exclude<ButtonVariant, 'light'>];
-
-  const textStyle = [
-    styles.textBase,
-    textSizeStyles[size],
-    variant !== 'light' && textVariantStyle,
-  ].filter(Boolean) as TextStyle[];
-
-  if (textColor) {
-    textStyle.push({ color: textColor });
-  }
-
   const baseButtonStyle = [styles.buttonBase, sizeStyles[size]];
   const disabledStyle = disabled ? styles.disabled : undefined;
 
   let content: React.ReactNode;
 
+  // Dynamic variant styles based on theme
+  const dynamicVariantStyles: Record<Exclude<ButtonVariant, 'primary'>, ViewStyle> = {
+    secondary: {
+      backgroundColor: theme.surface.tint,
+      borderWidth: 1,
+      borderColor: theme.border.light,
+      borderRadius: radius.lg,
+    },
+    ghost: {
+      backgroundColor: theme.surface.card,
+      borderWidth: 1.5,
+      borderColor: theme.accent.orange,
+      borderRadius: radius.lg,
+    },
+    danger: {
+      backgroundColor: theme.accent.red,
+      borderRadius: radius.lg,
+    },
+    light: {
+      backgroundColor: theme.surface.card,
+      borderRadius: radius.lg,
+      borderWidth: 1,
+      borderColor: theme.border.light,
+    },
+  };
+
+  // Dynamic text colors based on theme
+  const dynamicTextStyles: Record<Exclude<ButtonVariant, 'light'>, TextStyle> = {
+    primary: { color: theme.text.onAccent },
+    secondary: { color: theme.text.primary },
+    ghost: { color: theme.accent.orange },
+    danger: { color: theme.text.onAccent },
+  };
+
+  const textVariantStyle = variant !== 'light' ? dynamicTextStyles[variant as Exclude<ButtonVariant, 'light'>] : undefined;
+
+  const finalTextStyle = [
+    styles.textBase,
+    textSizeStyles[size],
+    textVariantStyle,
+  ].filter(Boolean) as TextStyle[];
+
+  if (textColor) {
+    finalTextStyle.push({ color: textColor });
+  }
+
   if (variant === 'primary') {
     content = (
       <LinearGradient
-        colors={[colors.accent.gradientStart, colors.accent.gradientEnd]}
+        colors={[theme.accent.gradientStart, theme.accent.gradientEnd]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={[...baseButtonStyle, styles.primaryButton, contentStyle as ViewStyle, disabledStyle]}
       >
-        <RNText style={textStyle}>{loading ? '...' : label}</RNText>
+        <RNText style={finalTextStyle}>{loading ? '...' : label}</RNText>
       </LinearGradient>
     );
   } else {
-    const variantStyle = {
-      secondary: styles.secondaryButton,
-      ghost: styles.ghostButton,
-      danger: styles.dangerButton,
-      light: styles.lightButton,
-    }[variant];
+    const variantStyle = dynamicVariantStyles[variant];
 
     const variantShadow =
       variant === 'danger'
@@ -198,8 +224,8 @@ export const Button: React.FC<ButtonProps> = ({
             {letters.map((char, index) => {
               const ratio = letters.length === 1 ? 0 : index / denominator;
               const letterColor = interpolateHexColor(
-                colors.accent.gradientStart,
-                colors.accent.gradientEnd,
+                theme.accent.gradientStart,
+                theme.accent.gradientEnd,
                 ratio
               );
 
@@ -221,7 +247,7 @@ export const Button: React.FC<ButtonProps> = ({
         );
       }
 
-      return <RNText style={textStyle}>{loading ? '...' : label}</RNText>;
+      return <RNText style={finalTextStyle}>{loading ? '...' : label}</RNText>;
     };
 
     content = (

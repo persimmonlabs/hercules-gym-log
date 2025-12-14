@@ -19,12 +19,15 @@ import { useAnalyticsData } from '@/hooks/useAnalyticsData';
 import { usePremiumStatus } from '@/hooks/usePremiumStatus';
 import { colors, spacing } from '@/constants/theme';
 import { TIME_RANGE_SUBTITLES } from '@/types/analytics';
+import { useSettingsStore } from '@/store/settingsStore';
 
 const VolumeAnalyticsScreen: React.FC = () => {
   const router = useRouter();
   const [timeRange, setTimeRange] = React.useState<'week' | 'month' | 'year' | 'all'>('week');
   const { weeklyVolume } = useAnalyticsData({ timeRange });
   const { isPremium } = usePremiumStatus();
+  const { getWeightUnit } = useSettingsStore();
+  const weightUnit = getWeightUnit();
 
   const handleBackPress = () => {
     router.replace('/(tabs)/profile');
@@ -66,7 +69,7 @@ const VolumeAnalyticsScreen: React.FC = () => {
           </Text>
           <TieredBarChart
             data={weeklyVolume.high}
-            unit="lbs"
+            unit={weightUnit}
           />
         </View>
       </SurfaceCard>
@@ -87,7 +90,7 @@ const VolumeAnalyticsScreen: React.FC = () => {
             </Text>
             <TieredBarChart
               data={weeklyVolume.byBodyPart.upper}
-              unit="lbs"
+              unit={weightUnit}
               onBarPress={handleMusclePress}
             />
           </View>
@@ -110,7 +113,7 @@ const VolumeAnalyticsScreen: React.FC = () => {
             </Text>
             <TieredBarChart
               data={weeklyVolume.byBodyPart.lower}
-              unit="lbs"
+              unit={weightUnit}
               onBarPress={handleMusclePress}
             />
           </View>
@@ -133,7 +136,7 @@ const VolumeAnalyticsScreen: React.FC = () => {
             </Text>
             <TieredBarChart
               data={weeklyVolume.byBodyPart.core}
-              unit="lbs"
+              unit={weightUnit}
               onBarPress={handleMusclePress}
             />
           </View>

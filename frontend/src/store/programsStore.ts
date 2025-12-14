@@ -137,8 +137,9 @@ export const useProgramsStore = create<ProgramsState>((set, get) => ({
 
       console.log('[programsStore] Hydrated successfully from Supabase');
     } catch (error) {
-      console.error('[programsStore] Failed to hydrate:', error);
-      set({ isLoading: false });
+      // Silently handle hydration failures - network issues are expected during app startup
+      console.warn('[programsStore] Hydration failed, using empty state');
+      set({ userPrograms: [], activePlanId: null, activeRotation: null, isLoading: false });
     }
   },
 

@@ -17,7 +17,8 @@ import Animated, {
   Easing,
 } from 'react-native-reanimated';
 
-import { colors, typography } from '@/constants/theme';
+import { typography } from '@/constants/theme';
+import { useTheme } from '@/hooks/useTheme';
 import { textFadeInAnimation } from '@/constants/animations';
 
 // ============================================================================
@@ -72,6 +73,7 @@ export const Text: React.FC<TextComponentProps> = ({
   style,
   ...props
 }) => {
+  const { theme } = useTheme();
   const opacity = useSharedValue(fadeIn ? 0 : 1);
 
   // Fade-in animation on mount
@@ -94,17 +96,17 @@ export const Text: React.FC<TextComponentProps> = ({
     fontWeight: typography[variant].fontWeight as any,
   };
 
-  // Get color
+  // Get color based on current theme
   const colorMap: Record<TextColor, string> = {
-    primary: colors.text.primary,
-    secondary: colors.text.secondary,
-    tertiary: colors.text.tertiary,
-    neutral: colors.neutral.gray600,
-    orange: colors.accent.orange,
-    red: colors.accent.red,
-    success: colors.accent.success,
-    warning: colors.accent.warning,
-    onAccent: colors.text.onAccent,
+    primary: theme.text.primary,
+    secondary: theme.text.secondary,
+    tertiary: theme.text.tertiary,
+    neutral: theme.neutral.gray600,
+    orange: theme.accent.orange,
+    red: theme.accent.red,
+    success: theme.accent.success,
+    warning: theme.accent.warning,
+    onAccent: theme.text.onAccent,
   };
 
   const textColor = colorMap[color];

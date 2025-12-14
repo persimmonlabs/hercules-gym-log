@@ -3,17 +3,19 @@ import { Tabs } from 'expo-router';
 import { View } from 'react-native';
 
 import { CustomTabBar } from '@/components/molecules/CustomTabBar';
-import { colors } from '@/constants/theme';
+import { useTheme } from '@/hooks/useTheme';
 
 export default function TabLayout() {
+  const { theme } = useTheme();
+
   return (
-    <View style={styles.container}>
+    <View style={{ flex: 1, backgroundColor: theme.primary.bg }}>
       <Tabs
         tabBar={(props) => <CustomTabBar {...props} />}
         screenOptions={{
           headerShown: false,
           tabBarStyle: {
-            backgroundColor: colors.primary.bg,
+            backgroundColor: theme.primary.bg,
             borderTopWidth: 0,
             elevation: 0,
             shadowOpacity: 0,
@@ -117,9 +119,3 @@ export default function TabLayout() {
   );
 }
 
-const styles = {
-  container: {
-    flex: 1,
-    backgroundColor: colors.primary.bg,
-  },
-} as const;

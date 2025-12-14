@@ -8,8 +8,9 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
 import { View } from 'react-native';
 
-import { colors, sizing } from '@/constants/theme';
+import { colors, darkColors, sizing } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import { useTheme } from '@/hooks/useTheme';
 import { AuthProvider, useAuth } from '@/providers/AuthProvider';
 import { PlanBuilderProvider } from '@/providers/PlanBuilderProvider';
 import { ProgramBuilderProvider } from '@/providers/ProgramBuilderProvider';
@@ -42,19 +43,28 @@ const useProtectedRoute = (session: any, isLoading: boolean) => {
 };
 
 const RootLayout: React.FC = () => {
-  const colorScheme = useColorScheme();
-  const isDarkMode = colorScheme === 'dark';
+  const { colorScheme, isDarkMode, theme } = useTheme();
 
   const statusBarStyle: 'light' | 'dark' = isDarkMode ? 'light' : 'dark';
   const statusBarBackgroundColor = Platform.OS === 'android'
     ? 'transparent'
-    : (isDarkMode ? colors.text.primary : colors.primary.bg);
-  const androidStatusBarStyle: 'light' | 'dark' = 'dark';
+    : theme.primary.bg;
+  const androidStatusBarStyle: 'light' | 'dark' = isDarkMode ? 'light' : 'dark';
 
   const navigationTheme = useMemo(
     () => {
-      if (colorScheme === 'dark') {
-        return DarkTheme;
+      if (isDarkMode) {
+        return {
+          ...DarkTheme,
+          colors: {
+            ...DarkTheme.colors,
+            background: darkColors.primary.bg,
+            card: darkColors.primary.bg,
+            text: darkColors.text.primary,
+            border: darkColors.border.dark,
+            primary: darkColors.accent.primary,
+          },
+        };
       }
 
       return {
@@ -63,10 +73,13 @@ const RootLayout: React.FC = () => {
           ...DefaultTheme.colors,
           background: colors.primary.bg,
           card: colors.primary.bg,
+          text: colors.text.primary,
+          border: colors.border.dark,
+          primary: colors.accent.primary,
         },
       };
     },
-    [colorScheme],
+    [isDarkMode],
   );
 
   useEffect(() => {
@@ -81,21 +94,21 @@ const RootLayout: React.FC = () => {
 
       try {
         if (!Number.isNaN(androidVersion) && androidVersion < 29) {
-          await NavigationBar.setBackgroundColorAsync(colors.primary.bg);
+          await NavigationBar.setBackgroundColorAsync(theme.primary.bg);
         }
       } catch (error) {
         console.warn('[NavigationBar] Unable to set background color', error);
       }
 
       try {
-        await NavigationBar.setButtonStyleAsync('dark');
+        await NavigationBar.setButtonStyleAsync(isDarkMode ? 'light' : 'dark');
       } catch (error) {
         console.warn('[NavigationBar] Unable to set button style', error);
       }
     };
 
     void configureNavigationBar();
-  }, [colorScheme]);
+  }, [isDarkMode, theme.primary.bg]);
 
   return (
     <AuthProvider>
@@ -104,6 +117,7 @@ const RootLayout: React.FC = () => {
           <RootLayoutNav
             navigationTheme={navigationTheme}
             isDarkMode={isDarkMode}
+            theme={theme}
             statusBarBackgroundColor={statusBarBackgroundColor}
             statusBarStyle={statusBarStyle}
             androidStatusBarStyle={androidStatusBarStyle}
@@ -118,6 +132,7 @@ const RootLayout: React.FC = () => {
 const RootLayoutNav = ({
   navigationTheme,
   isDarkMode,
+  theme,
   statusBarBackgroundColor,
   statusBarStyle,
   androidStatusBarStyle
@@ -139,15 +154,15 @@ const RootLayoutNav = ({
 
   if (isLoading || (!session && !inAuthGroup)) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.primary.bg }}>
-        <ActivityIndicator size="large" color={colors.accent.primary} />
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: theme.primary.bg }}>
+        <ActivityIndicator size="large" color={theme.accent.primary} />
       </View>
     );
   }
 
   return (
     <GestureHandlerRootView
-      style={[styles.root, isDarkMode ? styles.rootDark : styles.rootLight]}
+      style={[styles.root, { backgroundColor: theme.primary.bg }]}
     >
       <ThemeProvider value={navigationTheme}>
         <Stack
@@ -222,11 +237,5 @@ export default RootLayout;
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-  },
-  rootLight: {
-    backgroundColor: colors.primary.bg,
-  },
-  rootDark: {
-    backgroundColor: colors.text.primary,
   },
 });

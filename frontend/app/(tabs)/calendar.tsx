@@ -10,7 +10,8 @@ import { Text } from '@/components/atoms/Text';
 import { MonthlyCalendar } from '@/components/molecules/MonthlyCalendar';
 import { ScreenHeader } from '@/components/molecules/ScreenHeader';
 import { TabSwipeContainer } from '@/components/templates/TabSwipeContainer';
-import { colors, radius, spacing } from '@/constants/theme';
+import { spacing } from '@/constants/theme';
+import { useTheme } from '@/hooks/useTheme';
 import { formatDateToLocalISO, getDeviceCurrentDate, parseLocalISODate } from '@/utils/date';
 import { formatWorkoutTitle, getWorkoutSummary } from '@/utils/workout';
 import { useWorkoutSessionsStore, type WorkoutSessionsState } from '@/store/workoutSessionsStore';
@@ -29,6 +30,7 @@ const getWorkoutLocalISO = (workout: WorkoutSessionsState['workouts'][number]): 
 };
 
 const CalendarScreen: React.FC = () => {
+  const { theme } = useTheme();
   const router = useRouter();
   const [selectedDate, setSelectedDate] = useState<string>(() => formatDateToLocalISO(getDeviceCurrentDate()));
   const [currentMonth, setCurrentMonth] = useState<string>(() => formatDateToLocalISO(getDeviceCurrentDate()));
@@ -123,7 +125,7 @@ const CalendarScreen: React.FC = () => {
   );
 
   return (
-    <TabSwipeContainer contentContainerStyle={styles.contentContainer}>
+    <TabSwipeContainer contentContainerStyle={[styles.contentContainer, { backgroundColor: theme.primary.bg }]}>
       <ScreenHeader
         title="Calendar"
         subtitle="Track workouts and build consistency."
@@ -185,7 +187,6 @@ export default CalendarScreen;
 const styles = StyleSheet.create({
   contentContainer: {
     flexGrow: 1,
-    backgroundColor: colors.primary.bg,
     paddingTop: spacing.xl,
     paddingHorizontal: spacing.md,
     paddingBottom: spacing.sm,

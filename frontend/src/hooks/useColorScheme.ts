@@ -1,12 +1,20 @@
 /**
  * useColorScheme hook
- * Wraps React Native's useColorScheme to provide color scheme detection.
+ * Returns the resolved color scheme based on user preference and system settings.
+ * Uses the settings store for theme preference.
  */
 
 import { useColorScheme as useRNColorScheme, type ColorSchemeName } from 'react-native';
+import { useSettingsStore } from '@/store/settingsStore';
 
 export function useColorScheme(): NonNullable<ColorSchemeName> {
-  const colorScheme = useRNColorScheme();
-  // Default to 'light' if color scheme is null/undefined
-  return colorScheme ?? 'light';
+  const themePreference = useSettingsStore((state) => state.themePreference);
+  const systemColorScheme = useRNColorScheme();
+
+  // Resolve the color scheme based on preference
+  if (themePreference === 'system') {
+    return systemColorScheme ?? 'light';
+  }
+
+  return themePreference;
 }

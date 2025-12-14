@@ -115,6 +115,7 @@ async function withRetry<T>(
 /**
  * Wraps a Supabase operation with retry logic and graceful error handling
  * Returns null/empty array on failure instead of throwing (for non-critical operations)
+ * Silently handles network errors to prevent user-facing error messages
  */
 async function withGracefulRetry<T>(
   fn: () => Promise<T>,
@@ -125,7 +126,13 @@ async function withGracefulRetry<T>(
   try {
     return await withRetry(fn, options);
   } catch (error) {
-    console.error(`[Supabase] ${operationName} failed after retries:`, error);
+    // Use console.warn for network errors to avoid alarming error messages
+    // These are expected during app startup or poor connectivity
+    if (isNetworkError(error)) {
+      console.warn(`[Supabase] ${operationName} failed (network issue), using fallback`);
+    } else {
+      console.warn(`[Supabase] ${operationName} failed after retries, using fallback`);
+    }
     return fallback;
   }
 }
@@ -137,31 +144,34 @@ async function withGracefulRetry<T>(
 export async function fetchWorkoutSessions(userId: string): Promise<Workout[]> {
     console.log('[Supabase] Fetching workout sessions for user:', userId);
     
-    return withRetry(async () => {
-        const { data, error } = await supabaseClient
-            .from('workout_sessions')
-            .select('*')
-            .eq('user_id', userId)
-            .order('date', { ascending: false });
+    return withGracefulRetry(
+        async () => {
+            const { data, error } = await supabaseClient
+                .from('workout_sessions')
+                .select('*')
+                .eq('user_id', userId)
+                .order('date', { ascending: false });
 
-        if (error) {
-            console.error('[Supabase] Error fetching workout sessions:', error);
-            throw error;
-        }
+            if (error) {
+                throw error;
+            }
 
-        console.log('[Supabase] Successfully fetched', data?.length ?? 0, 'workout sessions');
+            console.log('[Supabase] Successfully fetched', data?.length ?? 0, 'workout sessions');
 
-        // Transform from DB format to app format
-        return (data || []).map((row) => ({
-            id: row.id,
-            planId: row.plan_id,
-            date: row.date,
-            startTime: row.start_time,
-            endTime: row.end_time,
-            duration: row.duration,
-            exercises: row.exercises || [],
-        }));
-    });
+            // Transform from DB format to app format
+            return (data || []).map((row) => ({
+                id: row.id,
+                planId: row.plan_id,
+                date: row.date,
+                startTime: row.start_time,
+                endTime: row.end_time,
+                duration: row.duration,
+                exercises: row.exercises || [],
+            }));
+        },
+        [], // fallback to empty array
+        'fetchWorkoutSessions'
+    );
 }
 
 export async function createWorkoutSession(userId: string, workout: Workout): Promise<string> {
@@ -264,70 +274,72 @@ export async function deleteWorkoutSession(userId: string, workoutId: string): P
 export async function fetchUserPlans(userId: string): Promise<UserPlan[]> {
     console.log('[Supabase] Fetching user plans for user:', userId);
     
-    return withRetry(async () => {
-        const { data: plansData, error: plansError } = await supabaseClient
-            .from('plans')
-            .select('*')
-            .eq('user_id', userId)
-            .order('created_at', { ascending: false });
+    return withGracefulRetry(
+        async () => {
+            const { data: plansData, error: plansError } = await supabaseClient
+                .from('plans')
+                .select('*')
+                .eq('user_id', userId)
+                .order('created_at', { ascending: false });
 
-        if (plansError) {
-            console.error('[Supabase] Error fetching plans:', plansError);
-            throw plansError;
-        }
-
-        if (!plansData || plansData.length === 0) {
-            console.log('[Supabase] No plans found for user');
-            return [];
-        }
-
-        console.log('[Supabase] Found', plansData.length, 'plans, fetching workouts...');
-
-        // Fetch workouts for all plans
-        const planIds = plansData.map((p) => p.id);
-        const { data: workoutsData, error: workoutsError } = await supabaseClient
-            .from('plan_workouts')
-            .select('*')
-            .in('plan_id', planIds)
-            .order('order_index', { ascending: true });
-
-        if (workoutsError) {
-            console.error('[Supabase] Error fetching plan workouts:', workoutsError);
-            throw workoutsError;
-        }
-
-        console.log('[Supabase] Successfully fetched', workoutsData?.length ?? 0, 'plan workouts');
-
-        // Group workouts by plan_id
-        const workoutsByPlan = (workoutsData || []).reduce((acc, workout) => {
-            if (!acc[workout.plan_id]) {
-                acc[workout.plan_id] = [];
+            if (plansError) {
+                throw plansError;
             }
-            acc[workout.plan_id].push({
-                id: workout.id,
-                name: workout.name,
-                exercises: workout.exercises || [],
-                sourceWorkoutId: workout.source_workout_id,
-            });
-            return acc;
-        }, {} as Record<string, PlanWorkout[]>);
 
-        // Combine plans with their workouts
-        return plansData.map((plan) => ({
-            id: plan.id,
-            name: plan.name,
-            workouts: workoutsByPlan[plan.id] || [],
-            metadata: plan.metadata || {},
-            scheduleType: plan.schedule_type,
-            schedule: plan.schedule_config,
-            isPremade: false,
-            sourceId: plan.source_id,
-            createdAt: plan.created_at,
-            modifiedAt: plan.updated_at,
-            is_active: plan.is_active || false,
-            rotation_state: plan.rotation_state || null,
-        }));
-    });
+            if (!plansData || plansData.length === 0) {
+                console.log('[Supabase] No plans found for user');
+                return [];
+            }
+
+            console.log('[Supabase] Found', plansData.length, 'plans, fetching workouts...');
+
+            // Fetch workouts for all plans
+            const planIds = plansData.map((p) => p.id);
+            const { data: workoutsData, error: workoutsError } = await supabaseClient
+                .from('plan_workouts')
+                .select('*')
+                .in('plan_id', planIds)
+                .order('order_index', { ascending: true });
+
+            if (workoutsError) {
+                throw workoutsError;
+            }
+
+            console.log('[Supabase] Successfully fetched', workoutsData?.length ?? 0, 'plan workouts');
+
+            // Group workouts by plan_id
+            const workoutsByPlan = (workoutsData || []).reduce((acc, workout) => {
+                if (!acc[workout.plan_id]) {
+                    acc[workout.plan_id] = [];
+                }
+                acc[workout.plan_id].push({
+                    id: workout.id,
+                    name: workout.name,
+                    exercises: workout.exercises || [],
+                    sourceWorkoutId: workout.source_workout_id,
+                });
+                return acc;
+            }, {} as Record<string, PlanWorkout[]>);
+
+            // Combine plans with their workouts
+            return plansData.map((plan) => ({
+                id: plan.id,
+                name: plan.name,
+                workouts: workoutsByPlan[plan.id] || [],
+                metadata: plan.metadata || {},
+                scheduleType: plan.schedule_type,
+                schedule: plan.schedule_config,
+                isPremade: false,
+                sourceId: plan.source_id,
+                createdAt: plan.created_at,
+                modifiedAt: plan.updated_at,
+                is_active: plan.is_active || false,
+                rotation_state: plan.rotation_state || null,
+            }));
+        },
+        [], // fallback to empty array
+        'fetchUserPlans'
+    );
 }
 
 export async function createUserPlan(userId: string, plan: UserPlan): Promise<string> {
@@ -490,28 +502,31 @@ export interface WorkoutTemplateDB {
 export async function fetchWorkoutTemplates(userId: string): Promise<WorkoutTemplateDB[]> {
     console.log('[Supabase] Fetching workout templates for user:', userId);
     
-    return withRetry(async () => {
-        const { data, error } = await supabaseClient
-            .from('workout_templates')
-            .select('*')
-            .eq('user_id', userId)
-            .order('created_at', { ascending: false });
+    return withGracefulRetry(
+        async () => {
+            const { data, error } = await supabaseClient
+                .from('workout_templates')
+                .select('*')
+                .eq('user_id', userId)
+                .order('created_at', { ascending: false });
 
-        if (error) {
-            console.error('[Supabase] Error fetching workout templates:', error);
-            throw error;
-        }
+            if (error) {
+                throw error;
+            }
 
-        console.log('[Supabase] Successfully fetched', data?.length ?? 0, 'workout templates');
+            console.log('[Supabase] Successfully fetched', data?.length ?? 0, 'workout templates');
 
-        return (data || []).map((row) => ({
-            id: row.id,
-            name: row.name,
-            exercises: row.exercises || [],
-            created_at: row.created_at,
-            updated_at: row.updated_at,
-        }));
-    });
+            return (data || []).map((row) => ({
+                id: row.id,
+                name: row.name,
+                exercises: row.exercises || [],
+                created_at: row.created_at,
+                updated_at: row.updated_at,
+            }));
+        },
+        [], // fallback to empty array
+        'fetchWorkoutTemplates'
+    );
 }
 
 export async function createWorkoutTemplate(
@@ -599,29 +614,32 @@ export interface ScheduleDB {
 export async function fetchSchedules(userId: string): Promise<ScheduleDB[]> {
     console.log('[Supabase] Fetching schedules for user:', userId);
     
-    return withRetry(async () => {
-        const { data, error } = await supabaseClient
-            .from('schedules')
-            .select('*')
-            .eq('user_id', userId)
-            .order('created_at', { ascending: false });
+    return withGracefulRetry(
+        async () => {
+            const { data, error } = await supabaseClient
+                .from('schedules')
+                .select('*')
+                .eq('user_id', userId)
+                .order('created_at', { ascending: false });
 
-        if (error) {
-            console.error('[Supabase] Error fetching schedules:', error);
-            throw error;
-        }
+            if (error) {
+                throw error;
+            }
 
-        console.log('[Supabase] Successfully fetched', data?.length ?? 0, 'schedules');
+            console.log('[Supabase] Successfully fetched', data?.length ?? 0, 'schedules');
 
-        return (data || []).map((row) => ({
-            id: row.id,
-            name: row.name,
-            schedule_data: row.schedule_data || {},
-            is_active: row.is_active || false,
-            created_at: row.created_at,
-            updated_at: row.updated_at,
-        }));
-    });
+            return (data || []).map((row) => ({
+                id: row.id,
+                name: row.name,
+                schedule_data: row.schedule_data || {},
+                is_active: row.is_active || false,
+                created_at: row.created_at,
+                updated_at: row.updated_at,
+            }));
+        },
+        [], // fallback to empty array
+        'fetchSchedules'
+    );
 }
 
 export async function createSchedule(

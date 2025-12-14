@@ -14,6 +14,7 @@ import { ChartWrapper } from '@/components/atoms/ChartWrapper';
 import { colors, spacing, radius } from '@/constants/theme';
 import { useAnalyticsData } from '@/hooks/useAnalyticsData';
 import { TIME_RANGE_SUBTITLES } from '@/types/analytics';
+import { useSettingsStore } from '@/store/settingsStore';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const CHART_WIDTH = SCREEN_WIDTH - spacing.xl * 2 - spacing.md * 2;
@@ -25,6 +26,7 @@ interface SimpleVolumeChartProps {
 
 export const SimpleVolumeChart: React.FC<SimpleVolumeChartProps> = ({ timeRange = 'week' }) => {
   const { weeklyVolume, hasFilteredData } = useAnalyticsData({ timeRange });
+  const { formatWeight } = useSettingsStore();
   const [selectedBar, setSelectedBar] = useState<{ label: string; value: number } | null>(null);
 
   const data = weeklyVolume.high;
@@ -131,7 +133,7 @@ export const SimpleVolumeChart: React.FC<SimpleVolumeChartProps> = ({ timeRange 
           {selectedBar && (
             <View style={styles.tooltip}>
               <Text variant="caption" color="primary">
-                {selectedBar.label.replace('\n', ' ')}: {Math.round(selectedBar.value).toLocaleString()} lbs
+                {selectedBar.label.replace('\n', ' ')}: {formatWeight(selectedBar.value)}
               </Text>
             </View>
           )}

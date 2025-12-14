@@ -7,7 +7,8 @@ import { Text } from '@/components/atoms/Text';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { SurfaceCard } from '@/components/atoms/SurfaceCard';
 import { TabSwipeContainer } from '@/components/templates/TabSwipeContainer';
-import { colors, radius, sizing, spacing } from '@/constants/theme';
+import { radius, sizing, spacing } from '@/constants/theme';
+import { useTheme } from '@/hooks/useTheme';
 import { usePlansStore, type Plan, type PlansState } from '@/store/plansStore';
 import { useSessionStore } from '@/store/sessionStore';
 import type { WorkoutExercise } from '@/types/workout';
@@ -21,7 +22,6 @@ const styles = StyleSheet.create({
     minHeight: '100%',
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: colors.primary.bg,
     paddingHorizontal: spacing.md,
     paddingBottom: spacing.sm,
     paddingTop: spacing['2xl'],
@@ -58,7 +58,6 @@ const styles = StyleSheet.create({
   },
   planCard: {
     borderRadius: radius.lg,
-    backgroundColor: colors.surface.card,
   },
   planCardContent: {
     gap: spacing.xs,
@@ -66,6 +65,7 @@ const styles = StyleSheet.create({
 });
 
 const WorkoutScreen: React.FC = () => {
+  const { theme } = useTheme();
   const [showPlansList, setShowPlansList] = useState<boolean>(false);
   const plans = usePlansStore((state: PlansState) => state.plans);
   const startSession = useSessionStore((state) => state.startSession);
@@ -136,7 +136,7 @@ const WorkoutScreen: React.FC = () => {
       {showPlansList ? (
         <View style={styles.topBar}>
           <Pressable style={styles.backIconButton} onPress={handleBack} hitSlop={spacing.sm}>
-            <IconSymbol name="arrow-back" color={colors.text.primary} size={sizing.iconMD} />
+            <IconSymbol name="arrow-back" color={theme.text.primary} size={sizing.iconMD} />
           </Pressable>
         </View>
       ) : null}

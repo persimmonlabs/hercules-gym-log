@@ -21,6 +21,7 @@ import { GradientText } from '@/components/atoms/GradientText';
 import { ScreenHeader } from '@/components/molecules/ScreenHeader';
 import { TabSwipeContainer } from '@/components/templates/TabSwipeContainer';
 import { colors, spacing, radius, shadows, sizing } from '@/constants/theme';
+import { useTheme } from '@/hooks/useTheme';
 import { MainTabRoute } from '@/constants/navigation';
 import { QuickLinkItem, RecentWorkoutSummary, WeekDayTracker } from '@/types/dashboard';
 import { createWeekTracker } from '@/utils/dashboard';
@@ -161,7 +162,6 @@ const styles = StyleSheet.create({
   backgroundGradient: { flex: 1 },
   container: {
     flex: 1,
-    backgroundColor: colors.primary.bg,
   },
   contentContainer: {
     paddingTop: spacing.xl,
@@ -205,14 +205,8 @@ const styles = StyleSheet.create({
     height: '100%',
     borderRadius: DAY_BUBBLE_RADIUS,
     borderWidth: spacing.xxxs,
-    borderColor: colors.accent.orange,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: colors.surface.card,
-  },
-  dayBubbleBorderWorkout: {
-    borderColor: colors.accent.orange,
-    backgroundColor: colors.accent.orange,
   },
   dayBubbleContent: {
     width: '100%',
@@ -222,17 +216,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     overflow: 'hidden',
   },
-  dayBubbleContentRest: {
-    backgroundColor: colors.surface.card,
-  },
-  dayBubbleContentWorkout: {
-    backgroundColor: colors.accent.orange,
-  },
   dayNumber: {
     textAlign: 'center',
   },
   dayLabel: {
-    color: colors.text.secondary,
     textAlign: 'center',
   },
   dayLabelToday: {
@@ -240,7 +227,6 @@ const styles = StyleSheet.create({
   },
   sectionHeading: { marginBottom: spacing.md },
   todaysPlanCard: {
-    backgroundColor: colors.surface.card,
     borderRadius: radius.lg,
     overflow: 'hidden',
     ...shadows.md,
@@ -383,6 +369,7 @@ const styles = StyleSheet.create({
 });
 
 const DashboardScreen: React.FC = () => {
+  const { theme } = useTheme();
   const { user } = useAuth();
   const workouts = useWorkoutSessionsStore((state: WorkoutSessionsState) => state.workouts);
   const profile = useUserProfileStore((state) => state.profile);
@@ -714,13 +701,13 @@ const DashboardScreen: React.FC = () => {
   return (
     <TabSwipeContainer>
       <LinearGradient
-        colors={[colors.primary.bg, colors.primary.light, colors.primary.bg]}
+        colors={[theme.primary.bg, theme.primary.light, theme.primary.bg]}
         locations={[0, 0.55, 1]}
         start={{ x: 0, y: 0 }}
         end={{ x: 0.8, y: 1 }}
         style={styles.backgroundGradient}
       >
-        <View style={styles.container}>
+        <View style={[styles.container, { backgroundColor: theme.primary.bg }]}>
           <View style={styles.contentContainer}>
             <ScreenHeader
               title={firstName ? `Welcome, ${firstName}!` : 'Welcome!'}
@@ -746,11 +733,19 @@ const DashboardScreen: React.FC = () => {
                       const isWorkoutDay = variant === 'workout';
                       const isToday = day.isToday;
                       const borderStyle = isWorkoutDay
-                        ? [styles.dayBubbleBorder, styles.dayBubbleBorderWorkout]
-                        : styles.dayBubbleBorder;
+                        ? [
+                            styles.dayBubbleBorder,
+                            { backgroundColor: theme.accent.orange, borderColor: theme.accent.orange },
+                          ]
+                        : [
+                            styles.dayBubbleBorder,
+                            { backgroundColor: theme.surface.elevated, borderColor: theme.accent.orange },
+                          ];
                       const contentStyle = [
                         styles.dayBubbleContent,
-                        isWorkoutDay ? styles.dayBubbleContentWorkout : styles.dayBubbleContentRest,
+                        isWorkoutDay
+                          ? { backgroundColor: theme.accent.orange }
+                          : { backgroundColor: theme.surface.elevated },
                       ];
                       const dayNumberColor: 'primary' | 'onAccent' = isWorkoutDay ? 'onAccent' : 'primary';
 
@@ -793,9 +788,9 @@ const DashboardScreen: React.FC = () => {
                   handleTodaysCardPress();
                 }}
               >
-                <Animated.View style={styles.todaysPlanCard}>
+                <Animated.View style={[styles.todaysPlanCard, { backgroundColor: theme.surface.card }]}>
                   <LinearGradient
-                    colors={[colors.accent.gradientStart, colors.accent.gradientEnd]}
+                    colors={[theme.accent.gradientStart, theme.accent.gradientEnd]}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 0, y: 1 }}
                     style={styles.todaysPlanAccentStripe}
@@ -833,7 +828,7 @@ const DashboardScreen: React.FC = () => {
                           >
                             <View style={styles.quickLinkButton}>
                               <LinearGradient
-                                colors={[colors.accent.gradientStart, colors.accent.gradientEnd]}
+                                colors={[theme.accent.gradientStart, theme.accent.gradientEnd]}
                                 start={{ x: 0, y: 0 }}
                                 end={{ x: 1, y: 1 }}
                                 style={styles.planStartButtonGradient}
@@ -868,7 +863,7 @@ const DashboardScreen: React.FC = () => {
                       </SurfaceCard>
                     ) : todaysCardState.variant === 'rest' ? (
                       <>
-                        <Text variant="heading2" color="primary">
+                        <Text variant="heading3" color="primary">
                           Rest Day
                         </Text>
                         <Text variant="body" color="secondary">
@@ -937,7 +932,7 @@ const DashboardScreen: React.FC = () => {
                           </View>
                           <View style={styles.quickLinkButton}>
                             <LinearGradient
-                              colors={[colors.accent.gradientStart, colors.accent.gradientEnd]}
+                              colors={[theme.accent.gradientStart, theme.accent.gradientEnd]}
                               start={{ x: 0, y: 0 }}
                               end={{ x: 1, y: 1 }}
                               style={{

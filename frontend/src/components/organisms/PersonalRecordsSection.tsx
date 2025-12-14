@@ -7,6 +7,7 @@ import { Text } from '@/components/atoms/Text';
 import { HorizontalAccentBar } from '@/components/atoms/HorizontalAccentBar';
 import { PRCard } from '@/components/molecules/PRCard';
 import { colors, spacing, radius, shadows } from '@/constants/theme';
+import { useTheme } from '@/hooks/useTheme';
 import { useWorkoutSessionsStore } from '@/store/workoutSessionsStore';
 import type { Workout } from '@/types/workout';
 import exercisesData from '@/data/exercises.json';
@@ -18,6 +19,7 @@ const DEFAULT_TRACKED_EXERCISES = [
 ];
 
 export const PersonalRecordsSection: React.FC = () => {
+  const { theme } = useTheme();
   const workouts = useWorkoutSessionsStore((state) => state.workouts);
   const [trackedExercises, setTrackedExercises] = useState<string[]>(DEFAULT_TRACKED_EXERCISES);
   const [isModalVisible, setIsModalVisible] = useState(false);
@@ -199,7 +201,7 @@ export const PersonalRecordsSection: React.FC = () => {
                     onPress={() => handleSelectNewExercise(item.name)}
                   >
                     <Text variant="body">{item.name}</Text>
-                    <Ionicons name="chevron-forward" size={20} color={colors.text.tertiary} />
+                    <Ionicons name="chevron-forward" size={20} color={theme.text.tertiary} />
                   </TouchableOpacity>
                 )}
                 style={styles.exerciseList}

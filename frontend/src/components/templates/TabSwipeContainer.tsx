@@ -8,7 +8,8 @@ import React, { ReactNode, useMemo } from 'react';
 import { Platform, ScrollView, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { colors, sizing, spacing, zIndex } from '@/constants/theme';
+import { sizing, spacing, zIndex } from '@/constants/theme';
+import { useTheme } from '@/hooks/useTheme';
 
 interface TabSwipeContainerProps {
   /** Screen content */
@@ -32,6 +33,7 @@ export const TabSwipeContainer: React.FC<TabSwipeContainerProps> = ({
   contentContainerStyle,
   showsVerticalScrollIndicator = false,
 }) => {
+  const { theme } = useTheme();
   const insets = useSafeAreaInsets();
 
   const paddingBottom = useMemo<number>(
@@ -45,10 +47,10 @@ export const TabSwipeContainer: React.FC<TabSwipeContainerProps> = ({
   );
 
   return (
-    <View style={[styles.root, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
-      <View style={styles.container}>
+    <View style={[styles.root, { paddingTop: insets.top, paddingBottom: insets.bottom, backgroundColor: theme.primary.bg }]}>
+      <View style={[styles.container, { backgroundColor: theme.primary.bg }]}>
         <ScrollView
-          style={styles.scrollView}
+          style={[styles.scrollView, { backgroundColor: theme.primary.bg }]}
           scrollEventThrottle={16}
           nestedScrollEnabled
           decelerationRate={momentumDeceleration}
@@ -68,13 +70,11 @@ export const TabSwipeContainer: React.FC<TabSwipeContainerProps> = ({
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: colors.primary.bg,
   },
   container: {
     flex: 1,
-    backgroundColor: colors.primary.bg,
   },
   scrollView: {
-    backgroundColor: colors.primary.bg,
+    flex: 1,
   },
 });

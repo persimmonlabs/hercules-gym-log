@@ -11,7 +11,8 @@ import * as Haptics from 'expo-haptics';
 
 import { Text } from '@/components/atoms/Text';
 import { buttonPressAnimation, springSmooth } from '@/constants/animations';
-import { colors, opacity, radius, spacing } from '@/constants/theme';
+import { opacity, radius, spacing } from '@/constants/theme';
+import { useTheme } from '@/hooks/useTheme';
 
 interface CalendarDayCellProps {
   /** ISO string for the date represented by this cell */
@@ -42,6 +43,7 @@ export const CalendarDayCell: React.FC<CalendarDayCellProps> = ({
   onSelect,
   onLongPress,
 }) => {
+  const { theme } = useTheme();
   const scale = useSharedValue(1);
 
   const handlePress = () => {
@@ -62,22 +64,25 @@ export const CalendarDayCell: React.FC<CalendarDayCellProps> = ({
   const showSelectedTodayMarkerFill = hasMarker && isSelected && isToday;
 
   const dayContainerStyle = useMemo<StyleProp<ViewStyle>>(() => {
-    const states: ViewStyle[] = [styles.dayContainer];
+    const states: ViewStyle[] = [
+      styles.dayContainer,
+      { backgroundColor: theme.surface.elevated, borderColor: theme.border.light },
+    ];
 
     if (isToday) {
-      states.push(styles.todayDayContainer);
+      states.push({ borderColor: theme.accent.orange });
     }
 
     if (showMarkerFill) {
-      states.push(styles.markerDayContainer);
+      states.push({ backgroundColor: theme.accent.orange, borderColor: theme.accent.orange });
     }
 
     if (isSelected) {
-      states.push(styles.selectedDayContainer);
+      states.push({ backgroundColor: theme.surface.elevated });
     }
 
     if (showSelectedTodayMarkerFill) {
-      states.push(styles.selectedTodayMarkerDayContainer);
+      states.push({ backgroundColor: theme.accent.orange, borderColor: theme.accent.orange });
     }
 
     if (!isCurrentMonth) {
@@ -85,7 +90,7 @@ export const CalendarDayCell: React.FC<CalendarDayCellProps> = ({
     }
 
     return states;
-  }, [isCurrentMonth, isSelected, isToday, showMarkerFill, showSelectedTodayMarkerFill]);
+  }, [isCurrentMonth, isSelected, isToday, showMarkerFill, showSelectedTodayMarkerFill, theme]);
 
   const textColor = useMemo(() => {
     if (!isCurrentMonth) {
@@ -166,29 +171,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     gap: 0,
-    backgroundColor: colors.surface.card,
     borderWidth: 2,
-    borderColor: colors.border.light,
     overflow: 'hidden',
-  },
-  todayDayContainer: {
-    borderColor: colors.accent.orange,
-  },
-  markerDayContainer: {
-    backgroundColor: colors.accent.orange,
-    borderColor: colors.accent.orange,
-  },
-  selectedDayContainer: {
-    backgroundColor: colors.surface.subtle,
   },
   outsideMonthDay: {
     opacity: opacity.tertiary,
   },
   todayLabelText: {
-    color: colors.overlay.navigation,
-  },
-  selectedTodayMarkerDayContainer: {
-    backgroundColor: colors.accent.orange,
-    borderColor: colors.accent.orange,
+    // Dynamic color applied inline
   },
 });

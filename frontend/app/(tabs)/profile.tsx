@@ -12,12 +12,15 @@ import { SimpleVolumeChart } from '@/components/molecules/SimpleVolumeChart';
 import { TrainingBalanceCard } from '@/components/molecules/TrainingBalanceCard';
 import { TimeRangeSelector } from '@/components/atoms/TimeRangeSelector';
 import { useAnalyticsData } from '@/hooks/useAnalyticsData';
-import { colors, spacing } from '@/constants/theme';
+import { spacing } from '@/constants/theme';
+import { useTheme } from '@/hooks/useTheme';
 import { TimeRange } from '@/types/analytics';
 import type { CardioStats } from '@/types/analytics';
+import { useSettingsStore } from '@/store/settingsStore';
 
 // Simple cardio stats content component
 const CardioStatsContent: React.FC<{ stats: CardioStats }> = ({ stats }) => {
+  const { formatDistance } = useSettingsStore();
   const { totalDuration, totalDistanceByType } = stats;
   
   // Check if there's any cardio data
@@ -72,7 +75,7 @@ const CardioStatsContent: React.FC<{ stats: CardioStats }> = ({ stats }) => {
                 {exerciseName}
               </Text>
               <Text variant="bodySemibold" color="primary">
-                {distance.toFixed(1)} mi
+                {formatDistance(distance)}
               </Text>
             </View>
           ))}
@@ -82,19 +85,21 @@ const CardioStatsContent: React.FC<{ stats: CardioStats }> = ({ stats }) => {
   );
 };
 
-const styles = StyleSheet.create({
-  contentContainer: {
-    flexGrow: 1,
-    backgroundColor: colors.primary.bg,
-    paddingTop: spacing.xl,
-    paddingHorizontal: spacing.md,
-    paddingBottom: spacing.sm,
-    gap: spacing['2xl'],
-  },
-});
 
 const StatsScreen: React.FC = () => {
   const router = useRouter();
+  const { theme } = useTheme();
+
+  const styles = StyleSheet.create({
+    contentContainer: {
+      flexGrow: 1,
+      backgroundColor: theme.primary.bg,
+      paddingTop: spacing.xl,
+      paddingHorizontal: spacing.md,
+      paddingBottom: spacing.sm,
+      gap: spacing['2xl'],
+    },
+  });
   
   // Independent state for each card
   const [volumeTimeRange, setVolumeTimeRange] = useState<TimeRange>('week');

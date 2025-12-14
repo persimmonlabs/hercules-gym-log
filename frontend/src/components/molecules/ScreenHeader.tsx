@@ -10,7 +10,8 @@ import * as Haptics from 'expo-haptics';
 
 import { Text } from '@/components/atoms/Text';
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { colors, spacing, radius, shadows } from '@/constants/theme';
+import { spacing, radius, shadows } from '@/constants/theme';
+import { useTheme } from '@/hooks/useTheme';
 
 interface ScreenHeaderProps {
   /** Primary screen heading */
@@ -24,6 +25,7 @@ interface ScreenHeaderProps {
 }
 
 export const ScreenHeader: React.FC<ScreenHeaderProps> = ({ title, subtitle, onProfilePress, userInitial }) => {
+  const { theme } = useTheme();
   const scale = useSharedValue(1);
 
   const animatedStyle = useAnimatedStyle(() => ({
@@ -55,19 +57,22 @@ export const ScreenHeader: React.FC<ScreenHeaderProps> = ({ title, subtitle, onP
         {onProfilePress && (
           <Animated.View style={animatedStyle}>
             <Pressable
-              style={userInitial ? styles.profileButtonWithInitial : styles.profileButton}
+              style={[
+                userInitial ? styles.profileButtonWithInitial : styles.profileButton,
+                { backgroundColor: theme.surface.card, borderColor: theme.accent.orange }
+              ]}
               onPress={handleProfilePress}
               accessibilityRole="button"
               accessibilityLabel="Profile"
             >
               {userInitial ? (
-                <Text variant="bodySemibold" style={styles.initialText}>
+                <Text variant="bodySemibold" style={[styles.initialText, { color: theme.text.primary }]}>
                   {userInitial}
                 </Text>
               ) : (
                 <IconSymbol
                   name="person"
-                  color={colors.text.primary}
+                  color={theme.text.primary}
                   size={24}
                 />
               )}
@@ -96,24 +101,19 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: radius.full,
-    backgroundColor: colors.surface.card,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,
-    borderColor: colors.accent.orange,
   },
   profileButtonWithInitial: {
     width: 40,
     height: 40,
     borderRadius: radius.full,
-    backgroundColor: colors.surface.card,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,
-    borderColor: colors.accent.orange,
   },
   initialText: {
-    color: colors.text.primary,
     fontSize: 18,
     fontWeight: '600',
   },

@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { Text } from '@/components/atoms/Text';
 import { colors, radius, spacing, shadows } from '@/constants/theme';
+import { useSettingsStore } from '@/store/settingsStore';
 
 interface PRCardProps {
   exerciseName: string;
@@ -14,6 +15,7 @@ interface PRCardProps {
 }
 
 export const PRCard: React.FC<PRCardProps> = ({ exerciseName, weight, reps, date, onReplace }) => {
+  const { formatWeightValue, getWeightUnit } = useSettingsStore();
   const formattedDate = date
     ? new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
     : 'No data';
@@ -42,10 +44,10 @@ export const PRCard: React.FC<PRCardProps> = ({ exerciseName, weight, reps, date
           <View style={styles.stats}>
             <View style={styles.weightBadge}>
               <Text variant="heading3" color="onAccent">
-                {weight}
+                {formatWeightValue(weight)}
               </Text>
               <Text variant="captionSmall" color="onAccent" style={styles.unit}>
-                lbs
+                {getWeightUnit()}
               </Text>
             </View>
           </View>

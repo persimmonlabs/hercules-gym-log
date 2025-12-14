@@ -53,8 +53,9 @@ export const useUserProfileStore = create<UserProfileState>((set, get) => ({
         .single();
 
       if (error) {
-        console.error('[UserProfileStore] Error fetching profile:', error);
-        set({ isLoading: false });
+        // Silently handle fetch failures - network issues are expected during app startup
+        console.warn('[UserProfileStore] Profile fetch failed, continuing with empty profile');
+        set({ profile: null, isLoading: false });
         return;
       }
 
@@ -75,8 +76,9 @@ export const useUserProfileStore = create<UserProfileState>((set, get) => ({
         set({ profile: null, isLoading: false });
       }
     } catch (error) {
-      console.error('[UserProfileStore] Error fetching profile:', error);
-      set({ isLoading: false });
+      // Silently handle fetch failures - network issues are expected during app startup
+      console.warn('[UserProfileStore] Profile fetch failed, continuing with empty profile');
+      set({ profile: null, isLoading: false });
     }
   },
 

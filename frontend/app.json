@@ -9,7 +9,11 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.ocreynolds.hercules",
+      "infoPlist": {
+        "UIBackgroundModes": ["fetch", "remote-notification"]
+      }
     },
     "android": {
       "edgeToEdgeEnabled": true,
@@ -24,6 +28,15 @@
     },
     "plugins": [
       "expo-router",
+      [
+        "expo-notifications",
+        {
+          "icon": "./src/assets/images/android-icon-monochrome.png",
+          "color": "#FF6B4A",
+          "defaultChannel": "workout-reminders",
+          "sounds": []
+        }
+      ],
       [
         "expo-build-properties",
         {

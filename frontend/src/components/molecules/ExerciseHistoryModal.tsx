@@ -13,8 +13,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Text } from '@/components/atoms/Text';
 import { colors, radius, spacing, zIndex, typography, shadows } from '@/constants/theme';
 import { useWorkoutSessionsStore } from '@/store/workoutSessionsStore';
-import { springGentle }
-  from '@/constants/animations';
+import { springGentle } from '@/constants/animations';
+import { useSettingsStore } from '@/store/settingsStore';
 
 const SCREEN_HEIGHT = Dimensions.get('window').height;
 const SHEET_DISMISS_THRESHOLD = spacing['2xl'] * 2;
@@ -31,7 +31,7 @@ export const ExerciseHistoryModal: React.FC<ExerciseHistoryModalProps> = ({
   onClose,
   exerciseName,
 }) => {
-
+  const { formatWeight } = useSettingsStore();
   const insets = useSafeAreaInsets();
   const sheetTranslateY = useSharedValue(SCREEN_HEIGHT);
   const workouts = useWorkoutSessionsStore((state) => state.workouts);
@@ -144,7 +144,7 @@ export const ExerciseHistoryModal: React.FC<ExerciseHistoryModalProps> = ({
                     <View key={i} style={styles.setRow}>
                       <Text variant="body" color="secondary">Set {i + 1}</Text>
                       <Text variant="bodySemibold">
-                        {set.weight} lbs × {set.reps} reps
+                        {formatWeight(set.weight ?? 0)} × {set.reps} reps
                       </Text>
                     </View>
                   ))}
