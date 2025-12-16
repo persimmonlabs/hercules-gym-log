@@ -18,7 +18,7 @@ Change the empty state messages to reflect current features and diction. Give op
 
 
 
-**Workout Actions:** 
+**Workout Actions:**
 
 
 
@@ -32,7 +32,7 @@ Sometimes selecting edit workout opens the create-workout page with prefilled da
 
 
 
-Workouts with very long names get properly truncated and formatted, however, i need to add some sort of character limit, just to prevent abuse so apply some reasonable character limit that won't get reached unless the user tries doing something excessive.     
+Workouts with very long names get properly truncated and formatted, however, i need to add some sort of character limit, just to prevent abuse so apply some reasonable character limit that won't get reached unless the user tries doing something excessive.
 
 
 
@@ -47,4 +47,16 @@ Set a limit for 10 workouts in My Workouts
 
 
 
+
+**My Plans Section Tests:**
+
+
+
+Basic Functionality: Good
+
+
+
+
+
+Plan Actions: Good
 
