@@ -1,27 +1,22 @@
-import React, { useState, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { StyleSheet, View, TouchableOpacity, Modal, FlatList, TextInput, PanResponder, Animated, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import { SurfaceCard } from '@/components/atoms/SurfaceCard';
 import { Text } from '@/components/atoms/Text';
-import { HorizontalAccentBar } from '@/components/atoms/HorizontalAccentBar';
 import { PRCard } from '@/components/molecules/PRCard';
 import { colors, spacing, radius, shadows } from '@/constants/theme';
 import { useTheme } from '@/hooks/useTheme';
 import { useWorkoutSessionsStore } from '@/store/workoutSessionsStore';
+import { usePersonalRecordsStore } from '@/store/personalRecordsStore';
 import type { Workout } from '@/types/workout';
 import exercisesData from '@/data/exercises.json';
-
-const DEFAULT_TRACKED_EXERCISES = [
-  'Barbell Bench Press',
-  'Barbell Squat',
-  'Barbell Deadlift',
-];
 
 export const PersonalRecordsSection: React.FC = () => {
   const { theme } = useTheme();
   const workouts = useWorkoutSessionsStore((state) => state.workouts);
-  const [trackedExercises, setTrackedExercises] = useState<string[]>(DEFAULT_TRACKED_EXERCISES);
+  const trackedExercises = usePersonalRecordsStore((state) => state.trackedExercises);
+  const replaceTrackedExercise = usePersonalRecordsStore((state) => state.replaceTrackedExercise);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [selectedExerciseIndex, setSelectedExerciseIndex] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -124,9 +119,7 @@ export const PersonalRecordsSection: React.FC = () => {
 
   const handleSelectNewExercise = (newName: string) => {
     if (selectedExerciseIndex !== null) {
-      const newTracked = [...trackedExercises];
-      newTracked[selectedExerciseIndex] = newName;
-      setTrackedExercises(newTracked);
+      replaceTrackedExercise(selectedExerciseIndex, newName);
       closeModal();
     }
   };
@@ -145,7 +138,6 @@ export const PersonalRecordsSection: React.FC = () => {
           <Text variant="heading3" color="primary">
             Personal Records
           </Text>
-          <HorizontalAccentBar />
         </View>
 
         <View style={styles.list}>

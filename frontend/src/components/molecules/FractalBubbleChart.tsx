@@ -20,6 +20,8 @@ const PIE_SIZE = 240;
 interface FractalBubbleChartProps {
   data: HierarchicalSetData;
   onMusclePress?: (muscleName: string) => void;
+  /** Optional: Start at a specific L1 group (e.g., "Upper Body", "Lower Body", "Core") */
+  rootGroup?: string;
 }
 
 interface BreadcrumbItem {
@@ -35,8 +37,21 @@ const getOrangeShade = (index: number, total: number): string => {
   return `rgba(255, 107, 74, ${opacity})`;
 };
 
-export const FractalBubbleChart: React.FC<FractalBubbleChartProps> = ({ data, onMusclePress }) => {
-  const [breadcrumb, setBreadcrumb] = useState<BreadcrumbItem[]>([{ name: 'Overview', level: 'root' }]);
+// Strip prefix from detailed muscle names for cleaner display
+// e.g., "Biceps - Long Head" -> "Long Head", "Calves - Medial Head" -> "Medial Head"
+const getDisplayName = (fullName: string): string => {
+  if (fullName.includes(' - ')) {
+    return fullName.split(' - ')[1];
+  }
+  return fullName;
+};
+
+export const FractalBubbleChart: React.FC<FractalBubbleChartProps> = ({ data, onMusclePress, rootGroup }) => {
+  // If rootGroup is provided, start at L1 level with that group
+  const initialBreadcrumb: BreadcrumbItem[] = rootGroup 
+    ? [{ name: rootGroup, level: 'L1' }]
+    : [{ name: 'Overview', level: 'root' }];
+  const [breadcrumb, setBreadcrumb] = useState<BreadcrumbItem[]>(initialBreadcrumb);
   const [selectedSlice, setSelectedSlice] = useState<string | null>(null);
 
   // Get current level's data with RELATIVE percentages (sum to 100%)
@@ -54,7 +69,12 @@ export const FractalBubbleChart: React.FC<FractalBubbleChartProps> = ({ data, on
 
   const hasChildren = useCallback((name: string): boolean => {
     const current = breadcrumb[breadcrumb.length - 1];
-    const nextLevel = current.level === 'root' ? 'L1' : current.level === 'L1' ? 'L2' : current.level === 'L2' ? 'L3' : null;
+    // Determine the next level based on current level
+    // root -> L1, L1 -> L2, L2 -> L3, L3 -> null (L4 is the deepest, no further drill-down)
+    const nextLevel = current.level === 'root' ? 'L1' 
+      : current.level === 'L1' ? 'L2' 
+      : current.level === 'L2' ? 'L3' 
+      : null;
     if (!nextLevel) return false;
     const children = data.byParent[`${nextLevel}:${name}`];
     return children && children.length > 0;
@@ -67,7 +87,11 @@ export const FractalBubbleChart: React.FC<FractalBubbleChartProps> = ({ data, on
       // Second tap - drill down or navigate
       if (hasChildren(name)) {
         const current = breadcrumb[breadcrumb.length - 1];
-        const nextLevel = current.level === 'root' ? 'L1' : current.level === 'L1' ? 'L2' : 'L3';
+        // Determine the next level based on current level
+        const nextLevel = current.level === 'root' ? 'L1' 
+          : current.level === 'L1' ? 'L2' 
+          : current.level === 'L2' ? 'L3' 
+          : 'L3'; // Fallback, shouldn't reach here if hasChildren is false
         setBreadcrumb([...breadcrumb, { name, level: nextLevel as any }]);
         setSelectedSlice(null);
       } else {
@@ -97,25 +121,26 @@ export const FractalBubbleChart: React.FC<FractalBubbleChartProps> = ({ data, on
 
   const getCurrentGroupName = (): string => {
     const current = breadcrumb[breadcrumb.length - 1];
-    return current.level === 'root' ? 'All Muscle Groups' : current.name;
+    if (current.level === 'root') return 'All Muscle Groups';
+    // For L1 level when it's the root (rootGroup mode), just show the group name
+    if (current.level === 'L1' && breadcrumb.length === 1) return current.name;
+    return current.name;
   };
 
   const getSubtitle = (): string => {
     const current = breadcrumb[breadcrumb.length - 1];
     if (current.level === 'root') return 'Tap slice to select, tap again to drill down';
+    // For L1 level when it's the starting point (rootGroup mode)
+    if (current.level === 'L1' && breadcrumb.length === 1) return 'Tap slice to select, tap again to drill down';
     if (current.level === 'L1') return 'Muscle group breakdown';
     if (current.level === 'L2') return 'Specific muscles';
     return 'Detailed breakdown';
   };
 
-  if (!data.root || data.root.length === 0) {
-    return (
-      <View style={styles.emptyContainer}>
-        <Text variant="body" color="secondary">No workout data available yet.</Text>
-        <Text variant="caption" color="tertiary">Complete workouts to see your distribution.</Text>
-      </View>
-    );
-  }
+  // Check if we have data - for rootGroup mode, check the L1 data
+  const hasData = rootGroup 
+    ? (data.byParent[`L1:${rootGroup}`] && data.byParent[`L1:${rootGroup}`].length > 0)
+    : (data.root && data.root.length > 0);
 
   return (
     <View style={styles.container}>
@@ -124,7 +149,7 @@ export const FractalBubbleChart: React.FC<FractalBubbleChartProps> = ({ data, on
         <Text variant="caption" color="tertiary">{getSubtitle()}</Text>
       </View>
 
-      {breadcrumb.length > 0 && (
+      {breadcrumb.length > 1 && (
         <Animated.View entering={FadeIn.duration(200)} style={styles.breadcrumbContainer}>
           {breadcrumb.map((item, index) => (
             <View key={`${item.level}-${item.name}`} style={styles.breadcrumbItem}>
@@ -142,7 +167,12 @@ export const FractalBubbleChart: React.FC<FractalBubbleChartProps> = ({ data, on
         </Animated.View>
       )}
 
-      {currentData.length > 0 ? (
+      {!hasData ? (
+        <View style={styles.emptyContainer}>
+          <Text variant="body" color="secondary">No workout data available yet.</Text>
+          <Text variant="caption" color="tertiary">Complete workouts to see your distribution.</Text>
+        </View>
+      ) : currentData.length > 0 ? (
         <>
           <Animated.View key={breadcrumb.map(b => b.name).join('-')} entering={FadeIn.duration(200)} style={styles.chartContainer}>
             <VictoryPie
@@ -176,7 +206,7 @@ export const FractalBubbleChart: React.FC<FractalBubbleChartProps> = ({ data, on
             {/* Selected slice info in center */}
             {selectedSlice && (
               <View style={styles.selectedInfo}>
-                <Text variant="labelMedium" color="primary" numberOfLines={1}>{selectedSlice}</Text>
+                <Text variant="labelMedium" color="primary" numberOfLines={1}>{getDisplayName(selectedSlice)}</Text>
                 <Text variant="heading2" color="primary">
                   {Math.round(currentData.find(d => d.name === selectedSlice)?.percentage || 0)}%
                 </Text>
@@ -217,7 +247,7 @@ export const FractalBubbleChart: React.FC<FractalBubbleChartProps> = ({ data, on
             >
               <View style={[styles.legendDot, { backgroundColor: getOrangeShade(index, currentData.length) }]} />
               <Text variant="caption" color="primary" style={styles.legendText} numberOfLines={1}>
-                {item.name}
+                {getDisplayName(item.name)}
               </Text>
               {canDrill && <Ionicons name="chevron-forward" size={12} color={colors.text.tertiary} />}
               <Text variant="caption" color="secondary">{Math.round(item.percentage)}%</Text>

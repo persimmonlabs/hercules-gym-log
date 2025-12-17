@@ -4,10 +4,9 @@
  * Simplified version without carousel for the main Performance screen
  */
 
-import React, { useState, useCallback } from 'react';
-import { View, StyleSheet, Dimensions, TouchableOpacity } from 'react-native';
+import React from 'react';
+import { View, StyleSheet, Dimensions } from 'react-native';
 import { VictoryChart, VictoryBar, VictoryAxis, VictoryTheme } from 'victory-native';
-import * as Haptics from 'expo-haptics';
 
 import { Text } from '@/components/atoms/Text';
 import { ChartWrapper } from '@/components/atoms/ChartWrapper';
@@ -26,8 +25,7 @@ interface SimpleVolumeChartProps {
 
 export const SimpleVolumeChart: React.FC<SimpleVolumeChartProps> = ({ timeRange = 'week' }) => {
   const { weeklyVolume, hasFilteredData } = useAnalyticsData({ timeRange });
-  const { formatWeight } = useSettingsStore();
-  const [selectedBar, setSelectedBar] = useState<{ label: string; value: number } | null>(null);
+  const weightUnit = useSettingsStore((state) => state.weightUnit);
 
   const data = weeklyVolume.high;
 
@@ -58,14 +56,13 @@ export const SimpleVolumeChart: React.FC<SimpleVolumeChartProps> = ({ timeRange 
     yTickValues.push(i);
   }
 
-  const chartData = data.map((d) => ({ x: d.label, y: d.value }));
+  const xCategories = data.map((d) => d.label.replace('\n', ' '));
+  const chartData = data.map((d, index) => ({
+    x: index + 1,
+    y: d.value,
+  }));
   const chartState = !hasFilteredData ? 'empty' : 'ready';
   const emptyMessage = `No workout data for ${TIME_RANGE_SUBTITLES[timeRange].toLowerCase()}.`;
-
-  const handleBarPress = useCallback((label: string, value: number) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setSelectedBar((prev) => (prev?.label === label ? null : { label, value }));
-  }, []);
 
   return (
     <ChartWrapper
@@ -77,76 +74,55 @@ export const SimpleVolumeChart: React.FC<SimpleVolumeChartProps> = ({ timeRange 
         <View style={styles.chartContainer}>
           <VictoryChart
             theme={VictoryTheme.material}
-            domainPadding={{ x: 40 }}
-            padding={{ top: 20, bottom: 40, left: 50, right: 20 }}
+            domainPadding={{ x: 30 }}
+            padding={{ top: 30, bottom: 40, left: 20, right: 20 }}
             height={CHART_HEIGHT}
             width={CHART_WIDTH}
           >
             <VictoryAxis
-              tickValues={data.map((d) => d.label)}
+              tickValues={chartData.map((d) => d.x)}
+              tickFormat={(t, index) => xCategories[index] || ''}
               style={{
                 axis: { stroke: 'none' },
-                tickLabels: { fill: colors.text.primary, fontSize: 10, padding: 5 },
+                tickLabels: { fill: colors.text.primary, fontSize: 11, padding: 5 },
                 grid: { stroke: 'none' },
               }}
             />
             <VictoryAxis
               dependentAxis
               tickValues={yTickValues}
-              tickFormat={(t) => `${Math.round(t)}`}
+              tickFormat={() => ''}
               style={{
                 axis: { stroke: 'none' },
-                tickLabels: { fill: colors.text.secondary, fontSize: 10, padding: 5 },
-                grid: { stroke: colors.neutral.gray200, strokeDasharray: '4, 4' },
+                ticks: { stroke: 'none' },
+                tickLabels: { fill: 'transparent' },
+                grid: { stroke: 'none' },
               }}
             />
             <VictoryBar
               data={chartData}
+              labels={({ datum }) =>
+                datum.y > 0
+                  ? datum.y >= 1000
+                    ? `${(datum.y / 1000).toFixed(1)}k`
+                    : Math.round(datum.y).toString()
+                  : ''
+              }
               style={{
                 data: {
                   fill: colors.accent.orange,
-                  width: 36,
+                  width: Math.min(32, (CHART_WIDTH - 100) / chartData.length - 8),
+                },
+                labels: {
+                  fill: colors.text.primary,
+                  fontSize: 10,
+                  fontWeight: '600',
                 },
               }}
-              cornerRadius={{ top: 6 }}
-              animate={{ duration: 400, onLoad: { duration: 400 } }}
-              events={[
-                {
-                  target: 'data',
-                  eventHandlers: {
-                    onPressIn: () => [
-                      {
-                        target: 'data',
-                        mutation: (props) => {
-                          handleBarPress(props.datum.x, props.datum.y);
-                          return null;
-                        },
-                      },
-                    ],
-                  },
-                },
-              ]}
+              cornerRadius={{ top: 4 }}
             />
           </VictoryChart>
-
-          {/* Tooltip */}
-          {selectedBar && (
-            <View style={styles.tooltip}>
-              <Text variant="caption" color="primary">
-                {selectedBar.label.replace('\n', ' ')}: {formatWeight(selectedBar.value)}
-              </Text>
-            </View>
-          )}
         </View>
-
-        {/* Dismiss overlay */}
-        {selectedBar && (
-          <TouchableOpacity
-            style={StyleSheet.absoluteFill}
-            onPress={() => setSelectedBar(null)}
-            activeOpacity={1}
-          />
-        )}
       </View>
     </ChartWrapper>
   );
@@ -160,15 +136,5 @@ const styles = StyleSheet.create({
   chartContainer: {
     alignItems: 'center',
     position: 'relative',
-  },
-  tooltip: {
-    position: 'absolute',
-    top: 10,
-    backgroundColor: colors.surface.card,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
-    borderRadius: radius.sm,
-    borderWidth: 1,
-    borderColor: colors.border.light,
   },
 });

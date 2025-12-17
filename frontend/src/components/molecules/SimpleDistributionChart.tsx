@@ -1,6 +1,7 @@
 /**
- * SimpleDistributionChart
+ * SimpleVolumeDistributionChart
  * High-tier only donut chart for dashboard (Upper/Lower/Core)
+ * Shows volume distribution (weight × reps × muscle_weighting)
  * Simplified version without carousel for the main Performance screen
  */
 
@@ -11,9 +12,10 @@ import * as Haptics from 'expo-haptics';
 
 import { Text } from '@/components/atoms/Text';
 import { ChartWrapper } from '@/components/atoms/ChartWrapper';
+import { TimeRangeSelector } from '@/components/atoms/TimeRangeSelector';
 import { colors, spacing, radius } from '@/constants/theme';
 import { useAnalyticsData } from '@/hooks/useAnalyticsData';
-import type { ChartSlice } from '@/types/analytics';
+import type { ChartSlice, TimeRange } from '@/types/analytics';
 
 const PIE_SIZE = 180;
 
@@ -36,10 +38,11 @@ const LegendItem: React.FC<LegendItemProps> = ({ item, isSelected, isDimmed, onP
 );
 
 export const SimpleDistributionChart: React.FC = () => {
-  const { tieredSets, hasFilteredData } = useAnalyticsData({ timeRange: 'all' });
+  const [timeRange, setTimeRange] = useState<TimeRange>('all');
+  const { tieredVolumeDistribution, hasFilteredData } = useAnalyticsData({ timeRange });
   const [selectedSlice, setSelectedSlice] = useState<string | null>(null);
 
-  const data = tieredSets.high;
+  const data = tieredVolumeDistribution.high;
 
   const handleSelectSlice = useCallback((name: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -62,9 +65,12 @@ export const SimpleDistributionChart: React.FC = () => {
     <ChartWrapper
       state={chartState}
       emptyMessage="No workout data yet. Complete a workout to see your distribution!"
-      minHeight={PIE_SIZE + 100}
+      minHeight={PIE_SIZE + 140}
     >
       <View style={styles.container}>
+        <View style={styles.selectorContainer}>
+          <TimeRangeSelector value={timeRange} onChange={setTimeRange} />
+        </View>
         <View style={styles.chartContainer}>
           <VictoryPie
             data={chartData}
@@ -124,6 +130,9 @@ const styles = StyleSheet.create({
   container: {
     alignItems: 'center',
     paddingVertical: spacing.sm,
+  },
+  selectorContainer: {
+    marginBottom: spacing.md,
   },
   chartContainer: {
     alignItems: 'center',

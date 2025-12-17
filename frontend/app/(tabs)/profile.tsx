@@ -107,6 +107,7 @@ const StatsScreen: React.FC = () => {
   
   // Fetch data separately for each time range
   const { hasFilteredData: hasVolumeData } = useAnalyticsData({ timeRange: volumeTimeRange });
+  const weightUnit = useSettingsStore((state) => state.weightUnit);
   const { cardioStats } = useAnalyticsData({ timeRange: cardioTimeRange });
 
   const handleDistributionPress = () => {
@@ -129,17 +130,17 @@ const StatsScreen: React.FC = () => {
       </View>
 
       <AnalyticsCard
-        title="Set Distribution"
+        title="Volume Distribution"
         onPress={handleDistributionPress}
         showAccentStripe={false}
         titleCentered={true}
-        showHorizontalAccentBar={true}
+        showHorizontalAccentBar={false}
       >
         <SimpleDistributionChart />
       </AnalyticsCard>
 
       <AnalyticsCard
-        title="Volume"
+        title={`Volume Totals (${weightUnit})`}
         onPress={handleVolumePress}
         headerRight={
           <TimeRangeSelector value={volumeTimeRange} onChange={setVolumeTimeRange} />
@@ -147,7 +148,7 @@ const StatsScreen: React.FC = () => {
         isEmpty={!hasVolumeData}
         showAccentStripe={false}
         titleCentered={true}
-        showHorizontalAccentBar={true}
+        showHorizontalAccentBar={false}
       >
         <SimpleVolumeChart timeRange={volumeTimeRange} />
       </AnalyticsCard>
@@ -158,7 +159,7 @@ const StatsScreen: React.FC = () => {
         title="Cardio Summary"
         showAccentStripe={false}
         titleCentered={true}
-        showHorizontalAccentBar={true}
+        showHorizontalAccentBar={false}
         headerRight={
           <TimeRangeSelector value={cardioTimeRange} onChange={setCardioTimeRange} />
         }

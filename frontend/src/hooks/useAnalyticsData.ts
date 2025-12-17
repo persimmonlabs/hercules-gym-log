@@ -32,33 +32,43 @@ const EXERCISE_TYPE_MAP = exerciseCatalog.reduce((acc, ex) => {
 }, {} as Record<string, ExerciseType>);
 
 // Build muscle hierarchy maps once at module load
+// Maps each muscle (at any level) to its parent at each tier
+// L1 = high (Upper Body, Lower Body, Core)
+// L2 = mid (Chest, Back, Arms, etc.)
+// L3 = low (Biceps, Triceps, Forearms, Upper Chest, etc.)
+// L4 = detailed (Biceps - Long Head, etc.)
 const buildMaps = () => {
   const leafToL1: Record<string, string> = {};
   const leafToL2: Record<string, string> = {};
   const leafToL3: Record<string, string> = {};
+  const leafToL4: Record<string, string> = {};
   const l2ToL1: Record<string, string> = {};
 
   const hierarchy = hierarchyData.muscle_hierarchy;
 
   Object.entries(hierarchy).forEach(([l1, l1Data]) => {
+    // L1 level (high): Upper Body, Lower Body, Core
     if (l1Data?.muscles) {
       Object.entries(l1Data.muscles).forEach(([l2, l2Data]: [string, any]) => {
+        // L2 level (mid): Chest, Back, Arms, etc.
         leafToL1[l2] = l1;
         leafToL2[l2] = l2;
-        leafToL3[l2] = l2;
         l2ToL1[l2] = l1;
 
         if (l2Data?.muscles) {
           Object.entries(l2Data.muscles).forEach(([l3, l3Data]: [string, any]) => {
+            // L3 level (low): Biceps, Triceps, Upper Chest, etc.
             leafToL1[l3] = l1;
             leafToL2[l3] = l2;
             leafToL3[l3] = l3;
 
             if (l3Data?.muscles) {
+              // L4 level (detailed): Biceps - Long Head, etc.
               Object.keys(l3Data.muscles).forEach((l4) => {
                 leafToL1[l4] = l1;
                 leafToL2[l4] = l2;
-                leafToL3[l4] = l4;
+                leafToL3[l4] = l3;
+                leafToL4[l4] = l4;
               });
             }
           });
@@ -67,10 +77,10 @@ const buildMaps = () => {
     }
   });
 
-  return { leafToL1, leafToL2, leafToL3, l2ToL1 };
+  return { leafToL1, leafToL2, leafToL3, leafToL4, l2ToL1 };
 };
 
-const { leafToL1, leafToL2, leafToL3, l2ToL1 } = buildMaps();
+const { leafToL1, leafToL2, leafToL3, leafToL4, l2ToL1 } = buildMaps();
 
 // Exercise name to muscle weights map
 const EXERCISE_MUSCLES = exercisesData.reduce((acc, ex) => {
@@ -233,66 +243,78 @@ export const useAnalyticsData = (options: UseAnalyticsDataOptions = {}) => {
     return { high, mid, low };
   }, [filteredWorkouts, userBodyWeight]);
 
-  // Calculate tiered set distribution (weighted sets)
-  const tieredSets = useMemo((): TieredSetData => {
+  // Calculate tiered volume distribution (volume = weight × reps × muscle_weighting)
+  // Only includes weight and assisted exercises
+  const tieredVolumeDistribution = useMemo((): TieredSetData => {
     const distL1: Record<string, number> = {};
     const distL2: Record<string, number> = {};
     const distL3: Record<string, number> = {};
-    let totalSets = 0;
 
     filteredWorkouts.forEach((workout) => {
       workout.exercises.forEach((exercise: any) => {
-        const weights = EXERCISE_MUSCLES[exercise.name];
-        if (!weights) return;
+        const muscleWeights = EXERCISE_MUSCLES[exercise.name];
+        if (!muscleWeights) return;
 
         const exerciseType = EXERCISE_TYPE_MAP[exercise.name] || 'weight';
         
-        // Skip cardio and duration exercises for set distribution
-        if (exerciseType === 'cardio' || exerciseType === 'duration') return;
+        // Only include weight and assisted exercises
+        if (exerciseType !== 'weight' && exerciseType !== 'assisted') return;
 
-        // Count completed sets based on exercise type
-        const completedSets = exercise.sets.filter((s: any) => {
-          if (!s.completed) return false;
-          switch (exerciseType) {
-            case 'bodyweight':
-            case 'reps_only':
-              return (s.reps ?? 0) > 0;
-            case 'assisted':
-              return (s.reps ?? 0) > 0;
-            case 'weight':
-            default:
-              return (s.weight ?? 0) > 0;
+        exercise.sets.forEach((set: any) => {
+          if (!set.completed) return;
+          
+          const reps = set.reps ?? 0;
+          if (reps <= 0) return;
+          
+          let setVolume = 0;
+          
+          if (exerciseType === 'weight') {
+            const weight = set.weight ?? 0;
+            if (weight <= 0) return;
+            setVolume = weight * reps;
+          } else if (exerciseType === 'assisted') {
+            // Safety check: skip if no body weight stored
+            if (!userBodyWeight) return;
+            const assistanceWeight = set.assistanceWeight ?? 0;
+            // Safety check: skip if assistance >= body weight (would be zero or negative)
+            if (assistanceWeight >= userBodyWeight) return;
+            const effectiveWeight = userBodyWeight - assistanceWeight;
+            setVolume = effectiveWeight * reps;
           }
-        }).length;
-        if (completedSets === 0) return;
+          
+          if (setVolume <= 0) return;
 
-        totalSets += completedSets;
+          // Distribute volume to muscles based on weightings
+          Object.entries(muscleWeights).forEach(([muscle, muscleWeight]) => {
+            const contribution = setVolume * muscleWeight;
 
-        Object.entries(weights).forEach(([muscle, weight]) => {
-          const contribution = completedSets * weight;
+            const cat1 = leafToL1[muscle];
+            if (cat1) distL1[cat1] = (distL1[cat1] || 0) + contribution;
 
-          const cat1 = leafToL1[muscle];
-          if (cat1) distL1[cat1] = (distL1[cat1] || 0) + contribution;
+            const cat2 = leafToL2[muscle];
+            if (cat2) distL2[cat2] = (distL2[cat2] || 0) + contribution;
 
-          const cat2 = leafToL2[muscle];
-          if (cat2) distL2[cat2] = (distL2[cat2] || 0) + contribution;
-
-          const cat3 = leafToL3[muscle];
-          if (cat3) distL3[cat3] = (distL3[cat3] || 0) + contribution;
+            const cat3 = leafToL3[muscle];
+            if (cat3) distL3[cat3] = (distL3[cat3] || 0) + contribution;
+          });
         });
       });
     });
 
+    // Format slices with percentages summing to 100% at each level
     const formatSlices = (dist: Record<string, number>): ChartSlice[] => {
       const sorted = Object.entries(dist).sort((a, b) => b[1] - a[1]);
       const total = Object.values(dist).reduce((sum, val) => sum + val, 0);
-      const threshold = total * 0.01;
+      if (total === 0) return [];
+      
+      const threshold = total * 0.01; // 1% threshold
       const filtered = sorted.filter(([, value]) => value >= threshold);
+      const filteredTotal = filtered.reduce((sum, [, val]) => sum + val, 0);
 
       return filtered.map(([name, value], index) => ({
         name,
         value,
-        percentage: totalSets > 0 ? (value / totalSets) * 100 : 0,
+        percentage: filteredTotal > 0 ? (value / filteredTotal) * 100 : 0,
         color: generateSliceColor(index, filtered.length),
       }));
     };
@@ -302,91 +324,113 @@ export const useAnalyticsData = (options: UseAnalyticsDataOptions = {}) => {
       mid: formatSlices(distL2),
       low: formatSlices(distL3),
     };
-  }, [filteredWorkouts]);
+  }, [filteredWorkouts, userBodyWeight]);
 
-  // Calculate hierarchical set distribution for drill-down navigation
-  const hierarchicalSets = useMemo((): HierarchicalSetData => {
+  // Calculate hierarchical volume distribution for drill-down navigation
+  // Uses same logic as tieredVolumeDistribution but with parent grouping for drill-down
+  const hierarchicalVolumeDistribution = useMemo((): HierarchicalSetData => {
     // Build distribution maps at each level with parent tracking
     const distByLevel: Record<string, Record<string, number>> = {};
-    let totalSets = 0;
 
     filteredWorkouts.forEach((workout) => {
       workout.exercises.forEach((exercise: any) => {
-        const weights = EXERCISE_MUSCLES[exercise.name];
-        if (!weights) return;
+        const muscleWeights = EXERCISE_MUSCLES[exercise.name];
+        if (!muscleWeights) return;
 
-        const completedSets = exercise.sets.filter(
-          (s: any) => s.completed && s.weight > 0
-        ).length;
-        if (completedSets === 0) return;
+        const exerciseType = EXERCISE_TYPE_MAP[exercise.name] || 'weight';
+        
+        // Only include weight and assisted exercises
+        if (exerciseType !== 'weight' && exerciseType !== 'assisted') return;
 
-        totalSets += completedSets;
-
-        Object.entries(weights).forEach(([muscle, weight]) => {
-          const contribution = completedSets * weight;
-
-          // Track at each level with its parent context
-          const l1 = leafToL1[muscle];
-          const l2 = leafToL2[muscle];
-          const l3 = leafToL3[muscle];
-
-          // Root level (L1): Upper Body, Lower Body, Core
-          if (l1) {
-            distByLevel['root'] = distByLevel['root'] || {};
-            distByLevel['root'][l1] = (distByLevel['root'][l1] || 0) + contribution;
+        exercise.sets.forEach((set: any) => {
+          if (!set.completed) return;
+          
+          const reps = set.reps ?? 0;
+          if (reps <= 0) return;
+          
+          let setVolume = 0;
+          
+          if (exerciseType === 'weight') {
+            const weight = set.weight ?? 0;
+            if (weight <= 0) return;
+            setVolume = weight * reps;
+          } else if (exerciseType === 'assisted') {
+            // Safety check: skip if no body weight stored
+            if (!userBodyWeight) return;
+            const assistanceWeight = set.assistanceWeight ?? 0;
+            // Safety check: skip if assistance >= body weight (would be zero or negative)
+            if (assistanceWeight >= userBodyWeight) return;
+            const effectiveWeight = userBodyWeight - assistanceWeight;
+            setVolume = effectiveWeight * reps;
           }
+          
+          if (setVolume <= 0) return;
 
-          // L2 grouped by L1 parent (e.g., "Upper Body" -> Chest, Back, etc.)
-          if (l1 && l2) {
-            const key = `L1:${l1}`;
-            distByLevel[key] = distByLevel[key] || {};
-            distByLevel[key][l2] = (distByLevel[key][l2] || 0) + contribution;
-          }
+          // Distribute volume to muscles based on weightings
+          Object.entries(muscleWeights).forEach(([muscle, muscleWeight]) => {
+            const contribution = setVolume * muscleWeight;
 
-          // L3 grouped by L2 parent (e.g., "Chest" -> Upper Chest, Mid Chest, etc.)
-          if (l2 && l3 && l2 !== l3) {
-            const key = `L2:${l2}`;
-            distByLevel[key] = distByLevel[key] || {};
-            distByLevel[key][l3] = (distByLevel[key][l3] || 0) + contribution;
-          }
+            // Track at each level with its parent context
+            const l1 = leafToL1[muscle];
+            const l2 = leafToL2[muscle];
+            const l3 = leafToL3[muscle];
+            const l4 = leafToL4[muscle];
 
-          // Detailed level grouped by L3 parent (for Arms muscles like Biceps -> Long Head, Short Head)
-          // This requires traversing the hierarchy to find detailed children
-          const hierarchy = hierarchyData.muscle_hierarchy as any;
-          const l1Data = hierarchy[l1];
-          if (l1Data?.muscles) {
-            const l2Data = l1Data.muscles[l2];
-            if (l2Data?.muscles) {
-              const l3Data = l2Data.muscles[l3];
-              if (l3Data?.muscles) {
-                // This L3 has detailed children, track muscle at detailed level
-                Object.keys(l3Data.muscles).forEach((detailed) => {
-                  if (muscle === detailed || muscle === l3) {
-                    const key = `L3:${l3}`;
-                    distByLevel[key] = distByLevel[key] || {};
-                    if (muscle !== l3) {
-                      distByLevel[key][muscle] = (distByLevel[key][muscle] || 0) + contribution;
-                    }
-                  }
-                });
-              }
+            // Root level (L1): Upper Body, Lower Body, Core
+            if (l1) {
+              distByLevel['root'] = distByLevel['root'] || {};
+              distByLevel['root'][l1] = (distByLevel['root'][l1] || 0) + contribution;
             }
-          }
+
+            // L2 grouped by L1 parent (e.g., "Upper Body" -> Chest, Back, Arms, etc.)
+            if (l1 && l2) {
+              const key = `L1:${l1}`;
+              distByLevel[key] = distByLevel[key] || {};
+              distByLevel[key][l2] = (distByLevel[key][l2] || 0) + contribution;
+            }
+
+            // L3 grouped by L2 parent (e.g., "Arms" -> Biceps, Triceps, Forearms)
+            // Only add if L3 exists and is different from L2
+            if (l2 && l3 && l2 !== l3) {
+              const key = `L2:${l2}`;
+              distByLevel[key] = distByLevel[key] || {};
+              distByLevel[key][l3] = (distByLevel[key][l3] || 0) + contribution;
+            }
+
+            // L4 grouped by L3 parent (e.g., "Biceps" -> Long Head, Short Head, Brachialis)
+            // Only add if L4 exists (detailed level muscles)
+            if (l3 && l4 && l3 !== l4) {
+              const key = `L3:${l3}`;
+              distByLevel[key] = distByLevel[key] || {};
+              distByLevel[key][l4] = (distByLevel[key][l4] || 0) + contribution;
+            }
+
+            // Special case: when L2 and L3 have the same name (e.g., Calves -> Calves),
+            // show L4 children directly under L2 to avoid redundant drill-down
+            if (l2 && l3 && l2 === l3 && l4) {
+              const key = `L2:${l2}`;
+              distByLevel[key] = distByLevel[key] || {};
+              distByLevel[key][l4] = (distByLevel[key][l4] || 0) + contribution;
+            }
+          });
         });
       });
     });
 
-    // Format slices for each level
+    // Format slices with percentages summing to 100% at each level
     const formatSlicesForLevel = (dist: Record<string, number>): ChartSlice[] => {
       const sorted = Object.entries(dist).sort((a, b) => b[1] - a[1]);
       const total = Object.values(dist).reduce((sum, val) => sum + val, 0);
+      if (total === 0) return [];
+      
       const threshold = total * 0.01; // 1% threshold
       const filtered = sorted.filter(([, value]) => value >= threshold);
+      const filteredTotal = filtered.reduce((sum, [, val]) => sum + val, 0);
 
       return filtered.map(([name, value], index) => ({
         name,
         value,
-        percentage: totalSets > 0 ? (value / totalSets) * 100 : 0,
+        percentage: filteredTotal > 0 ? (value / filteredTotal) * 100 : 0,
         color: generateSliceColor(index, filtered.length),
       }));
     };
@@ -403,7 +447,7 @@ export const useAnalyticsData = (options: UseAnalyticsDataOptions = {}) => {
       root: formatSlicesForLevel(distByLevel['root'] || {}),
       byParent,
     };
-  }, [filteredWorkouts]);
+  }, [filteredWorkouts, userBodyWeight]);
 
   // Weekly volume bar chart data
   const weeklyVolume = useMemo((): WeeklyVolumeData => {
@@ -527,8 +571,8 @@ export const useAnalyticsData = (options: UseAnalyticsDataOptions = {}) => {
     
     // Processed data
     tieredVolume,
-    tieredSets,
-    hierarchicalSets,
+    tieredVolumeDistribution,
+    hierarchicalVolumeDistribution,
     weeklyVolume,
     streakData,
     cardioStats,

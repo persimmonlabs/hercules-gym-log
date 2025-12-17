@@ -1,38 +1,54 @@
 /**
- * Distribution Analytics Page
- * Body heatmap visualization for exploring muscle set distribution
+ * Volume Distribution Analytics Page
+ * Body heatmap visualization for exploring muscle volume distribution
  * Tap muscle regions to see details and drill down
  */
 
-import React from 'react';
-import { View, StyleSheet, TouchableOpacity } from 'react-native';
+import React, { useCallback } from 'react';
+import { View, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { useFocusEffect } from 'expo-router';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
 import { Text } from '@/components/atoms/Text';
 import { SurfaceCard } from '@/components/atoms/SurfaceCard';
 import { PremiumLock } from '@/components/atoms/PremiumLock';
+import { TimeRangeSelector } from '@/components/atoms/TimeRangeSelector';
 import { TabSwipeContainer } from '@/components/templates/TabSwipeContainer';
 import { FractalBubbleChart } from '@/components/molecules/FractalBubbleChart';
-import { ExerciseInsights } from '@/components/molecules/ExerciseInsights';
 import { useAnalyticsData } from '@/hooks/useAnalyticsData';
 import { usePremiumStatus } from '@/hooks/usePremiumStatus';
 import { colors, spacing } from '@/constants/theme';
+import type { TimeRange } from '@/types/analytics';
 
 const DistributionAnalyticsScreen: React.FC = () => {
   const router = useRouter();
-  const { hierarchicalSets } = useAnalyticsData({ timeRange: 'all' });
-  const { isPremium } = usePremiumStatus();
+  const [timeRange, setTimeRange] = React.useState<TimeRange>('all');
+  const { hierarchicalVolumeDistribution } = useAnalyticsData({ timeRange });
+  const { isPremium, isLoading } = usePremiumStatus();
+  
+  // Key to force FractalBubbleChart to reset when page is revisited
+  const [chartKey, setChartKey] = React.useState(0);
+  
+  // Reset chart to Overview and time range when page gains focus
+  useFocusEffect(
+    useCallback(() => {
+      setChartKey(prev => prev + 1);
+      setTimeRange('all');
+    }, [])
+  );
+  
+  // Show loading screen while checking premium status to avoid paywall flash
+  if (isLoading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={colors.accent.orange} />
+      </View>
+    );
+  }
 
   const handleBackPress = () => {
     router.replace('/(tabs)/profile');
-  };
-
-  const handleMusclePress = (muscleName: string) => {
-    router.push({
-      pathname: '/(tabs)/muscle-detail',
-      params: { muscle: muscleName },
-    } as any);
   };
 
   const handleUpgrade = () => {
@@ -47,35 +63,62 @@ const DistributionAnalyticsScreen: React.FC = () => {
         <TouchableOpacity onPress={handleBackPress} style={styles.backButton}>
           <Ionicons name="chevron-back" size={24} color={colors.text.primary} />
         </TouchableOpacity>
-        <Text variant="heading2" color="primary">Set Distribution</Text>
+        <Text variant="heading2" color="primary">Volume Distribution</Text>
         <View style={styles.placeholder} />
       </View>
 
-      {/* Fractal Bubble Chart - Drill down through muscle hierarchy */}
-      <SurfaceCard tone="neutral" padding="lg">
+      {/* Time Range Selector */}
+      <View style={styles.selectorContainer}>
+        <TimeRangeSelector value={timeRange} onChange={setTimeRange} />
+      </View>
+
+      {/* Upper Body Distribution */}
+      <SurfaceCard tone="neutral" padding="lg" showAccentStripe={false}>
         <View style={styles.cardContent}>
           <PremiumLock
             isLocked={!isPremium}
-            featureName="Muscle Distribution Explorer"
+            featureName="Upper Body Distribution"
             onUnlock={handleUpgrade}
           >
             <FractalBubbleChart
-              data={hierarchicalSets}
-              onMusclePress={handleMusclePress}
+              key={`upper-${chartKey}-${timeRange}`}
+              data={hierarchicalVolumeDistribution}
+              rootGroup="Upper Body"
             />
           </PremiumLock>
         </View>
       </SurfaceCard>
 
-      {/* Exercise Insights (Premium) */}
-      <SurfaceCard tone="neutral" padding="lg">
+      {/* Lower Body Distribution */}
+      <SurfaceCard tone="neutral" padding="lg" showAccentStripe={false}>
         <View style={styles.cardContent}>
           <PremiumLock
             isLocked={!isPremium}
-            featureName="Exercise Insights"
+            featureName="Lower Body Distribution"
             onUnlock={handleUpgrade}
           >
-            <ExerciseInsights />
+            <FractalBubbleChart
+              key={`lower-${chartKey}-${timeRange}`}
+              data={hierarchicalVolumeDistribution}
+              rootGroup="Lower Body"
+            />
+          </PremiumLock>
+        </View>
+      </SurfaceCard>
+
+      {/* Core Distribution */}
+      <SurfaceCard tone="neutral" padding="lg" showAccentStripe={false}>
+        <View style={styles.cardContent}>
+          <PremiumLock
+            isLocked={!isPremium}
+            featureName="Core Distribution"
+            onUnlock={handleUpgrade}
+          >
+            <FractalBubbleChart
+              key={`core-${chartKey}-${timeRange}`}
+              data={hierarchicalVolumeDistribution}
+              rootGroup="Core"
+            />
           </PremiumLock>
         </View>
       </SurfaceCard>
@@ -84,6 +127,12 @@ const DistributionAnalyticsScreen: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
+  loadingContainer: {
+    flex: 1,
+    backgroundColor: colors.primary.bg,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   contentContainer: {
     flexGrow: 1,
     backgroundColor: colors.primary.bg,
@@ -96,6 +145,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingBottom: spacing.sm,
+  },
+  selectorContainer: {
+    alignItems: 'center',
   },
   backButton: {
     width: 40,

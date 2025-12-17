@@ -4,8 +4,9 @@
  * Shows high-tier (free), body-part breakdowns (premium-gated)
  */
 
-import React from 'react';
-import { View, StyleSheet, TouchableOpacity } from 'react-native';
+import React, { useCallback } from 'react';
+import { View, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { useFocusEffect } from 'expo-router';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -13,31 +14,42 @@ import { Text } from '@/components/atoms/Text';
 import { SurfaceCard } from '@/components/atoms/SurfaceCard';
 import { PremiumLock } from '@/components/atoms/PremiumLock';
 import { TabSwipeContainer } from '@/components/templates/TabSwipeContainer';
-import { TieredBarChart } from '@/components/molecules/TieredBarChart';
+import { DrilldownBarChart } from '@/components/molecules/DrilldownBarChart';
 import { TimeRangeSelector } from '@/components/atoms/TimeRangeSelector';
 import { useAnalyticsData } from '@/hooks/useAnalyticsData';
 import { usePremiumStatus } from '@/hooks/usePremiumStatus';
 import { colors, spacing } from '@/constants/theme';
-import { TIME_RANGE_SUBTITLES } from '@/types/analytics';
 import { useSettingsStore } from '@/store/settingsStore';
 
 const VolumeAnalyticsScreen: React.FC = () => {
   const router = useRouter();
   const [timeRange, setTimeRange] = React.useState<'week' | 'month' | 'year' | 'all'>('week');
-  const { weeklyVolume } = useAnalyticsData({ timeRange });
-  const { isPremium } = usePremiumStatus();
-  const { getWeightUnit } = useSettingsStore();
-  const weightUnit = getWeightUnit();
+  const { hierarchicalVolumeDistribution } = useAnalyticsData({ timeRange });
+  const { isPremium, isLoading } = usePremiumStatus();
+  const weightUnit = useSettingsStore((state) => state.weightUnit);
+  
+  // Key to force charts to reset when page is revisited
+  const [chartKey, setChartKey] = React.useState(0);
+  
+  // Reset time range and charts when page is revisited
+  useFocusEffect(
+    useCallback(() => {
+      setTimeRange('week');
+      setChartKey(prev => prev + 1);
+    }, [])
+  );
+  
+  // Show loading screen while checking premium status to avoid paywall flash
+  if (isLoading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={colors.accent.orange} />
+      </View>
+    );
+  }
 
   const handleBackPress = () => {
     router.replace('/(tabs)/profile');
-  };
-
-  const handleMusclePress = (muscleName: string) => {
-    router.push({
-      pathname: '/(tabs)/muscle-detail',
-      params: { muscle: muscleName },
-    } as any);
   };
 
   const handleUpgrade = () => {
@@ -52,7 +64,7 @@ const VolumeAnalyticsScreen: React.FC = () => {
         <TouchableOpacity onPress={handleBackPress} style={styles.backButton}>
           <Ionicons name="chevron-back" size={24} color={colors.text.primary} />
         </TouchableOpacity>
-        <Text variant="heading2" color="primary">Volume</Text>
+        <Text variant="heading2" color="primary">Volume Totals ({weightUnit})</Text>
         <View style={styles.placeholder} />
       </View>
 
@@ -61,85 +73,48 @@ const VolumeAnalyticsScreen: React.FC = () => {
         <TimeRangeSelector value={timeRange} onChange={setTimeRange} />
       </View>
 
-      {/* High-tier (Free) - Total Volume */}
-      <SurfaceCard tone="neutral" padding="md">
-        <View style={styles.section}>
-          <Text variant="labelMedium" color="secondary" style={styles.tierLabel}>
-            TOTAL VOLUME • {TIME_RANGE_SUBTITLES[timeRange].toUpperCase()}
-          </Text>
-          <TieredBarChart
-            data={weeklyVolume.high}
-            unit={weightUnit}
-          />
-        </View>
-      </SurfaceCard>
-
       {/* Upper Body Breakdown (Premium) */}
-      <SurfaceCard tone="neutral" padding="md">
+      <SurfaceCard tone="neutral" padding="md" showAccentStripe={false}>
         <PremiumLock
           isLocked={!isPremium}
           featureName="Upper Body Breakdown"
           onUnlock={handleUpgrade}
         >
-          <View style={styles.section}>
-            <Text variant="labelMedium" color="secondary" style={styles.tierLabel}>
-              UPPER BODY
-            </Text>
-            <Text variant="caption" color="tertiary" style={styles.tierHint}>
-              Chest • Back • Shoulders • Arms
-            </Text>
-            <TieredBarChart
-              data={weeklyVolume.byBodyPart.upper}
-              unit={weightUnit}
-              onBarPress={handleMusclePress}
-            />
-          </View>
+          <DrilldownBarChart
+            key={`upper-${chartKey}-${timeRange}`}
+            data={hierarchicalVolumeDistribution}
+            rootGroup="Upper Body"
+          />
         </PremiumLock>
       </SurfaceCard>
 
       {/* Lower Body Breakdown (Premium) */}
-      <SurfaceCard tone="neutral" padding="md">
+      <SurfaceCard tone="neutral" padding="md" showAccentStripe={false}>
         <PremiumLock
           isLocked={!isPremium}
           featureName="Lower Body Breakdown"
           onUnlock={handleUpgrade}
         >
-          <View style={styles.section}>
-            <Text variant="labelMedium" color="secondary" style={styles.tierLabel}>
-              LOWER BODY
-            </Text>
-            <Text variant="caption" color="tertiary" style={styles.tierHint}>
-              Quads • Hamstrings • Glutes • Calves • Hips
-            </Text>
-            <TieredBarChart
-              data={weeklyVolume.byBodyPart.lower}
-              unit={weightUnit}
-              onBarPress={handleMusclePress}
-            />
-          </View>
+          <DrilldownBarChart
+            key={`lower-${chartKey}-${timeRange}`}
+            data={hierarchicalVolumeDistribution}
+            rootGroup="Lower Body"
+          />
         </PremiumLock>
       </SurfaceCard>
 
       {/* Core Breakdown (Premium) */}
-      <SurfaceCard tone="neutral" padding="md">
+      <SurfaceCard tone="neutral" padding="md" showAccentStripe={false}>
         <PremiumLock
           isLocked={!isPremium}
           featureName="Core Breakdown"
           onUnlock={handleUpgrade}
         >
-          <View style={styles.section}>
-            <Text variant="labelMedium" color="secondary" style={styles.tierLabel}>
-              CORE
-            </Text>
-            <Text variant="caption" color="tertiary" style={styles.tierHint}>
-              Abs • Obliques
-            </Text>
-            <TieredBarChart
-              data={weeklyVolume.byBodyPart.core}
-              unit={weightUnit}
-              onBarPress={handleMusclePress}
-            />
-          </View>
+          <DrilldownBarChart
+            key={`core-${chartKey}-${timeRange}`}
+            data={hierarchicalVolumeDistribution}
+            rootGroup="Core"
+          />
         </PremiumLock>
       </SurfaceCard>
 
@@ -155,6 +130,12 @@ const VolumeAnalyticsScreen: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
+  loadingContainer: {
+    flex: 1,
+    backgroundColor: colors.primary.bg,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   contentContainer: {
     flexGrow: 1,
     backgroundColor: colors.primary.bg,
@@ -180,16 +161,6 @@ const styles = StyleSheet.create({
   selectorContainer: {
     alignItems: 'center',
     marginBottom: spacing.xs,
-  },
-  section: {
-    gap: spacing.xs,
-  },
-  tierLabel: {
-    letterSpacing: 1,
-    marginBottom: spacing.xs,
-  },
-  tierHint: {
-    marginBottom: spacing.sm,
   },
   tipContainer: {
     flexDirection: 'row',
