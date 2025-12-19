@@ -19,7 +19,7 @@ import * as Haptics from 'expo-haptics';
 import { Text } from '@/components/atoms/Text';
 import { SurfaceCard } from '@/components/atoms/SurfaceCard';
 import { HorizontalAccentBar } from '@/components/atoms/HorizontalAccentBar';
-import { spacing, radius } from '@/constants/theme';
+import { colors, spacing, radius } from '@/constants/theme';
 import { useTheme } from '@/hooks/useTheme';
 
 interface AnalyticsCardProps {
@@ -144,13 +144,16 @@ export const AnalyticsCard: React.FC<AnalyticsCardProps> = ({
 const styles = StyleSheet.create({
   cardContent: {
     gap: spacing.md,
+    paddingHorizontal: spacing.lg,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    paddingHorizontal: spacing.lg,
     paddingTop: spacing.md,
+    paddingBottom: spacing.xs,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border.light,
   },
   headerText: {
     flex: 1,

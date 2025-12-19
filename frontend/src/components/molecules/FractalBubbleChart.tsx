@@ -145,32 +145,30 @@ export const FractalBubbleChart: React.FC<FractalBubbleChartProps> = ({ data, on
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text variant="heading3" color="primary">{getCurrentGroupName()}</Text>
-        <Text variant="caption" color="tertiary">{getSubtitle()}</Text>
+        <Text variant="heading3" color="primary" style={styles.headerTitle}>
+          {getCurrentGroupName()}
+        </Text>
       </View>
 
-      {breadcrumb.length > 1 && (
-        <Animated.View entering={FadeIn.duration(200)} style={styles.breadcrumbContainer}>
-          {breadcrumb.map((item, index) => (
-            <View key={`${item.level}-${item.name}`} style={styles.breadcrumbItem}>
-              {index > 0 && <Ionicons name="chevron-forward" size={14} color={colors.text.tertiary} />}
-              <Pressable
-                onPress={() => handleBreadcrumbPress(index)}
-                style={[styles.breadcrumbButton, index === breadcrumb.length - 1 && styles.breadcrumbButtonActive]}
-              >
-                <Text variant="caption" color={index === breadcrumb.length - 1 ? 'primary' : 'tertiary'}>
-                  {item.name}
-                </Text>
-              </Pressable>
-            </View>
-          ))}
-        </Animated.View>
-      )}
+      <View style={styles.breadcrumbContainer}>
+        {breadcrumb.map((item, index) => (
+          <View key={`${item.level}-${item.name}`} style={styles.breadcrumbItem}>
+            {index > 0 && <Ionicons name="chevron-forward" size={14} color={colors.text.tertiary} />}
+            <Pressable
+              onPress={() => handleBreadcrumbPress(index)}
+              style={[styles.breadcrumbButton, index === breadcrumb.length - 1 && styles.breadcrumbButtonActive]}
+            >
+              <Text variant="caption" color={index === breadcrumb.length - 1 ? 'primary' : 'tertiary'}>
+                {item.name}
+              </Text>
+            </Pressable>
+          </View>
+        ))}
+      </View>
 
       {!hasData ? (
         <View style={styles.emptyContainer}>
-          <Text variant="body" color="secondary">No workout data available yet.</Text>
-          <Text variant="caption" color="tertiary">Complete workouts to see your distribution.</Text>
+          <Text variant="body" color="secondary" style={styles.emptyText}>No workout data available</Text>
         </View>
       ) : currentData.length > 0 ? (
         <>
@@ -261,7 +259,18 @@ export const FractalBubbleChart: React.FC<FractalBubbleChartProps> = ({ data, on
 
 const styles = StyleSheet.create({
   container: { gap: spacing.md },
-  header: { gap: spacing.xs, paddingBottom: spacing.sm, borderBottomWidth: 1, borderBottomColor: colors.border.light },
+  header: {
+    paddingBottom: spacing.xs,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border.light,
+    alignItems: 'center',
+  },
+  headerTitle: {
+    textAlign: 'center',
+  },
+  headerSubtitle: {
+    textAlign: 'center',
+  },
   breadcrumbContainer: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: spacing.xs, paddingVertical: spacing.xs },
   breadcrumbItem: { flexDirection: 'row', alignItems: 'center' },
   breadcrumbButton: { paddingHorizontal: spacing.sm, paddingVertical: spacing.xs, borderRadius: radius.sm },
@@ -274,6 +283,7 @@ const styles = StyleSheet.create({
   legendDot: { width: 10, height: 10, borderRadius: 5 },
   legendText: { maxWidth: 80 },
   emptyContainer: { padding: spacing.lg, alignItems: 'center', gap: spacing.xs },
+  emptyText: { textAlign: 'center' },
   noDataContainer: { alignItems: 'center', justifyContent: 'center', gap: spacing.md, padding: spacing.lg, minHeight: 200 },
   goBackButton: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: radius.md, backgroundColor: colors.neutral.gray200 },
 });

@@ -209,9 +209,13 @@ export const PersonalRecordsSection: React.FC = () => {
 const styles = StyleSheet.create({
   cardContent: {
     gap: spacing.lg,
+    paddingHorizontal: spacing.sm,
   },
   headerContainer: {
     alignItems: 'center',
+    paddingBottom: spacing.xs,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border.light,
   },
   list: {
     gap: spacing.lg,

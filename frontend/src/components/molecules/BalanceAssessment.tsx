@@ -13,18 +13,18 @@ import { colors, spacing, radius } from '@/constants/theme';
 import { useWorkoutSessionsStore } from '@/store/workoutSessionsStore';
 import exercisesData from '@/data/exercises.json';
 
-const EXERCISE_MUSCLES = exercisesData.reduce((acc, ex) => {
-  if (ex.muscles) {
-    acc[ex.name] = ex.muscles as unknown as Record<string, number>;
-  }
-  return acc;
-}, {} as Record<string, Record<string, number>>);
+interface ExerciseMetadata {
+  push_pull: 'push' | 'pull' | null;
+  upper_lower: 'upper' | 'lower' | null;
+}
 
-// Muscle categorization for balance analysis
-const PUSH_MUSCLES = ['Chest', 'Front Delts', 'Triceps', 'Upper Chest', 'Mid Chest', 'Lower Chest'];
-const PULL_MUSCLES = ['Back', 'Lats', 'Rear Delts', 'Biceps', 'Mid Back', 'Upper Back', 'Traps'];
-const QUAD_DOMINANT = ['Quads', 'Quad'];
-const HIP_DOMINANT = ['Hamstrings', 'Glutes', 'Hams'];
+const EXERCISE_METADATA = exercisesData.reduce((acc, ex) => {
+  acc[ex.name] = {
+    push_pull: ex.push_pull as 'push' | 'pull' | null,
+    upper_lower: ex.upper_lower as 'upper' | 'lower' | null,
+  };
+  return acc;
+}, {} as Record<string, ExerciseMetadata>);
 
 interface BalanceBarProps {
   label: string;
@@ -94,8 +94,6 @@ export const BalanceAssessment: React.FC = () => {
   const balanceData = useMemo(() => {
     let push = 0;
     let pull = 0;
-    let quad = 0;
-    let hip = 0;
     let upper = 0;
     let lower = 0;
 
@@ -106,32 +104,31 @@ export const BalanceAssessment: React.FC = () => {
       .filter((w) => new Date(w.date) >= cutoff)
       .forEach((workout) => {
         workout.exercises.forEach((exercise) => {
-          const muscles = EXERCISE_MUSCLES[exercise.name];
-          if (!muscles) return;
+          const metadata = EXERCISE_METADATA[exercise.name];
+          if (!metadata) return;
 
-          const completedSets = exercise.sets.filter((s) => s.completed && (s.weight ?? 0) > 0).length;
+          const completedSets = exercise.sets.filter(
+            (s) => s.completed && ((s.weight ?? 0) > 0 || (s.reps ?? 0) > 0)
+          ).length;
           if (completedSets === 0) return;
 
-          Object.keys(muscles).forEach((muscle) => {
-            const contribution = completedSets;
+          // Push/Pull classification
+          if (metadata.push_pull === 'push') {
+            push += completedSets;
+          } else if (metadata.push_pull === 'pull') {
+            pull += completedSets;
+          }
 
-            if (PUSH_MUSCLES.some((p) => muscle.includes(p))) push += contribution;
-            if (PULL_MUSCLES.some((p) => muscle.includes(p))) pull += contribution;
-            if (QUAD_DOMINANT.some((q) => muscle.includes(q))) quad += contribution;
-            if (HIP_DOMINANT.some((h) => muscle.includes(h))) hip += contribution;
-
-            // Upper vs Lower
-            if ([...PUSH_MUSCLES, ...PULL_MUSCLES, 'Arms', 'Shoulders'].some((u) => muscle.includes(u))) {
-              upper += contribution;
-            }
-            if ([...QUAD_DOMINANT, ...HIP_DOMINANT, 'Calf', 'Hip'].some((l) => muscle.includes(l))) {
-              lower += contribution;
-            }
-          });
+          // Upper/Lower classification
+          if (metadata.upper_lower === 'upper') {
+            upper += completedSets;
+          } else if (metadata.upper_lower === 'lower') {
+            lower += completedSets;
+          }
         });
       });
 
-    return { push, pull, quad, hip, upper, lower };
+    return { push, pull, upper, lower };
   }, [workouts]);
 
   const hasData = Object.values(balanceData).some((v) => v > 0);
@@ -168,13 +165,6 @@ export const BalanceAssessment: React.FC = () => {
         rightValue={balanceData.lower}
       />
 
-      <BalanceBar
-        label="Quad / Hip Dominant"
-        leftLabel="Quads"
-        rightLabel="Glutes/Hams"
-        leftValue={balanceData.quad}
-        rightValue={balanceData.hip}
-      />
     </View>
   );
 };

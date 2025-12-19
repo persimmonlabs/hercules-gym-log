@@ -191,13 +191,6 @@ export const DrilldownBarChart: React.FC<DrilldownBarChartProps> = ({
   // Categories for x-axis labels
   const xCategories = currentData.map(d => getDisplayName(d.name));
 
-  const getSubtitle = (): string => {
-    const current = breadcrumb[breadcrumb.length - 1];
-    if (current.level === 'L1' && breadcrumb.length === 1) {
-      return 'Tap bar to select, tap again to drill down';
-    }
-    return '';
-  };
 
   // Check for data
   const hasData = currentData.length > 0 && rawMax > 0;
@@ -214,16 +207,11 @@ export const DrilldownBarChart: React.FC<DrilldownBarChartProps> = ({
         <Text variant="heading3" color="primary">
           {headerTitle}
         </Text>
-        {getSubtitle() && (
-          <Text variant="caption" color="tertiary">
-            {getSubtitle()}
-          </Text>
-        )}
       </View>
 
-      {/* Breadcrumb */}
-      {breadcrumb.length > 1 && (
-        <Animated.View entering={FadeIn.duration(200)} style={styles.breadcrumbContainer}>
+      {/* Breadcrumb - always visible unless empty state */}
+      {hasData && (
+        <View style={styles.breadcrumbContainer}>
           {breadcrumb.map((item, index) => (
             <View key={`${item.level}-${item.name}`} style={styles.breadcrumbItem}>
               {index > 0 && (
@@ -245,7 +233,7 @@ export const DrilldownBarChart: React.FC<DrilldownBarChartProps> = ({
               </Pressable>
             </View>
           ))}
-        </Animated.View>
+        </View>
       )}
 
       {/* Chart */}
@@ -331,16 +319,15 @@ export const DrilldownBarChart: React.FC<DrilldownBarChartProps> = ({
               />
             </VictoryChart>
 
-            {/* Tooltip - only show if selected bar exists in current data */}
-            {selectedBar && currentData.some(d => d.name === selectedBar.label) && (
-              <View style={styles.tooltip}>
-                <Text variant="caption" color="primary">
-                  {getDisplayName(selectedBar.label)}: {Math.round(selectedBar.value).toLocaleString()} {weightUnit}
-                  {canDrillDown(selectedBar.label) && ' →'}
-                </Text>
-              </View>
-            )}
           </View>
+
+          {/* Drill down hint below chart */}
+          {selectedBar && canDrillDown(selectedBar.label) && (
+            <View style={styles.drillHint}>
+              <Ionicons name="finger-print-outline" size={14} color={colors.text.tertiary} />
+              <Text variant="caption" color="tertiary">Tap again to explore</Text>
+            </View>
+          )}
 
         </ChartWrapper>
       )}
@@ -351,10 +338,13 @@ export const DrilldownBarChart: React.FC<DrilldownBarChartProps> = ({
 const styles = StyleSheet.create({
   container: {
     gap: spacing.sm,
+    paddingHorizontal: spacing.lg,
   },
   header: {
     alignItems: 'center',
-    gap: spacing.xs,
+    paddingBottom: spacing.xs,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border.light,
   },
   breadcrumbContainer: {
     flexDirection: 'row',
@@ -387,14 +377,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     position: 'relative',
   },
-  tooltip: {
-    position: 'absolute',
-    top: 10,
-    backgroundColor: colors.surface.card,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
-    borderRadius: radius.sm,
-    borderWidth: 1,
-    borderColor: colors.border.light,
+  drillHint: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xs,
+    paddingVertical: spacing.sm,
   },
 });

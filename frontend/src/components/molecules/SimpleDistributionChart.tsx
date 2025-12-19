@@ -17,7 +17,7 @@ import { colors, spacing, radius } from '@/constants/theme';
 import { useAnalyticsData } from '@/hooks/useAnalyticsData';
 import type { ChartSlice, TimeRange } from '@/types/analytics';
 
-const PIE_SIZE = 180;
+const PIE_SIZE = 240;
 
 interface LegendItemProps {
   item: ChartSlice;

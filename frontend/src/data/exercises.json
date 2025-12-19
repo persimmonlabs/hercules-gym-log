@@ -29,7 +29,9 @@
     ],
     "movement_pattern": "Horizontal Push",
     "difficulty": "Intermediate",
-    "is_compound": true
+    "is_compound": true,
+    "push_pull": "push",
+    "upper_lower": "upper"
   },
   {
     "id": "exercise_002",
@@ -62,7 +64,9 @@
     ],
     "movement_pattern": "Horizontal Push",
     "difficulty": "Beginner",
-    "is_compound": true
+    "is_compound": true,
+    "push_pull": "push",
+    "upper_lower": "upper"
   },
   {
     "id": "exercise_003",
@@ -95,7 +99,9 @@
     ],
     "movement_pattern": "Horizontal Push",
     "difficulty": "Beginner",
-    "is_compound": false
+    "is_compound": false,
+    "push_pull": "push",
+    "upper_lower": "upper"
   },
   {
     "id": "exercise_004",
@@ -129,7 +135,9 @@
     ],
     "movement_pattern": "Lateral Raise",
     "difficulty": "Beginner",
-    "is_compound": false
+    "is_compound": false,
+    "push_pull": null,
+    "upper_lower": "upper"
   },
   {
     "id": "exercise_005",
@@ -163,7 +171,9 @@
     ],
     "movement_pattern": "Vertical Push",
     "difficulty": "Intermediate",
-    "is_compound": true
+    "is_compound": true,
+    "push_pull": "push",
+    "upper_lower": "upper"
   },
   {
     "id": "exercise_006",
@@ -195,7 +205,9 @@
     ],
     "movement_pattern": "Vertical Push",
     "difficulty": "Beginner",
-    "is_compound": false
+    "is_compound": false,
+    "push_pull": "push",
+    "upper_lower": "upper"
   },
   {
     "id": "exercise_007",
@@ -228,7 +240,9 @@
     ],
     "movement_pattern": "Vertical Push",
     "difficulty": "Beginner",
-    "is_compound": true
+    "is_compound": true,
+    "push_pull": "push",
+    "upper_lower": "upper"
   },
   {
     "id": "exercise_008",
@@ -256,7 +270,9 @@
     ],
     "movement_pattern": "Vertical Pull",
     "difficulty": "Beginner",
-    "is_compound": true
+    "is_compound": true,
+    "push_pull": "pull",
+    "upper_lower": "upper"
   },
   {
     "id": "exercise_009",
@@ -286,7 +302,9 @@
     ],
     "movement_pattern": "Vertical Pull",
     "difficulty": "Beginner",
-    "is_compound": false
+    "is_compound": false,
+    "push_pull": "pull",
+    "upper_lower": "upper"
   },
   {
     "id": "exercise_010",
@@ -315,7 +333,9 @@
     ],
     "movement_pattern": "Horizontal Pull",
     "difficulty": "Beginner",
-    "is_compound": true
+    "is_compound": true,
+    "push_pull": "pull",
+    "upper_lower": "upper"
   },
   {
     "id": "exercise_011",
@@ -345,7 +365,9 @@
     ],
     "movement_pattern": "Vertical Pull",
     "difficulty": "Beginner",
-    "is_compound": false
+    "is_compound": false,
+    "push_pull": "pull",
+    "upper_lower": "upper"
   },
   {
     "id": "exercise_012",
@@ -376,7 +398,9 @@
     ],
     "movement_pattern": "Vertical Pull",
     "difficulty": "Beginner",
-    "is_compound": false
+    "is_compound": false,
+    "push_pull": "pull",
+    "upper_lower": "upper"
   },
   {
     "id": "exercise_013",
@@ -404,7 +428,9 @@
     ],
     "movement_pattern": "Horizontal Extension",
     "difficulty": "Intermediate",
-    "is_compound": true
+    "is_compound": true,
+    "push_pull": null,
+    "upper_lower": "upper"
   },
   {
     "id": "exercise_014",
@@ -432,7 +458,9 @@
     ],
     "movement_pattern": "Vertical Push",
     "difficulty": "Beginner",
-    "is_compound": true
+    "is_compound": true,
+    "push_pull": "push",
+    "upper_lower": "lower"
   },
   {
     "id": "exercise_015",
@@ -456,7 +484,9 @@
     ],
     "movement_pattern": "Knee Extension",
     "difficulty": "Beginner",
-    "is_compound": false
+    "is_compound": false,
+    "push_pull": "push",
+    "upper_lower": "lower"
   },
   {
     "id": "exercise_016",
@@ -481,7 +511,9 @@
     ],
     "movement_pattern": "Knee Flexion",
     "difficulty": "Beginner",
-    "is_compound": false
+    "is_compound": false,
+    "push_pull": "pull",
+    "upper_lower": "lower"
   },
   {
     "id": "exercise_017",
@@ -505,7 +537,9 @@
     ],
     "movement_pattern": "Horizontal Adduction",
     "difficulty": "Beginner",
-    "is_compound": false
+    "is_compound": false,
+    "push_pull": null,
+    "upper_lower": "lower"
   },
   {
     "id": "exercise_018",
@@ -530,7 +564,9 @@
     ],
     "movement_pattern": "Horizontal Abduction",
     "difficulty": "Beginner",
-    "is_compound": false
+    "is_compound": false,
+    "push_pull": null,
+    "upper_lower": "lower"
   },
   {
     "id": "exercise_019",
@@ -564,7 +600,9 @@
     ],
     "movement_pattern": "Vertical Push",
     "difficulty": "Intermediate",
-    "is_compound": true
+    "is_compound": true,
+    "push_pull": "push",
+    "upper_lower": "lower"
   },
   {
     "id": "exercise_020",
@@ -594,7 +632,9 @@
     ],
     "movement_pattern": "Horizontal Pull",
     "difficulty": "Intermediate",
-    "is_compound": true
+    "is_compound": true,
+    "push_pull": "pull",
+    "upper_lower": "lower"
   },
   {
     "id": "exercise_021",
@@ -625,7 +665,9 @@
     ],
     "movement_pattern": "Vertical Pull",
     "difficulty": "Beginner",
-    "is_compound": false
+    "is_compound": false,
+    "push_pull": "pull",
+    "upper_lower": "upper"
   },
   {
     "id": "exercise_022",
@@ -659,7 +701,9 @@
     ],
     "movement_pattern": "Vertical Push",
     "difficulty": "Beginner",
-    "is_compound": true
+    "is_compound": true,
+    "push_pull": "push",
+    "upper_lower": "upper"
   },
   {
     "id": "exercise_023",
@@ -692,7 +736,9 @@
     ],
     "movement_pattern": "Vertical Push",
     "difficulty": "Intermediate",
-    "is_compound": true
+    "is_compound": true,
+    "push_pull": "push",
+    "upper_lower": "lower"
   },
   {
     "id": "exercise_024",
@@ -715,7 +761,9 @@
     ],
     "movement_pattern": "Vertical Push",
     "difficulty": "Beginner",
-    "is_compound": false
+    "is_compound": false,
+    "push_pull": "push",
+    "upper_lower": "lower"
   },
   {
     "id": "exercise_025",
@@ -740,7 +788,9 @@
     ],
     "movement_pattern": "Knee Flexion",
     "difficulty": "Beginner",
-    "is_compound": false
+    "is_compound": false,
+    "push_pull": "pull",
+    "upper_lower": "lower"
   },
   {
     "id": "exercise_026",
@@ -771,7 +821,9 @@
     ],
     "movement_pattern": "Vertical Push",
     "difficulty": "Beginner",
-    "is_compound": false
+    "is_compound": false,
+    "push_pull": "push",
+    "upper_lower": "upper"
   },
   {
     "id": "exercise_027",
@@ -800,7 +852,9 @@
     ],
     "movement_pattern": "Vertical Pull",
     "difficulty": "Beginner",
-    "is_compound": false
+    "is_compound": false,
+    "push_pull": "pull",
+    "upper_lower": "upper"
   },
   {
     "id": "exercise_028",
@@ -828,7 +882,9 @@
     ],
     "movement_pattern": "Lateral Raise",
     "difficulty": "Beginner",
-    "is_compound": false
+    "is_compound": false,
+    "push_pull": null,
+    "upper_lower": "upper"
   },
   {
     "id": "exercise_029",
@@ -859,7 +915,9 @@
     ],
     "movement_pattern": "Vertical Pull",
     "difficulty": "Beginner",
-    "is_compound": false
+    "is_compound": false,
+    "push_pull": "pull",
+    "upper_lower": "upper"
   },
   {
     "id": "exercise_030",
@@ -893,7 +951,9 @@
     ],
     "movement_pattern": "Vertical Push",
     "difficulty": "Intermediate",
-    "is_compound": true
+    "is_compound": true,
+    "push_pull": "push",
+    "upper_lower": "upper"
   },
   {
     "id": "exercise_031",
@@ -925,7 +985,9 @@
     ],
     "movement_pattern": "Vertical Pull",
     "difficulty": "Beginner",
-    "is_compound": false
+    "is_compound": false,
+    "push_pull": "pull",
+    "upper_lower": "upper"
   },
   {
     "id": "exercise_032",
@@ -956,7 +1018,9 @@
     ],
     "movement_pattern": "Vertical Push",
     "difficulty": "Intermediate",
-    "is_compound": true
+    "is_compound": true,
+    "push_pull": "push",
+    "upper_lower": "lower"
   },
   {
     "id": "exercise_033",
@@ -995,7 +1059,9 @@
     ],
     "movement_pattern": "Vertical Pull",
     "difficulty": "Advanced",
-    "is_compound": true
+    "is_compound": true,
+    "push_pull": "pull",
+    "upper_lower": "lower"
   },
   {
     "id": "exercise_034",
@@ -1037,7 +1103,9 @@
     ],
     "movement_pattern": "Vertical Push",
     "difficulty": "Advanced",
-    "is_compound": true
+    "is_compound": true,
+    "push_pull": "push",
+    "upper_lower": "upper"
   },
   {
     "id": "exercise_035",
@@ -1066,7 +1134,9 @@
     ],
     "movement_pattern": "Vertical Pull",
     "difficulty": "Intermediate",
-    "is_compound": false
+    "is_compound": false,
+    "push_pull": "pull",
+    "upper_lower": "upper"
   },
   {
     "id": "exercise_036",
@@ -1101,7 +1171,9 @@
     ],
     "movement_pattern": "Horizontal Push",
     "difficulty": "Intermediate",
-    "is_compound": true
+    "is_compound": true,
+    "push_pull": "push",
+    "upper_lower": "upper"
   },
   {
     "id": "exercise_037",
@@ -1126,7 +1198,9 @@
     ],
     "movement_pattern": "Lateral Raise",
     "difficulty": "Beginner",
-    "is_compound": false
+    "is_compound": false,
+    "push_pull": null,
+    "upper_lower": "upper"
   },
   {
     "id": "exercise_038",
@@ -1161,7 +1235,9 @@
     ],
     "movement_pattern": "Vertical Push",
     "difficulty": "Intermediate",
-    "is_compound": true
+    "is_compound": true,
+    "push_pull": "push",
+    "upper_lower": "lower"
   },
   {
     "id": "exercise_039",
@@ -1189,7 +1265,9 @@
     ],
     "movement_pattern": "Horizontal Extension",
     "difficulty": "Intermediate",
-    "is_compound": true
+    "is_compound": true,
+    "push_pull": null,
+    "upper_lower": "lower"
   },
   {
     "id": "exercise_040",
@@ -1221,7 +1299,9 @@
     ],
     "movement_pattern": "Horizontal Extension",
     "difficulty": "Intermediate",
-    "is_compound": true
+    "is_compound": true,
+    "push_pull": null,
+    "upper_lower": "lower"
   },
   {
     "id": "exercise_041",
@@ -1252,7 +1332,9 @@
     ],
     "movement_pattern": "Vertical Push",
     "difficulty": "Intermediate",
-    "is_compound": true
+    "is_compound": true,
+    "push_pull": "push",
+    "upper_lower": "lower"
   },
   {
     "id": "exercise_042",
@@ -1279,7 +1361,9 @@
     ],
     "movement_pattern": "Horizontal Extension",
     "difficulty": "Intermediate",
-    "is_compound": true
+    "is_compound": true,
+    "push_pull": null,
+    "upper_lower": "lower"
   },
   {
     "id": "exercise_043",
@@ -1317,7 +1401,9 @@
     ],
     "movement_pattern": "Vertical Push",
     "difficulty": "Intermediate",
-    "is_compound": true
+    "is_compound": true,
+    "push_pull": "push",
+    "upper_lower": "lower"
   },
   {
     "id": "exercise_044",
@@ -1356,7 +1442,9 @@
     ],
     "movement_pattern": "Vertical Push",
     "difficulty": "Advanced",
-    "is_compound": true
+    "is_compound": true,
+    "push_pull": "push",
+    "upper_lower": "lower"
   },
   {
     "id": "exercise_045",
@@ -1391,7 +1479,9 @@
     ],
     "movement_pattern": "Vertical Pull",
     "difficulty": "Advanced",
-    "is_compound": true
+    "is_compound": true,
+    "push_pull": "pull",
+    "upper_lower": "lower"
   },
   {
     "id": "exercise_046",
@@ -1417,7 +1507,9 @@
     ],
     "movement_pattern": "Vertical Pull",
     "difficulty": "Beginner",
-    "is_compound": false
+    "is_compound": false,
+    "push_pull": "pull",
+    "upper_lower": "upper"
   },
   {
     "id": "exercise_047",
@@ -1449,7 +1541,9 @@
     ],
     "movement_pattern": "Horizontal Pull",
     "difficulty": "Intermediate",
-    "is_compound": true
+    "is_compound": true,
+    "push_pull": "pull",
+    "upper_lower": "lower"
   },
   {
     "id": "exercise_048",
@@ -1475,7 +1569,9 @@
     ],
     "movement_pattern": "Vertical Pull",
     "difficulty": "Beginner",
-    "is_compound": false
+    "is_compound": false,
+    "push_pull": "pull",
+    "upper_lower": "upper"
   },
   {
     "id": "exercise_049",
@@ -1512,7 +1608,9 @@
     ],
     "movement_pattern": "Vertical Pull",
     "difficulty": "Advanced",
-    "is_compound": true
+    "is_compound": true,
+    "push_pull": "pull",
+    "upper_lower": "lower"
   },
   {
     "id": "exercise_050",
@@ -1545,7 +1643,9 @@
     ],
     "movement_pattern": "Vertical Push",
     "difficulty": "Intermediate",
-    "is_compound": true
+    "is_compound": true,
+    "push_pull": "push",
+    "upper_lower": "lower"
   },
   {
     "id": "exercise_051",
@@ -1575,7 +1675,9 @@
     ],
     "movement_pattern": "Vertical Pull",
     "difficulty": "Intermediate",
-    "is_compound": true
+    "is_compound": true,
+    "push_pull": "pull",
+    "upper_lower": "upper"
   },
   {
     "id": "exercise_052",
@@ -1610,7 +1712,9 @@
     ],
     "movement_pattern": "Horizontal Pull",
     "difficulty": "Intermediate",
-    "is_compound": true
+    "is_compound": true,
+    "push_pull": "pull",
+    "upper_lower": "upper"
   },
   {
     "id": "exercise_053",
@@ -1638,7 +1742,9 @@
     ],
     "movement_pattern": "Vertical Push",
     "difficulty": "Beginner",
-    "is_compound": false
+    "is_compound": false,
+    "push_pull": "push",
+    "upper_lower": "upper"
   },
   {
     "id": "exercise_054",
@@ -1671,7 +1777,9 @@
     ],
     "movement_pattern": "Lateral Raise",
     "difficulty": "Beginner",
-    "is_compound": false
+    "is_compound": false,
+    "push_pull": null,
+    "upper_lower": "upper"
   },
   {
     "id": "exercise_055",
@@ -1706,7 +1814,9 @@
     ],
     "movement_pattern": "Horizontal Push",
     "difficulty": "Beginner",
-    "is_compound": false
+    "is_compound": false,
+    "push_pull": "push",
+    "upper_lower": "upper"
   },
   {
     "id": "exercise_056",
@@ -1738,7 +1848,9 @@
     ],
     "movement_pattern": "Lateral Raise",
     "difficulty": "Beginner",
-    "is_compound": false
+    "is_compound": false,
+    "push_pull": null,
+    "upper_lower": "upper"
   },
   {
     "id": "exercise_057",
@@ -1765,7 +1877,9 @@
     ],
     "movement_pattern": "Vertical Pull",
     "difficulty": "Beginner",
-    "is_compound": false
+    "is_compound": false,
+    "push_pull": "pull",
+    "upper_lower": "upper"
   },
   {
     "id": "exercise_058",
@@ -1792,7 +1906,9 @@
     ],
     "movement_pattern": "Horizontal Abduction",
     "difficulty": "Beginner",
-    "is_compound": false
+    "is_compound": false,
+    "push_pull": null,
+    "upper_lower": "lower"
   },
   {
     "id": "exercise_059",
@@ -1819,7 +1935,9 @@
     ],
     "movement_pattern": "Horizontal Adduction",
     "difficulty": "Beginner",
-    "is_compound": false
+    "is_compound": false,
+    "push_pull": null,
+    "upper_lower": "lower"
   },
   {
     "id": "exercise_060",
@@ -1849,7 +1967,9 @@
     ],
     "movement_pattern": "Vertical Push",
     "difficulty": "Beginner",
-    "is_compound": false
+    "is_compound": false,
+    "push_pull": "push",
+    "upper_lower": "upper"
   },
   {
     "id": "exercise_061",
@@ -1872,7 +1992,9 @@
     ],
     "movement_pattern": "Vertical Pull",
     "difficulty": "Beginner",
-    "is_compound": false
+    "is_compound": false,
+    "push_pull": "pull",
+    "upper_lower": "upper"
   },
   {
     "id": "exercise_062",
@@ -1899,7 +2021,9 @@
     ],
     "movement_pattern": "Horizontal Pull",
     "difficulty": "Beginner",
-    "is_compound": true
+    "is_compound": true,
+    "push_pull": "pull",
+    "upper_lower": "lower"
   },
   {
     "id": "exercise_063",
@@ -1921,7 +2045,9 @@
     ],
     "movement_pattern": "Vertical Push",
     "difficulty": "Beginner",
-    "is_compound": false
+    "is_compound": false,
+    "push_pull": "push",
+    "upper_lower": "upper"
   },
   {
     "id": "exercise_064",
@@ -1949,7 +2075,9 @@
     ],
     "movement_pattern": "Vertical Pull",
     "difficulty": "Beginner",
-    "is_compound": true
+    "is_compound": true,
+    "push_pull": "pull",
+    "upper_lower": "upper"
   },
   {
     "id": "exercise_065",
@@ -1980,7 +2108,9 @@
     ],
     "movement_pattern": "Vertical Pull",
     "difficulty": "Intermediate",
-    "is_compound": true
+    "is_compound": true,
+    "push_pull": "pull",
+    "upper_lower": "upper"
   },
   {
     "id": "exercise_066",
@@ -2009,7 +2139,9 @@
     ],
     "movement_pattern": "Knee Extension",
     "difficulty": "Beginner",
-    "is_compound": false
+    "is_compound": false,
+    "push_pull": "push",
+    "upper_lower": "lower"
   },
   {
     "id": "exercise_067",
@@ -2036,7 +2168,9 @@
     ],
     "movement_pattern": "Horizontal Pull",
     "difficulty": "Intermediate",
-    "is_compound": true
+    "is_compound": true,
+    "push_pull": "pull",
+    "upper_lower": "upper"
   },
   {
     "id": "exercise_068",
@@ -2068,7 +2202,9 @@
     ],
     "movement_pattern": "Horizontal Push",
     "difficulty": "Intermediate",
-    "is_compound": true
+    "is_compound": true,
+    "push_pull": "push",
+    "upper_lower": "upper"
   },
   {
     "id": "exercise_069",
@@ -2097,7 +2233,9 @@
     ],
     "movement_pattern": "Vertical Pull",
     "difficulty": "Beginner",
-    "is_compound": true
+    "is_compound": true,
+    "push_pull": "pull",
+    "upper_lower": "upper"
   },
   {
     "id": "exercise_070",
@@ -2128,7 +2266,9 @@
     ],
     "movement_pattern": "Horizontal Push",
     "difficulty": "Intermediate",
-    "is_compound": true
+    "is_compound": true,
+    "push_pull": "push",
+    "upper_lower": "upper"
   },
   {
     "id": "exercise_071",
@@ -2158,7 +2298,9 @@
     ],
     "movement_pattern": "Horizontal Push",
     "difficulty": "Beginner",
-    "is_compound": true
+    "is_compound": true,
+    "push_pull": "push",
+    "upper_lower": "upper"
   },
   {
     "id": "exercise_072",
@@ -2191,7 +2333,9 @@
     ],
     "movement_pattern": "Horizontal Push",
     "difficulty": "Intermediate",
-    "is_compound": true
+    "is_compound": true,
+    "push_pull": "push",
+    "upper_lower": "upper"
   },
   {
     "id": "exercise_073",
@@ -2221,7 +2365,9 @@
     ],
     "movement_pattern": "Horizontal Push",
     "difficulty": "Beginner",
-    "is_compound": false
+    "is_compound": false,
+    "push_pull": "push",
+    "upper_lower": "upper"
   },
   {
     "id": "exercise_074",
@@ -2241,7 +2387,9 @@
     ],
     "movement_pattern": "Horizontal Extension",
     "difficulty": "Beginner",
-    "is_compound": false
+    "is_compound": false,
+    "push_pull": null,
+    "upper_lower": "upper"
   },
   {
     "id": "exercise_075",
@@ -2263,7 +2411,9 @@
     ],
     "movement_pattern": "Vertical Push",
     "difficulty": "Beginner",
-    "is_compound": false
+    "is_compound": false,
+    "push_pull": "push",
+    "upper_lower": "upper"
   },
   {
     "id": "exercise_076",
@@ -2291,7 +2441,9 @@
     ],
     "movement_pattern": "Horizontal Push",
     "difficulty": "Beginner",
-    "is_compound": true
+    "is_compound": true,
+    "push_pull": "push",
+    "upper_lower": "upper"
   },
   {
     "id": "exercise_077",
@@ -2319,7 +2471,9 @@
     ],
     "movement_pattern": "Vertical Push",
     "difficulty": "Intermediate",
-    "is_compound": true
+    "is_compound": true,
+    "push_pull": "push",
+    "upper_lower": "lower"
   },
   {
     "id": "exercise_078",
@@ -2341,7 +2495,9 @@
     ],
     "movement_pattern": "Vertical Pull",
     "difficulty": "Beginner",
-    "is_compound": false
+    "is_compound": false,
+    "push_pull": "pull",
+    "upper_lower": "upper"
   },
   {
     "id": "exercise_079",
@@ -2370,7 +2526,9 @@
     ],
     "movement_pattern": "Vertical Push",
     "difficulty": "Intermediate",
-    "is_compound": true
+    "is_compound": true,
+    "push_pull": "push",
+    "upper_lower": "upper"
   },
   {
     "id": "exercise_080",
@@ -2400,7 +2558,9 @@
     ],
     "movement_pattern": "Horizontal Pull",
     "difficulty": "Intermediate",
-    "is_compound": true
+    "is_compound": true,
+    "push_pull": "pull",
+    "upper_lower": "lower"
   },
   {
     "id": "exercise_081",
@@ -2430,7 +2590,9 @@
     ],
     "movement_pattern": "Horizontal Push",
     "difficulty": "Beginner",
-    "is_compound": false
+    "is_compound": false,
+    "push_pull": "push",
+    "upper_lower": "upper"
   },
   {
     "id": "exercise_082",
@@ -2459,7 +2621,9 @@
     ],
     "movement_pattern": "Vertical Push",
     "difficulty": "Intermediate",
-    "is_compound": true
+    "is_compound": true,
+    "push_pull": "push",
+    "upper_lower": "lower"
   },
   {
     "id": "exercise_083",
@@ -2482,7 +2646,9 @@
     ],
     "movement_pattern": "Vertical Pull",
     "difficulty": "Beginner",
-    "is_compound": false
+    "is_compound": false,
+    "push_pull": "pull",
+    "upper_lower": "upper"
   },
   {
     "id": "exercise_084",
@@ -2508,7 +2674,9 @@
     ],
     "movement_pattern": "Vertical Push",
     "difficulty": "Beginner",
-    "is_compound": true
+    "is_compound": true,
+    "push_pull": "push",
+    "upper_lower": "lower"
   },
   {
     "id": "exercise_085",
@@ -2535,7 +2703,9 @@
     ],
     "movement_pattern": "Vertical Push",
     "difficulty": "Beginner",
-    "is_compound": true
+    "is_compound": true,
+    "push_pull": "push",
+    "upper_lower": "lower"
   },
   {
     "id": "exercise_086",
@@ -2564,7 +2734,9 @@
     ],
     "movement_pattern": "Horizontal Pull",
     "difficulty": "Intermediate",
-    "is_compound": true
+    "is_compound": true,
+    "push_pull": "pull",
+    "upper_lower": "lower"
   },
   {
     "id": "exercise_087",
@@ -2588,7 +2760,9 @@
     ],
     "movement_pattern": "Vertical Pull",
     "difficulty": "Beginner",
-    "is_compound": false
+    "is_compound": false,
+    "push_pull": "pull",
+    "upper_lower": "upper"
   },
   {
     "id": "exercise_088",
@@ -2610,7 +2784,9 @@
     ],
     "movement_pattern": "Vertical Pull",
     "difficulty": "Beginner",
-    "is_compound": false
+    "is_compound": false,
+    "push_pull": "pull",
+    "upper_lower": "upper"
   },
   {
     "id": "exercise_089",
@@ -2641,7 +2817,9 @@
     ],
     "movement_pattern": "Vertical Push",
     "difficulty": "Beginner",
-    "is_compound": true
+    "is_compound": true,
+    "push_pull": "push",
+    "upper_lower": "lower"
   },
   {
     "id": "exercise_090",
@@ -2672,7 +2850,9 @@
     ],
     "movement_pattern": "Vertical Push",
     "difficulty": "Beginner",
-    "is_compound": true
+    "is_compound": true,
+    "push_pull": "push",
+    "upper_lower": "lower"
   },
   {
     "id": "exercise_091",
@@ -2697,7 +2877,9 @@
     ],
     "movement_pattern": "Vertical Push",
     "difficulty": "Beginner",
-    "is_compound": false
+    "is_compound": false,
+    "push_pull": "push",
+    "upper_lower": "upper"
   },
   {
     "id": "exercise_092",
@@ -2726,7 +2908,9 @@
     ],
     "movement_pattern": "Vertical Pull",
     "difficulty": "Intermediate",
-    "is_compound": true
+    "is_compound": true,
+    "push_pull": "pull",
+    "upper_lower": "upper"
   },
   {
     "id": "exercise_093",
@@ -2747,7 +2931,9 @@
     ],
     "movement_pattern": "Vertical Pull",
     "difficulty": "Beginner",
-    "is_compound": false
+    "is_compound": false,
+    "push_pull": "pull",
+    "upper_lower": "upper"
   },
   {
     "id": "exercise_094",
@@ -2771,7 +2957,9 @@
     ],
     "movement_pattern": "Vertical Push",
     "difficulty": "Intermediate",
-    "is_compound": false
+    "is_compound": false,
+    "push_pull": "push",
+    "upper_lower": "upper"
   },
   {
     "id": "exercise_095",
@@ -2797,7 +2985,9 @@
     ],
     "movement_pattern": "Horizontal Pull",
     "difficulty": "Beginner",
-    "is_compound": false
+    "is_compound": false,
+    "push_pull": "pull",
+    "upper_lower": "upper"
   },
   {
     "id": "exercise_096",
@@ -2823,7 +3013,9 @@
     ],
     "movement_pattern": "Vertical Push",
     "difficulty": "Beginner",
-    "is_compound": true
+    "is_compound": true,
+    "push_pull": "push",
+    "upper_lower": "lower"
   },
   {
     "id": "exercise_097",
@@ -2847,7 +3039,9 @@
     ],
     "movement_pattern": "Horizontal Extension",
     "difficulty": "Beginner",
-    "is_compound": true
+    "is_compound": true,
+    "push_pull": null,
+    "upper_lower": "lower"
   },
   {
     "id": "exercise_098",
@@ -2876,7 +3070,9 @@
     ],
     "movement_pattern": "Horizontal Push",
     "difficulty": "Intermediate",
-    "is_compound": true
+    "is_compound": true,
+    "push_pull": "push",
+    "upper_lower": "upper"
   },
   {
     "id": "exercise_099",
@@ -2900,7 +3096,9 @@
     ],
     "movement_pattern": "Vertical Push",
     "difficulty": "Intermediate",
-    "is_compound": false
+    "is_compound": false,
+    "push_pull": "push",
+    "upper_lower": "upper"
   },
   {
     "id": "exercise_100",
@@ -2930,7 +3128,9 @@
     ],
     "movement_pattern": "Horizontal Push",
     "difficulty": "Beginner",
-    "is_compound": false
+    "is_compound": false,
+    "push_pull": "push",
+    "upper_lower": "upper"
   },
   {
     "id": "exercise_101",
@@ -2955,7 +3155,9 @@
     ],
     "movement_pattern": "Horizontal Push",
     "difficulty": "Beginner",
-    "is_compound": true
+    "is_compound": true,
+    "push_pull": "push",
+    "upper_lower": "upper"
   },
   {
     "id": "exercise_102",
@@ -2986,7 +3188,9 @@
     ],
     "movement_pattern": "Horizontal Push",
     "difficulty": "Beginner",
-    "is_compound": true
+    "is_compound": true,
+    "push_pull": "push",
+    "upper_lower": "upper"
   },
   {
     "id": "exercise_103",
@@ -3018,7 +3222,9 @@
     ],
     "movement_pattern": "Horizontal Push",
     "difficulty": "Beginner",
-    "is_compound": false
+    "is_compound": false,
+    "push_pull": "push",
+    "upper_lower": "upper"
   },
   {
     "id": "exercise_104",
@@ -3042,7 +3248,9 @@
     ],
     "movement_pattern": "Vertical Push",
     "difficulty": "Beginner",
-    "is_compound": false
+    "is_compound": false,
+    "push_pull": "push",
+    "upper_lower": "upper"
   },
   {
     "id": "exercise_105",
@@ -3071,7 +3279,9 @@
     ],
     "movement_pattern": "Vertical Push",
     "difficulty": "Intermediate",
-    "is_compound": true
+    "is_compound": true,
+    "push_pull": "push",
+    "upper_lower": "lower"
   },
   {
     "id": "exercise_106",
@@ -3100,7 +3310,9 @@
     ],
     "movement_pattern": "Vertical Push",
     "difficulty": "Beginner",
-    "is_compound": true
+    "is_compound": true,
+    "push_pull": "push",
+    "upper_lower": "lower"
   },
   {
     "id": "exercise_107",
@@ -3123,7 +3335,9 @@
     ],
     "movement_pattern": "Horizontal Pull",
     "difficulty": "Intermediate",
-    "is_compound": true
+    "is_compound": true,
+    "push_pull": "pull",
+    "upper_lower": "lower"
   },
   {
     "id": "exercise_108",
@@ -3144,7 +3358,9 @@
     ],
     "movement_pattern": "Horizontal Rotation",
     "difficulty": "Beginner",
-    "is_compound": false
+    "is_compound": false,
+    "push_pull": null,
+    "upper_lower": "upper"
   },
   {
     "id": "exercise_109",
@@ -3172,7 +3388,9 @@
     ],
     "movement_pattern": "Horizontal Extension",
     "difficulty": "Intermediate",
-    "is_compound": true
+    "is_compound": true,
+    "push_pull": null,
+    "upper_lower": "lower"
   },
   {
     "id": "exercise_110",
@@ -3197,7 +3415,9 @@
     ],
     "movement_pattern": "Vertical Push",
     "difficulty": "Beginner",
-    "is_compound": false
+    "is_compound": false,
+    "push_pull": "push",
+    "upper_lower": "upper"
   },
   {
     "id": "exercise_111",
@@ -3222,7 +3442,9 @@
     ],
     "movement_pattern": "Vertical Pull",
     "difficulty": "Beginner",
-    "is_compound": true
+    "is_compound": true,
+    "push_pull": "pull",
+    "upper_lower": "upper"
   },
   {
     "id": "exercise_112",
@@ -3255,7 +3477,9 @@
     ],
     "movement_pattern": "Vertical Push",
     "difficulty": "Intermediate",
-    "is_compound": true
+    "is_compound": true,
+    "push_pull": "push",
+    "upper_lower": "upper"
   },
   {
     "id": "exercise_113",
@@ -3282,7 +3506,9 @@
     ],
     "movement_pattern": "Lateral Raise",
     "difficulty": "Beginner",
-    "is_compound": false
+    "is_compound": false,
+    "push_pull": null,
+    "upper_lower": "upper"
   },
   {
     "id": "exercise_114",
@@ -3306,7 +3532,9 @@
     ],
     "movement_pattern": "Vertical Push",
     "difficulty": "Intermediate",
-    "is_compound": false
+    "is_compound": false,
+    "push_pull": "push",
+    "upper_lower": "upper"
   },
   {
     "id": "exercise_115",
@@ -3330,7 +3558,9 @@
     ],
     "movement_pattern": "Horizontal Push",
     "difficulty": "Beginner",
-    "is_compound": true
+    "is_compound": true,
+    "push_pull": "push",
+    "upper_lower": "upper"
   },
   {
     "id": "exercise_116",
@@ -3355,7 +3585,9 @@
     ],
     "movement_pattern": "Vertical Push",
     "difficulty": "Beginner",
-    "is_compound": false
+    "is_compound": false,
+    "push_pull": "push",
+    "upper_lower": "upper"
   },
   {
     "id": "exercise_117",
@@ -3371,7 +3603,9 @@
     ],
     "movement_pattern": "Wrist Extension",
     "difficulty": "Beginner",
-    "is_compound": false
+    "is_compound": false,
+    "push_pull": null,
+    "upper_lower": "upper"
   },
   {
     "id": "exercise_118",
@@ -3396,7 +3630,9 @@
     ],
     "movement_pattern": "Vertical Pull",
     "difficulty": "Beginner",
-    "is_compound": false
+    "is_compound": false,
+    "push_pull": "pull",
+    "upper_lower": "upper"
   },
   {
     "id": "exercise_119",
@@ -3421,7 +3657,9 @@
     ],
     "movement_pattern": "Vertical Pull",
     "difficulty": "Beginner",
-    "is_compound": false
+    "is_compound": false,
+    "push_pull": "pull",
+    "upper_lower": "upper"
   },
   {
     "id": "exercise_120",
@@ -3446,7 +3684,9 @@
     ],
     "movement_pattern": "Vertical Pull",
     "difficulty": "Beginner",
-    "is_compound": false
+    "is_compound": false,
+    "push_pull": "pull",
+    "upper_lower": "upper"
   },
   {
     "id": "exercise_121",
@@ -3470,7 +3710,9 @@
     ],
     "movement_pattern": "Horizontal Pull",
     "difficulty": "Beginner",
-    "is_compound": false
+    "is_compound": false,
+    "push_pull": "pull",
+    "upper_lower": "upper"
   },
   {
     "id": "exercise_122",
@@ -3500,7 +3742,9 @@
     ],
     "movement_pattern": "Horizontal Pull",
     "difficulty": "Intermediate",
-    "is_compound": true
+    "is_compound": true,
+    "push_pull": "pull",
+    "upper_lower": "upper"
   },
   {
     "id": "exercise_123",
@@ -3525,7 +3769,9 @@
     ],
     "movement_pattern": "Vertical Push",
     "difficulty": "Beginner",
-    "is_compound": false
+    "is_compound": false,
+    "push_pull": "push",
+    "upper_lower": "upper"
   },
   {
     "id": "exercise_124",
@@ -3551,7 +3797,9 @@
     ],
     "movement_pattern": "Horizontal Extension",
     "difficulty": "Beginner",
-    "is_compound": true
+    "is_compound": true,
+    "push_pull": null,
+    "upper_lower": "upper"
   },
   {
     "id": "exercise_125",
@@ -3576,7 +3824,9 @@
     ],
     "movement_pattern": "Vertical Push",
     "difficulty": "Beginner",
-    "is_compound": false
+    "is_compound": false,
+    "push_pull": "push",
+    "upper_lower": "lower"
   },
   {
     "id": "exercise_126",
@@ -3600,7 +3850,9 @@
     ],
     "movement_pattern": "Vertical Push",
     "difficulty": "Intermediate",
-    "is_compound": true
+    "is_compound": true,
+    "push_pull": "push",
+    "upper_lower": "upper"
   },
   {
     "id": "exercise_127",
@@ -3629,7 +3881,9 @@
     ],
     "movement_pattern": "Horizontal Pull",
     "difficulty": "Beginner",
-    "is_compound": false
+    "is_compound": false,
+    "push_pull": "pull",
+    "upper_lower": "upper"
   },
   {
     "id": "exercise_128",
@@ -3654,7 +3908,9 @@
     ],
     "movement_pattern": "Horizontal Push",
     "difficulty": "Beginner",
-    "is_compound": false
+    "is_compound": false,
+    "push_pull": "push",
+    "upper_lower": "upper"
   },
   {
     "id": "exercise_129",
@@ -3682,7 +3938,9 @@
     ],
     "movement_pattern": "Horizontal Pull",
     "difficulty": "Beginner",
-    "is_compound": true
+    "is_compound": true,
+    "push_pull": "pull",
+    "upper_lower": "upper"
   },
   {
     "id": "exercise_130",
@@ -3709,7 +3967,9 @@
     ],
     "movement_pattern": "Vertical Push",
     "difficulty": "Beginner",
-    "is_compound": false
+    "is_compound": false,
+    "push_pull": "push",
+    "upper_lower": "lower"
   },
   {
     "id": "exercise_131",
@@ -3736,7 +3996,9 @@
     ],
     "movement_pattern": "Vertical Pull",
     "difficulty": "Beginner",
-    "is_compound": false
+    "is_compound": false,
+    "push_pull": "pull",
+    "upper_lower": "upper"
   },
   {
     "id": "exercise_132",
@@ -3763,7 +4025,9 @@
     ],
     "movement_pattern": "Vertical Push",
     "difficulty": "Beginner",
-    "is_compound": false
+    "is_compound": false,
+    "push_pull": "push",
+    "upper_lower": "upper"
   },
   {
     "id": "exercise_133",
@@ -3790,7 +4054,9 @@
     ],
     "movement_pattern": "Horizontal Push",
     "difficulty": "Beginner",
-    "is_compound": true
+    "is_compound": true,
+    "push_pull": "push",
+    "upper_lower": "upper"
   },
   {
     "id": "exercise_134",
@@ -3814,7 +4080,9 @@
     ],
     "movement_pattern": "Horizontal Pull",
     "difficulty": "Beginner",
-    "is_compound": true
+    "is_compound": true,
+    "push_pull": "pull",
+    "upper_lower": "upper"
   },
   {
     "id": "exercise_135",
@@ -3849,7 +4117,9 @@
     ],
     "movement_pattern": "Vertical Push",
     "difficulty": "Intermediate",
-    "is_compound": true
+    "is_compound": true,
+    "push_pull": "push",
+    "upper_lower": "lower"
   },
   {
     "id": "exercise_136",
@@ -3878,7 +4148,9 @@
     ],
     "movement_pattern": "Horizontal Push",
     "difficulty": "Intermediate",
-    "is_compound": true
+    "is_compound": true,
+    "push_pull": "push",
+    "upper_lower": "upper"
   },
   {
     "id": "exercise_137",
@@ -3909,7 +4181,9 @@
     ],
     "movement_pattern": "Horizontal Pull",
     "difficulty": "Beginner",
-    "is_compound": true
+    "is_compound": true,
+    "push_pull": "pull",
+    "upper_lower": "lower"
   },
   {
     "id": "exercise_138",
@@ -3937,7 +4211,9 @@
     ],
     "movement_pattern": "Horizontal Push",
     "difficulty": "Intermediate",
-    "is_compound": true
+    "is_compound": true,
+    "push_pull": "push",
+    "upper_lower": "upper"
   },
   {
     "id": "exercise_139",
@@ -3964,7 +4240,9 @@
     ],
     "movement_pattern": "Horizontal Extension",
     "difficulty": "Intermediate",
-    "is_compound": true
+    "is_compound": true,
+    "push_pull": null,
+    "upper_lower": "lower"
   },
   {
     "id": "exercise_140",
@@ -3989,7 +4267,9 @@
     ],
     "movement_pattern": "Vertical Push",
     "difficulty": "Beginner",
-    "is_compound": true
+    "is_compound": true,
+    "push_pull": "push",
+    "upper_lower": "lower"
   },
   {
     "id": "exercise_141",
@@ -4016,7 +4296,9 @@
     ],
     "movement_pattern": "Horizontal Extension",
     "difficulty": "Beginner",
-    "is_compound": true
+    "is_compound": true,
+    "push_pull": null,
+    "upper_lower": "lower"
   },
   {
     "id": "exercise_142",
@@ -4046,7 +4328,9 @@
     ],
     "movement_pattern": "Horizontal Push",
     "difficulty": "Beginner",
-    "is_compound": true
+    "is_compound": true,
+    "push_pull": "push",
+    "upper_lower": "upper"
   },
   {
     "id": "cardio_001",
@@ -4059,7 +4343,9 @@
     ],
     "movement_pattern": "Cardio",
     "difficulty": "Beginner",
-    "is_compound": false
+    "is_compound": false,
+    "push_pull": null,
+    "upper_lower": null
   },
   {
     "id": "cardio_002",
@@ -4072,7 +4358,9 @@
     ],
     "movement_pattern": "Cardio",
     "difficulty": "Beginner",
-    "is_compound": false
+    "is_compound": false,
+    "push_pull": null,
+    "upper_lower": null
   },
   {
     "id": "cardio_003",
@@ -4085,7 +4373,9 @@
     ],
     "movement_pattern": "Cardio",
     "difficulty": "Beginner",
-    "is_compound": true
+    "is_compound": true,
+    "push_pull": null,
+    "upper_lower": null
   },
   {
     "id": "cardio_004",
@@ -4098,7 +4388,9 @@
     ],
     "movement_pattern": "Cardio",
     "difficulty": "Beginner",
-    "is_compound": false
+    "is_compound": false,
+    "push_pull": null,
+    "upper_lower": null
   },
   {
     "id": "cardio_005",
@@ -4111,7 +4403,9 @@
     ],
     "movement_pattern": "Cardio",
     "difficulty": "Beginner",
-    "is_compound": true
+    "is_compound": true,
+    "push_pull": null,
+    "upper_lower": null
   },
   {
     "id": "cardio_006",
@@ -4124,7 +4418,9 @@
     ],
     "movement_pattern": "Cardio",
     "difficulty": "Beginner",
-    "is_compound": false
+    "is_compound": false,
+    "push_pull": null,
+    "upper_lower": null
   },
   {
     "id": "cardio_007",
@@ -4137,7 +4433,9 @@
     ],
     "movement_pattern": "Cardio",
     "difficulty": "Beginner",
-    "is_compound": false
+    "is_compound": false,
+    "push_pull": null,
+    "upper_lower": null
   },
   {
     "id": "cardio_008",
@@ -4150,7 +4448,9 @@
     ],
     "movement_pattern": "Cardio",
     "difficulty": "Intermediate",
-    "is_compound": true
+    "is_compound": true,
+    "push_pull": null,
+    "upper_lower": null
   },
   {
     "id": "bodyweight_001",
@@ -4177,7 +4477,9 @@
     ],
     "movement_pattern": "Horizontal Push",
     "difficulty": "Beginner",
-    "is_compound": true
+    "is_compound": true,
+    "push_pull": "push",
+    "upper_lower": "upper"
   },
   {
     "id": "bodyweight_002",
@@ -4203,7 +4505,9 @@
     ],
     "movement_pattern": "Vertical Pull",
     "difficulty": "Intermediate",
-    "is_compound": true
+    "is_compound": true,
+    "push_pull": "pull",
+    "upper_lower": "upper"
   },
   {
     "id": "bodyweight_003",
@@ -4231,7 +4535,9 @@
     ],
     "movement_pattern": "Vertical Pull",
     "difficulty": "Intermediate",
-    "is_compound": true
+    "is_compound": true,
+    "push_pull": "pull",
+    "upper_lower": "upper"
   },
   {
     "id": "bodyweight_004",
@@ -4258,7 +4564,9 @@
     ],
     "movement_pattern": "Vertical Push",
     "difficulty": "Intermediate",
-    "is_compound": true
+    "is_compound": true,
+    "push_pull": "push",
+    "upper_lower": "upper"
   },
   {
     "id": "bodyweight_005",
@@ -4276,7 +4584,9 @@
     ],
     "movement_pattern": "Flexion",
     "difficulty": "Beginner",
-    "is_compound": false
+    "is_compound": false,
+    "push_pull": null,
+    "upper_lower": "upper"
   },
   {
     "id": "bodyweight_006",
@@ -4294,7 +4604,9 @@
     ],
     "movement_pattern": "Flexion",
     "difficulty": "Beginner",
-    "is_compound": false
+    "is_compound": false,
+    "push_pull": null,
+    "upper_lower": "upper"
   },
   {
     "id": "bodyweight_007",
@@ -4316,7 +4628,9 @@
     ],
     "movement_pattern": "Flexion",
     "difficulty": "Intermediate",
-    "is_compound": false
+    "is_compound": false,
+    "push_pull": null,
+    "upper_lower": "upper"
   },
   {
     "id": "bodyweight_008",
@@ -4344,7 +4658,9 @@
     ],
     "movement_pattern": "Squat",
     "difficulty": "Beginner",
-    "is_compound": true
+    "is_compound": true,
+    "push_pull": null,
+    "upper_lower": "lower"
   },
   {
     "id": "bodyweight_009",
@@ -4368,7 +4684,9 @@
     ],
     "movement_pattern": "Lunge",
     "difficulty": "Beginner",
-    "is_compound": true
+    "is_compound": true,
+    "push_pull": null,
+    "upper_lower": "lower"
   },
   {
     "id": "bodyweight_010",
@@ -4399,7 +4717,9 @@
     ],
     "movement_pattern": "Cardio",
     "difficulty": "Beginner",
-    "is_compound": true
+    "is_compound": true,
+    "push_pull": null,
+    "upper_lower": "upper"
   },
   {
     "id": "bodyweight_011",
@@ -4438,7 +4758,9 @@
     ],
     "movement_pattern": "Cardio",
     "difficulty": "Intermediate",
-    "is_compound": true
+    "is_compound": true,
+    "push_pull": null,
+    "upper_lower": "upper"
   },
   {
     "id": "bodyweight_012",
@@ -4468,7 +4790,9 @@
     ],
     "movement_pattern": "Horizontal Pull",
     "difficulty": "Beginner",
-    "is_compound": true
+    "is_compound": true,
+    "push_pull": "pull",
+    "upper_lower": "upper"
   },
   {
     "id": "assisted_001",
@@ -4496,7 +4820,9 @@
     ],
     "movement_pattern": "Vertical Pull",
     "difficulty": "Beginner",
-    "is_compound": true
+    "is_compound": true,
+    "push_pull": "pull",
+    "upper_lower": "upper"
   },
   {
     "id": "assisted_002",
@@ -4523,7 +4849,9 @@
     ],
     "movement_pattern": "Vertical Push",
     "difficulty": "Beginner",
-    "is_compound": true
+    "is_compound": true,
+    "push_pull": "push",
+    "upper_lower": "upper"
   },
   {
     "id": "assisted_003",
@@ -4549,7 +4877,9 @@
     ],
     "movement_pattern": "Vertical Pull",
     "difficulty": "Beginner",
-    "is_compound": true
+    "is_compound": true,
+    "push_pull": "pull",
+    "upper_lower": "upper"
   },
   {
     "id": "band_001",
@@ -4562,7 +4892,9 @@
     ],
     "movement_pattern": "Horizontal Pull",
     "difficulty": "Beginner",
-    "is_compound": false
+    "is_compound": false,
+    "push_pull": "pull",
+    "upper_lower": null
   },
   {
     "id": "band_002",
@@ -4575,7 +4907,9 @@
     ],
     "movement_pattern": "Horizontal Pull",
     "difficulty": "Beginner",
-    "is_compound": true
+    "is_compound": true,
+    "push_pull": "pull",
+    "upper_lower": null
   },
   {
     "id": "band_003",
@@ -4588,7 +4922,9 @@
     ],
     "movement_pattern": "Vertical Pull",
     "difficulty": "Beginner",
-    "is_compound": false
+    "is_compound": false,
+    "push_pull": "pull",
+    "upper_lower": null
   },
   {
     "id": "band_004",
@@ -4601,7 +4937,9 @@
     ],
     "movement_pattern": "Vertical Push",
     "difficulty": "Beginner",
-    "is_compound": false
+    "is_compound": false,
+    "push_pull": "push",
+    "upper_lower": null
   },
   {
     "id": "band_005",
@@ -4614,7 +4952,9 @@
     ],
     "movement_pattern": "Horizontal Pull",
     "difficulty": "Beginner",
-    "is_compound": false
+    "is_compound": false,
+    "push_pull": "pull",
+    "upper_lower": null
   },
   {
     "id": "band_006",
@@ -4627,7 +4967,9 @@
     ],
     "movement_pattern": "Lateral",
     "difficulty": "Beginner",
-    "is_compound": false
+    "is_compound": false,
+    "push_pull": null,
+    "upper_lower": null
   },
   {
     "id": "duration_001",
@@ -4640,7 +4982,9 @@
     ],
     "movement_pattern": "Isometric",
     "difficulty": "Beginner",
-    "is_compound": true
+    "is_compound": true,
+    "push_pull": null,
+    "upper_lower": null
   },
   {
     "id": "duration_002",
@@ -4653,7 +4997,9 @@
     ],
     "movement_pattern": "Isometric",
     "difficulty": "Beginner",
-    "is_compound": false
+    "is_compound": false,
+    "push_pull": null,
+    "upper_lower": null
   },
   {
     "id": "duration_003",
@@ -4666,7 +5012,9 @@
     ],
     "movement_pattern": "Isometric",
     "difficulty": "Beginner",
-    "is_compound": false
+    "is_compound": false,
+    "push_pull": null,
+    "upper_lower": null
   },
   {
     "id": "duration_004",
@@ -4679,7 +5027,9 @@
     ],
     "movement_pattern": "Isometric",
     "difficulty": "Beginner",
-    "is_compound": false
+    "is_compound": false,
+    "push_pull": null,
+    "upper_lower": null
   },
   {
     "id": "duration_005",
@@ -4692,7 +5042,9 @@
     ],
     "movement_pattern": "Isometric",
     "difficulty": "Beginner",
-    "is_compound": false
+    "is_compound": false,
+    "push_pull": null,
+    "upper_lower": null
   },
   {
     "id": "duration_006",
@@ -4705,6 +5057,8 @@
     ],
     "movement_pattern": "Isometric",
     "difficulty": "Intermediate",
-    "is_compound": true
+    "is_compound": true,
+    "push_pull": null,
+    "upper_lower": null
   }
 ]

@@ -11,7 +11,6 @@ import * as Haptics from 'expo-haptics';
 
 import { Text } from '@/components/atoms/Text';
 import { SurfaceCard } from '@/components/atoms/SurfaceCard';
-import { HorizontalAccentBar } from '@/components/atoms/HorizontalAccentBar';
 import { TimeRangeSelector } from '@/components/atoms/TimeRangeSelector';
 import { colors, spacing, radius } from '@/constants/theme';
 import { useWorkoutSessionsStore } from '@/store/workoutSessionsStore';
@@ -20,32 +19,23 @@ import type { TimeRange } from '@/types/analytics';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const CARD_PADDING = spacing.md * 2;
-const CONTENT_WIDTH = SCREEN_WIDTH - CARD_PADDING - spacing.md * 2;
+const CONTAINER_PADDING = spacing.lg * 2;
+const CONTENT_WIDTH = SCREEN_WIDTH - CARD_PADDING - spacing.md * 2 - CONTAINER_PADDING;
 
-const EXERCISE_MUSCLES = exercisesData.reduce((acc, ex) => {
-  if (ex.muscles) {
-    acc[ex.name] = ex.muscles as unknown as Record<string, number>;
-  }
+interface ExerciseMetadata {
+  push_pull: 'push' | 'pull' | null;
+  upper_lower: 'upper' | 'lower' | null;
+  is_compound: boolean;
+}
+
+const EXERCISE_METADATA = exercisesData.reduce((acc, ex) => {
+  acc[ex.name] = {
+    push_pull: ex.push_pull as 'push' | 'pull' | null,
+    upper_lower: ex.upper_lower as 'upper' | 'lower' | null,
+    is_compound: ex.is_compound ?? false,
+  };
   return acc;
-}, {} as Record<string, Record<string, number>>);
-
-// Muscle categorization for balance analysis
-const PUSH_MUSCLES = ['Chest', 'Front Delts', 'Triceps', 'Upper Chest', 'Mid Chest', 'Lower Chest'];
-const PULL_MUSCLES = ['Back', 'Lats', 'Rear Delts', 'Biceps', 'Mid Back', 'Upper Back', 'Traps'];
-const QUAD_DOMINANT = ['Quads', 'Quad'];
-const HIP_DOMINANT = ['Hamstrings', 'Glutes', 'Hams'];
-// Compound exercises (multi-joint movements)
-const COMPOUND_EXERCISES = [
-  'Barbell Bench Press', 'Barbell Squat', 'Barbell Deadlift', 'Dumbbell Bench Press',
-  'Dumbbell Squat', 'Romanian Deadlift', 'Overhead Press', 'Pull-ups', 'Rows',
-  'Dips', 'Lunges', 'Leg Press', 'Shoulder Press'
-];
-// Isolated exercises (single-joint movements)
-const ISOLATED_EXERCISES = [
-  'Bicep Curls', 'Tricep Extensions', 'Leg Curls', 'Leg Extensions',
-  'Calf Raises', 'Lateral Raises', 'Front Raises', 'Rear Delt Flyes',
-  'Cable Flyes', 'Pec Deck', 'Hammer Curls'
-];
+}, {} as Record<string, ExerciseMetadata>);
 
 interface BalanceBarProps {
   label: string;
@@ -203,57 +193,48 @@ export const TrainingBalanceCard: React.FC = () => {
       .filter((w) => new Date(w.date) >= cutoff)
       .forEach((workout) => {
         workout.exercises.forEach((exercise: any) => {
-          const muscles = EXERCISE_MUSCLES[exercise.name];
-          if (!muscles) return;
+          const metadata = EXERCISE_METADATA[exercise.name];
+          if (!metadata) return;
 
-          exercise.sets.forEach((set: any) => {
-            if (!set.completed || set.weight <= 0) return;
-            
-            const volume = set.weight * set.reps;
+          // Count completed sets for this exercise
+          const completedSets = exercise.sets.filter(
+            (set: any) => set.completed && (set.weight > 0 || set.reps > 0)
+          );
+          const setCount = completedSets.length;
+          if (setCount === 0) return;
 
-            Object.keys(muscles).forEach((muscle) => {
-              // Volume-based
-              if (PUSH_MUSCLES.some((p) => muscle.includes(p))) volumeBalance.push += volume;
-              if (PULL_MUSCLES.some((p) => muscle.includes(p))) volumeBalance.pull += volume;
-              if (QUAD_DOMINANT.some((q) => muscle.includes(q))) volumeBalance.quad += volume;
-              if (HIP_DOMINANT.some((h) => muscle.includes(h))) volumeBalance.hip += volume;
-              if ([...PUSH_MUSCLES, ...PULL_MUSCLES, 'Arms', 'Shoulders'].some((u) => muscle.includes(u))) {
-                volumeBalance.upper += volume;
-              }
-              if ([...QUAD_DOMINANT, ...HIP_DOMINANT, 'Calf', 'Hip'].some((l) => muscle.includes(l))) {
-                volumeBalance.lower += volume;
-              }
+          // Calculate total volume for this exercise
+          const totalVolume = completedSets.reduce(
+            (sum: number, set: any) => sum + (set.weight || 0) * (set.reps || 0),
+            0
+          );
 
-              // Compound vs Isolated - check exercise name directly
-              const exerciseName = exercise.name.toLowerCase();
-              const isCompound = COMPOUND_EXERCISES.some(comp => exerciseName.includes(comp.toLowerCase()));
-              const isIsolated = ISOLATED_EXERCISES.some(iso => exerciseName.includes(iso.toLowerCase()));
-              
-              if (isCompound) {
-                volumeBalance.compound += volume;
-              } else if (isIsolated) {
-                volumeBalance.isolated += volume;
-              }
+          // Push/Pull classification
+          if (metadata.push_pull === 'push') {
+            setBalance.push += setCount;
+            volumeBalance.push += totalVolume;
+          } else if (metadata.push_pull === 'pull') {
+            setBalance.pull += setCount;
+            volumeBalance.pull += totalVolume;
+          }
 
-              // Set-based
-              if (PUSH_MUSCLES.some((p) => muscle.includes(p))) setBalance.push += 1;
-              if (PULL_MUSCLES.some((p) => muscle.includes(p))) setBalance.pull += 1;
-              if (QUAD_DOMINANT.some((q) => muscle.includes(q))) setBalance.quad += 1;
-              if (HIP_DOMINANT.some((h) => muscle.includes(h))) setBalance.hip += 1;
-              if ([...PUSH_MUSCLES, ...PULL_MUSCLES, 'Arms', 'Shoulders'].some((u) => muscle.includes(u))) {
-                setBalance.upper += 1;
-              }
-              if ([...QUAD_DOMINANT, ...HIP_DOMINANT, 'Calf', 'Hip'].some((l) => muscle.includes(l))) {
-                setBalance.lower += 1;
-              }
-              
-              if (isCompound) {
-                setBalance.compound += 1;
-              } else if (isIsolated) {
-                setBalance.isolated += 1;
-              }
-            });
-          });
+          // Upper/Lower classification
+          if (metadata.upper_lower === 'upper') {
+            setBalance.upper += setCount;
+            volumeBalance.upper += totalVolume;
+          } else if (metadata.upper_lower === 'lower') {
+            setBalance.lower += setCount;
+            volumeBalance.lower += totalVolume;
+          }
+
+          // Compound/Isolated classification
+          if (metadata.is_compound) {
+            setBalance.compound += setCount;
+            volumeBalance.compound += totalVolume;
+          } else {
+            setBalance.isolated += setCount;
+            volumeBalance.isolated += totalVolume;
+          }
         });
       });
 
@@ -281,7 +262,6 @@ export const TrainingBalanceCard: React.FC = () => {
       <SurfaceCard tone="neutral" padding="md" showAccentStripe={false}>
         <View style={[styles.header, styles.headerCentered]}>
           <Text variant="heading3" color="primary">Training Balance</Text>
-          <HorizontalAccentBar />
         </View>
         <View style={styles.emptyState}>
           <Text variant="body" color="tertiary" style={styles.emptyText}>
@@ -304,7 +284,6 @@ export const TrainingBalanceCard: React.FC = () => {
           <Text variant="heading3" color="primary">
             Training Balance by {currentPage === 0 ? 'Sets' : 'Volume'}
           </Text>
-          <HorizontalAccentBar />
         </View>
 
         <View style={styles.timeRangeContainer}>
@@ -347,10 +326,13 @@ export const TrainingBalanceCard: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     gap: spacing.md,
+    paddingHorizontal: spacing.lg,
   },
   header: {
-    paddingHorizontal: spacing.md,
     paddingTop: spacing.sm,
+    paddingBottom: spacing.xs,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border.light,
   },
   headerCentered: {
     alignItems: 'center',
