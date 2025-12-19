@@ -538,8 +538,9 @@ const PlansScreen: React.FC = () => {
 
     // Use program ID if it's a program workout, otherwise the plan ID
     const planId = item.type === 'program' ? item.programId : item.id;
+    const sessionName = item.name;
 
-    startSession(planId, workoutExercises);
+    startSession(planId, workoutExercises, sessionName);
     setExpandedPlanId(null);
     router.push('/(tabs)/workout');
   }, [router, startSession, setCompletionOverlayVisible]);

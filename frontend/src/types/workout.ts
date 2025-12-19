@@ -18,6 +18,11 @@ export interface WorkoutExercise {
 export interface Workout {
   id: string;
   planId: string | null;
+  /**
+   * Snapshot of the workout's display name (if started from a saved workout/program).
+   * Falls back to null for scratch sessions.
+   */
+  name?: string | null;
   date: string;
   startTime: number;
   endTime?: number;

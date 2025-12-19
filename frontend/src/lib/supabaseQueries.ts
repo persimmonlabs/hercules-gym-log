@@ -162,6 +162,7 @@ export async function fetchWorkoutSessions(userId: string): Promise<Workout[]> {
             return (data || []).map((row) => ({
                 id: row.id,
                 planId: row.plan_id,
+                name: row.name,
                 date: row.date,
                 startTime: row.start_time,
                 endTime: row.end_time,
@@ -197,6 +198,7 @@ export async function createWorkoutSession(userId: string, workout: Workout): Pr
             .insert({
                 user_id: userId,
                 plan_id: validPlanId,
+                name: workout.name,
                 date: workout.date,
                 start_time: workout.startTime,
                 end_time: workout.endTime,
@@ -236,6 +238,7 @@ export async function updateWorkoutSession(userId: string, workout: Workout): Pr
             .from('workout_sessions')
             .update({
                 plan_id: validPlanId,
+                name: workout.name,
                 date: workout.date,
                 start_time: workout.startTime,
                 end_time: workout.endTime,

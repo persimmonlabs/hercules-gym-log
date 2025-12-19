@@ -39,6 +39,10 @@ export const createDefaultSetsForExercise = (exerciseName: string): SetLog[] => 
  * Formats a workout session title, prioritizing the linked plan name when available.
  */
 export const formatWorkoutTitle = (workout: Workout | null, planName: string | null): string => {
+  if (workout?.name) {
+    return workout.name;
+  }
+
   if (planName) {
     return planName;
   }

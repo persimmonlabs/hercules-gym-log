@@ -644,8 +644,9 @@ const DashboardScreen: React.FC = () => {
     }));
 
     const planId = todaysCardState.variant === 'rotation' ? todaysCardState.programId : (todaysPlan?.id ?? '');
+    const sessionName = todaysCardState.variant === 'rotation' ? (rotationWorkout?.name ?? null) : (todaysPlan?.name ?? null);
 
-    startSession(planId, workoutExercises);
+    startSession(planId, workoutExercises, sessionName);
     router.push('/(tabs)/workout');
   }, [todaysPlan, rotationWorkout, startSession, router, setCompletionOverlayVisible, todaysCardState]);
 
@@ -849,9 +850,11 @@ const DashboardScreen: React.FC = () => {
                       >
                         <View style={styles.recentCardHeader}>
                           <Text variant="bodySemibold" color="primary">
-                            {todaysCardState.workout.planId
-                              ? planNameLookup[todaysCardState.workout.planId]?.name ?? `${formatWorkoutDateLabel(todaysCardState.workout)} Session`
-                              : `${formatWorkoutDateLabel(todaysCardState.workout)} Session`}
+                            {todaysCardState.workout.name
+                              ? todaysCardState.workout.name
+                              : todaysCardState.workout.planId
+                                ? planNameLookup[todaysCardState.workout.planId]?.name ?? `${formatWorkoutDateLabel(todaysCardState.workout)} Session`
+                                : `${formatWorkoutDateLabel(todaysCardState.workout)} Session`}
                           </Text>
                           <Text variant="body" color="secondary">
                             {formatWorkoutDateLabel(todaysCardState.workout)}
@@ -965,7 +968,7 @@ const DashboardScreen: React.FC = () => {
                     recentWorkouts.map((workout, index) => {
                       const lift = recentWorkoutLifts[index];
                       const planTitle = workout.planId ? planNameLookup[workout.planId]?.name : null;
-                      const workoutTitle = planTitle ?? `${formatWorkoutDateLabel(workout)} Session`;
+                      const workoutTitle = workout.name ?? planTitle ?? `${formatWorkoutDateLabel(workout)} Session`;
 
                       return (
                         <Pressable

@@ -8,6 +8,7 @@ import type { Workout, WorkoutExercise } from '@/types/workout';
 
 interface SessionDraft {
   planId: string | null;
+  name: string | null;
   startTime: number;
   exercises: WorkoutExercise[];
 }
@@ -15,7 +16,7 @@ interface SessionDraft {
 export interface SessionState {
   currentSession: SessionDraft | null;
   isSessionActive: boolean;
-  startSession: (planId: string | null, exercises?: WorkoutExercise[]) => void;
+  startSession: (planId: string | null, exercises?: WorkoutExercise[], name?: string | null) => void;
   addExercise: (exercise: WorkoutExercise) => void;
   updateExercise: (exerciseName: string, updatedExercise: WorkoutExercise) => void;
   removeExercise: (exerciseName: string) => void;
@@ -34,9 +35,10 @@ export const useSessionStore = create<SessionState>((set, get) => ({
   currentSession: null,
   isSessionActive: false,
   isCompletionOverlayVisible: false,
-  startSession: (planId, exercises = []) => {
+  startSession: (planId, exercises = [], name = null) => {
     const nextSession: SessionDraft = {
       planId,
+      name,
       startTime: Date.now(),
       exercises: [...exercises],
     };
@@ -105,6 +107,7 @@ export const useSessionStore = create<SessionState>((set, get) => ({
     const workout: Workout = {
       id: generateWorkoutId(),
       planId: currentSession.planId,
+      name: currentSession.name,
       date: new Date(currentSession.startTime).toISOString(),
       startTime: currentSession.startTime,
       endTime,

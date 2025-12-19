@@ -95,7 +95,7 @@ const WorkoutScreen: React.FC = () => {
         sets: createDefaultSetsForExercise(exercise.name),
       }));
 
-      startSession(plan.id, mappedExercises);
+      startSession(plan.id, mappedExercises, plan.name);
       setShowPlansList(false);
     },
     [startSession, setCompletionOverlayVisible],
@@ -107,7 +107,7 @@ const WorkoutScreen: React.FC = () => {
     // Explicitly reset overlay state before starting new session
     setCompletionOverlayVisible(false);
     
-    startSession(null, []);
+    startSession(null, [], null);
     setShowPlansList(false);
   }, [startSession, setCompletionOverlayVisible]);
 

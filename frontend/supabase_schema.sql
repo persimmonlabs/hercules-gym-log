@@ -98,6 +98,7 @@ create table public.workout_sessions (
   id uuid default uuid_generate_v4() primary key,
   user_id uuid references public.profiles(id) on delete cascade not null,
   plan_id uuid references public.plans(id) on delete set null,
+  name text,
   date timestamp with time zone not null,
   start_time bigint,
   end_time bigint,

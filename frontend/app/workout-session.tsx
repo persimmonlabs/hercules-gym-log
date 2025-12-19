@@ -381,6 +381,7 @@ const WorkoutSessionScreen: React.FC = () => {
     const workout = {
       id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
       planId: currentSessionData.planId,
+      name: currentSessionData.name,
       date: new Date(currentSessionData.startTime).toISOString(),
       startTime: currentSessionData.startTime,
       endTime,
