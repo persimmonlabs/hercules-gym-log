@@ -14,6 +14,7 @@ import { usePlansStore } from '@/store/plansStore';
 import { useSchedulesStore } from '@/store/schedulesStore';
 import { useProgramsStore } from '@/store/programsStore';
 import { useWorkoutSessionsStore } from '@/store/workoutSessionsStore';
+import { useSettingsStore } from '@/store/settingsStore';
 
 interface AuthProviderProps {
   children: React.ReactNode;
@@ -51,7 +52,7 @@ const hydrateAllStores = async (userId: string): Promise<void> => {
   }
 
   console.log('[AuthProvider] Hydrating all stores for user:', userId);
-  
+
   hydrationPromise = (async () => {
     try {
       // Use Promise.allSettled to ensure all stores attempt hydration
@@ -63,12 +64,13 @@ const hydrateAllStores = async (userId: string): Promise<void> => {
         useSchedulesStore.getState().hydrateSchedules(userId),
         useProgramsStore.getState().hydratePrograms(userId),
         useWorkoutSessionsStore.getState().hydrateWorkouts(userId),
+        useSettingsStore.getState().syncFromSupabase(),
       ]);
 
       // Log any failures but don't throw - app should still work with partial data
       const failures = results.filter(r => r.status === 'rejected');
       if (failures.length > 0) {
-        console.warn('[AuthProvider] Some stores failed to hydrate (network issues?):', 
+        console.warn('[AuthProvider] Some stores failed to hydrate (network issues?):',
           failures.map(f => {
             const reason = (f as PromiseRejectedResult).reason;
             return reason instanceof Error ? reason.message : String(reason);

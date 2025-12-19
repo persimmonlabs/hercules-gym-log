@@ -81,7 +81,7 @@ const VolumeAnalyticsScreen: React.FC = () => {
           onUnlock={handleUpgrade}
         >
           <DrilldownBarChart
-            key={`upper-${chartKey}-${timeRange}`}
+            key={`upper-${chartKey}`}
             data={hierarchicalVolumeDistribution}
             rootGroup="Upper Body"
           />
@@ -96,7 +96,7 @@ const VolumeAnalyticsScreen: React.FC = () => {
           onUnlock={handleUpgrade}
         >
           <DrilldownBarChart
-            key={`lower-${chartKey}-${timeRange}`}
+            key={`lower-${chartKey}`}
             data={hierarchicalVolumeDistribution}
             rootGroup="Lower Body"
           />
@@ -111,7 +111,7 @@ const VolumeAnalyticsScreen: React.FC = () => {
           onUnlock={handleUpgrade}
         >
           <DrilldownBarChart
-            key={`core-${chartKey}-${timeRange}`}
+            key={`core-${chartKey}`}
             data={hierarchicalVolumeDistribution}
             rootGroup="Core"
           />

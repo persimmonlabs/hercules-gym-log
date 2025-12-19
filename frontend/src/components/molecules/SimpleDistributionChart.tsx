@@ -5,8 +5,9 @@
  * Simplified version without carousel for the main Performance screen
  */
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { View, StyleSheet, TouchableOpacity } from 'react-native';
+import { useFocusEffect } from 'expo-router';
 import { VictoryPie } from 'victory-native';
 import * as Haptics from 'expo-haptics';
 
@@ -38,9 +39,17 @@ const LegendItem: React.FC<LegendItemProps> = ({ item, isSelected, isDimmed, onP
 );
 
 export const SimpleDistributionChart: React.FC = () => {
-  const [timeRange, setTimeRange] = useState<TimeRange>('all');
+  const [timeRange, setTimeRange] = useState<TimeRange>('week');
   const { tieredVolumeDistribution, hasFilteredData } = useAnalyticsData({ timeRange });
   const [selectedSlice, setSelectedSlice] = useState<string | null>(null);
+  
+  // Reset time range to 'week' when page gains focus
+  useFocusEffect(
+    useCallback(() => {
+      setTimeRange('week');
+      setSelectedSlice(null);
+    }, [])
+  );
 
   const data = tieredVolumeDistribution.high;
 

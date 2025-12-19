@@ -15,6 +15,7 @@ import { TimeRangeSelector } from '@/components/atoms/TimeRangeSelector';
 import { colors, spacing, radius } from '@/constants/theme';
 import { useWorkoutSessionsStore } from '@/store/workoutSessionsStore';
 import exercisesData from '@/data/exercises.json';
+import hierarchyData from '@/data/hierarchy.json';
 import type { TimeRange } from '@/types/analytics';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
@@ -36,6 +37,40 @@ const EXERCISE_METADATA = exercisesData.reduce((acc, ex) => {
   };
   return acc;
 }, {} as Record<string, ExerciseMetadata>);
+
+const EXERCISE_MUSCLES = exercisesData.reduce((acc, ex) => {
+  if (ex.muscles) {
+    acc[ex.name] = ex.muscles as unknown as Record<string, number>;
+  }
+  return acc;
+}, {} as Record<string, Record<string, number>>);
+
+const buildLeafToL1 = (): Record<string, string> => {
+  const leafToL1: Record<string, string> = {};
+  const hierarchy = hierarchyData.muscle_hierarchy as Record<string, any>;
+
+  Object.entries(hierarchy).forEach(([l1, l1Data]) => {
+    if (l1Data?.muscles) {
+      Object.entries(l1Data.muscles).forEach(([l2, l2Data]: [string, any]) => {
+        leafToL1[l2] = l1;
+        if (l2Data?.muscles) {
+          Object.entries(l2Data.muscles).forEach(([l3, l3Data]: [string, any]) => {
+            leafToL1[l3] = l1;
+            if (l3Data?.muscles) {
+              Object.keys(l3Data.muscles).forEach((l4) => {
+                leafToL1[l4] = l1;
+              });
+            }
+          });
+        }
+      });
+    }
+  });
+
+  return leafToL1;
+};
+
+const LEAF_TO_L1 = buildLeafToL1();
 
 interface BalanceBarProps {
   label: string;
@@ -218,13 +253,26 @@ export const TrainingBalanceCard: React.FC = () => {
             volumeBalance.pull += totalVolume;
           }
 
-          // Upper/Lower classification
+          // Upper/Lower classification (volume-based: distribute by muscle weights)
+          // Sets still use exercise-level classification
           if (metadata.upper_lower === 'upper') {
             setBalance.upper += setCount;
-            volumeBalance.upper += totalVolume;
           } else if (metadata.upper_lower === 'lower') {
             setBalance.lower += setCount;
-            volumeBalance.lower += totalVolume;
+          }
+
+          // Volume: distribute based on individual muscle contributions
+          const muscleWeights = EXERCISE_MUSCLES[exercise.name];
+          if (muscleWeights && totalVolume > 0) {
+            Object.entries(muscleWeights).forEach(([muscle, weight]) => {
+              const muscleVolume = totalVolume * weight;
+              const l1Category = LEAF_TO_L1[muscle];
+              if (l1Category === 'Upper Body' || l1Category === 'Core') {
+                volumeBalance.upper += muscleVolume;
+              } else if (l1Category === 'Lower Body') {
+                volumeBalance.lower += muscleVolume;
+              }
+            });
           }
 
           // Compound/Isolated classification

@@ -1,6 +1,373 @@
 {
   "workouts": [
     {
+      "id": "beginner-push-day",
+      "name": "Beginner Push Day",
+      "exercises": [
+        { "id": "exercise_002", "name": "Chest Press Machine", "sets": 3 },
+        { "id": "exercise_022", "name": "Seated Shoulder Press Machine", "sets": 3 },
+        { "id": "exercise_003", "name": "Butterfly Machine", "sets": 3 },
+        { "id": "exercise_007", "name": "Seated Triceps Dip Machine", "sets": 3 }
+      ],
+      "metadata": {
+        "goal": "build-muscle",
+        "experienceLevel": "beginner",
+        "equipment": "full-gym",
+        "durationMinutes": 40,
+        "description": "Machine-focused push workout perfect for beginners learning proper form.",
+        "tags": ["push", "machines", "beginner", "chest", "shoulders"]
+      },
+      "isPremade": true
+    },
+    {
+      "id": "beginner-pull-day",
+      "name": "Beginner Pull Day",
+      "exercises": [
+        { "id": "exercise_010", "name": "Seated Row Machine", "sets": 3 },
+        { "id": "exercise_008", "name": "Wide Grip Lat Pulldown", "sets": 3 },
+        { "id": "exercise_009", "name": "Bicep Curl Machine", "sets": 3 },
+        { "id": "exercise_096", "name": "Face Pull", "sets": 3 }
+      ],
+      "metadata": {
+        "goal": "build-muscle",
+        "experienceLevel": "beginner",
+        "equipment": "full-gym",
+        "durationMinutes": 40,
+        "description": "Machine-focused pull workout to build back and biceps safely.",
+        "tags": ["pull", "machines", "beginner", "back", "biceps"]
+      },
+      "isPremade": true
+    },
+    {
+      "id": "dumbbell-upper-hypertrophy",
+      "name": "Dumbbell Upper Hypertrophy",
+      "exercises": [
+        { "id": "exercise_076", "name": "Dumbbell Bench Press", "sets": 4 },
+        { "id": "exercise_077", "name": "Dumbbell Row", "sets": 4 },
+        { "id": "exercise_005", "name": "Dumbbell Shoulder Press", "sets": 3 },
+        { "id": "exercise_004", "name": "Lateral Raises", "sets": 3 },
+        { "id": "exercise_027", "name": "Dumbbell Bicep Curls", "sets": 3 },
+        { "id": "exercise_053", "name": "Triceps Kickback", "sets": 3 }
+      ],
+      "metadata": {
+        "goal": "build-muscle",
+        "experienceLevel": "intermediate",
+        "equipment": "dumbbells-only",
+        "durationMinutes": 55,
+        "description": "Complete upper body hypertrophy using only dumbbells.",
+        "tags": ["upper-body", "dumbbells", "hypertrophy", "intermediate"]
+      },
+      "isPremade": true
+    },
+    {
+      "id": "dumbbell-lower-hypertrophy",
+      "name": "Dumbbell Lower Hypertrophy",
+      "exercises": [
+        { "id": "exercise_023", "name": "Dumbbell Bulgarian Split Squat", "sets": 4 },
+        { "id": "exercise_078", "name": "Dumbbell Romanian Deadlift", "sets": 4 },
+        { "id": "exercise_079", "name": "Dumbbell Goblet Squat", "sets": 3 },
+        { "id": "exercise_080", "name": "Dumbbell Lunges", "sets": 3 },
+        { "id": "exercise_081", "name": "Dumbbell Calf Raises", "sets": 4 }
+      ],
+      "metadata": {
+        "goal": "build-muscle",
+        "experienceLevel": "intermediate",
+        "equipment": "dumbbells-only",
+        "durationMinutes": 50,
+        "description": "Build powerful legs using only dumbbells.",
+        "tags": ["lower-body", "dumbbells", "hypertrophy", "legs"]
+      },
+      "isPremade": true
+    },
+    {
+      "id": "bodyweight-muscle-builder",
+      "name": "Bodyweight Muscle Builder",
+      "exercises": [
+        { "id": "bodyweight_001", "name": "Push-ups", "sets": 4 },
+        { "id": "bodyweight_012", "name": "Inverted Rows", "sets": 4 },
+        { "id": "bodyweight_004", "name": "Dips", "sets": 3 },
+        { "id": "bodyweight_008", "name": "Air Squats", "sets": 4 },
+        { "id": "bodyweight_009", "name": "Lunges", "sets": 3 },
+        { "id": "duration_001", "name": "Plank", "sets": 3 }
+      ],
+      "metadata": {
+        "goal": "build-muscle",
+        "experienceLevel": "beginner",
+        "equipment": "bodyweight",
+        "durationMinutes": 35,
+        "description": "Build muscle anywhere with zero equipment required.",
+        "tags": ["bodyweight", "home", "beginner", "full-body"]
+      },
+      "isPremade": true
+    },
+    {
+      "id": "advanced-chest-back",
+      "name": "Advanced Chest & Back",
+      "exercises": [
+        { "id": "exercise_001", "name": "Barbell Bench Press", "sets": 5 },
+        { "id": "exercise_052", "name": "Barbell Bent-Over Row", "sets": 5 },
+        { "id": "exercise_099", "name": "Incline Barbell Bench Press", "sets": 4 },
+        { "id": "exercise_008", "name": "Wide Grip Lat Pulldown", "sets": 4 },
+        { "id": "exercise_054", "name": "Cable Crossover", "sets": 3 },
+        { "id": "exercise_067", "name": "Chest Supported T-Bar Row", "sets": 3 }
+      ],
+      "metadata": {
+        "goal": "build-muscle",
+        "experienceLevel": "advanced",
+        "equipment": "full-gym",
+        "durationMinutes": 75,
+        "description": "High-volume antagonist superset workout for advanced lifters.",
+        "tags": ["chest", "back", "advanced", "high-volume", "superset"]
+      },
+      "isPremade": true
+    },
+    {
+      "id": "strength-foundations",
+      "name": "Strength Foundations",
+      "exercises": [
+        { "id": "exercise_019", "name": "Barbell Squat", "sets": 5 },
+        { "id": "exercise_001", "name": "Barbell Bench Press", "sets": 5 },
+        { "id": "exercise_052", "name": "Barbell Bent-Over Row", "sets": 5 }
+      ],
+      "metadata": {
+        "goal": "strength",
+        "experienceLevel": "beginner",
+        "equipment": "full-gym",
+        "durationMinutes": 45,
+        "description": "Master the big three lifts with proper form and progressive overload.",
+        "tags": ["strength", "compound", "beginner", "powerlifting"]
+      },
+      "isPremade": true
+    },
+    {
+      "id": "powerlifting-focus",
+      "name": "Powerlifting Focus",
+      "exercises": [
+        { "id": "exercise_019", "name": "Barbell Squat", "sets": 5 },
+        { "id": "exercise_001", "name": "Barbell Bench Press", "sets": 5 },
+        { "id": "exercise_020", "name": "Barbell Deadlift", "sets": 5 },
+        { "id": "exercise_005", "name": "Dumbbell Shoulder Press", "sets": 3 },
+        { "id": "exercise_052", "name": "Barbell Bent-Over Row", "sets": 3 }
+      ],
+      "metadata": {
+        "goal": "strength",
+        "experienceLevel": "intermediate",
+        "equipment": "full-gym",
+        "durationMinutes": 70,
+        "description": "Heavy compound lifts for building raw strength.",
+        "tags": ["powerlifting", "strength", "compound", "intermediate"]
+      },
+      "isPremade": true
+    },
+    {
+      "id": "advanced-strength-day",
+      "name": "Advanced Strength Day",
+      "exercises": [
+        { "id": "exercise_019", "name": "Barbell Squat", "sets": 6 },
+        { "id": "exercise_001", "name": "Barbell Bench Press", "sets": 6 },
+        { "id": "exercise_020", "name": "Barbell Deadlift", "sets": 5 },
+        { "id": "exercise_068", "name": "Close Grip Barbell Bench Press", "sets": 4 },
+        { "id": "exercise_038", "name": "Barbell Front Squat", "sets": 4 }
+      ],
+      "metadata": {
+        "goal": "strength",
+        "experienceLevel": "advanced",
+        "equipment": "full-gym",
+        "durationMinutes": 90,
+        "description": "Periodized heavy lifting for experienced strength athletes.",
+        "tags": ["powerlifting", "strength", "advanced", "periodization"]
+      },
+      "isPremade": true
+    },
+    {
+      "id": "dumbbell-strength",
+      "name": "Dumbbell Strength",
+      "exercises": [
+        { "id": "exercise_076", "name": "Dumbbell Bench Press", "sets": 5 },
+        { "id": "exercise_077", "name": "Dumbbell Row", "sets": 5 },
+        { "id": "exercise_023", "name": "Dumbbell Bulgarian Split Squat", "sets": 4 },
+        { "id": "exercise_005", "name": "Dumbbell Shoulder Press", "sets": 4 },
+        { "id": "exercise_078", "name": "Dumbbell Romanian Deadlift", "sets": 4 }
+      ],
+      "metadata": {
+        "goal": "strength",
+        "experienceLevel": "intermediate",
+        "equipment": "dumbbells-only",
+        "durationMinutes": 55,
+        "description": "Build serious strength with heavy dumbbell compounds.",
+        "tags": ["strength", "dumbbells", "compound", "intermediate"]
+      },
+      "isPremade": true
+    },
+    {
+      "id": "fat-burn-circuit",
+      "name": "Fat Burn Circuit",
+      "exercises": [
+        { "id": "exercise_014", "name": "Leg Press", "sets": 3 },
+        { "id": "exercise_002", "name": "Chest Press Machine", "sets": 3 },
+        { "id": "exercise_010", "name": "Seated Row Machine", "sets": 3 },
+        { "id": "exercise_022", "name": "Seated Shoulder Press Machine", "sets": 3 },
+        { "id": "exercise_015", "name": "Leg Extensions", "sets": 3 },
+        { "id": "exercise_063", "name": "Cable Crunch", "sets": 3 }
+      ],
+      "metadata": {
+        "goal": "lose-fat",
+        "experienceLevel": "beginner",
+        "equipment": "full-gym",
+        "durationMinutes": 35,
+        "description": "Machine circuit with minimal rest for maximum calorie burn.",
+        "tags": ["circuit", "fat-loss", "machines", "beginner"]
+      },
+      "isPremade": true
+    },
+    {
+      "id": "bodyweight-fat-burner",
+      "name": "Bodyweight Fat Burner",
+      "exercises": [
+        { "id": "bodyweight_011", "name": "Burpees", "sets": 4 },
+        { "id": "bodyweight_010", "name": "Mountain Climbers", "sets": 4 },
+        { "id": "bodyweight_008", "name": "Air Squats", "sets": 4 },
+        { "id": "bodyweight_001", "name": "Push-ups", "sets": 3 },
+        { "id": "bodyweight_009", "name": "Lunges", "sets": 3 },
+        { "id": "duration_001", "name": "Plank", "sets": 3 }
+      ],
+      "metadata": {
+        "goal": "lose-fat",
+        "experienceLevel": "beginner",
+        "equipment": "bodyweight",
+        "durationMinutes": 25,
+        "description": "High-intensity bodyweight workout for fat burning anywhere.",
+        "tags": ["hiit", "bodyweight", "fat-loss", "home"]
+      },
+      "isPremade": true
+    },
+    {
+      "id": "dumbbell-metabolic",
+      "name": "Dumbbell Metabolic",
+      "exercises": [
+        { "id": "exercise_079", "name": "Dumbbell Goblet Squat", "sets": 4 },
+        { "id": "exercise_076", "name": "Dumbbell Bench Press", "sets": 4 },
+        { "id": "exercise_077", "name": "Dumbbell Row", "sets": 4 },
+        { "id": "exercise_080", "name": "Dumbbell Lunges", "sets": 3 },
+        { "id": "exercise_005", "name": "Dumbbell Shoulder Press", "sets": 3 },
+        { "id": "exercise_027", "name": "Dumbbell Bicep Curls", "sets": 3 }
+      ],
+      "metadata": {
+        "goal": "lose-fat",
+        "experienceLevel": "intermediate",
+        "equipment": "dumbbells-only",
+        "durationMinutes": 40,
+        "description": "Dumbbell complexes for metabolic conditioning and fat loss.",
+        "tags": ["metabolic", "dumbbells", "fat-loss", "conditioning"]
+      },
+      "isPremade": true
+    },
+    {
+      "id": "advanced-conditioning",
+      "name": "Advanced Conditioning",
+      "exercises": [
+        { "id": "exercise_019", "name": "Barbell Squat", "sets": 4 },
+        { "id": "exercise_001", "name": "Barbell Bench Press", "sets": 4 },
+        { "id": "exercise_052", "name": "Barbell Bent-Over Row", "sets": 4 },
+        { "id": "exercise_020", "name": "Barbell Deadlift", "sets": 3 },
+        { "id": "bodyweight_011", "name": "Burpees", "sets": 3 },
+        { "id": "bodyweight_010", "name": "Mountain Climbers", "sets": 3 }
+      ],
+      "metadata": {
+        "goal": "lose-fat",
+        "experienceLevel": "advanced",
+        "equipment": "full-gym",
+        "durationMinutes": 60,
+        "description": "High-intensity strength and conditioning for advanced athletes.",
+        "tags": ["conditioning", "strength", "fat-loss", "advanced"]
+      },
+      "isPremade": true
+    },
+    {
+      "id": "bodyweight-intermediate",
+      "name": "Bodyweight Intermediate",
+      "exercises": [
+        { "id": "bodyweight_002", "name": "Pull-ups", "sets": 4 },
+        { "id": "bodyweight_004", "name": "Dips", "sets": 4 },
+        { "id": "bodyweight_001", "name": "Push-ups", "sets": 4 },
+        { "id": "bodyweight_009", "name": "Lunges", "sets": 4 },
+        { "id": "bodyweight_007", "name": "Leg Raises", "sets": 3 },
+        { "id": "duration_006", "name": "Hollow Body Hold", "sets": 3 }
+      ],
+      "metadata": {
+        "goal": "general-fitness",
+        "experienceLevel": "intermediate",
+        "equipment": "bodyweight",
+        "durationMinutes": 40,
+        "description": "Challenging bodyweight progressions for intermediate athletes.",
+        "tags": ["bodyweight", "calisthenics", "intermediate", "full-body"]
+      },
+      "isPremade": true
+    },
+    {
+      "id": "bodyweight-advanced",
+      "name": "Bodyweight Advanced",
+      "exercises": [
+        { "id": "bodyweight_002", "name": "Pull-ups", "sets": 5 },
+        { "id": "bodyweight_004", "name": "Dips", "sets": 5 },
+        { "id": "bodyweight_003", "name": "Chin-ups", "sets": 4 },
+        { "id": "bodyweight_001", "name": "Push-ups", "sets": 4 },
+        { "id": "bodyweight_007", "name": "Leg Raises", "sets": 4 },
+        { "id": "duration_006", "name": "Hollow Body Hold", "sets": 3 }
+      ],
+      "metadata": {
+        "goal": "general-fitness",
+        "experienceLevel": "advanced",
+        "equipment": "bodyweight",
+        "durationMinutes": 50,
+        "description": "Advanced calisthenics for elite bodyweight athletes.",
+        "tags": ["calisthenics", "advanced", "bodyweight", "athletic"]
+      },
+      "isPremade": true
+    },
+    {
+      "id": "dumbbell-total-body",
+      "name": "Dumbbell Total Body",
+      "exercises": [
+        { "id": "exercise_079", "name": "Dumbbell Goblet Squat", "sets": 3 },
+        { "id": "exercise_076", "name": "Dumbbell Bench Press", "sets": 3 },
+        { "id": "exercise_077", "name": "Dumbbell Row", "sets": 3 },
+        { "id": "exercise_005", "name": "Dumbbell Shoulder Press", "sets": 3 },
+        { "id": "exercise_078", "name": "Dumbbell Romanian Deadlift", "sets": 3 },
+        { "id": "exercise_027", "name": "Dumbbell Bicep Curls", "sets": 2 }
+      ],
+      "metadata": {
+        "goal": "general-fitness",
+        "experienceLevel": "intermediate",
+        "equipment": "dumbbells-only",
+        "durationMinutes": 45,
+        "description": "Balanced full-body workout using only dumbbells.",
+        "tags": ["full-body", "dumbbells", "balanced", "intermediate"]
+      },
+      "isPremade": true
+    },
+    {
+      "id": "athletic-performance",
+      "name": "Athletic Performance",
+      "exercises": [
+        { "id": "exercise_019", "name": "Barbell Squat", "sets": 4 },
+        { "id": "exercise_045", "name": "Barbell Power Clean", "sets": 4 },
+        { "id": "exercise_001", "name": "Barbell Bench Press", "sets": 4 },
+        { "id": "exercise_052", "name": "Barbell Bent-Over Row", "sets": 3 },
+        { "id": "exercise_042", "name": "Barbell Hip Thrust", "sets": 3 },
+        { "id": "bodyweight_011", "name": "Burpees", "sets": 3 }
+      ],
+      "metadata": {
+        "goal": "general-fitness",
+        "experienceLevel": "advanced",
+        "equipment": "full-gym",
+        "durationMinutes": 65,
+        "description": "Power and conditioning for athletic performance.",
+        "tags": ["athletic", "power", "conditioning", "advanced"]
+      },
+      "isPremade": true
+    },
+    {
       "id": "classic-push",
       "name": "Classic Push Day",
       "exercises": [

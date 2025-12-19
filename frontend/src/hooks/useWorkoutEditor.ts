@@ -8,7 +8,9 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { exercises as exerciseCatalog, type Exercise } from '@/constants/exercises';
 import type { SetLog, Workout, WorkoutExercise } from '@/types/workout';
 import { usePlansStore } from '@/store/plansStore';
+
 import { useWorkoutSessionsStore } from '@/store/workoutSessionsStore';
+import { useSettingsStore } from '@/store/settingsStore';
 import { getLastCompletedSetsForExercise } from '@/utils/exerciseHistory';
 
 interface WorkoutEditorHook {
@@ -60,7 +62,9 @@ export const useWorkoutEditor = (workoutId?: string): WorkoutEditorHook => {
   const hydrateWorkouts = useWorkoutSessionsStore((state) => state.hydrateWorkouts);
   const updateWorkout = useWorkoutSessionsStore((state) => state.updateWorkout);
   const plans = usePlansStore((state) => state.plans);
+
   const hydratePlans = usePlansStore((state) => state.hydratePlans);
+  const { convertWeight, convertWeightToLbs, weightUnit } = useSettingsStore();
 
   const [exerciseDrafts, setExerciseDrafts] = useState<WorkoutExercise[]>([]);
   const [expandedExercise, setExpandedExercise] = useState<string | null>(null);
@@ -85,12 +89,17 @@ export const useWorkoutEditor = (workoutId?: string): WorkoutEditorHook => {
 
     const nextDrafts = workout.exercises.map((exercise) => ({
       ...exercise,
-      sets: exercise.sets.map((set) => ({ ...set })),
+      sets: exercise.sets.map((set) => ({
+        ...set,
+        weight: convertWeight(set.weight ?? 0),
+      })),
     }));
 
     setExerciseDrafts(nextDrafts);
-    setExpandedExercise(nextDrafts[0]?.name ?? null);
-  }, [workout]);
+    if (!exerciseDrafts.length) {
+      setExpandedExercise(nextDrafts[0]?.name ?? null);
+    }
+  }, [workout, weightUnit]);
 
   useEffect(() => {
     if (exerciseDrafts.length === 0) {
@@ -179,9 +188,15 @@ export const useWorkoutEditor = (workoutId?: string): WorkoutEditorHook => {
         defaultSets = createDefaultSetLogs(baseName, workouts, workout?.id);
       }
 
+      // Convert default/historical sets from LBS (storage) to User Unit (display)
+      const convertedSets = defaultSets.map((set) => ({
+        ...set,
+        weight: convertWeight(set.weight ?? 0),
+      }));
+
       const next: WorkoutExercise = {
         name: baseName,
-        sets: defaultSets,
+        sets: convertedSets,
       };
 
       resolvedName = baseName;
@@ -190,7 +205,7 @@ export const useWorkoutEditor = (workoutId?: string): WorkoutEditorHook => {
     setPickerVisible(false);
     setSearchTerm('');
     setExpandedExercise(resolvedName);
-  }, [workouts, workout]);
+  }, [workouts, workout, convertWeight, weightUnit]);
 
   const openPicker = useCallback(() => {
     setPickerVisible(true);
@@ -223,9 +238,18 @@ export const useWorkoutEditor = (workoutId?: string): WorkoutEditorHook => {
     }
 
     try {
+      // Convert exercises from User Unit (display) to LBS (storage)
+      const preparedExercises = exerciseDrafts.map((exercise) => ({
+        ...exercise,
+        sets: exercise.sets.map((set) => ({
+          ...set,
+          weight: convertWeightToLbs(set.weight ?? 0),
+        })),
+      }));
+
       await updateWorkout({
         ...workout,
-        exercises: exerciseDrafts,
+        exercises: preparedExercises,
       });
       return true;
     } catch (error) {

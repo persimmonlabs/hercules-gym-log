@@ -41,7 +41,7 @@ const buildMaps = () => {
                         // l3 could be "Upper Chest" (low), "Biceps" (low with children), or "Medial Head" (detailed under Calves)
                         leafToL1[l3] = l1;
                         leafToL2[l3] = l2;
-                        
+
                         // Handle L4 (detailed level, e.g., Long Head under Biceps)
                         if (l3Data?.muscles) {
                             Object.keys(l3Data.muscles).forEach(l4 => {
@@ -130,29 +130,29 @@ const ChartPage: React.FC<ChartPageProps> = ({ title, data, selectedBar, setSele
     // Calculate tooltip position based on selected bar value and position
     const getTooltipPosition = () => {
         if (!selectedBar) return { top: 10, left: 0 };
-        
+
         const chartHeight = 250;
         const chartWidth = CHART_WIDTH;
         const chartPadding = { top: 20, bottom: 40, left: 40, right: 40 };
         const usableHeight = chartHeight - chartPadding.top - chartPadding.bottom;
         const usableWidth = chartWidth - chartPadding.left - chartPadding.right;
         const maxValue = Math.max(...data.values, 1);
-        
+
         // Find the index of the selected bar
         const barIndex = data.labels.indexOf(selectedBar.label);
         const numBars = data.labels.length;
-        
+
         // Calculate bar position (center of the bar)
         const barWidth = 32; // VictoryBar width from style
         const domainPadding = 40; // domainPadding from VictoryChart
         const barSpacing = (usableWidth - domainPadding * 2) / numBars;
         const barCenterX = chartPadding.left + domainPadding + (barIndex * barSpacing) + (barSpacing / 2);
-        
+
         // Calculate vertical position (just above the bar top)
         const barHeight = (selectedBar.value / maxValue) * usableHeight;
         const tooltipTop = chartPadding.top + usableHeight - barHeight - 25; // 25px above bar top
-        
-        return { 
+
+        return {
             top: Math.max(chartPadding.top, tooltipTop),
             left: barCenterX,
         };
@@ -225,7 +225,7 @@ const ChartPage: React.FC<ChartPageProps> = ({ title, data, selectedBar, setSele
                         }]}
                     />
                 </VictoryChart>
-                
+
                 {/* Tooltip */}
                 {selectedBar && (
                     <View style={[styles.tooltip, getTooltipPosition()]}>
@@ -235,10 +235,10 @@ const ChartPage: React.FC<ChartPageProps> = ({ title, data, selectedBar, setSele
                     </View>
                 )}
             </View>
-            
+
             {/* Transparent overlay to capture taps anywhere on screen */}
             {selectedBar && (
-                <TouchableOpacity 
+                <TouchableOpacity
                     style={styles.fullScreenOverlay}
                     onPress={() => setSelectedBar(null)}
                     activeOpacity={1}
@@ -250,7 +250,7 @@ const ChartPage: React.FC<ChartPageProps> = ({ title, data, selectedBar, setSele
 
 export const WeeklyVolumeChart: React.FC = () => {
     const workouts = useWorkoutSessionsStore((state) => state.workouts);
-    const { formatWeight, getWeightUnit } = useSettingsStore();
+    const { formatWeight, getWeightUnit, convertWeight } = useSettingsStore();
     const [currentPage, setCurrentPage] = useState(0);
     // Per-page selected bar state to prevent cross-page artifacts
     const [selectedBars, setSelectedBars] = useState<Record<number, { label: string; value: number } | null>>({});
@@ -302,7 +302,7 @@ export const WeeklyVolumeChart: React.FC = () => {
                 exercise.sets.forEach(set => {
                     if (!set.completed || (set.weight ?? 0) <= 0 || (set.reps ?? 0) <= 0) return;
 
-                    const setVolume = (set.weight ?? 0) * (set.reps ?? 0);
+                    const setVolume = convertWeight((set.weight ?? 0) * (set.reps ?? 0));
 
                     Object.entries(weights).forEach(([muscle, weight]) => {
                         const contribution = setVolume * weight;
@@ -353,7 +353,7 @@ export const WeeklyVolumeChart: React.FC = () => {
         const hasData = [volumeL1, volumeL2].some(dict => Object.values(dict).some(v => v > 0));
 
         return { dataL1, dataUpper, dataLower, dataCore, hasData };
-    }, [workouts]);
+    }, [workouts, convertWeight]);
 
     const handleMomentumScrollEnd = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
         const contentOffsetX = event.nativeEvent.contentOffset.x;

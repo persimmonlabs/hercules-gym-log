@@ -31,7 +31,7 @@ export const ExerciseHistoryModal: React.FC<ExerciseHistoryModalProps> = ({
   onClose,
   exerciseName,
 }) => {
-  const { formatWeight } = useSettingsStore();
+  const { weightUnit, convertWeight } = useSettingsStore();
   const insets = useSafeAreaInsets();
   const sheetTranslateY = useSharedValue(SCREEN_HEIGHT);
   const workouts = useWorkoutSessionsStore((state) => state.workouts);
@@ -144,7 +144,7 @@ export const ExerciseHistoryModal: React.FC<ExerciseHistoryModalProps> = ({
                     <View key={i} style={styles.setRow}>
                       <Text variant="body" color="secondary">Set {i + 1}</Text>
                       <Text variant="bodySemibold">
-                        {formatWeight(set.weight ?? 0)} × {set.reps} reps
+                        {Math.round(convertWeight(set.weight ?? 0))} {weightUnit} × {set.reps} reps
                       </Text>
                     </View>
                   ))}

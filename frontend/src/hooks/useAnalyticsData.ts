@@ -8,6 +8,7 @@ import { useMemo } from 'react';
 
 import { useWorkoutSessionsStore } from '@/store/workoutSessionsStore';
 import { useUserProfileStore } from '@/store/userProfileStore';
+import { useSettingsStore } from '@/store/settingsStore';
 import { exercises as exerciseCatalog } from '@/constants/exercises';
 import exercisesData from '@/data/exercises.json';
 import hierarchyData from '@/data/hierarchy.json';
@@ -133,6 +134,7 @@ export const useAnalyticsData = (options: UseAnalyticsDataOptions = {}) => {
   const { timeRange = 'week' } = options;
   const workouts = useWorkoutSessionsStore((state) => state.workouts);
   const userBodyWeight = useUserProfileStore((state) => state.profile?.weightLbs);
+  const { convertWeight, weightUnit } = useSettingsStore();
 
   // Filter workouts based on time range
   const filteredWorkouts = useMemo(() => {
@@ -150,7 +152,7 @@ export const useAnalyticsData = (options: UseAnalyticsDataOptions = {}) => {
       workout.exercises.forEach((exercise: any) => {
         const exerciseType = EXERCISE_TYPE_MAP[exercise.name];
         if (exerciseType !== 'cardio') return;
-        
+
         hasCardio = true;
         exercise.sets.forEach((set: any) => {
           if (!set.completed) return;
@@ -178,17 +180,17 @@ export const useAnalyticsData = (options: UseAnalyticsDataOptions = {}) => {
         if (!weights) return;
 
         const exerciseType = EXERCISE_TYPE_MAP[exercise.name] || 'weight';
-        
+
         // Skip cardio and duration exercises for volume calculations
         if (exerciseType === 'cardio' || exerciseType === 'duration') return;
 
         exercise.sets.forEach((set: any) => {
           if (!set.completed) return;
-          
+
           // Calculate set volume based on exercise type
           let setVolume = 0;
           const reps = set.reps ?? 0;
-          
+
           switch (exerciseType) {
             case 'bodyweight':
               // Use body weight if available, otherwise skip
@@ -215,7 +217,10 @@ export const useAnalyticsData = (options: UseAnalyticsDataOptions = {}) => {
               }
               break;
           }
-          
+
+          // Convert volume to user's preferred unit (LBS -> User Unit)
+          setVolume = convertWeight(setVolume);
+
           if (setVolume <= 0) return;
 
           Object.entries(weights).forEach(([muscle, weight]) => {
@@ -241,7 +246,7 @@ export const useAnalyticsData = (options: UseAnalyticsDataOptions = {}) => {
     });
 
     return { high, mid, low };
-  }, [filteredWorkouts, userBodyWeight]);
+  }, [filteredWorkouts, userBodyWeight, convertWeight, weightUnit]);
 
   // Calculate tiered volume distribution (volume = weight × reps × muscle_weighting)
   // Only includes weight and assisted exercises
@@ -256,18 +261,18 @@ export const useAnalyticsData = (options: UseAnalyticsDataOptions = {}) => {
         if (!muscleWeights) return;
 
         const exerciseType = EXERCISE_TYPE_MAP[exercise.name] || 'weight';
-        
+
         // Only include weight and assisted exercises
         if (exerciseType !== 'weight' && exerciseType !== 'assisted') return;
 
         exercise.sets.forEach((set: any) => {
           if (!set.completed) return;
-          
+
           const reps = set.reps ?? 0;
           if (reps <= 0) return;
-          
+
           let setVolume = 0;
-          
+
           if (exerciseType === 'weight') {
             const weight = set.weight ?? 0;
             if (weight <= 0) return;
@@ -281,7 +286,10 @@ export const useAnalyticsData = (options: UseAnalyticsDataOptions = {}) => {
             const effectiveWeight = userBodyWeight - assistanceWeight;
             setVolume = effectiveWeight * reps;
           }
-          
+
+          // Convert volume to user's preferred unit
+          setVolume = convertWeight(setVolume);
+
           if (setVolume <= 0) return;
 
           // Distribute volume to muscles based on weightings
@@ -306,7 +314,7 @@ export const useAnalyticsData = (options: UseAnalyticsDataOptions = {}) => {
       const sorted = Object.entries(dist).sort((a, b) => b[1] - a[1]);
       const total = Object.values(dist).reduce((sum, val) => sum + val, 0);
       if (total === 0) return [];
-      
+
       const threshold = total * 0.01; // 1% threshold
       const filtered = sorted.filter(([, value]) => value >= threshold);
       const filteredTotal = filtered.reduce((sum, [, val]) => sum + val, 0);
@@ -324,7 +332,7 @@ export const useAnalyticsData = (options: UseAnalyticsDataOptions = {}) => {
       mid: formatSlices(distL2),
       low: formatSlices(distL3),
     };
-  }, [filteredWorkouts, userBodyWeight]);
+  }, [filteredWorkouts, userBodyWeight, convertWeight, weightUnit]);
 
   // Calculate hierarchical volume distribution for drill-down navigation
   // Uses same logic as tieredVolumeDistribution but with parent grouping for drill-down
@@ -338,18 +346,18 @@ export const useAnalyticsData = (options: UseAnalyticsDataOptions = {}) => {
         if (!muscleWeights) return;
 
         const exerciseType = EXERCISE_TYPE_MAP[exercise.name] || 'weight';
-        
+
         // Only include weight and assisted exercises
         if (exerciseType !== 'weight' && exerciseType !== 'assisted') return;
 
         exercise.sets.forEach((set: any) => {
           if (!set.completed) return;
-          
+
           const reps = set.reps ?? 0;
           if (reps <= 0) return;
-          
+
           let setVolume = 0;
-          
+
           if (exerciseType === 'weight') {
             const weight = set.weight ?? 0;
             if (weight <= 0) return;
@@ -363,7 +371,10 @@ export const useAnalyticsData = (options: UseAnalyticsDataOptions = {}) => {
             const effectiveWeight = userBodyWeight - assistanceWeight;
             setVolume = effectiveWeight * reps;
           }
-          
+
+          // Convert volume to user's preferred unit
+          setVolume = convertWeight(setVolume);
+
           if (setVolume <= 0) return;
 
           // Distribute volume to muscles based on weightings
@@ -422,7 +433,7 @@ export const useAnalyticsData = (options: UseAnalyticsDataOptions = {}) => {
       const sorted = Object.entries(dist).sort((a, b) => b[1] - a[1]);
       const total = Object.values(dist).reduce((sum, val) => sum + val, 0);
       if (total === 0) return [];
-      
+
       const threshold = total * 0.01; // 1% threshold
       const filtered = sorted.filter(([, value]) => value >= threshold);
       const filteredTotal = filtered.reduce((sum, [, val]) => sum + val, 0);
@@ -447,7 +458,7 @@ export const useAnalyticsData = (options: UseAnalyticsDataOptions = {}) => {
       root: formatSlicesForLevel(distByLevel['root'] || {}),
       byParent,
     };
-  }, [filteredWorkouts, userBodyWeight]);
+  }, [filteredWorkouts, userBodyWeight, convertWeight, weightUnit]);
 
   // Weekly volume bar chart data
   const weeklyVolume = useMemo((): WeeklyVolumeData => {
@@ -487,7 +498,7 @@ export const useAnalyticsData = (options: UseAnalyticsDataOptions = {}) => {
   const streakData = useMemo((): StreakData => {
     const now = new Date();
     const today = now.toISOString().split('T')[0];
-    
+
     // Sort workouts by date descending
     const sortedDates = [...new Set(workouts.map((w) => w.date.split('T')[0]))]
       .sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
@@ -495,13 +506,13 @@ export const useAnalyticsData = (options: UseAnalyticsDataOptions = {}) => {
     // Calculate current streak
     let currentStreak = 0;
     let checkDate = new Date(today);
-    
+
     for (const date of sortedDates) {
       const workoutDate = new Date(date);
       const diffDays = Math.floor(
         (checkDate.getTime() - workoutDate.getTime()) / (1000 * 60 * 60 * 24)
       );
-      
+
       if (diffDays <= 1) {
         currentStreak++;
         checkDate = workoutDate;
@@ -568,7 +579,7 @@ export const useAnalyticsData = (options: UseAnalyticsDataOptions = {}) => {
     // Raw data
     workouts,
     filteredWorkouts,
-    
+
     // Processed data
     tieredVolume,
     tieredVolumeDistribution,
@@ -576,11 +587,11 @@ export const useAnalyticsData = (options: UseAnalyticsDataOptions = {}) => {
     weeklyVolume,
     streakData,
     cardioStats,
-    
+
     // State
     hasData,
     hasFilteredData,
-    
+
     // Utilities
     leafToL1,
     leafToL2,

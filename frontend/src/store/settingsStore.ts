@@ -7,6 +7,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { supabaseClient } from '@/lib/supabaseClient';
 
 export type UnitSystem = 'imperial' | 'metric';
 export type WeightUnit = 'lbs' | 'kg';
@@ -59,6 +60,8 @@ interface SettingsState {
   formatDistance: (miles: number, decimals?: number) => string;
   /** Format distance without unit (just the number) */
   formatDistanceValue: (miles: number, decimals?: number) => string;
+  /** Sync settings from Supabase */
+  syncFromSupabase: () => Promise<void>;
 }
 
 // Conversion constants
@@ -86,20 +89,78 @@ export const useSettingsStore = create<SettingsState>()(
         });
       },
 
-      setThemePreference: (preference: ThemePreference) => {
+      setThemePreference: async (preference: ThemePreference) => {
         set({ themePreference: preference });
+        try {
+          const { data: { user } } = await supabaseClient.auth.getUser();
+          if (user) {
+            await supabaseClient.from('profiles').update({ theme_preference: preference }).eq('id', user.id);
+          }
+        } catch (error) {
+          console.warn('Failed to sync theme preference to Supabase', error);
+        }
       },
 
-      setWeightUnit: (unit: WeightUnit) => {
+      setWeightUnit: async (unit: WeightUnit) => {
         set({ weightUnit: unit });
+        try {
+          const { data: { user } } = await supabaseClient.auth.getUser();
+          if (user) {
+            await supabaseClient.from('profiles').update({ weight_unit: unit }).eq('id', user.id);
+          }
+        } catch (error) {
+          console.warn('Failed to sync weight unit to Supabase', error);
+        }
       },
 
-      setDistanceUnit: (unit: DistanceUnit) => {
+      setDistanceUnit: async (unit: DistanceUnit) => {
         set({ distanceUnit: unit });
+        try {
+          const { data: { user } } = await supabaseClient.auth.getUser();
+          if (user) {
+            await supabaseClient.from('profiles').update({ distance_unit: unit }).eq('id', user.id);
+          }
+        } catch (error) {
+          console.warn('Failed to sync distance unit to Supabase', error);
+        }
       },
 
-      setSizeUnit: (unit: SizeUnit) => {
+      setSizeUnit: async (unit: SizeUnit) => {
         set({ sizeUnit: unit });
+        try {
+          const { data: { user } } = await supabaseClient.auth.getUser();
+          if (user) {
+            await supabaseClient.from('profiles').update({ size_unit: unit }).eq('id', user.id);
+          }
+        } catch (error) {
+          console.warn('Failed to sync size unit to Supabase', error);
+        }
+      },
+
+      syncFromSupabase: async () => {
+        try {
+          const { data: { user } } = await supabaseClient.auth.getUser();
+          if (user) {
+            const { data, error } = await supabaseClient
+              .from('profiles')
+              .select('unit_system, weight_unit, distance_unit, size_unit, theme_preference')
+              .eq('id', user.id)
+              .single();
+
+            if (data && !error) {
+              set({
+                // Only update if value exists in DB
+                unitSystem: (data.unit_system as UnitSystem) || get().unitSystem,
+                weightUnit: (data.weight_unit as WeightUnit) || get().weightUnit,
+                distanceUnit: (data.distance_unit as DistanceUnit) || get().distanceUnit,
+                sizeUnit: (data.size_unit as SizeUnit) || get().sizeUnit,
+                themePreference: (data.theme_preference as ThemePreference) || get().themePreference,
+              });
+            }
+          }
+        } catch (error) {
+          console.warn('Failed to sync settings from Supabase', error);
+        }
       },
 
       getWeightUnit: () => {

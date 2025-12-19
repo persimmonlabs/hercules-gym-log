@@ -15,7 +15,11 @@ interface PRCardProps {
 }
 
 export const PRCard: React.FC<PRCardProps> = ({ exerciseName, weight, reps, date, onReplace }) => {
-  const { formatWeightValue, getWeightUnit } = useSettingsStore();
+  const { weightUnit, convertWeight } = useSettingsStore();
+
+  const displayWeight = convertWeight(weight);
+  const unitLabel = weightUnit;
+
   const formattedDate = date
     ? new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
     : 'No data';
@@ -39,19 +43,19 @@ export const PRCard: React.FC<PRCardProps> = ({ exerciseName, weight, reps, date
             </Text>
           </View>
         </View>
-        
+
         <View style={styles.rightSection}>
           <View style={styles.stats}>
             <View style={styles.weightBadge}>
               <Text variant="heading3" color="onAccent">
-                {formatWeightValue(weight)}
+                {Math.round(displayWeight * 10) / 10}
               </Text>
               <Text variant="captionSmall" color="onAccent" style={styles.unit}>
-                {getWeightUnit()}
+                {unitLabel}
               </Text>
             </View>
           </View>
-          
+
           {onReplace && (
             <TouchableOpacity onPress={onReplace} style={styles.menuButton}>
               <Ionicons name="ellipsis-vertical" size={20} color={colors.text.tertiary} />

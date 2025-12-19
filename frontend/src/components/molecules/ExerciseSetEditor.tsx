@@ -433,7 +433,7 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
         {hasSets ? (
           sets.map((set, index) => {
             const isCompleted = set.completed;
-            
+
             // Generate summary text based on exercise type
             let summaryText = '';
             switch (exerciseType) {
@@ -447,7 +447,7 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
                 summaryText = `${set.reps ?? 0} reps`;
                 break;
               case 'assisted':
-                summaryText = `${formatWeight(set.assistanceWeight ?? 0)} assist × ${set.reps ?? 0} reps`;
+                summaryText = `${set.assistanceWeight ?? 0} ${weightUnit} assist × ${set.reps ?? 0} reps`;
                 break;
               case 'duration':
                 const dMins = Math.floor((set.duration ?? 0) / 60);
@@ -456,7 +456,7 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
                 break;
               case 'weight':
               default:
-                summaryText = `${formatWeight(set.weight ?? 0)} × ${set.reps ?? 0} reps`;
+                summaryText = `${set.weight ?? 0} ${weightUnit} × ${set.reps ?? 0} reps`;
             }
 
             return (
@@ -583,7 +583,7 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
                               const decrement = distanceUnitLabel === 'km' ? 0.1 : 0.1;
                               const newDisplayValue = Math.max(0, currentDisplayValue - decrement);
                               const newMiles = convertDistanceToMiles(newDisplayValue);
-                              updateSet(index, { 
+                              updateSet(index, {
                                 distance: Math.round(newMiles * 100) / 100,
                                 distanceInput: newDisplayValue.toFixed(1)
                               });
@@ -604,7 +604,7 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
                               const displayValue = parseFloat(sanitized) || 0;
                               // Convert from display unit to miles for storage
                               const distanceInMiles = convertDistanceToMiles(displayValue);
-                              updateSet(index, { 
+                              updateSet(index, {
                                 distanceInput: sanitized,
                                 distance: Math.round(distanceInMiles * 100) / 100
                               });
@@ -625,7 +625,7 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
                               const increment = distanceUnitLabel === 'km' ? 0.1 : 0.1;
                               const newDisplayValue = Math.round((currentDisplayValue + increment) * 10) / 10;
                               const newMiles = convertDistanceToMiles(newDisplayValue);
-                              updateSet(index, { 
+                              updateSet(index, {
                                 distance: Math.round(newMiles * 100) / 100,
                                 distanceInput: newDisplayValue.toFixed(1)
                               });
@@ -669,9 +669,9 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
                             onChangeText={(value) => {
                               const sanitized = value.replace(/[^0-9:]/g, '');
                               const seconds = parseDuration(sanitized);
-                              updateSet(index, { 
+                              updateSet(index, {
                                 durationInput: sanitized,
-                                duration: seconds 
+                                duration: seconds
                               });
                             }}
                             keyboardType="numeric"
@@ -687,7 +687,7 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
                             onPressIn={() => {
                               const increment = exerciseType === 'cardio' ? 60 : 5; // 1 min or 5 sec
                               const newDuration = (set.duration ?? 0) + increment;
-                              updateSet(index, { 
+                              updateSet(index, {
                                 duration: newDuration,
                                 durationInput: formatDuration(newDuration)
                               });
@@ -740,18 +740,18 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
                             }
                             onFocus={() => handleRepsFocus(index)}
                             onBlur={() => handleRepsBlur(index)}
-                        />
-                        <Pressable
-                          style={styles.adjustButton}
-                          onPressIn={() => adjustSetValue(index, 'reps', 1)}
-                          accessibilityRole="button"
-                          accessibilityLabel={`Increase reps for set ${index + 1}`}
-                        >
-                          <MaterialCommunityIcons
-                            name="plus"
-                            size={sizing.iconMD}
-                            color={colors.text.primary}
                           />
+                          <Pressable
+                            style={styles.adjustButton}
+                            onPressIn={() => adjustSetValue(index, 'reps', 1)}
+                            accessibilityRole="button"
+                            accessibilityLabel={`Increase reps for set ${index + 1}`}
+                          >
+                            <MaterialCommunityIcons
+                              name="plus"
+                              size={sizing.iconMD}
+                              color={colors.text.primary}
+                            />
                           </Pressable>
                         </View>
                       </View>

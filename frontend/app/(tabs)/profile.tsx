@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 
 import { ScreenHeader } from '@/components/molecules/ScreenHeader';
 import { Text } from '@/components/atoms/Text';
@@ -104,6 +104,14 @@ const StatsScreen: React.FC = () => {
   // Independent state for each card
   const [volumeTimeRange, setVolumeTimeRange] = useState<TimeRange>('week');
   const [cardioTimeRange, setCardioTimeRange] = useState<TimeRange>('week');
+  
+  // Reset time ranges to 'week' when page gains focus
+  useFocusEffect(
+    useCallback(() => {
+      setVolumeTimeRange('week');
+      setCardioTimeRange('week');
+    }, [])
+  );
   
   // Fetch data separately for each time range
   const { hasFilteredData: hasVolumeData } = useAnalyticsData({ timeRange: volumeTimeRange });

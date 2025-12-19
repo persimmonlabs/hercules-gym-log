@@ -9,11 +9,13 @@ import { colors, spacing, radius, shadows } from '@/constants/theme';
 import { useTheme } from '@/hooks/useTheme';
 import { useWorkoutSessionsStore } from '@/store/workoutSessionsStore';
 import { usePersonalRecordsStore } from '@/store/personalRecordsStore';
+import { useSettingsStore } from '@/store/settingsStore';
 import type { Workout } from '@/types/workout';
 import exercisesData from '@/data/exercises.json';
 
 export const PersonalRecordsSection: React.FC = () => {
   const { theme } = useTheme();
+  const { weightUnit } = useSettingsStore(); // Force re-render on unit change
   const workouts = useWorkoutSessionsStore((state) => state.workouts);
   const trackedExercises = usePersonalRecordsStore((state) => state.trackedExercises);
   const replaceTrackedExercise = usePersonalRecordsStore((state) => state.replaceTrackedExercise);

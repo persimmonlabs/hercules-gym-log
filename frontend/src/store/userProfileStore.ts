@@ -48,7 +48,7 @@ export const useUserProfileStore = create<UserProfileState>((set, get) => ({
       // Fetch only the columns that are guaranteed to exist
       const { data, error } = await supabaseClient
         .from('profiles')
-        .select('first_name, last_name, full_name')
+        .select('first_name, last_name, full_name, height_feet, height_inches, weight_lbs')
         .eq('id', userId)
         .single();
 
@@ -65,10 +65,10 @@ export const useUserProfileStore = create<UserProfileState>((set, get) => ({
             firstName: data.first_name || '',
             lastName: data.last_name || '',
             fullName: data.full_name || '',
-            // Body metrics stored locally until DB schema is updated
-            heightFeet: undefined,
-            heightInches: undefined,
-            weightLbs: undefined,
+            // Body metrics
+            heightFeet: data.height_feet,
+            heightInches: data.height_inches,
+            weightLbs: data.weight_lbs,
           },
           isLoading: false,
         });
@@ -117,12 +117,6 @@ export const useUserProfileStore = create<UserProfileState>((set, get) => ({
       },
     });
 
-    // Note: Supabase persistence disabled until DB schema is updated
-    // To enable, run this SQL in Supabase:
-    // ALTER TABLE profiles ADD COLUMN height_feet INTEGER;
-    // ALTER TABLE profiles ADD COLUMN height_inches INTEGER;
-    // ALTER TABLE profiles ADD COLUMN weight_lbs INTEGER;
-    /*
     try {
       const { data: { user } } = await supabaseClient.auth.getUser();
       if (user) {
@@ -136,13 +130,12 @@ export const useUserProfileStore = create<UserProfileState>((set, get) => ({
           .eq('id', user.id);
 
         if (error) {
-          console.error('[UserProfileStore] Error updating body metrics:', error);
+          console.error('[UserProfileStore] Error updating body metrics in Supabase:', error);
         }
       }
     } catch (error) {
       console.error('[UserProfileStore] Error updating body metrics:', error);
     }
-    */
   },
 
   clearProfile: () => {

@@ -23,7 +23,7 @@ import type { TimeRange } from '@/types/analytics';
 
 const DistributionAnalyticsScreen: React.FC = () => {
   const router = useRouter();
-  const [timeRange, setTimeRange] = React.useState<TimeRange>('all');
+  const [timeRange, setTimeRange] = React.useState<TimeRange>('week');
   const { hierarchicalVolumeDistribution } = useAnalyticsData({ timeRange });
   const { isPremium, isLoading } = usePremiumStatus();
   
@@ -34,7 +34,7 @@ const DistributionAnalyticsScreen: React.FC = () => {
   useFocusEffect(
     useCallback(() => {
       setChartKey(prev => prev + 1);
-      setTimeRange('all');
+      setTimeRange('week');
     }, [])
   );
   
@@ -81,7 +81,7 @@ const DistributionAnalyticsScreen: React.FC = () => {
             onUnlock={handleUpgrade}
           >
             <FractalBubbleChart
-              key={`upper-${chartKey}-${timeRange}`}
+              key={`upper-${chartKey}`}
               data={hierarchicalVolumeDistribution}
               rootGroup="Upper Body"
             />
@@ -98,7 +98,7 @@ const DistributionAnalyticsScreen: React.FC = () => {
             onUnlock={handleUpgrade}
           >
             <FractalBubbleChart
-              key={`lower-${chartKey}-${timeRange}`}
+              key={`lower-${chartKey}`}
               data={hierarchicalVolumeDistribution}
               rootGroup="Lower Body"
             />
@@ -115,7 +115,7 @@ const DistributionAnalyticsScreen: React.FC = () => {
             onUnlock={handleUpgrade}
           >
             <FractalBubbleChart
-              key={`core-${chartKey}-${timeRange}`}
+              key={`core-${chartKey}`}
               data={hierarchicalVolumeDistribution}
               rootGroup="Core"
             />
