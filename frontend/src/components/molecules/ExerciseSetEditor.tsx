@@ -9,6 +9,7 @@ import * as Haptics from 'expo-haptics';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 import { Text } from '@/components/atoms/Text';
+import { HoldRepeatIconButton } from '@/components/atoms/HoldRepeatIconButton';
 import { springGentle } from '@/constants/animations';
 import { colors, radius, shadows, sizing, spacing, zIndex } from '@/constants/theme';
 import type { SetLog } from '@/types/workout';
@@ -24,6 +25,7 @@ interface ExerciseSetEditorProps {
   embedded?: boolean;
   exerciseType?: ExerciseType;
   distanceUnit?: 'miles' | 'meters' | 'floors';
+  historySetCount?: number;
 }
 
 const DEFAULT_NEW_SET: SetLog = {
@@ -108,7 +110,7 @@ const sanitizeRepsInput = (value: string): string => {
   return digitsOnly.replace(/^0+(?=\d)/, '');
 };
 
-const AUTO_SAVE_DEBOUNCE_MS = 120;
+const AUTO_SAVE_DEBOUNCE_MS = 600;
 
 const mapDraftsToSetLogs = (drafts: SetDraft[]): SetLog[] =>
   drafts.map((draft) => ({
@@ -132,6 +134,7 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
   embedded = false,
   exerciseType = 'weight',
   distanceUnit = 'miles',
+  historySetCount = 0,
 }) => {
   const { getWeightUnit, formatWeight, getDistanceUnitShort, formatDistance, convertDistance, convertDistanceToMiles } = useSettingsStore();
   const weightUnit = getWeightUnit();
@@ -150,6 +153,13 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
   const onProgressChangeRef = useRef<((progress: { completedSets: number; totalSets: number }) => void) | null>(
     onProgressChange ?? null,
   );
+  const weightInputRefs = useRef<Record<number, TextInput | null>>({});
+  const repsInputRefs = useRef<Record<number, TextInput | null>>({});
+  const distanceInputRefs = useRef<Record<number, TextInput | null>>({});
+  const durationInputRefs = useRef<Record<number, TextInput | null>>({});
+  const setsRef = useRef<SetDraft[]>([]);
+  const completedSetsRef = useRef(0);
+  const totalSetsRef = useRef(0);
 
   const initialSignature = useMemo(() => JSON.stringify(initialSets), [initialSets]);
 
@@ -162,6 +172,11 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
   }, [onProgressChange]);
 
   useEffect(() => {
+    setsRef.current = sets;
+  }, [sets]);
+
+
+  useEffect(() => {
     const wasExpanded = prevIsExpandedRef.current;
     prevIsExpandedRef.current = isExpanded;
 
@@ -169,28 +184,57 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
       return;
     }
 
-    const shouldHydrate = !wasExpanded || lastSyncedSignatureRef.current !== initialSignature;
-
-    if (!shouldHydrate) {
+    if (wasExpanded) {
       return;
     }
 
     skipNextEmitRef.current = true;
-    setSets(initialSets.map((set) => createDraftFromSet(set)));
+    const nextDrafts = initialSets.map((set) => createDraftFromSet(set));
+    setsRef.current = nextDrafts;
+    totalSetsRef.current = nextDrafts.length;
+    completedSetsRef.current = nextDrafts.filter((set) => set.completed).length;
+    setSets(nextDrafts);
     setOpenMenuIndex(null);
     lastSyncedSignatureRef.current = initialSignature;
+
+    emitProgress();
+
+    setTimeout(() => {
+      nextDrafts.forEach((draft, index) => {
+        const weightRef = weightInputRefs.current[index];
+        const repsRef = repsInputRefs.current[index];
+        const distanceRef = distanceInputRefs.current[index];
+        const durationRef = durationInputRefs.current[index];
+
+        if (weightRef) {
+          const text = exerciseType === 'assisted' ? draft.assistanceWeightInput : draft.weightInput;
+          weightRef.setNativeProps({ text });
+        }
+
+        if (repsRef) {
+          repsRef.setNativeProps({ text: draft.repsInput });
+        }
+
+        if (distanceRef) {
+          distanceRef.setNativeProps({ text: draft.distanceInput });
+        }
+
+        if (durationRef) {
+          durationRef.setNativeProps({ text: draft.durationInput });
+        }
+      });
+    }, 0);
   }, [initialSignature, initialSets, isExpanded]);
 
   const hasSets = useMemo(() => sets.length > 0, [sets.length]);
 
-  useEffect(() => {
+  const emitProgress = useCallback(() => {
     if (!onProgressChangeRef.current) {
       return;
     }
 
-    const completedCount = sets.filter((set) => set.completed).length;
-    onProgressChangeRef.current({ completedSets: completedCount, totalSets: sets.length });
-  }, [sets]);
+    onProgressChangeRef.current({ completedSets: completedSetsRef.current, totalSets: totalSetsRef.current });
+  }, []);
 
   useEffect(() => {
     if (skipNextEmitRef.current) {
@@ -218,73 +262,96 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
     };
   }, []);
 
-  const updateSet = (index: number, updates: Partial<SetDraft>) => {
-    setSets((prev) => prev.map((set, idx) => (idx === index ? { ...set, ...updates } : set)));
-  };
+  const updateSet = useCallback((index: number, updater: Partial<SetDraft> | ((current: SetDraft) => Partial<SetDraft>)) => {
+    setSets((prev) => {
+      const current = prev[index];
+      if (!current) return prev;
+      const updates = typeof updater === 'function' ? updater(current) : updater;
+      const next = [...prev];
+      next[index] = { ...current, ...updates };
+      setsRef.current = next;
+      return next;
+    });
+  }, []);
 
-  const adjustSetValue = (index: number, field: 'weight' | 'reps', delta: number) => {
-    void Haptics.selectionAsync();
-    setSets((prev) =>
-      prev.map((set, idx) => {
-        if (idx !== index) return set;
+  const adjustSetValue = useCallback((index: number, field: 'weight' | 'reps' | 'assistanceWeight', delta: number) => {
+    const current = setsRef.current[index];
+    if (!current) {
+      return;
+    }
 
-        const currentValue = set[field] ?? 0;
+    const weightInputRef = weightInputRefs.current[index];
+    const repsInputRef = repsInputRefs.current[index];
 
-        let nextValue: number;
-        if (field === 'weight') {
-          // Check if current value is a multiple of 2.5
-          const isMultipleOf2_5 = currentValue % 2.5 === 0;
+    const currentValue = (current[field] ?? 0) as number;
 
-          if (!isMultipleOf2_5) {
-            // Snap to nearest 2.5 multiple
-            if (delta > 0) {
-              nextValue = Math.ceil(currentValue / 2.5) * 2.5;
-            } else {
-              nextValue = Math.floor(currentValue / 2.5) * 2.5;
-            }
-          } else {
-            // Already a multiple, increment normally
-            nextValue = currentValue + delta;
-          }
+    if (field === 'reps') {
+      const nextValue = Math.max(0, Math.round(currentValue + delta));
+      const nextText = String(nextValue);
+      if (repsInputRef) {
+        repsInputRef.setNativeProps({ text: nextText });
+      }
+      updateSet(index, { reps: nextValue, repsInput: nextText });
+      return;
+    }
 
-          nextValue = Math.max(0, Number.parseFloat(nextValue.toFixed(1)));
+    const isMultipleOf2_5 = currentValue % 2.5 === 0;
+    let nextValue: number;
+    if (!isMultipleOf2_5) {
+      nextValue = delta > 0 ? Math.ceil(currentValue / 2.5) * 2.5 : Math.floor(currentValue / 2.5) * 2.5;
+    } else {
+      nextValue = currentValue + delta;
+    }
 
-          return {
-            ...set,
-            weight: nextValue,
-            weightInput: formatWeightInputValue(nextValue),
-          };
-        }
+    nextValue = Math.max(0, Number.parseFloat(nextValue.toFixed(1)));
+    const nextText = formatWeightInputValue(nextValue);
 
-        nextValue = Math.max(0, Math.round(currentValue + delta));
-        return {
-          ...set,
-          reps: nextValue,
-          repsInput: String(nextValue),
-        };
-      }),
-    );
-  };
+    if (weightInputRef) {
+      weightInputRef.setNativeProps({ text: nextText });
+    }
 
-  const addSet = () => {
+    if (field === 'assistanceWeight') {
+      updateSet(index, { assistanceWeight: nextValue, assistanceWeightInput: nextText });
+      return;
+    }
+
+    updateSet(index, { weight: nextValue, weightInput: nextText });
+  }, [updateSet]);
+
+  const addSet = useCallback(() => {
     void Haptics.selectionAsync();
     setSets((prev) => {
       // Find the last completed set to use its values
       const lastCompletedSet = [...prev].reverse().find((set) => set.completed);
 
-      const newSetValues: SetDraft = lastCompletedSet
+      // Priority:
+      // 1. Use last completed set's values (if any sets have been completed in this session)
+      // 2. Use last history set's values (if there's history data)
+      // 3. Fall back to defaults
+      let sourceSet: SetDraft | null = null;
+
+      if (lastCompletedSet) {
+        // Use the last completed set from this session
+        sourceSet = lastCompletedSet;
+      } else if (historySetCount > 0 && prev.length > 0) {
+        // Use the last history set (or last available set if fewer sets than history)
+        const lastHistoryIndex = Math.min(historySetCount - 1, prev.length - 1);
+        sourceSet = prev[lastHistoryIndex];
+      }
+
+      const newSetValues: SetDraft = sourceSet
         ? {
-          weight: lastCompletedSet.weight ?? 0,
-          reps: lastCompletedSet.reps ?? 8,
-          duration: lastCompletedSet.duration ?? 0,
-          distance: lastCompletedSet.distance ?? 0,
-          assistanceWeight: lastCompletedSet.assistanceWeight ?? 0,
+          weight: sourceSet.weight ?? 0,
+          reps: sourceSet.reps ?? 8,
+          duration: sourceSet.duration ?? 0,
+          distance: sourceSet.distance ?? 0,
+          assistanceWeight: sourceSet.assistanceWeight ?? 0,
           completed: false,
-          weightInput: formatWeightInputValue(lastCompletedSet.weight ?? 0),
-          repsInput: String(lastCompletedSet.reps ?? 8),
-          durationInput: lastCompletedSet.durationInput ?? '0:00',
-          distanceInput: lastCompletedSet.distanceInput ?? '0',
-          assistanceWeightInput: lastCompletedSet.assistanceWeightInput ?? '0.0',
+          weightInput: formatWeightInputValue(sourceSet.weight ?? 0),
+          repsInput: String(sourceSet.reps ?? 8),
+          durationInput: sourceSet.durationInput ?? '0:00',
+          distanceInput: sourceSet.distanceInput ?? '0',
+          assistanceWeightInput: sourceSet.assistanceWeightInput ?? '0.0',
         }
         : {
           ...DEFAULT_NEW_SET,
@@ -295,58 +362,105 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
           assistanceWeightInput: '0.0',
         };
 
-      return [...prev, newSetValues];
+      const next = [...prev, newSetValues];
+      setsRef.current = next;
+      totalSetsRef.current = next.length;
+      completedSetsRef.current = next.filter((set) => set.completed).length;
+      setTimeout(emitProgress, 0);
+      return next;
     });
-  };
+  }, [emitProgress, historySetCount]);
 
-  const removeSet = (index: number) => {
+  const removeSet = useCallback((index: number) => {
     void Haptics.selectionAsync();
     setSets((prev) => prev.filter((_, idx) => idx !== index));
-  };
+    const next = setsRef.current.filter((_, idx) => idx !== index);
+    setsRef.current = next;
+    totalSetsRef.current = next.length;
+    completedSetsRef.current = next.filter((set) => set.completed).length;
+    setTimeout(emitProgress, 0);
+  }, [emitProgress]);
 
-  const handleWeightInput = (index: number, value: string) => {
+  const handleWeightInput = useCallback((index: number, value: string) => {
     const sanitized = sanitizeWeightInput(value);
     const parsed = sanitized.length > 0 ? Number.parseFloat(sanitized) : null;
     setActiveSelection(null);
+
+    const weightInputRef = weightInputRefs.current[index];
+    if (weightInputRef && sanitized !== value) {
+      weightInputRef.setNativeProps({ text: sanitized });
+    }
+
+    if (exerciseType === 'assisted') {
+      updateSet(index, {
+        assistanceWeightInput: sanitized,
+        assistanceWeight: parsed === null || Number.isNaN(parsed) ? 0 : parsed,
+      });
+      return;
+    }
+
     updateSet(index, {
       weightInput: sanitized,
       weight: parsed === null || Number.isNaN(parsed) ? 0 : parsed,
     });
-  };
+  }, [exerciseType, updateSet]);
 
-  const handleRepsInput = (index: number, value: string) => {
+  const handleRepsInput = useCallback((index: number, value: string) => {
     const sanitized = sanitizeRepsInput(value);
     const parsed = sanitized.length > 0 ? Number.parseInt(sanitized, 10) : null;
     setActiveSelection(null);
+
+    const repsInputRef = repsInputRefs.current[index];
+    if (repsInputRef && sanitized !== value) {
+      repsInputRef.setNativeProps({ text: sanitized });
+    }
+
     updateSet(index, {
       repsInput: sanitized,
       reps: parsed === null || Number.isNaN(parsed) ? 0 : parsed,
     });
-  };
+  }, [updateSet]);
 
-  const handleWeightBlur = (index: number) => {
+  const handleWeightBlur = useCallback((index: number) => {
     setActiveSelection(null);
+
+    const weightInputRef = weightInputRefs.current[index];
+
     setSets((prev) =>
       prev.map((set, idx) => {
-        if (idx !== index || set.weightInput.length > 0) {
+        const shouldDefaultToZero = exerciseType === 'assisted' ? set.assistanceWeightInput.length === 0 : set.weightInput.length === 0;
+        if (idx !== index || !shouldDefaultToZero) {
           return set;
+        }
+
+        if (weightInputRef) {
+          weightInputRef.setNativeProps({ text: formatWeightInputValue(0) });
         }
 
         return {
           ...set,
-          weight: 0,
-          weightInput: formatWeightInputValue(0),
+          weight: exerciseType === 'assisted' ? set.weight : 0,
+          weightInput: exerciseType === 'assisted' ? set.weightInput : formatWeightInputValue(0),
+          assistanceWeight: exerciseType === 'assisted' ? 0 : set.assistanceWeight,
+          assistanceWeightInput: exerciseType === 'assisted' ? formatWeightInputValue(0) : set.assistanceWeightInput,
         };
       }),
     );
-  };
+  }, [exerciseType]);
 
-  const handleRepsBlur = (index: number) => {
+  const handleRepsBlur = useCallback((index: number) => {
     setActiveSelection(null);
+
+    const repsInputRef = repsInputRefs.current[index];
+
     setSets((prev) =>
       prev.map((set, idx) => {
         if (idx !== index || set.repsInput.length > 0) {
           return set;
+        }
+
+        if (repsInputRef) {
+          repsInputRef.setNativeProps({ text: '0' });
         }
 
         return {
@@ -356,47 +470,80 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
         };
       }),
     );
-  };
+  }, []);
 
   const toggleSetCompletion = useCallback((index: number) => {
     void Haptics.selectionAsync();
-    setSets((prev) => {
-      const updatedSets = prev.map((set, idx) => {
-        if (idx === index) {
-          return { ...set, completed: !set.completed };
-        }
-        return set;
-      });
+    const prev = setsRef.current;
+    if (!prev[index]) {
+      return;
+    }
 
-      // If we just marked a set as completed, populate the next uncompleted set
-      const justCompleted = !prev[index].completed && updatedSets[index].completed;
-      if (justCompleted) {
-        const completedSet = updatedSets[index];
-
-        // Find the next uncompleted set
-        const nextUncompletedIndex = updatedSets.findIndex(
-          (set, idx) => idx > index && !set.completed
-        );
-
-        if (nextUncompletedIndex !== -1) {
-          const nextSet = updatedSets[nextUncompletedIndex];
-
-          // Only update if the next set has default values (0 weight and 8 reps)
-          if ((nextSet.weight ?? 0) === 0 && (nextSet.reps ?? 8) === 8) {
-            updatedSets[nextUncompletedIndex] = {
-              ...nextSet,
-              weight: completedSet.weight ?? 0,
-              reps: completedSet.reps ?? 8,
-              weightInput: formatWeightInputValue(completedSet.weight ?? 0),
-              repsInput: String(completedSet.reps ?? 8),
-            };
-          }
-        }
+    const updatedSets = prev.map((set, idx) => {
+      if (idx === index) {
+        return { ...set, completed: !set.completed };
       }
-
-      return updatedSets;
+      return set;
     });
-  }, []);
+
+    const justCompleted = !prev[index].completed && updatedSets[index].completed;
+    let propagatedIndex: number | null = null;
+
+    if (justCompleted) {
+      const completedSet = updatedSets[index];
+      const nextUncompletedIndex = updatedSets.findIndex((set, idx) => idx > index && !set.completed);
+      if (nextUncompletedIndex !== -1 && nextUncompletedIndex >= historySetCount) {
+        const nextSet = updatedSets[nextUncompletedIndex];
+        propagatedIndex = nextUncompletedIndex;
+        updatedSets[nextUncompletedIndex] = {
+          ...nextSet,
+          weight: completedSet.weight ?? 0,
+          reps: completedSet.reps ?? 8,
+          weightInput: formatWeightInputValue(completedSet.weight ?? 0),
+          repsInput: String(completedSet.reps ?? 8),
+          duration: completedSet.duration,
+          distance: completedSet.distance,
+          durationInput: completedSet.durationInput,
+          distanceInput: completedSet.distanceInput,
+          assistanceWeight: completedSet.assistanceWeight,
+          assistanceWeightInput: completedSet.assistanceWeightInput,
+        };
+      }
+    }
+
+    setsRef.current = updatedSets;
+    totalSetsRef.current = updatedSets.length;
+    completedSetsRef.current = updatedSets.filter((set) => set.completed).length;
+    setSets(updatedSets);
+    emitProgress();
+
+    if (propagatedIndex !== null) {
+      const propagatedSet = updatedSets[propagatedIndex];
+      setTimeout(() => {
+        const weightRef = weightInputRefs.current[propagatedIndex];
+        const repsRef = repsInputRefs.current[propagatedIndex];
+        const distanceRef = distanceInputRefs.current[propagatedIndex];
+        const durationRef = durationInputRefs.current[propagatedIndex];
+
+        if (weightRef) {
+          const text = exerciseType === 'assisted' ? propagatedSet.assistanceWeightInput : propagatedSet.weightInput;
+          weightRef.setNativeProps({ text });
+        }
+
+        if (repsRef) {
+          repsRef.setNativeProps({ text: propagatedSet.repsInput });
+        }
+
+        if (distanceRef) {
+          distanceRef.setNativeProps({ text: propagatedSet.distanceInput });
+        }
+
+        if (durationRef) {
+          durationRef.setNativeProps({ text: propagatedSet.durationInput });
+        }
+      }, 0);
+    }
+  }, [emitProgress, exerciseType, historySetCount]);
 
   const handleCompleteSetPress = useCallback((index: number) => {
     toggleSetCompletion(index);
@@ -523,20 +670,17 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
                           {exerciseType === 'assisted' ? `Assistance (${weightUnit})` : `Weight (${weightUnit})`}
                         </Text>
                         <View style={styles.metricControls}>
-                          <Pressable
+                          <HoldRepeatIconButton
+                            iconName="minus"
                             style={styles.adjustButton}
-                            onPressIn={() => adjustSetValue(index, 'weight', exerciseType === 'assisted' ? -5 : -2.5)}
-                            accessibilityRole="button"
                             accessibilityLabel={`Decrease weight for set ${index + 1}`}
-                          >
-                            <MaterialCommunityIcons
-                              name="minus"
-                              size={sizing.iconMD}
-                              color={colors.text.primary}
-                            />
-                          </Pressable>
+                            onStep={() => adjustSetValue(index, exerciseType === 'assisted' ? 'assistanceWeight' : 'weight', exerciseType === 'assisted' ? -5 : -2.5)}
+                          />
                           <TextInput
-                            value={exerciseType === 'assisted' ? set.assistanceWeightInput : set.weightInput}
+                            ref={(ref) => {
+                              weightInputRefs.current[index] = ref;
+                            }}
+                            defaultValue={exerciseType === 'assisted' ? set.assistanceWeightInput : set.weightInput}
                             onChangeText={(value) => handleWeightInput(index, value)}
                             keyboardType="decimal-pad"
                             style={styles.metricValue}
@@ -553,18 +697,12 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
                             onFocus={() => handleWeightFocus(index)}
                             onBlur={() => handleWeightBlur(index)}
                           />
-                          <Pressable
+                          <HoldRepeatIconButton
+                            iconName="plus"
                             style={styles.adjustButton}
-                            onPressIn={() => adjustSetValue(index, 'weight', exerciseType === 'assisted' ? 5 : 2.5)}
-                            accessibilityRole="button"
                             accessibilityLabel={`Increase weight for set ${index + 1}`}
-                          >
-                            <MaterialCommunityIcons
-                              name="plus"
-                              size={sizing.iconMD}
-                              color={colors.text.primary}
-                            />
-                          </Pressable>
+                            onStep={() => adjustSetValue(index, exerciseType === 'assisted' ? 'assistanceWeight' : 'weight', exerciseType === 'assisted' ? 5 : 2.5)}
+                          />
                         </View>
                       </View>
                     )}
@@ -575,30 +713,38 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
                           Distance ({distanceUnitLabel})
                         </Text>
                         <View style={styles.metricControls}>
-                          <Pressable
+                          <HoldRepeatIconButton
+                            iconName="minus"
                             style={styles.adjustButton}
-                            onPressIn={() => {
-                              // Decrement in display units, then convert back to miles for storage
-                              const currentDisplayValue = convertDistance(set.distance ?? 0);
-                              const decrement = distanceUnitLabel === 'km' ? 0.1 : 0.1;
-                              const newDisplayValue = Math.max(0, currentDisplayValue - decrement);
+                            accessibilityLabel={`Decrease distance for set ${index + 1}`}
+                            onStep={() => {
+                              const current = setsRef.current[index];
+                              if (!current) {
+                                return;
+                              }
+
+                              const currentDisplayValue = convertDistance(current.distance ?? 0);
+                              const newDisplayValue = Math.max(0, currentDisplayValue - 0.1);
                               const newMiles = convertDistanceToMiles(newDisplayValue);
+                              const nextDistance = Math.round(newMiles * 100) / 100;
+                              const nextText = newDisplayValue.toFixed(1);
+
+                              const distanceRef = distanceInputRefs.current[index];
+                              if (distanceRef) {
+                                distanceRef.setNativeProps({ text: nextText });
+                              }
+
                               updateSet(index, {
-                                distance: Math.round(newMiles * 100) / 100,
-                                distanceInput: newDisplayValue.toFixed(1)
+                                distance: nextDistance,
+                                distanceInput: nextText,
                               });
                             }}
-                            accessibilityRole="button"
-                            accessibilityLabel={`Decrease distance for set ${index + 1}`}
-                          >
-                            <MaterialCommunityIcons
-                              name="minus"
-                              size={sizing.iconMD}
-                              color={colors.text.primary}
-                            />
-                          </Pressable>
+                          />
                           <TextInput
-                            value={set.distanceInput}
+                            ref={(ref) => {
+                              distanceInputRefs.current[index] = ref;
+                            }}
+                            defaultValue={set.distanceInput}
                             onChangeText={(value) => {
                               const sanitized = sanitizeWeightInput(value);
                               const displayValue = parseFloat(sanitized) || 0;
@@ -617,28 +763,33 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
                             cursorColor={colors.accent.primary}
                             selectionColor={colors.accent.orangeLight}
                           />
-                          <Pressable
+                          <HoldRepeatIconButton
+                            iconName="plus"
                             style={styles.adjustButton}
-                            onPressIn={() => {
-                              // Increment in display units, then convert back to miles for storage
-                              const currentDisplayValue = convertDistance(set.distance ?? 0);
-                              const increment = distanceUnitLabel === 'km' ? 0.1 : 0.1;
-                              const newDisplayValue = Math.round((currentDisplayValue + increment) * 10) / 10;
+                            accessibilityLabel={`Increase distance for set ${index + 1}`}
+                            onStep={() => {
+                              const current = setsRef.current[index];
+                              if (!current) {
+                                return;
+                              }
+
+                              const currentDisplayValue = convertDistance(current.distance ?? 0);
+                              const newDisplayValue = Math.round((currentDisplayValue + 0.1) * 10) / 10;
                               const newMiles = convertDistanceToMiles(newDisplayValue);
+                              const nextDistance = Math.round(newMiles * 100) / 100;
+                              const nextText = newDisplayValue.toFixed(1);
+
+                              const distanceRef = distanceInputRefs.current[index];
+                              if (distanceRef) {
+                                distanceRef.setNativeProps({ text: nextText });
+                              }
+
                               updateSet(index, {
-                                distance: Math.round(newMiles * 100) / 100,
-                                distanceInput: newDisplayValue.toFixed(1)
+                                distance: nextDistance,
+                                distanceInput: nextText,
                               });
                             }}
-                            accessibilityRole="button"
-                            accessibilityLabel={`Increase distance for set ${index + 1}`}
-                          >
-                            <MaterialCommunityIcons
-                              name="plus"
-                              size={sizing.iconMD}
-                              color={colors.text.primary}
-                            />
-                          </Pressable>
+                          />
                         </View>
                       </View>
                     )}
@@ -649,23 +800,36 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
                           {exerciseType === 'cardio' ? 'Time (min:sec)' : 'Time (sec)'}
                         </Text>
                         <View style={styles.metricControls}>
-                          <Pressable
+                          <HoldRepeatIconButton
+                            iconName="minus"
                             style={styles.adjustButton}
-                            onPressIn={() => {
-                              const decrement = exerciseType === 'cardio' ? -60 : -5; // 1 min or 5 sec
-                              updateSet(index, { duration: Math.max(0, (set.duration ?? 0) + decrement) });
-                            }}
-                            accessibilityRole="button"
                             accessibilityLabel={`Decrease duration for set ${index + 1}`}
-                          >
-                            <MaterialCommunityIcons
-                              name="minus"
-                              size={sizing.iconMD}
-                              color={colors.text.primary}
-                            />
-                          </Pressable>
+                            onStep={() => {
+                              const current = setsRef.current[index];
+                              if (!current) {
+                                return;
+                              }
+
+                              const decrement = exerciseType === 'cardio' ? 60 : 5;
+                              const newDuration = Math.max(0, (current.duration ?? 0) - decrement);
+                              const nextText = formatDuration(newDuration);
+
+                              const durationRef = durationInputRefs.current[index];
+                              if (durationRef) {
+                                durationRef.setNativeProps({ text: nextText });
+                              }
+
+                              updateSet(index, {
+                                duration: newDuration,
+                                durationInput: nextText,
+                              });
+                            }}
+                          />
                           <TextInput
-                            value={set.durationInput}
+                            ref={(ref) => {
+                              durationInputRefs.current[index] = ref;
+                            }}
+                            defaultValue={set.durationInput}
                             onChangeText={(value) => {
                               const sanitized = value.replace(/[^0-9:]/g, '');
                               const seconds = parseDuration(sanitized);
@@ -682,25 +846,31 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
                             cursorColor={colors.accent.primary}
                             selectionColor={colors.accent.orangeLight}
                           />
-                          <Pressable
+                          <HoldRepeatIconButton
+                            iconName="plus"
                             style={styles.adjustButton}
-                            onPressIn={() => {
-                              const increment = exerciseType === 'cardio' ? 60 : 5; // 1 min or 5 sec
-                              const newDuration = (set.duration ?? 0) + increment;
+                            accessibilityLabel={`Increase duration for set ${index + 1}`}
+                            onStep={() => {
+                              const current = setsRef.current[index];
+                              if (!current) {
+                                return;
+                              }
+
+                              const increment = exerciseType === 'cardio' ? 60 : 5;
+                              const newDuration = (current.duration ?? 0) + increment;
+                              const nextText = formatDuration(newDuration);
+
+                              const durationRef = durationInputRefs.current[index];
+                              if (durationRef) {
+                                durationRef.setNativeProps({ text: nextText });
+                              }
+
                               updateSet(index, {
                                 duration: newDuration,
-                                durationInput: formatDuration(newDuration)
+                                durationInput: nextText,
                               });
                             }}
-                            accessibilityRole="button"
-                            accessibilityLabel={`Increase duration for set ${index + 1}`}
-                          >
-                            <MaterialCommunityIcons
-                              name="plus"
-                              size={sizing.iconMD}
-                              color={colors.text.primary}
-                            />
-                          </Pressable>
+                          />
                         </View>
                       </View>
                     )}
@@ -711,20 +881,17 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
                           Reps
                         </Text>
                         <View style={styles.metricControls}>
-                          <Pressable
+                          <HoldRepeatIconButton
+                            iconName="minus"
                             style={styles.adjustButton}
-                            onPressIn={() => adjustSetValue(index, 'reps', -1)}
-                            accessibilityRole="button"
                             accessibilityLabel={`Decrease reps for set ${index + 1}`}
-                          >
-                            <MaterialCommunityIcons
-                              name="minus"
-                              size={sizing.iconMD}
-                              color={colors.text.primary}
-                            />
-                          </Pressable>
+                            onStep={() => adjustSetValue(index, 'reps', -1)}
+                          />
                           <TextInput
-                            value={set.repsInput}
+                            ref={(ref) => {
+                              repsInputRefs.current[index] = ref;
+                            }}
+                            defaultValue={set.repsInput}
                             onChangeText={(value) => handleRepsInput(index, value)}
                             keyboardType="numeric"
                             style={styles.metricValue}
@@ -741,18 +908,12 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
                             onFocus={() => handleRepsFocus(index)}
                             onBlur={() => handleRepsBlur(index)}
                           />
-                          <Pressable
+                          <HoldRepeatIconButton
+                            iconName="plus"
                             style={styles.adjustButton}
-                            onPressIn={() => adjustSetValue(index, 'reps', 1)}
-                            accessibilityRole="button"
                             accessibilityLabel={`Increase reps for set ${index + 1}`}
-                          >
-                            <MaterialCommunityIcons
-                              name="plus"
-                              size={sizing.iconMD}
-                              color={colors.text.primary}
-                            />
-                          </Pressable>
+                            onStep={() => adjustSetValue(index, 'reps', 1)}
+                          />
                         </View>
                       </View>
                     )}

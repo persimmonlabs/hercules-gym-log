@@ -50,6 +50,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.xs,
   },
+  optionTitle: {
+    textAlign: 'center',
+  },
+  optionSubtitle: {
+    textAlign: 'center',
+  },
 });
 
 export const ScheduleTypeSelector: React.FC<ScheduleTypeSelectorProps> = ({ 
@@ -82,10 +88,11 @@ export const ScheduleTypeSelector: React.FC<ScheduleTypeSelectorProps> = ({
           <Text 
             variant="bodySemibold" 
             color={value === 'weekly' ? 'primary' : 'secondary'}
+            style={styles.optionTitle}
           >
             Weekly
           </Text>
-          <Text variant="caption" color="tertiary">
+          <Text variant="caption" color="tertiary" style={styles.optionSubtitle}>
             Same days each week
           </Text>
         </View>
@@ -108,10 +115,11 @@ export const ScheduleTypeSelector: React.FC<ScheduleTypeSelectorProps> = ({
           <Text 
             variant="bodySemibold" 
             color={value === 'rotation' ? 'primary' : 'secondary'}
+            style={styles.optionTitle}
           >
             Rotation
           </Text>
-          <Text variant="caption" color="tertiary">
+          <Text variant="caption" color="tertiary" style={styles.optionSubtitle}>
             Cycle through workouts
           </Text>
         </View>

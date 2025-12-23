@@ -39,12 +39,11 @@ import { usePlansStore } from '@/store/plansStore';
 import { useWorkoutSessionsStore } from '@/store/workoutSessionsStore';
 import { useProgramsStore } from '@/store/programsStore';
 import { normalizeSearchText } from '@/utils/strings';
-import { getLastCompletedSetsForExercise } from '@/utils/exerciseHistory';
+import { createSetsWithHistory } from '@/utils/exerciseHistory';
 import type { Exercise } from '@/constants/exercises';
 import type { SetLog, WorkoutExercise } from '@/types/workout';
 import hierarchyData from '@/data/hierarchy.json';
 
-const DEFAULT_SET_COUNT = 3;
 const SCREEN_HEIGHT = Dimensions.get('window').height;
 const SHEET_DISMISS_THRESHOLD = spacing['2xl'] * 2;
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
@@ -53,43 +52,6 @@ interface ExerciseProgressSnapshot {
   completedSets: number;
   totalSets: number;
 }
-
-const createDefaultSetLogs = (exerciseName: string, allWorkouts: any[], currentSessionId?: string): WorkoutExercise['sets'] => {
-  // Get exercise type from catalog
-  const exercise = exerciseCatalog.find(e => e.name === exerciseName);
-  const exerciseType = exercise?.exerciseType || 'weight';
-  
-  // Filter out the current session to avoid using incomplete data
-  const historicalWorkouts = currentSessionId
-    ? allWorkouts.filter((w) => w.id !== currentSessionId)
-    : allWorkouts;
-
-  // Try to get history for this exercise from other workouts
-  const lastSets = getLastCompletedSetsForExercise(exerciseName, historicalWorkouts);
-
-  if (lastSets && lastSets.length > 0) {
-    // Use the historical sets, but mark them as not completed
-    return lastSets.map((set) => ({ ...set, completed: false }));
-  }
-
-  // Create type-appropriate default sets
-  switch (exerciseType) {
-    case 'cardio':
-      // Single set for cardio (users can add intervals)
-      return [{ duration: 0, distance: 0, completed: false }];
-    case 'bodyweight':
-    case 'reps_only':
-      return Array.from({ length: DEFAULT_SET_COUNT }, () => ({ reps: 10, completed: false }));
-    case 'assisted':
-      return Array.from({ length: DEFAULT_SET_COUNT }, () => ({ assistanceWeight: 0, reps: 8, completed: false }));
-    case 'duration':
-      // Single set for timed exercises
-      return [{ duration: 30, completed: false }];
-    case 'weight':
-    default:
-      return Array.from({ length: DEFAULT_SET_COUNT }, () => ({ reps: 8, weight: 0, completed: false }));
-  }
-};
 
 const formatElapsed = (seconds: number): string => {
   const minutes = Math.floor(seconds / 60)
@@ -270,12 +232,38 @@ const WorkoutSessionScreen: React.FC = () => {
 
     if (targetName) {
       const existing = sessionExercises.find((item) => item.name === targetName);
+      let sets = existing?.sets;
+      let historySetCount = 0;
+
+      if (!sets) {
+        const result = createSetsWithHistory(exercise.name, allWorkouts);
+        sets = result.sets;
+        historySetCount = result.historySetCount;
+      }
+
       const nextExercise: WorkoutExercise = {
         name: exercise.name,
-        sets: existing?.sets ?? createDefaultSetLogs(exercise.name, allWorkouts),
+        sets,
       };
 
       updateExercise(targetName, nextExercise);
+
+      // Update history set count for the new exercise
+      if (historySetCount > 0) {
+        const currentSession = useSessionStore.getState().currentSession;
+        if (currentSession) {
+          useSessionStore.setState({
+            currentSession: {
+              ...currentSession,
+              historySetCounts: {
+                ...currentSession.historySetCounts,
+                [exercise.name]: historySetCount,
+              },
+            },
+          });
+        }
+      }
+
       setExpandedExercises((prev) => {
         if (!prev.has(targetName)) {
           return prev;
@@ -295,12 +283,13 @@ const WorkoutSessionScreen: React.FC = () => {
         return rest;
       });
     } else {
+      const { sets, historySetCount } = createSetsWithHistory(exercise.name, allWorkouts);
       const nextExercise: WorkoutExercise = {
         name: exercise.name,
-        sets: createDefaultSetLogs(exercise.name, allWorkouts),
+        sets,
       };
 
-      addExerciseToSession(nextExercise);
+      addExerciseToSession(nextExercise, historySetCount);
       hasUserAddedExerciseRef.current = true;
     }
 
@@ -804,6 +793,7 @@ const WorkoutSessionScreen: React.FC = () => {
                         onProgressChange={(progress) => handleExerciseProgressChange(item.name, progress)}
                         exerciseType={exerciseCatalog.find(e => e.name === item.name)?.exerciseType || 'weight'}
                         distanceUnit={exerciseCatalog.find(e => e.name === item.name)?.distanceUnit}
+                        historySetCount={sessionToDisplay?.historySetCounts?.[item.name] ?? 0}
                       />
                     </View>
                   ) : null}

@@ -6,7 +6,7 @@ import { SurfaceCard } from '@/components/atoms/SurfaceCard';
 import { Text } from '@/components/atoms/Text';
 import { colors, radius, spacing } from '@/constants/theme';
 import type { Exercise } from '@/constants/exercises';
-import hierarchyData from '@/data/hierarchy.json';
+import { getExerciseDisplayTagText } from '@/utils/exerciseDisplayTags';
 
 interface PlanExerciseCardProps {
   exercise: Exercise;
@@ -14,46 +14,12 @@ interface PlanExerciseCardProps {
 }
 
 export const PlanExerciseCard: React.FC<PlanExerciseCardProps> = ({ exercise, onAdd }) => {
-  // Build muscle to mid-level group mapping
-  const muscleToMidLevelMap = useMemo(() => {
-    const map: Record<string, string> = {};
-    const hierarchy = hierarchyData.muscle_hierarchy;
-
-    Object.entries(hierarchy).forEach(([l1, l1Data]) => {
-      if (l1Data.muscles) {
-        Object.entries(l1Data.muscles).forEach(([midLevel, midLevelData]) => {
-          // Map the mid-level group to itself
-          map[midLevel] = midLevel;
-          
-          // Map all low-level muscles to their mid-level parent
-          if (midLevelData.muscles) {
-            Object.keys(midLevelData.muscles).forEach(lowLevel => {
-              map[lowLevel] = midLevel;
-            });
-          }
-        });
-      }
+  const tagText = useMemo(() => {
+    return getExerciseDisplayTagText({
+      muscles: exercise.muscles,
+      exerciseType: exercise.exerciseType,
     });
-    return map;
-  }, []);
-
-  const midLevelMusclesLabel = useMemo(() => {
-    const muscles = exercise.muscles || {};
-    
-    // Sort muscles by weight (descending) and take top 3
-    const topMuscles = Object.entries(muscles)
-      .sort(([, weightA], [, weightB]) => weightB - weightA)
-      .slice(0, 3)
-      .map(([muscle]) => muscle);
-    
-    // Map each muscle to its mid-level parent group
-    const midLevelGroups = topMuscles.map(muscle => muscleToMidLevelMap[muscle]).filter(Boolean);
-    
-    // Remove duplicates and sort for consistency
-    const uniqueGroups = [...new Set(midLevelGroups)];
-    
-    return uniqueGroups.length > 0 ? uniqueGroups.join(' · ') : 'General';
-  }, [exercise.muscles, muscleToMidLevelMap]);
+  }, [exercise.exerciseType, exercise.muscles]);
 
   return (
     <SurfaceCard tone="neutral" padding="lg" showAccentStripe={false} style={styles.card}>
@@ -62,9 +28,11 @@ export const PlanExerciseCard: React.FC<PlanExerciseCardProps> = ({ exercise, on
           <Text variant="bodySemibold" color="primary">
             {exercise.name}
           </Text>
-          <Text variant="caption" color="secondary">
-            {midLevelMusclesLabel}
-          </Text>
+          {tagText ? (
+            <Text variant="caption" color="secondary">
+              {tagText}
+            </Text>
+          ) : null}
         </View>
         <Button label="Add" size="sm" variant="secondary" onPress={() => onAdd(exercise)} />
       </View>

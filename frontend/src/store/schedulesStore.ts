@@ -6,13 +6,14 @@
  */
 import { create } from 'zustand';
 
-import type { Schedule } from '@/types/schedule';
+import type { Schedule, ScheduleType, RotatingScheduleConfig } from '@/types/schedule';
 import { supabaseClient } from '@/lib/supabaseClient';
 import {
   fetchSchedules,
   createSchedule,
   updateSchedule as updateScheduleDB,
   deleteSchedule as deleteScheduleDB,
+  type ScheduleDataFull,
 } from '@/lib/supabaseQueries';
 
 interface SchedulesState {
@@ -24,6 +25,56 @@ interface SchedulesState {
   getSchedules: () => Schedule[];
   hydrateSchedules: (userId?: string) => Promise<void>;
 }
+
+const scheduleToDBFormat = (schedule: Schedule): ScheduleDataFull => {
+  return {
+    type: schedule.type,
+    weekly: schedule.type === 'weekly' ? schedule.weekdays : undefined,
+    rotating: schedule.type === 'rotating' ? schedule.rotating : undefined,
+  };
+};
+
+const dbToScheduleFormat = (dbSchedule: any): Schedule => {
+  const scheduleData = dbSchedule.schedule_data;
+  
+  // Handle legacy format (direct weekday keys) or new format (type + weekly/rotating)
+  const isNewFormat = scheduleData && 'type' in scheduleData;
+  
+  if (isNewFormat) {
+    const type: ScheduleType = scheduleData.type || 'weekly';
+    return {
+      id: dbSchedule.id,
+      name: dbSchedule.name,
+      type,
+      weekdays: scheduleData.weekly || {
+        monday: null,
+        tuesday: null,
+        wednesday: null,
+        thursday: null,
+        friday: null,
+        saturday: null,
+        sunday: null,
+      },
+      rotating: scheduleData.rotating,
+    };
+  }
+  
+  // Legacy format: direct weekday keys
+  return {
+    id: dbSchedule.id,
+    name: dbSchedule.name,
+    type: 'weekly',
+    weekdays: {
+      monday: scheduleData?.monday ?? null,
+      tuesday: scheduleData?.tuesday ?? null,
+      wednesday: scheduleData?.wednesday ?? null,
+      thursday: scheduleData?.thursday ?? null,
+      friday: scheduleData?.friday ?? null,
+      saturday: scheduleData?.saturday ?? null,
+      sunday: scheduleData?.sunday ?? null,
+    },
+  };
+};
 
 export const useSchedulesStore = create<SchedulesState>((set, get) => ({
   schedules: [],
@@ -40,7 +91,7 @@ export const useSchedulesStore = create<SchedulesState>((set, get) => ({
       // Create in Supabase
       const newId = await createSchedule(user.id, {
         name: schedule.name,
-        weekdays: schedule.weekdays,
+        scheduleData: scheduleToDBFormat(schedule),
       });
 
       // Update local state with the new ID from Supabase
@@ -100,7 +151,7 @@ export const useSchedulesStore = create<SchedulesState>((set, get) => ({
       // Sync to Supabase
       await updateScheduleDB(user.id, schedule.id, {
         name: schedule.name,
-        weekdays: schedule.weekdays,
+        scheduleData: scheduleToDBFormat(schedule),
       });
 
       console.log('[schedulesStore] Schedule updated in Supabase');
@@ -134,19 +185,7 @@ export const useSchedulesStore = create<SchedulesState>((set, get) => ({
       console.log('[schedulesStore] HYDRATING SCHEDULES from Supabase');
       const dbSchedules = await fetchSchedules(uid);
 
-      const schedules: Schedule[] = dbSchedules.map((s) => ({
-        id: s.id,
-        name: s.name,
-        weekdays: {
-          monday: s.schedule_data?.monday ?? null,
-          tuesday: s.schedule_data?.tuesday ?? null,
-          wednesday: s.schedule_data?.wednesday ?? null,
-          thursday: s.schedule_data?.thursday ?? null,
-          friday: s.schedule_data?.friday ?? null,
-          saturday: s.schedule_data?.saturday ?? null,
-          sunday: s.schedule_data?.sunday ?? null,
-        },
-      }));
+      const schedules: Schedule[] = dbSchedules.map(dbToScheduleFormat);
 
       set({ schedules, isLoading: false });
       console.log('[schedulesStore] Hydrated', schedules.length, 'schedules from Supabase');

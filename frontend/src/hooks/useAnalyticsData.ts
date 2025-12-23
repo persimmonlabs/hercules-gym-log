@@ -9,6 +9,7 @@ import { useMemo } from 'react';
 import { useWorkoutSessionsStore } from '@/store/workoutSessionsStore';
 import { useUserProfileStore } from '@/store/userProfileStore';
 import { useSettingsStore } from '@/store/settingsStore';
+import { useDevToolsStore } from '@/store/devToolsStore';
 import { exercises as exerciseCatalog } from '@/constants/exercises';
 import exercisesData from '@/data/exercises.json';
 import hierarchyData from '@/data/hierarchy.json';
@@ -132,7 +133,9 @@ interface UseAnalyticsDataOptions {
 
 export const useAnalyticsData = (options: UseAnalyticsDataOptions = {}) => {
   const { timeRange = 'week' } = options;
-  const workouts = useWorkoutSessionsStore((state) => state.workouts);
+  const forceEmptyAnalytics = useDevToolsStore((state) => state.forceEmptyAnalytics);
+  const rawWorkouts = useWorkoutSessionsStore((state) => state.workouts);
+  const workouts = __DEV__ && forceEmptyAnalytics ? [] : rawWorkouts;
   const userBodyWeight = useUserProfileStore((state) => state.profile?.weightLbs);
   const { convertWeight, weightUnit } = useSettingsStore();
 

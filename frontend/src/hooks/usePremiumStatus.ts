@@ -9,6 +9,7 @@
 import { useState, useEffect } from 'react';
 
 import type { PremiumStatus } from '@/types/analytics';
+import { useDevToolsStore } from '@/store/devToolsStore';
 
 // Default free tier status
 const FREE_STATUS: PremiumStatus = {
@@ -18,7 +19,7 @@ const FREE_STATUS: PremiumStatus = {
 };
 
 // DEV MODE: Set to true to test premium features
-const DEV_PREMIUM_ENABLED = true;
+const DEV_PREMIUM_ENABLED = __DEV__;
 
 // Mock premium status for development/testing
 const MOCK_PREMIUM_STATUS: PremiumStatus = {
@@ -34,6 +35,7 @@ interface UsePremiumStatusOptions {
 
 export const usePremiumStatus = (options: UsePremiumStatusOptions = {}) => {
   const { mockPremium = false } = options;
+  const premiumOverride = useDevToolsStore((state) => state.premiumOverride);
   const [status, setStatus] = useState<PremiumStatus>(FREE_STATUS);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -50,8 +52,14 @@ export const usePremiumStatus = (options: UsePremiumStatusOptions = {}) => {
       
       // Simulate network delay
       await new Promise((resolve) => setTimeout(resolve, 100));
-      
-      if (mockPremium || DEV_PREMIUM_ENABLED) {
+
+      if (__DEV__ && premiumOverride !== 'default') {
+        if (premiumOverride === 'premium') {
+          setStatus(MOCK_PREMIUM_STATUS);
+        } else {
+          setStatus(FREE_STATUS);
+        }
+      } else if (mockPremium || DEV_PREMIUM_ENABLED) {
         setStatus(MOCK_PREMIUM_STATUS);
       } else {
         setStatus(FREE_STATUS);
@@ -61,7 +69,7 @@ export const usePremiumStatus = (options: UsePremiumStatusOptions = {}) => {
     };
 
     loadStatus();
-  }, [mockPremium]);
+  }, [mockPremium, premiumOverride]);
 
   // Helper functions for feature gating
   const canAccessMidTier = status.isPremium || status.tier === 'pro' || status.tier === 'lifetime';

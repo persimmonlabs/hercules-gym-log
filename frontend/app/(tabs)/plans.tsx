@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Modal, Pressable, StyleSheet, View, Alert, type ViewStyle } from 'react-native';
+import { Alert, Modal, Pressable, StyleSheet, View, type ViewStyle } from 'react-native';
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import Animated, { Easing, useAnimatedStyle, useSharedValue, withSpring, withTiming, type AnimatedStyle } from 'react-native-reanimated';
@@ -18,8 +18,10 @@ import { useProgramsStore } from '@/store/programsStore';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { useSessionStore } from '@/store/sessionStore';
 import { ProgramCard } from '@/components/molecules/ProgramCard';
+import { WorkoutInProgressModal } from '@/components/molecules/WorkoutInProgressModal';
 import type { WorkoutExercise } from '@/types/workout';
-import { createDefaultSetsForExercise } from '@/utils/workout';
+import { createSetsWithHistory } from '@/utils/workout';
+import { useWorkoutSessionsStore, type WorkoutSessionsState } from '@/store/workoutSessionsStore';
 import type { Schedule } from '@/types/schedule';
 import type { PremadeProgram, WeeklyScheduleConfig, Weekday, UserProgram } from '@/types/premadePlan';
 
@@ -307,6 +309,7 @@ const styles = StyleSheet.create({
 const PlansScreen: React.FC = () => {
   const { theme } = useTheme();
   const router = useRouter();
+  const [workoutInProgressVisible, setWorkoutInProgressVisible] = useState<boolean>(false);
   const plans = usePlansStore((state: PlansState) => state.plans);
   const removePlan = usePlansStore((state: PlansState) => state.removePlan);
   const schedules = useSchedulesStore((state: SchedulesState) => state.schedules);
@@ -314,6 +317,10 @@ const PlansScreen: React.FC = () => {
   const { userPrograms, deleteUserProgram, deleteWorkoutFromProgram, activePlanId } = useProgramsStore();
   const startSession = useSessionStore((state) => state.startSession);
   const setCompletionOverlayVisible = useSessionStore((state) => state.setCompletionOverlayVisible);
+  const isSessionActive = useSessionStore((state) => state.isSessionActive);
+  const currentSession = useSessionStore((state) => state.currentSession);
+  const clearSession = useSessionStore((state) => state.clearSession);
+  const allWorkouts = useWorkoutSessionsStore((state: WorkoutSessionsState) => state.workouts);
   const [expandedPlanId, setExpandedPlanId] = useState<string | null>(null);
   const [isDeleteDialogVisible, setIsDeleteDialogVisible] = useState<boolean>(false);
   const [itemToDelete, setItemToDelete] = useState<any>(null);
@@ -529,24 +536,52 @@ const PlansScreen: React.FC = () => {
 
   const handleStartWorkoutItem = useCallback((item: any) => {
     void Haptics.selectionAsync();
-    setCompletionOverlayVisible(false);
 
-    const workoutExercises: WorkoutExercise[] = item.exercises.map((exercise: any) => ({
-      name: exercise.name,
-      sets: createDefaultSetsForExercise(exercise.name),
-    }));
+    const doStartSession = () => {
+      setCompletionOverlayVisible(false);
 
-    // Use program ID if it's a program workout, otherwise the plan ID
-    const planId = item.type === 'program' ? item.programId : item.id;
-    const sessionName = item.name;
+      const historySetCounts: Record<string, number> = {};
+      const workoutExercises: WorkoutExercise[] = item.exercises.map((exercise: any) => {
+        const { sets, historySetCount } = createSetsWithHistory(exercise.name, allWorkouts);
+        historySetCounts[exercise.name] = historySetCount;
+        return {
+          name: exercise.name,
+          sets,
+        };
+      });
 
-    startSession(planId, workoutExercises, sessionName);
-    setExpandedPlanId(null);
-    router.push('/(tabs)/workout');
-  }, [router, startSession, setCompletionOverlayVisible]);
+      // Use program ID if it's a program workout, otherwise the plan ID
+      const planId = item.type === 'program' ? item.programId : item.id;
+      const sessionName = item.name;
+
+      startSession(planId, workoutExercises, sessionName, historySetCounts);
+      setExpandedPlanId(null);
+      router.push('/(tabs)/workout');
+    };
+
+    if (isSessionActive && currentSession) {
+      setWorkoutInProgressVisible(true);
+      return;
+    }
+
+    doStartSession();
+  }, [router, startSession, setCompletionOverlayVisible, allWorkouts, isSessionActive, currentSession, clearSession]);
 
   return (
     <TabSwipeContainer contentContainerStyle={[styles.contentContainer, { backgroundColor: theme.primary.bg }]}>
+      <WorkoutInProgressModal
+        visible={workoutInProgressVisible}
+        sessionName={currentSession?.name ?? 'Current Workout'}
+        elapsedMinutes={currentSession ? Math.floor((Date.now() - currentSession.startTime) / 60000) : 0}
+        onResume={() => {
+          setWorkoutInProgressVisible(false);
+          setExpandedPlanId(null);
+          router.push('/(tabs)/workout');
+        }}
+        onCancel={() => {
+          setWorkoutInProgressVisible(false);
+        }}
+      />
       <ScreenHeader title="My Programs" subtitle="Create and manage your workout plans." />
 
       <SurfaceCard padding="xl" tone="neutral" style={{ marginTop: -spacing.md }}>

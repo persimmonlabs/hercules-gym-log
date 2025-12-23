@@ -89,6 +89,16 @@ export const WorkoutExerciseSummaryCard: React.FC<WorkoutExerciseSummaryCardProp
   const catalogEntry = exerciseCatalog.find(e => e.name === exercise.name);
   const exerciseType: ExerciseType = catalogEntry?.exerciseType || 'weight';
 
+  // Only show completed sets in the summary
+  const completedSets = exercise.sets
+    .map((set, originalIndex) => ({ set, originalIndex }))
+    .filter(({ set }) => set.completed);
+
+  // Don't render the card if no sets were completed
+  if (completedSets.length === 0) {
+    return null;
+  }
+
   return (
     <Animated.View layout={Layout.springify()} style={styles.wrapper}>
       <SurfaceCard tone="card" padding="lg" style={styles.card}>
@@ -101,14 +111,14 @@ export const WorkoutExerciseSummaryCard: React.FC<WorkoutExerciseSummaryCardProp
         </View>
 
         <View style={styles.setList}>
-          {exercise.sets.map((set, setIndex) => {
+          {completedSets.map(({ set, originalIndex }, displayIndex) => {
             const effortLabel = getSetEffortLabel(set, exerciseType, formatWeight, formatDistance);
 
             return (
-              <View key={`${exercise.name}-${setIndex}`} style={styles.setRow}>
+              <View key={`${exercise.name}-${originalIndex}`} style={styles.setRow}>
                 <View style={styles.setMeta}>
                   <Text variant="bodySemibold" color="primary">
-                    {`Set ${setIndex + 1}`}
+                    {`Set ${displayIndex + 1}`}
                   </Text>
                   <Text variant="body" color="secondary">
                     {effortLabel}

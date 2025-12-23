@@ -7,12 +7,14 @@ import { Text } from '@/components/atoms/Text';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { SurfaceCard } from '@/components/atoms/SurfaceCard';
 import { TabSwipeContainer } from '@/components/templates/TabSwipeContainer';
+import { WorkoutInProgressModal } from '@/components/molecules/WorkoutInProgressModal';
 import { radius, sizing, spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/useTheme';
 import { usePlansStore, type Plan, type PlansState } from '@/store/plansStore';
 import { useSessionStore } from '@/store/sessionStore';
 import type { WorkoutExercise } from '@/types/workout';
-import { createDefaultSetsForExercise } from '@/utils/workout';
+import { createSetsWithHistory } from '@/utils/workout';
+import { useWorkoutSessionsStore } from '@/store/workoutSessionsStore';
 import WorkoutSessionScreen from '../workout-session';
 import { WorkoutCompletionOverlay } from '@/components/organisms';
 
@@ -66,6 +68,7 @@ const styles = StyleSheet.create({
 
 const WorkoutScreen: React.FC = () => {
   const { theme } = useTheme();
+  const [workoutInProgressVisible, setWorkoutInProgressVisible] = useState<boolean>(false);
   const [showPlansList, setShowPlansList] = useState<boolean>(false);
   const plans = usePlansStore((state: PlansState) => state.plans);
   const startSession = useSessionStore((state) => state.startSession);
@@ -83,33 +86,55 @@ const WorkoutScreen: React.FC = () => {
     setShowPlansList(true);
   };
 
+  const allWorkouts = useWorkoutSessionsStore((state) => state.workouts);
+
   const handlePlanSelect = useCallback(
     (plan: Plan) => {
       void Haptics.selectionAsync();
 
-      // Explicitly reset overlay state before starting new session
-      setCompletionOverlayVisible(false);
+      const doStartSession = () => {
+        setCompletionOverlayVisible(false);
 
-      const mappedExercises: WorkoutExercise[] = plan.exercises.map((exercise) => ({
-        name: exercise.name,
-        sets: createDefaultSetsForExercise(exercise.name),
-      }));
+        const historySetCounts: Record<string, number> = {};
+        const mappedExercises: WorkoutExercise[] = plan.exercises.map((exercise) => {
+          const { sets, historySetCount } = createSetsWithHistory(exercise.name, allWorkouts);
+          historySetCounts[exercise.name] = historySetCount;
+          return {
+            name: exercise.name,
+            sets,
+          };
+        });
 
-      startSession(plan.id, mappedExercises, plan.name);
-      setShowPlansList(false);
+        startSession(plan.id, mappedExercises, plan.name, historySetCounts);
+        setShowPlansList(false);
+      };
+
+      if (isSessionActive && currentSession) {
+        setWorkoutInProgressVisible(true);
+        return;
+      }
+
+      doStartSession();
     },
-    [startSession, setCompletionOverlayVisible],
+    [startSession, setCompletionOverlayVisible, allWorkouts, isSessionActive, currentSession],
   );
 
   const handleStartFromScratch = useCallback(() => {
     void Haptics.selectionAsync();
-    
-    // Explicitly reset overlay state before starting new session
-    setCompletionOverlayVisible(false);
-    
-    startSession(null, [], null);
-    setShowPlansList(false);
-  }, [startSession, setCompletionOverlayVisible]);
+
+    const doStartSession = () => {
+      setCompletionOverlayVisible(false);
+      startSession(null, [], null);
+      setShowPlansList(false);
+    };
+
+    if (isSessionActive && currentSession) {
+      setWorkoutInProgressVisible(true);
+      return;
+    }
+
+    doStartSession();
+  }, [startSession, setCompletionOverlayVisible, isSessionActive, currentSession]);
 
   useFocusEffect(
     useCallback(() => {
@@ -130,6 +155,18 @@ const WorkoutScreen: React.FC = () => {
 
   return (
     <TabSwipeContainer contentContainerStyle={styles.contentContainer}>
+      <WorkoutInProgressModal
+        visible={workoutInProgressVisible}
+        sessionName={currentSession?.name ?? 'Current Workout'}
+        elapsedMinutes={currentSession ? Math.floor((Date.now() - currentSession.startTime) / 60000) : 0}
+        onResume={() => {
+          setWorkoutInProgressVisible(false);
+          setShowPlansList(false);
+        }}
+        onCancel={() => {
+          setWorkoutInProgressVisible(false);
+        }}
+      />
       {isCompletionOverlayVisible ? (
         <WorkoutCompletionOverlay onDismiss={() => setCompletionOverlayVisible(false)} />
       ) : null}

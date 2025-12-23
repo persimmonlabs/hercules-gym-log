@@ -597,18 +597,37 @@ export async function deleteWorkoutTemplate(userId: string, templateId: string):
 // SCHEDULES
 // ============================================================================
 
+export interface ScheduleDataWeekly {
+    monday: string | null;
+    tuesday: string | null;
+    wednesday: string | null;
+    thursday: string | null;
+    friday: string | null;
+    saturday: string | null;
+    sunday: string | null;
+}
+
+export interface RotatingDayDB {
+    id: string;
+    dayNumber: number;
+    planId: string | null;
+}
+
+export interface ScheduleDataRotating {
+    days: RotatingDayDB[];
+    startDate: number | null;
+}
+
+export interface ScheduleDataFull {
+    type: 'weekly' | 'rotating';
+    weekly?: ScheduleDataWeekly;
+    rotating?: ScheduleDataRotating;
+}
+
 export interface ScheduleDB {
     id: string;
     name: string;
-    schedule_data: {
-        monday: string | null;
-        tuesday: string | null;
-        wednesday: string | null;
-        thursday: string | null;
-        friday: string | null;
-        saturday: string | null;
-        sunday: string | null;
-    };
+    schedule_data: ScheduleDataFull | ScheduleDataWeekly;
     is_active: boolean;
     created_at: string;
     updated_at: string;
@@ -647,7 +666,7 @@ export async function fetchSchedules(userId: string): Promise<ScheduleDB[]> {
 
 export async function createSchedule(
     userId: string,
-    schedule: { name: string; weekdays: ScheduleDB['schedule_data'] }
+    schedule: { name: string; scheduleData: ScheduleDataFull }
 ): Promise<string> {
     return withRetry(async () => {
         const { data, error } = await supabaseClient
@@ -655,7 +674,7 @@ export async function createSchedule(
             .insert({
                 user_id: userId,
                 name: schedule.name,
-                schedule_data: schedule.weekdays,
+                schedule_data: schedule.scheduleData,
             })
             .select('id')
             .single();
@@ -672,7 +691,7 @@ export async function createSchedule(
 export async function updateSchedule(
     userId: string,
     scheduleId: string,
-    updates: { name?: string; weekdays?: ScheduleDB['schedule_data']; is_active?: boolean }
+    updates: { name?: string; scheduleData?: ScheduleDataFull; is_active?: boolean }
 ): Promise<void> {
     return withRetry(async () => {
         const updateData: Record<string, unknown> = {
@@ -680,7 +699,7 @@ export async function updateSchedule(
         };
 
         if (updates.name !== undefined) updateData.name = updates.name;
-        if (updates.weekdays !== undefined) updateData.schedule_data = updates.weekdays;
+        if (updates.scheduleData !== undefined) updateData.schedule_data = updates.scheduleData;
         if (updates.is_active !== undefined) updateData.is_active = updates.is_active;
 
         const { error } = await supabaseClient

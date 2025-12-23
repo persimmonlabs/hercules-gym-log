@@ -6,6 +6,9 @@
 import type { Workout, SetLog } from '@/types/workout';
 import type { ExerciseType } from '@/types/exercise';
 import { exercises as exerciseCatalog } from '@/constants/exercises';
+import { createSetsWithHistory, SetsWithHistoryResult } from '@/utils/exerciseHistory';
+
+export { createSetsWithHistory, SetsWithHistoryResult };
 
 const DEFAULT_SET_COUNT = 3;
 
@@ -99,7 +102,7 @@ export const formatDurationLabel = (duration?: number): string => {
  */
 export const getWorkoutSummary = (workout: Workout): string => {
   const completedExercises = workout.exercises.filter((exercise) =>
-    exercise.sets.length > 0 ? exercise.sets.every((set) => set.completed) : false
+    exercise.sets.length > 0 ? exercise.sets.some((set) => set.completed) : false
   );
   const completedCount = completedExercises.length;
   const base = `${completedCount} completed ${completedCount === 1 ? 'exercise' : 'exercises'}`;

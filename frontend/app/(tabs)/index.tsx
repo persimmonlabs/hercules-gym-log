@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { View, StyleSheet, Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
 import type { Href } from 'expo-router';
@@ -37,9 +37,10 @@ import { IconSymbol } from '@/components/ui/icon-symbol';
 import { useSessionStore } from '@/store/sessionStore';
 import { useUserProfileStore } from '@/store/userProfileStore';
 import { useAuth } from '@/providers/AuthProvider';
+import { WorkoutInProgressModal } from '@/components/molecules/WorkoutInProgressModal';
 import type { Schedule } from '@/types/schedule';
 import type { UserProgram, RotationSchedule, ProgramWorkout } from '@/types/premadePlan';
-import { createDefaultSetsForExercise } from '@/utils/workout';
+import { createSetsWithHistory } from '@/utils/workout';
 
 const QUICK_LINKS: QuickLinkItem[] = [
   { id: 'link-workout', title: 'Start Workout', description: 'Log a new workout session.', icon: 'flash-outline', route: 'workout', variant: 'primary' },
@@ -374,6 +375,8 @@ const DashboardScreen: React.FC = () => {
   const workouts = useWorkoutSessionsStore((state: WorkoutSessionsState) => state.workouts);
   const profile = useUserProfileStore((state) => state.profile);
 
+  const [workoutInProgressVisible, setWorkoutInProgressVisible] = useState<boolean>(false);
+
   // Get firstName and userInitial reactively from store state
   const firstName = profile?.firstName || null;
   const userInitial = firstName ? firstName.charAt(0).toUpperCase() : null;
@@ -484,6 +487,8 @@ const DashboardScreen: React.FC = () => {
   const hydrateWorkouts = useWorkoutSessionsStore((state: WorkoutSessionsState) => state.hydrateWorkouts);
   const startSession = useSessionStore((state) => state.startSession);
   const setCompletionOverlayVisible = useSessionStore((state) => state.setCompletionOverlayVisible);
+  const isSessionActive = useSessionStore((state) => state.isSessionActive);
+  const currentSession = useSessionStore((state) => state.currentSession);
 
   useEffect(() => {
     void hydrateSchedules();
@@ -526,9 +531,23 @@ const DashboardScreen: React.FC = () => {
     | { variant: 'rest'; dayLabel: string }
     | { variant: 'plan'; dayLabel: string; plan: Plan }
     | { variant: 'rotation'; programName: string; workout: ProgramWorkout; programId: string }
-    | { variant: 'completed'; workout: Workout };
+    | { variant: 'standaloneRotation'; dayLabel: string; plan: Plan; dayNumber: number }
+    | { variant: 'completed'; workout: Workout }
+    | { variant: 'ongoing'; sessionName: string | null; exerciseCount: number; elapsedMinutes: number };
 
   const todaysCardState: TodaysCardState = useMemo(() => {
+    // PRIORITY 1: Check for ongoing workout session (highest priority)
+    if (isSessionActive && currentSession) {
+      const elapsedMs = Date.now() - currentSession.startTime;
+      const elapsedMinutes = Math.floor(elapsedMs / 60000);
+      return {
+        variant: 'ongoing',
+        sessionName: currentSession.name,
+        exerciseCount: currentSession.exercises.length,
+        elapsedMinutes,
+      };
+    }
+
     // Check for completed workout today
     const todayString = new Date().toDateString();
     const todaysWorkouts = workouts.filter(w => {
@@ -587,6 +606,54 @@ const DashboardScreen: React.FC = () => {
       return { variant: 'noSchedule' };
     }
 
+    // Check for standalone rotating schedule
+    if (activeSchedule.type === 'rotating' && activeSchedule.rotating) {
+      const { days, startDate } = activeSchedule.rotating;
+      
+      if (days.length === 0) {
+        return { variant: 'rest', dayLabel: todayLabel };
+      }
+
+      if (!startDate) {
+        // No start date set, show as rest
+        return { variant: 'rest', dayLabel: todayLabel };
+      }
+
+      // Calculate which day of the rotation we're on
+      const now = new Date();
+      const start = new Date(startDate);
+      now.setHours(0, 0, 0, 0);
+      start.setHours(0, 0, 0, 0);
+      const diffDays = Math.floor((now.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+
+      if (diffDays < 0) {
+        // Schedule starts in the future
+        return { variant: 'rest', dayLabel: todayLabel };
+      }
+
+      const currentDayIndex = diffDays % days.length;
+      const currentDay = days[currentDayIndex];
+
+      if (!currentDay || !currentDay.planId) {
+        // Rest day in the rotation
+        return { variant: 'rest', dayLabel: `Day ${currentDay?.dayNumber ?? currentDayIndex + 1}` };
+      }
+
+      // Find the plan for today
+      const plan = planNameLookup[currentDay.planId];
+      if (!plan) {
+        return { variant: 'rest', dayLabel: `Day ${currentDay.dayNumber}` };
+      }
+
+      return {
+        variant: 'standaloneRotation',
+        dayLabel: `Day ${currentDay.dayNumber}`,
+        plan,
+        dayNumber: currentDay.dayNumber,
+      };
+    }
+
+    // Weekly schedule
     const todaysPlanId = activeSchedule.weekdays[todayKey];
 
     if (!todaysPlanId) {
@@ -600,17 +667,26 @@ const DashboardScreen: React.FC = () => {
     }
 
     return { variant: 'plan', dayLabel: todayLabel, plan };
-  }, [activeSchedule, activeRotation, getTodayWorkout, planNameLookup, plans.length, todayKey, todayLabel, userPrograms, workouts, activePlanId]);
+  }, [activeSchedule, activeRotation, getTodayWorkout, planNameLookup, plans.length, todayKey, todayLabel, userPrograms, workouts, activePlanId, isSessionActive, currentSession]);
 
-  const todaysPlan = todaysCardState.variant === 'plan' ? todaysCardState.plan : null;
+  const todaysPlan = todaysCardState.variant === 'plan' 
+    ? todaysCardState.plan 
+    : todaysCardState.variant === 'standaloneRotation' 
+      ? todaysCardState.plan 
+      : null;
   const rotationWorkout = todaysCardState.variant === 'rotation' ? todaysCardState.workout : null;
 
   const handleTodaysCardPress = useCallback(() => {
-    if (todaysCardState.variant === 'plan' || todaysCardState.variant === 'rotation' || todaysCardState.variant === 'noPlans') {
+    if (todaysCardState.variant === 'plan' || todaysCardState.variant === 'rotation' || todaysCardState.variant === 'standaloneRotation' || todaysCardState.variant === 'noPlans') {
       return;
     }
 
     void Haptics.selectionAsync();
+
+    if (todaysCardState.variant === 'ongoing') {
+      router.push('/(tabs)/workout');
+      return;
+    }
 
     if (todaysCardState.variant === 'completed') {
       router.push({ pathname: '/(tabs)/workout-detail', params: { workoutId: todaysCardState.workout.id } });
@@ -632,23 +708,42 @@ const DashboardScreen: React.FC = () => {
 
     void Haptics.selectionAsync();
 
-    // Explicitly reset overlay state before starting new session
-    setCompletionOverlayVisible(false);
+    const doStartSession = () => {
+      setCompletionOverlayVisible(false);
 
-    const target = todaysPlan || rotationWorkout;
-    if (!target) return;
+      const target = todaysPlan || rotationWorkout;
+      if (!target) return;
 
-    const workoutExercises: WorkoutExercise[] = target.exercises.map((exercise) => ({
-      name: exercise.name,
-      sets: createDefaultSetsForExercise(exercise.name),
-    }));
+      const historySetCounts: Record<string, number> = {};
+      const workoutExercises: WorkoutExercise[] = target.exercises.map((exercise) => {
+        const { sets, historySetCount } = createSetsWithHistory(exercise.name, workouts);
+        historySetCounts[exercise.name] = historySetCount;
+        return {
+          name: exercise.name,
+          sets,
+        };
+      });
 
-    const planId = todaysCardState.variant === 'rotation' ? todaysCardState.programId : (todaysPlan?.id ?? '');
-    const sessionName = todaysCardState.variant === 'rotation' ? (rotationWorkout?.name ?? null) : (todaysPlan?.name ?? null);
+      const planId = todaysCardState.variant === 'rotation' 
+        ? todaysCardState.programId 
+        : (todaysPlan?.id ?? '');
+      const sessionName = todaysCardState.variant === 'rotation' 
+        ? (rotationWorkout?.name ?? null) 
+        : todaysCardState.variant === 'standaloneRotation'
+          ? `${todaysCardState.dayLabel}: ${todaysPlan?.name ?? 'Workout'}`
+          : (todaysPlan?.name ?? null);
 
-    startSession(planId, workoutExercises, sessionName);
-    router.push('/(tabs)/workout');
-  }, [todaysPlan, rotationWorkout, startSession, router, setCompletionOverlayVisible, todaysCardState]);
+      startSession(planId, workoutExercises, sessionName, historySetCounts);
+      router.push('/(tabs)/workout');
+    };
+
+    if (isSessionActive && currentSession) {
+      setWorkoutInProgressVisible(true);
+      return;
+    }
+
+    doStartSession();
+  }, [todaysPlan, rotationWorkout, startSession, router, setCompletionOverlayVisible, todaysCardState, workouts, isSessionActive, currentSession]);
 
   const recentWorkouts = useMemo<Workout[]>(() => {
     if (workouts.length === 0) {
@@ -666,7 +761,7 @@ const DashboardScreen: React.FC = () => {
 
   const formatWorkoutSubtitle = useCallback((workout: Workout) => {
     const completedExercises = workout.exercises.filter((exercise) =>
-      exercise.sets.length > 0 ? exercise.sets.every((set) => set.completed) : false
+      exercise.sets.length > 0 ? exercise.sets.some((set) => set.completed) : false
     );
     const completedCount = completedExercises.length;
     const base = `${completedCount} completed ${completedCount === 1 ? 'exercise' : 'exercises'}`;
@@ -709,6 +804,18 @@ const DashboardScreen: React.FC = () => {
         style={styles.backgroundGradient}
       >
         <View style={[styles.container, { backgroundColor: theme.primary.bg }]}>
+          <WorkoutInProgressModal
+            visible={workoutInProgressVisible}
+            sessionName={currentSession?.name ?? 'Current Workout'}
+            elapsedMinutes={currentSession ? Math.floor((Date.now() - currentSession.startTime) / 60000) : 0}
+            onResume={() => {
+              setWorkoutInProgressVisible(false);
+              router.push('/(tabs)/workout');
+            }}
+            onCancel={() => {
+              setWorkoutInProgressVisible(false);
+            }}
+          />
           <View style={styles.contentContainer}>
             <ScreenHeader
               title={firstName ? `Welcome, ${firstName}!` : 'Welcome!'}
@@ -801,7 +908,43 @@ const DashboardScreen: React.FC = () => {
                     <Text variant="heading3" color="primary">
                       Today's Workout
                     </Text>
-                    {todaysCardState.variant === 'plan' || todaysCardState.variant === 'rotation' ? (
+                    {todaysCardState.variant === 'ongoing' ? (
+                      <SurfaceCard
+                        tone="neutral"
+                        padding="lg"
+                        showAccentStripe={false}
+                        style={[styles.inlineCard, styles.todaysPlanSubCard]}
+                      >
+                        <View style={styles.quickLinkRow}>
+                          <View style={styles.quickLinkInfo}>
+                            <Text variant="bodySemibold" color="primary">
+                              {todaysCardState.sessionName ?? 'Workout in Progress'}
+                            </Text>
+                            <Text variant="body" color="secondary">
+                              {todaysCardState.exerciseCount} {todaysCardState.exerciseCount === 1 ? 'exercise' : 'exercises'} · {todaysCardState.elapsedMinutes} min elapsed
+                            </Text>
+                          </View>
+                          <Pressable
+                            style={styles.planStartButton}
+                            onPress={handleTodaysCardPress}
+                            accessibilityRole="button"
+                            accessibilityLabel="Resume ongoing workout"
+                          >
+                            <View style={styles.quickLinkButton}>
+                              <LinearGradient
+                                colors={[theme.accent.gradientStart, theme.accent.gradientEnd]}
+                                start={{ x: 0, y: 0 }}
+                                end={{ x: 1, y: 1 }}
+                                style={styles.planStartButtonGradient}
+                              />
+                              <Text variant="bodySemibold" color="onAccent">
+                                →
+                              </Text>
+                            </View>
+                          </Pressable>
+                        </View>
+                      </SurfaceCard>
+                    ) : todaysCardState.variant === 'plan' || todaysCardState.variant === 'rotation' || todaysCardState.variant === 'standaloneRotation' ? (
                       <SurfaceCard
                         tone="neutral"
                         padding="lg"
@@ -813,12 +956,16 @@ const DashboardScreen: React.FC = () => {
                             <Text variant="bodySemibold" color="primary">
                               {todaysCardState.variant === 'rotation'
                                 ? `${todaysCardState.programName}: ${todaysCardState.workout.name}`
-                                : todaysCardState.plan.name}
+                                : todaysCardState.variant === 'standaloneRotation'
+                                  ? `${todaysCardState.dayLabel}: ${todaysCardState.plan.name}`
+                                  : todaysCardState.plan.name}
                             </Text>
                             <Text variant="body" color="secondary">
                               {todaysCardState.variant === 'rotation'
                                 ? `${todaysCardState.workout.exercises.length} exercises`
-                                : `${todaysCardState.plan.exercises.length} exercises`}
+                                : todaysCardState.variant === 'standaloneRotation'
+                                  ? `${todaysCardState.plan.exercises.length} exercises`
+                                  : `${todaysCardState.plan.exercises.length} exercises`}
                             </Text>
                           </View>
                           <Pressable

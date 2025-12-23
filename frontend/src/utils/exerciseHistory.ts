@@ -4,6 +4,15 @@
  */
 
 import type { SetLog, Workout } from '@/types/workout';
+import type { ExerciseType } from '@/types/exercise';
+import { exercises as exerciseCatalog } from '@/constants/exercises';
+
+const DEFAULT_SET_COUNT = 3;
+
+export interface SetsWithHistoryResult {
+    sets: SetLog[];
+    historySetCount: number;
+}
 
 /**
  * Get the most recent completed sets for a specific exercise
@@ -63,4 +72,84 @@ export const getDefaultSetValues = (
         weight: lastSets[0].weight ?? defaultWeight,
         reps: lastSets[0].reps ?? defaultReps,
     };
+};
+
+/**
+ * Creates sets for an exercise with smart history-based pre-population.
+ * 
+ * Logic:
+ * - If history exists: pre-populate from history sets
+ * - If more sets needed than history provides: fill extra sets with last history values
+ * - If no history: use exercise-type-appropriate defaults
+ * 
+ * @param exerciseName - The name of the exercise
+ * @param workouts - All historical workouts
+ * @param currentWorkoutId - Optional ID to exclude current workout from history lookup
+ * @param requestedSetCount - Optional number of sets to create (defaults to history count or DEFAULT_SET_COUNT)
+ * @returns Object containing the sets and the count of sets that came from actual history
+ */
+export const createSetsWithHistory = (
+    exerciseName: string,
+    workouts: Workout[],
+    currentWorkoutId?: string,
+    requestedSetCount?: number,
+): SetsWithHistoryResult => {
+    const exercise = exerciseCatalog.find(e => e.name === exerciseName);
+    const exerciseType: ExerciseType = exercise?.exerciseType || 'weight';
+
+    // Filter out current workout to avoid using incomplete data
+    const historicalWorkouts = currentWorkoutId
+        ? workouts.filter((w) => w.id !== currentWorkoutId)
+        : workouts;
+
+    // Get history for this exercise
+    const historySets = getLastCompletedSetsForExercise(exerciseName, historicalWorkouts);
+    const hasHistory = historySets && historySets.length > 0;
+
+    // Determine how many sets to create
+    const historySetCount = hasHistory ? historySets.length : 0;
+    const targetSetCount = requestedSetCount ?? (historySetCount || DEFAULT_SET_COUNT);
+
+    if (hasHistory) {
+        const sets: SetLog[] = [];
+
+        // Add sets from history (mark as not completed)
+        for (let i = 0; i < Math.min(historySetCount, targetSetCount); i++) {
+            sets.push({ ...historySets[i], completed: false });
+        }
+
+        // If we need more sets than history provides, use the last history set's values
+        if (targetSetCount > historySetCount) {
+            const lastHistorySet = historySets[historySetCount - 1];
+            for (let i = historySetCount; i < targetSetCount; i++) {
+                sets.push({ ...lastHistorySet, completed: false });
+            }
+        }
+
+        return { sets, historySetCount };
+    }
+
+    // No history - create type-appropriate default sets
+    let defaultSets: SetLog[];
+    switch (exerciseType) {
+        case 'cardio':
+            defaultSets = [{ duration: 0, distance: 0, completed: false }];
+            break;
+        case 'duration':
+            defaultSets = [{ duration: 30, completed: false }];
+            break;
+        case 'bodyweight':
+        case 'reps_only':
+            defaultSets = Array.from({ length: targetSetCount }, () => ({ reps: 10, completed: false }));
+            break;
+        case 'assisted':
+            defaultSets = Array.from({ length: targetSetCount }, () => ({ assistanceWeight: 0, reps: 8, completed: false }));
+            break;
+        case 'weight':
+        default:
+            defaultSets = Array.from({ length: targetSetCount }, () => ({ reps: 8, weight: 0, completed: false }));
+            break;
+    }
+
+    return { sets: defaultSets, historySetCount: 0 };
 };

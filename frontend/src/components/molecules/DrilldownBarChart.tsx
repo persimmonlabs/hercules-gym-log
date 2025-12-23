@@ -69,7 +69,15 @@ export const DrilldownBarChart: React.FC<DrilldownBarChartProps> = ({
     } else if (current.level === 'L2') {
       // L2 -> get L3 children (e.g., Arms -> Biceps, Triceps, Forearms)
       const l1Name = breadcrumb[0].name;
-      return Object.keys(hierarchy[l1Name]?.muscles?.[current.name]?.muscles || {});
+      const l3Children = hierarchy[l1Name]?.muscles?.[current.name]?.muscles || {};
+      const l3Names = Object.keys(l3Children);
+      
+      // Special case: if L3 has same name as L2 (e.g., Calves -> Calves),
+      // return L4 children directly to skip redundant level
+      if (l3Names.length === 1 && l3Names[0] === current.name) {
+        return Object.keys(l3Children[current.name]?.muscles || {});
+      }
+      return l3Names;
     } else if (current.level === 'L3') {
       // L3 -> get L4 children (e.g., Biceps -> Long Head, Short Head, Brachialis)
       const l1Name = breadcrumb[0].name;
@@ -82,7 +90,17 @@ export const DrilldownBarChart: React.FC<DrilldownBarChartProps> = ({
   // Get current level's data, ensuring all expected children are included
   const currentData = useMemo((): ChartSlice[] => {
     const current = breadcrumb[breadcrumb.length - 1];
-    const key = `${current.level}:${current.name}`;
+    let key = `${current.level}:${current.name}`;
+    
+    // Special case: for L3 where L2 and L3 have same name (e.g., Calves),
+    // the data is stored under L2 key, not L3
+    if (current.level === 'L3' && breadcrumb.length > 1) {
+      const l2Name = breadcrumb[1].name;
+      if (l2Name === current.name) {
+        key = `L2:${current.name}`;
+      }
+    }
+    
     const rawData = data.byParent[key] || [];
     
     // Create a map of existing data
@@ -115,8 +133,16 @@ export const DrilldownBarChart: React.FC<DrilldownBarChartProps> = ({
 
       if (!nextLevel) return false;
 
-      const key = `${nextLevel}:${name}`;
-      const children = data.byParent[key];
+      // Check for data at the next level
+      let key = `${nextLevel}:${name}`;
+      let children = data.byParent[key];
+      
+      // Special case: for same-name L2/L3 (e.g., Calves), data is under L2 key
+      if (!children?.length && nextLevel === 'L3' && current.name === name) {
+        key = `L2:${name}`;
+        children = data.byParent[key];
+      }
+      
       return children && children.length > 0;
     },
     [breadcrumb, data]

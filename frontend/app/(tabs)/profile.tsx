@@ -10,16 +10,24 @@ import { AnalyticsCard } from '@/components/atoms/AnalyticsCard';
 import { SimpleDistributionChart } from '@/components/molecules/SimpleDistributionChart';
 import { SimpleVolumeChart } from '@/components/molecules/SimpleVolumeChart';
 import { TrainingBalanceCard } from '@/components/molecules/TrainingBalanceCard';
+import { DevPreviewPanel } from '@/components/molecules/DevPreviewPanel';
 import { TimeRangeSelector } from '@/components/atoms/TimeRangeSelector';
 import { useAnalyticsData } from '@/hooks/useAnalyticsData';
 import { spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/useTheme';
-import { TimeRange } from '@/types/analytics';
+import { TIME_RANGE_SUBTITLES, TimeRange } from '@/types/analytics';
 import type { CardioStats } from '@/types/analytics';
 import { useSettingsStore } from '@/store/settingsStore';
 
 // Simple cardio stats content component
-const CardioStatsContent: React.FC<{ stats: CardioStats }> = ({ stats }) => {
+const EMPTY_CARD_MIN_HEIGHT = 240;
+
+interface CardioStatsContentProps {
+  stats: CardioStats;
+  timeRange: TimeRange;
+}
+
+const CardioStatsContent: React.FC<CardioStatsContentProps> = ({ stats, timeRange }) => {
   const { formatDistance } = useSettingsStore();
   const { totalDuration, totalDistanceByType } = stats;
   
@@ -28,9 +36,9 @@ const CardioStatsContent: React.FC<{ stats: CardioStats }> = ({ stats }) => {
   
   if (!hasData) {
     return (
-      <View style={{ alignItems: 'center', paddingVertical: spacing.xl }}>
-        <Text variant="body" color="secondary">
-          No cardio data available for this time range
+      <View style={cardioStyles.emptyState}>
+        <Text variant="body" color="secondary" style={cardioStyles.emptyText}>
+          {`No workout data for ${TIME_RANGE_SUBTITLES[timeRange].toLowerCase()}.`}
         </Text>
       </View>
     );
@@ -85,6 +93,18 @@ const CardioStatsContent: React.FC<{ stats: CardioStats }> = ({ stats }) => {
   );
 };
 
+const cardioStyles = StyleSheet.create({
+  emptyState: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: spacing.md,
+    minHeight: EMPTY_CARD_MIN_HEIGHT,
+  },
+  emptyText: {
+    textAlign: 'center',
+  },
+});
+
 
 const StatsScreen: React.FC = () => {
   const router = useRouter();
@@ -133,6 +153,8 @@ const StatsScreen: React.FC = () => {
         subtitle="View your training metrics and personal records."
       />
 
+      {__DEV__ && <DevPreviewPanel />}
+
       <View style={{ marginTop: -spacing.lg }}>
         <PersonalRecordsSection />
       </View>
@@ -172,7 +194,7 @@ const StatsScreen: React.FC = () => {
           <TimeRangeSelector value={cardioTimeRange} onChange={setCardioTimeRange} />
         }
       >
-        <CardioStatsContent stats={cardioStats} />
+        <CardioStatsContent stats={cardioStats} timeRange={cardioTimeRange} />
       </AnalyticsCard>
     </TabSwipeContainer>
   );

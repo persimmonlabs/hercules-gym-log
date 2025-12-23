@@ -16,9 +16,11 @@ import { ChartWrapper } from '@/components/atoms/ChartWrapper';
 import { TimeRangeSelector } from '@/components/atoms/TimeRangeSelector';
 import { colors, spacing, radius } from '@/constants/theme';
 import { useAnalyticsData } from '@/hooks/useAnalyticsData';
+import { TIME_RANGE_SUBTITLES } from '@/types/analytics';
 import type { ChartSlice, TimeRange } from '@/types/analytics';
 
 const PIE_SIZE = 240;
+const EMPTY_MIN_HEIGHT = 240;
 
 interface LegendItemProps {
   item: ChartSlice;
@@ -58,9 +60,6 @@ export const SimpleDistributionChart: React.FC = () => {
     setSelectedSlice((prev) => (prev === name ? null : name));
   }, []);
 
-  // Determine chart state
-  const chartState = !hasFilteredData ? 'empty' : 'ready';
-
   // Prepare Victory data
   const chartData = data.map((item) => ({
     x: item.name,
@@ -69,17 +68,20 @@ export const SimpleDistributionChart: React.FC = () => {
   }));
 
   const colorScale = chartData.map((d) => d.color);
+  const chartState = !hasFilteredData ? 'empty' : 'ready';
+  const emptyMessage = `No workout data for ${TIME_RANGE_SUBTITLES[timeRange].toLowerCase()}.`;
 
   return (
-    <ChartWrapper
-      state={chartState}
-      emptyMessage="No workout data yet. Complete a workout to see your distribution!"
-      minHeight={PIE_SIZE + 140}
-    >
-      <View style={styles.container}>
-        <View style={styles.selectorContainer}>
-          <TimeRangeSelector value={timeRange} onChange={setTimeRange} />
-        </View>
+    <View style={styles.container}>
+      <View style={styles.selectorContainer}>
+        <TimeRangeSelector value={timeRange} onChange={setTimeRange} />
+      </View>
+
+      <ChartWrapper
+        state={chartState}
+        emptyMessage={emptyMessage}
+        minHeight={chartState === 'empty' ? EMPTY_MIN_HEIGHT : PIE_SIZE + 140}
+      >
         <View style={styles.chartContainer}>
           <VictoryPie
             data={chartData}
@@ -130,8 +132,8 @@ export const SimpleDistributionChart: React.FC = () => {
             />
           ))}
         </View>
-      </View>
-    </ChartWrapper>
+      </ChartWrapper>
+    </View>
   );
 };
 

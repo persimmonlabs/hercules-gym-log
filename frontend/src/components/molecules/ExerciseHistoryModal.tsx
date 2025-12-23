@@ -45,11 +45,15 @@ export const ExerciseHistoryModal: React.FC<ExerciseHistoryModalProps> = ({
       )
       .map((workout) => {
         const exercise = workout.exercises.find((e) => e.name === exerciseName);
+        // Only include completed sets in history
+        const completedSets = (exercise?.sets || []).filter((set) => set.completed);
         return {
           date: workout.date,
-          sets: exercise?.sets || [],
+          sets: completedSets,
         };
       })
+      // Filter out workouts with no completed sets for this exercise
+      .filter((item) => item.sets.length > 0)
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }, [workouts, exerciseName]);
 

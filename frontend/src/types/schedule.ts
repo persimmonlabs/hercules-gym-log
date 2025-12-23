@@ -17,8 +17,23 @@ export interface ScheduleWeekdayAssignment {
   sunday: string | null;
 }
 
+export type ScheduleType = 'weekly' | 'rotating';
+
+export interface RotatingDay {
+  id: string;
+  dayNumber: number;
+  planId: string | null;
+}
+
+export interface RotatingScheduleConfig {
+  days: RotatingDay[];
+  startDate: number | null;
+}
+
 export interface Schedule {
   id: string;
   name: string;
+  type: ScheduleType;
   weekdays: ScheduleWeekdayAssignment;
+  rotating?: RotatingScheduleConfig;
 }
