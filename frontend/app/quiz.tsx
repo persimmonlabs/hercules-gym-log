@@ -120,6 +120,11 @@ const styles = StyleSheet.create({
     left: '50%',
     transform: [{ translateX: -12 }, { translateY: -6 }],
   },
+  backButton: {
+    padding: spacing.sm,
+    paddingTop: spacing.xs,
+    borderRadius: radius.full,
+  },
 });
 
 export default function QuizScreen() {
@@ -145,6 +150,7 @@ export default function QuizScreen() {
 
   const currentStep = STEPS[currentStepIndex];
   const isLastQuestion = isWorkoutMode ? currentStep === 'equipment' : currentStep === 'days';
+  const isResultsStep = currentStep === 'results';
 
   // Calculate how many questions have been answered
   const answeredCount = useMemo(() => {
@@ -354,25 +360,32 @@ export default function QuizScreen() {
 
         return (
           <ScrollView contentContainerStyle={styles.resultsList}>
-            <View style={{ marginBottom: spacing.lg }}>
-              <Text variant="heading2" color="primary">{resultsTitle}</Text>
-              <Text variant="body" color="secondary">Based on your preferences</Text>
+            <View style={styles.header}>
+              <View style={styles.titleContainer}>
+                <Text variant="heading2" color="primary">{resultsTitle}</Text>
+                <Text variant="body" color="secondary">Based on your preferences</Text>
+              </View>
+              <Pressable onPress={() => router.back()} style={styles.backButton} hitSlop={8}>
+                <IconSymbol name="arrow-back" size={24} color={colors.text.primary} />
+              </Pressable>
             </View>
 
-            {resultsData.length > 0 ? (
-              resultsData.map(item => (
-                <ProgramCard key={item.id} program={item} onPress={handleProgramPress} />
-              ))
-            ) : (
-              <SurfaceCard tone="neutral" padding="xl" showAccentStripe={false} style={{ alignItems: 'center', gap: spacing.md }}>
-                <IconSymbol name="sentiment-dissatisfied" size={48} color={colors.text.tertiary} />
-                <Text variant="bodySemibold" color="primary">No exact matches</Text>
-                <Text variant="body" color="secondary" style={{ textAlign: 'center' }}>
-                  {emptyMessage}
-                </Text>
-                <Button label={browseLabel} variant="secondary" onPress={() => router.replace(browsePath)} />
-              </SurfaceCard>
-            )}
+            <View style={{ paddingHorizontal: spacing.md, gap: spacing.md }}>
+              {resultsData.length > 0 ? (
+                resultsData.map(item => (
+                  <ProgramCard key={item.id} program={item} onPress={handleProgramPress} />
+                ))
+              ) : (
+                <SurfaceCard tone="neutral" padding="xl" showAccentStripe={false} style={{ alignItems: 'center', gap: spacing.md }}>
+                  <IconSymbol name="sentiment-dissatisfied" size={48} color={colors.text.tertiary} />
+                  <Text variant="bodySemibold" color="primary">No exact matches</Text>
+                  <Text variant="body" color="secondary" style={{ textAlign: 'center' }}>
+                    {emptyMessage}
+                  </Text>
+                  <Button label={browseLabel} variant="secondary" onPress={() => router.replace(browsePath)} />
+                </SurfaceCard>
+              )}
+            </View>
           </ScrollView>
         );
     }
@@ -391,27 +404,29 @@ export default function QuizScreen() {
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
-      {/* Header */}
-      <View style={styles.header}>
-        <View style={styles.titleContainer}>
-          <Text variant="heading2" color="primary">
-            {" "}
-          </Text>
-          <Text variant="body" color="secondary">
-            {" "}
-          </Text>
+      {/* Header (Only show for non-results steps) */}
+      {!isResultsStep && (
+        <View style={styles.header}>
+          <View style={styles.titleContainer}>
+            <Text variant="heading2" color="primary">
+              {" "}
+            </Text>
+            <Text variant="body" color="secondary">
+              {" "}
+            </Text>
+          </View>
+          <Pressable
+            onPress={handleBack}
+            style={{ padding: spacing.sm, paddingTop: spacing.xs }}
+            hitSlop={8}
+          >
+            <IconSymbol name="arrow-back" size={24} color={colors.text.primary} />
+          </Pressable>
         </View>
-        <Pressable
-          onPress={currentStep === 'results' ? () => router.back() : handleBack}
-          style={{ padding: spacing.sm, paddingTop: spacing.xs }}
-          hitSlop={8}
-        >
-          <IconSymbol name="arrow-back" size={24} color={colors.text.primary} />
-        </Pressable>
-      </View>
+      )}
 
       {/* Content */}
-      <View style={styles.content}>
+      <View style={[styles.content, isResultsStep && { paddingHorizontal: 0 }]}>
         <View
           key={currentStep}
           style={{ flex: 1 }}

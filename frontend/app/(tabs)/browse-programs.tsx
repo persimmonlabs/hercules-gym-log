@@ -50,7 +50,6 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   listContent: {
-    paddingHorizontal: spacing.md,
     paddingBottom: spacing['2xl'],
     gap: spacing.md,
   },
@@ -112,46 +111,50 @@ export default function BrowseProgramsScreen() {
 
   return (
     <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom + sizing.tabBarHeight }]}>
-      {/* Header */}
-      <View style={styles.header}>
-        <View style={styles.titleContainer}>
-          <Text variant="heading2" color="primary">
-            {isWorkoutMode ? 'Browse Workouts' : 'Browse Programs'}
-          </Text>
-          <Text variant="body" color="secondary">
-            {isWorkoutMode ? 'Find a session that fits your goals' : 'Find a plan that fits your goals'}
-          </Text>
-        </View>
-        <Pressable onPress={handleBack} style={styles.backButton} hitSlop={8}>
-          <IconSymbol name="arrow-back" size={24} color={colors.text.primary} />
-        </Pressable>
-      </View>
-
-      {/* Filters */}
-      <View>
-        <FlatList
-          horizontal
-          data={FILTERS}
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={[styles.filtersContent, styles.filtersContainer]}
-          keyExtractor={(item) => item.value}
-          renderItem={({ item }) => (
-            <QuickFilterChip
-              label={item.label}
-              active={selectedFilter === item.value}
-              onPress={() => handleFilterPress(item.value)}
-            />
-          )}
-        />
-      </View>
-
-      {/* List */}
       <FlatList
         data={filteredItems}
         contentContainerStyle={styles.listContent}
         keyExtractor={(item) => item.id}
+        ListHeaderComponent={
+          <>
+            {/* Header */}
+            <View style={styles.header}>
+              <View style={styles.titleContainer}>
+                <Text variant="heading2" color="primary">
+                  {isWorkoutMode ? 'Browse Workouts' : 'Browse Programs'}
+                </Text>
+                <Text variant="body" color="secondary">
+                  {isWorkoutMode ? 'Find a session that fits your goals' : 'Find a plan that fits your goals'}
+                </Text>
+              </View>
+              <Pressable onPress={handleBack} style={styles.backButton} hitSlop={8}>
+                <IconSymbol name="arrow-back" size={24} color={colors.text.primary} />
+              </Pressable>
+            </View>
+
+            {/* Filters */}
+            <View>
+              <FlatList
+                horizontal
+                data={FILTERS}
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={[styles.filtersContent, styles.filtersContainer]}
+                keyExtractor={(item) => item.value}
+                renderItem={({ item }) => (
+                  <QuickFilterChip
+                    label={item.label}
+                    active={selectedFilter === item.value}
+                    onPress={() => handleFilterPress(item.value)}
+                  />
+                )}
+              />
+            </View>
+          </>
+        }
         renderItem={({ item }) => (
-          <ProgramCard program={item} onPress={handleProgramPress} />
+          <View style={{ paddingHorizontal: spacing.md }}>
+            <ProgramCard program={item} onPress={handleProgramPress} />
+          </View>
         )}
         ListEmptyComponent={
           <View style={styles.emptyState}>

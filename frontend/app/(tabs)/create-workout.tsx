@@ -132,9 +132,7 @@ const CreateWorkoutScreen: React.FC = () => {
     setEditingPlanId(editingPlanId);
 
     return () => {
-      if (!editingPlanId) {
-        resetSession();
-      }
+      resetSession();
     };
   }, [editingPlanId, resetSession, setEditingPlanId]);
 
@@ -157,13 +155,13 @@ const CreateWorkoutScreen: React.FC = () => {
 
   const handleBackPress = useCallback(() => {
     void Haptics.selectionAsync();
-    
+
     // If returnTo is specified, use it for navigation
     if (decodedReturnTo) {
       router.replace(decodedReturnTo as any);
       return;
     }
-    
+
     if (planId) {
       // If this is a nested program workout (e.g. from Edit Plan screen), just go back
       const idStr = Array.isArray(planId) ? planId[0] : planId;
@@ -200,13 +198,13 @@ const CreateWorkoutScreen: React.FC = () => {
           router.replace(decodedReturnTo as any);
           return;
         }
-        
+
         // Check if we are in a nested stack context (e.g. from Edit Plan)
         const idStr = Array.isArray(planId) ? planId[0] : planId;
         if (idStr && (idStr.startsWith('program:') || idStr.includes('%3A'))) {
-           router.back();
+          router.back();
         } else {
-           router.push('/(tabs)/plans');
+          router.push('/(tabs)/plans');
         }
       }
       // Note: 'duplicate-name' no longer returned - system auto-renames duplicates

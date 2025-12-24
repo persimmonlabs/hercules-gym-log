@@ -34,21 +34,15 @@ const getPlanSummary = (program: UserProgram) => {
   if (program.schedule.type === 'rotation' && program.schedule.rotation) {
     const order = program.schedule.rotation.workoutOrder;
     let workoutCount = 0;
-    let restCount = 0;
 
     order.forEach(id => {
       const workout = program.workouts.find(w => w.id === id);
-      if (workout) {
-        if (workout.exercises.length > 0) {
-          workoutCount++;
-        } else {
-          restCount++;
-        }
+      if (workout && workout.exercises.length > 0) {
+        workoutCount++;
       }
     });
 
-    const totalDays = workoutCount + restCount;
-    return `${workoutCount} workouts • ${restCount} rest days • ${totalDays} day plan`;
+    return `${workoutCount} workouts`;
   }
 
   if (program.schedule.type === 'weekly' && program.schedule.weekly) {
@@ -66,12 +60,11 @@ const getPlanSummary = (program: UserProgram) => {
       }
     });
 
-    const restCount = 7 - workoutCount;
-    return `${workoutCount} workouts • ${restCount} rest days • 7 day plan`;
+    return `${workoutCount} workouts`;
   }
 
   // Fallback
-  return `${program.workouts.length} workouts • ${program.metadata?.daysPerWeek || 3} days/week`;
+  return `${program.workouts.length} workouts`;
 };
 
 const CARD_LIFT_TRANSLATE = -2;
@@ -454,7 +447,8 @@ const PlansScreen: React.FC = () => {
       setExpandedPlanId(null);
 
       if (item.type === 'program') {
-        const compositeId = encodeURIComponent(`program:${item.programId}:${item.id}`);
+        const programId = item.programId || (item.programIds && item.programIds[0]);
+        const compositeId = encodeURIComponent(`program:${programId}:${item.id}`);
         router.push(`/(tabs)/create-workout?planId=${compositeId}&premadeWorkoutId=`);
       } else {
         router.push(`/(tabs)/create-workout?planId=${encodeURIComponent(item.id)}&premadeWorkoutId=`);
@@ -487,47 +481,75 @@ const PlansScreen: React.FC = () => {
   }, [plans]);
 
   const myWorkouts = useMemo(() => {
-    // Build a set of workout names that are in programs (for deduplication)
-    const programWorkoutNames = new Set<string>();
+    interface GroupedWorkout {
+      id: string;
+      name: string;
+      exercises: any[];
+      type: 'custom' | 'program';
+      programNames: string[];
+      programIds: string[];
+      programId?: string;
+      uniqueId: string;
+      subtitle?: string;
+    }
+
+    const workoutsGroupedByName: Record<string, GroupedWorkout> = {};
+
+    // 1. Collect all standalone templates
+    plans.forEach(plan => {
+      const nameKey = plan.name.trim().toLowerCase();
+      if (!workoutsGroupedByName[nameKey]) {
+        workoutsGroupedByName[nameKey] = {
+          id: plan.id,
+          name: plan.name,
+          exercises: plan.exercises,
+          type: 'custom',
+          programNames: [],
+          programIds: [],
+          uniqueId: `template-${plan.id}`,
+        };
+      }
+    });
+
+    // 2. Collect all plan-specific workouts
     userPrograms.forEach(prog => {
       prog.workouts.forEach(w => {
-        // Only track non-rest-day workouts
-        if (w.exercises.length > 0) {
-          programWorkoutNames.add(w.name);
+        if (w.exercises.length === 0) return;
+
+        const nameKey = w.name.trim().toLowerCase();
+        if (!workoutsGroupedByName[nameKey]) {
+          workoutsGroupedByName[nameKey] = {
+            id: w.id,
+            name: w.name,
+            exercises: w.exercises,
+            type: 'program',
+            programNames: [prog.name],
+            programIds: [prog.id],
+            programId: prog.id,
+            uniqueId: `group-${nameKey}`,
+          };
+        } else {
+          if (!workoutsGroupedByName[nameKey].programNames.includes(prog.name)) {
+            workoutsGroupedByName[nameKey].programNames.push(prog.name);
+            workoutsGroupedByName[nameKey].programIds.push(prog.id);
+          }
+          if (workoutsGroupedByName[nameKey].type === 'custom') {
+            workoutsGroupedByName[nameKey].type = 'program';
+            workoutsGroupedByName[nameKey].id = w.id;
+            workoutsGroupedByName[nameKey].programId = prog.id;
+          }
         }
       });
     });
 
-    // Custom workouts - exclude if they're already in a program (by name)
-    // This prevents duplicates when a workout exists both standalone AND in a plan
-    const customWorkouts = plans
-      .filter(p => !programWorkoutNames.has(p.name))
-      .map(p => ({
-        ...p,
-        type: 'custom' as const,
-        uniqueId: p.id,
-        subtitle: p.exercises.length === 1 ? '1 exercise' : `${p.exercises.length} exercises`
-      }));
-
-    // Program workouts - filter out rest days (workouts with 0 exercises)
-    const programWorkouts = userPrograms.flatMap(prog =>
-      prog.workouts
-        .filter(w => w.exercises.length > 0) // Filter out rest days
-        .map(w => ({
-          id: w.id,
-          name: w.name,
-          exercises: w.exercises,
-          type: 'program' as const,
-          programName: prog.name,
-          programId: prog.id,
-          uniqueId: `${prog.id}-${w.id}`,
-          subtitle: `${prog.name} • ${w.exercises.length} exercises`
-        }))
-    );
-
-    const allWorkouts = [...customWorkouts, ...programWorkouts];
-
-    return allWorkouts.sort((a, b) => a.name.localeCompare(b.name));
+    return Object.values(workoutsGroupedByName)
+      .map((w): GroupedWorkout => ({
+        ...w,
+        subtitle: w.programNames.length > 0
+          ? `${w.programNames.join(' • ')} • ${w.exercises.length} exercises`
+          : `${w.exercises.length} exercises`
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name));
   }, [plans, userPrograms]);
 
   const myPlans = useMemo(() => {
@@ -550,8 +572,7 @@ const PlansScreen: React.FC = () => {
         };
       });
 
-      // Use program ID if it's a program workout, otherwise the plan ID
-      const planId = item.type === 'program' ? item.programId : item.id;
+      const planId = item.type === 'program' ? (item.programId || item.programIds?.[0]) : item.id;
       const sessionName = item.name;
 
       startSession(planId, workoutExercises, sessionName, historySetCounts);
@@ -565,7 +586,8 @@ const PlansScreen: React.FC = () => {
     }
 
     doStartSession();
-  }, [router, startSession, setCompletionOverlayVisible, allWorkouts, isSessionActive, currentSession, clearSession]);
+  }, [router, startSession, setCompletionOverlayVisible, allWorkouts, isSessionActive, currentSession, setWorkoutInProgressVisible, setExpandedPlanId]);
+
 
   return (
     <TabSwipeContainer contentContainerStyle={[styles.contentContainer, { backgroundColor: theme.primary.bg }]}>

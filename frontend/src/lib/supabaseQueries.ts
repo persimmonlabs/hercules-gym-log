@@ -12,53 +12,53 @@ import type { UserPlan, PlanWorkout } from '@/types/premadePlan';
 // ============================================================================
 
 interface RetryOptions {
-  maxAttempts?: number;
-  initialDelayMs?: number;
-  maxDelayMs?: number;
-  backoffMultiplier?: number;
+    maxAttempts?: number;
+    initialDelayMs?: number;
+    maxDelayMs?: number;
+    backoffMultiplier?: number;
 }
 
 const DEFAULT_RETRY_OPTIONS: Required<RetryOptions> = {
-  maxAttempts: 3,
-  initialDelayMs: 1000,
-  maxDelayMs: 10000,
-  backoffMultiplier: 2,
+    maxAttempts: 3,
+    initialDelayMs: 1000,
+    maxDelayMs: 10000,
+    backoffMultiplier: 2,
 };
 
 /**
  * Checks if an error is a network-related error that should be retried
  */
 function isNetworkError(error: unknown): boolean {
-  if (!(error instanceof Error)) return false;
-  
-  const networkErrorPatterns = [
-    'network request failed',
-    'network error',
-    'failed to fetch',
-    'fetch failed',
-    'timeout',
-    'econnrefused',
-    'econnreset',
-    'enotfound',
-    'socket hang up',
-    'aborted',
-    'network is offline',
-    'internet connection',
-  ];
-  
-  const message = error.message.toLowerCase();
-  return networkErrorPatterns.some(pattern => message.includes(pattern));
+    if (!(error instanceof Error)) return false;
+
+    const networkErrorPatterns = [
+        'network request failed',
+        'network error',
+        'failed to fetch',
+        'fetch failed',
+        'timeout',
+        'econnrefused',
+        'econnreset',
+        'enotfound',
+        'socket hang up',
+        'aborted',
+        'network is offline',
+        'internet connection',
+    ];
+
+    const message = error.message.toLowerCase();
+    return networkErrorPatterns.some(pattern => message.includes(pattern));
 }
 
 /**
  * Checks if an error is an auth error that should NOT be retried
  */
 function isAuthError(error: unknown): boolean {
-  if (!(error instanceof Error)) return false;
-  
-  const authErrorPatterns = ['jwt', 'auth', 'unauthorized', '401', 'token'];
-  const message = error.message.toLowerCase();
-  return authErrorPatterns.some(pattern => message.includes(pattern));
+    if (!(error instanceof Error)) return false;
+
+    const authErrorPatterns = ['jwt', 'auth', 'unauthorized', '401', 'token'];
+    const message = error.message.toLowerCase();
+    return authErrorPatterns.some(pattern => message.includes(pattern));
 }
 
 /**
@@ -69,47 +69,47 @@ function isAuthError(error: unknown): boolean {
  * @returns The result of the function
  */
 async function withRetry<T>(
-  fn: () => Promise<T>,
-  options: RetryOptions = {}
+    fn: () => Promise<T>,
+    options: RetryOptions = {}
 ): Promise<T> {
-  const opts = { ...DEFAULT_RETRY_OPTIONS, ...options };
-  let lastError: unknown;
-  let delay = opts.initialDelayMs;
+    const opts = { ...DEFAULT_RETRY_OPTIONS, ...options };
+    let lastError: unknown;
+    let delay = opts.initialDelayMs;
 
-  for (let attempt = 1; attempt <= opts.maxAttempts; attempt++) {
-    try {
-      return await fn();
-    } catch (error) {
-      lastError = error;
-      
-      // Don't retry on auth errors
-      if (isAuthError(error)) {
-        console.warn('[Supabase] Auth error detected, not retrying:', error);
-        throw error;
-      }
-      
-      // Last attempt - throw the error
-      if (attempt === opts.maxAttempts) {
-        console.error(`[Supabase] All ${opts.maxAttempts} attempts failed:`, error);
-        throw error;
-      }
+    for (let attempt = 1; attempt <= opts.maxAttempts; attempt++) {
+        try {
+            return await fn();
+        } catch (error) {
+            lastError = error;
 
-      // Log retry attempt with more context
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      const isNetwork = isNetworkError(error);
-      console.log(
-        `[Supabase] Attempt ${attempt}/${opts.maxAttempts} failed (${isNetwork ? 'network' : 'other'} error: ${errorMessage}), retrying in ${delay}ms...`
-      );
-      
-      // Wait before retrying
-      await new Promise(resolve => setTimeout(resolve, delay));
-      
-      // Increase delay for next attempt
-      delay = Math.min(delay * opts.backoffMultiplier, opts.maxDelayMs);
+            // Don't retry on auth errors
+            if (isAuthError(error)) {
+                console.warn('[Supabase] Auth error detected, not retrying:', error);
+                throw error;
+            }
+
+            // Last attempt - throw the error
+            if (attempt === opts.maxAttempts) {
+                console.error(`[Supabase] All ${opts.maxAttempts} attempts failed:`, error);
+                throw error;
+            }
+
+            // Log retry attempt with more context
+            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+            const isNetwork = isNetworkError(error);
+            console.log(
+                `[Supabase] Attempt ${attempt}/${opts.maxAttempts} failed (${isNetwork ? 'network' : 'other'} error: ${errorMessage}), retrying in ${delay}ms...`
+            );
+
+            // Wait before retrying
+            await new Promise(resolve => setTimeout(resolve, delay));
+
+            // Increase delay for next attempt
+            delay = Math.min(delay * opts.backoffMultiplier, opts.maxDelayMs);
+        }
     }
-  }
 
-  throw lastError;
+    throw lastError;
 }
 
 /**
@@ -118,23 +118,23 @@ async function withRetry<T>(
  * Silently handles network errors to prevent user-facing error messages
  */
 async function withGracefulRetry<T>(
-  fn: () => Promise<T>,
-  fallback: T,
-  operationName: string,
-  options: RetryOptions = {}
+    fn: () => Promise<T>,
+    fallback: T,
+    operationName: string,
+    options: RetryOptions = {}
 ): Promise<T> {
-  try {
-    return await withRetry(fn, options);
-  } catch (error) {
-    // Use console.warn for network errors to avoid alarming error messages
-    // These are expected during app startup or poor connectivity
-    if (isNetworkError(error)) {
-      console.warn(`[Supabase] ${operationName} failed (network issue), using fallback`);
-    } else {
-      console.warn(`[Supabase] ${operationName} failed after retries, using fallback`);
+    try {
+        return await withRetry(fn, options);
+    } catch (error) {
+        // Use console.warn for network errors to avoid alarming error messages
+        // These are expected during app startup or poor connectivity
+        if (isNetworkError(error)) {
+            console.warn(`[Supabase] ${operationName} failed (network issue), using fallback`);
+        } else {
+            console.warn(`[Supabase] ${operationName} failed after retries, using fallback`);
+        }
+        return fallback;
     }
-    return fallback;
-  }
 }
 
 // ============================================================================
@@ -143,7 +143,7 @@ async function withGracefulRetry<T>(
 
 export async function fetchWorkoutSessions(userId: string): Promise<Workout[]> {
     console.log('[Supabase] Fetching workout sessions for user:', userId);
-    
+
     return withGracefulRetry(
         async () => {
             const { data, error } = await supabaseClient
@@ -180,14 +180,14 @@ export async function createWorkoutSession(userId: string, workout: Workout): Pr
         // Validate planId exists in the plans table before inserting
         // planId could be a workout_templates.id which would violate the foreign key constraint
         let validPlanId: string | null = null;
-        
+
         if (workout.planId) {
             const { data: planExists } = await supabaseClient
                 .from('plans')
                 .select('id')
                 .eq('id', workout.planId)
                 .single();
-            
+
             if (planExists) {
                 validPlanId = workout.planId;
             }
@@ -221,14 +221,14 @@ export async function updateWorkoutSession(userId: string, workout: Workout): Pr
     return withRetry(async () => {
         // Validate planId exists in the plans table before updating
         let validPlanId: string | null = null;
-        
+
         if (workout.planId) {
             const { data: planExists } = await supabaseClient
                 .from('plans')
                 .select('id')
                 .eq('id', workout.planId)
                 .single();
-            
+
             if (planExists) {
                 validPlanId = workout.planId;
             }
@@ -276,7 +276,7 @@ export async function deleteWorkoutSession(userId: string, workoutId: string): P
 
 export async function fetchUserPlans(userId: string): Promise<UserPlan[]> {
     console.log('[Supabase] Fetching user plans for user:', userId);
-    
+
     return withGracefulRetry(
         async () => {
             const { data: plansData, error: plansError } = await supabaseClient
@@ -345,7 +345,7 @@ export async function fetchUserPlans(userId: string): Promise<UserPlan[]> {
     );
 }
 
-export async function createUserPlan(userId: string, plan: UserPlan): Promise<string> {
+export async function createUserPlan(userId: string, plan: UserPlan): Promise<{ id: string; workouts: PlanWorkout[] }> {
     return withRetry(async () => {
         // Insert the plan (let Supabase generate UUID)
         const { data: planData, error: planError } = await supabaseClient
@@ -368,6 +368,7 @@ export async function createUserPlan(userId: string, plan: UserPlan): Promise<st
         }
 
         const newPlanId = planData.id;
+        let finalWorkouts: PlanWorkout[] = [];
 
         // Insert workouts (let Supabase generate UUIDs)
         if (plan.workouts && plan.workouts.length > 0) {
@@ -380,17 +381,72 @@ export async function createUserPlan(userId: string, plan: UserPlan): Promise<st
                 source_workout_id: workout.sourceWorkoutId,
             }));
 
-            const { error: workoutsError } = await supabaseClient
+            const { data: insertedWorkouts, error: workoutsError } = await supabaseClient
                 .from('plan_workouts')
-                .insert(workoutsToInsert);
+                .insert(workoutsToInsert)
+                .select('*');
 
             if (workoutsError) {
                 console.error('[Supabase] Error creating plan workouts:', workoutsError);
                 throw workoutsError;
             }
+
+            if (insertedWorkouts) {
+                // Map temporary IDs to new UUIDs
+                const idMap = new Map<string, string>();
+
+                // Sort by order_index to match original array order
+                const sortedInserted = [...insertedWorkouts].sort((a, b) => a.order_index - b.order_index);
+
+                sortedInserted.forEach((row, index) => {
+                    const originalWorkout = plan.workouts[index];
+                    if (originalWorkout) {
+                        idMap.set(originalWorkout.id, row.id);
+                        finalWorkouts.push({
+                            id: row.id,
+                            name: row.name,
+                            exercises: row.exercises || [],
+                            sourceWorkoutId: row.source_workout_id,
+                        });
+                    }
+                });
+
+                // Crucial: Update the schedule_config in the DB if it contains original IDs
+                if (plan.schedule) {
+                    let updatedSchedule = JSON.parse(JSON.stringify(plan.schedule));
+                    let needsUpdate = false;
+
+                    if (updatedSchedule.rotation?.workoutOrder) {
+                        updatedSchedule.rotation.workoutOrder = updatedSchedule.rotation.workoutOrder.map(
+                            (id: string) => {
+                                const newId = idMap.get(id);
+                                if (newId) needsUpdate = true;
+                                return newId || id;
+                            }
+                        );
+                    }
+
+                    if (updatedSchedule.weekly) {
+                        Object.keys(updatedSchedule.weekly).forEach(day => {
+                            const oldId = updatedSchedule.weekly[day];
+                            if (oldId && idMap.has(oldId)) {
+                                updatedSchedule.weekly[day] = idMap.get(oldId);
+                                needsUpdate = true;
+                            }
+                        });
+                    }
+
+                    if (needsUpdate) {
+                        await supabaseClient
+                            .from('plans')
+                            .update({ schedule_config: updatedSchedule })
+                            .eq('id', newPlanId);
+                    }
+                }
+            }
         }
 
-        return newPlanId;
+        return { id: newPlanId, workouts: finalWorkouts };
     });
 }
 
@@ -504,7 +560,7 @@ export interface WorkoutTemplateDB {
 
 export async function fetchWorkoutTemplates(userId: string): Promise<WorkoutTemplateDB[]> {
     console.log('[Supabase] Fetching workout templates for user:', userId);
-    
+
     return withGracefulRetry(
         async () => {
             const { data, error } = await supabaseClient
@@ -635,7 +691,7 @@ export interface ScheduleDB {
 
 export async function fetchSchedules(userId: string): Promise<ScheduleDB[]> {
     console.log('[Supabase] Fetching schedules for user:', userId);
-    
+
     return withGracefulRetry(
         async () => {
             const { data, error } = await supabaseClient

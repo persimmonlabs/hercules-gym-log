@@ -24,7 +24,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     justifyContent: 'space-between',
-    paddingHorizontal: spacing.md,
     paddingTop: spacing.xl,
     paddingBottom: spacing.lg,
     gap: spacing.sm,
@@ -109,7 +108,7 @@ export default function ReviewWorkoutScreen(): React.JSX.Element {
   }, [program, workoutId]);
 
   const handleBack = useCallback(() => {
-    Haptics.selectionAsync().catch(() => {});
+    Haptics.selectionAsync().catch(() => { });
     if (programId) {
       router.navigate({
         pathname: '/(tabs)/program-details',
@@ -158,24 +157,24 @@ export default function ReviewWorkoutScreen(): React.JSX.Element {
         { paddingTop: insets.top, paddingBottom: insets.bottom + sizing.tabBarHeight },
       ]}
     >
-      {/* Header */}
-      <View style={styles.header}>
-        <View style={styles.titleContainer}>
-          <Text variant="heading2" color="primary">
-            {workout.name}
-          </Text>
-          <Text variant="body" color="secondary">
-            {workout.exercises.length} exercise{workout.exercises.length !== 1 ? 's' : ''} •{' '}
-            {program.name}
-          </Text>
-        </View>
-        <Pressable onPress={handleBack} style={styles.backButton} hitSlop={8}>
-          <IconSymbol name="arrow-back" size={24} color={colors.text.primary} />
-        </Pressable>
-      </View>
-
       {/* Content */}
       <ScrollView contentContainerStyle={styles.scrollContent}>
+        {/* Header */}
+        <View style={styles.header}>
+          <View style={styles.titleContainer}>
+            <Text variant="heading2" color="primary">
+              {workout.name}
+            </Text>
+            <Text variant="body" color="secondary">
+              {workout.exercises.length} exercise{workout.exercises.length !== 1 ? 's' : ''} •{' '}
+              {program.name}
+            </Text>
+          </View>
+          <Pressable onPress={handleBack} style={styles.backButton} hitSlop={8}>
+            <IconSymbol name="arrow-back" size={24} color={colors.text.primary} />
+          </Pressable>
+        </View>
+
         <SurfaceCard padding="xl" tone="neutral">
           <View style={styles.outerCardContent}>
             <Text variant="heading3" color="primary">

@@ -188,7 +188,7 @@ export const useSettingsStore = create<SettingsState>()(
 
       convertWeightToLbs: (value: number) => {
         if (get().weightUnit === 'kg') {
-          return Math.round(value * KG_TO_LBS);
+          return Math.round(value * KG_TO_LBS * 10) / 10;
         }
         return value;
       },
@@ -207,16 +207,29 @@ export const useSettingsStore = create<SettingsState>()(
         return value;
       },
 
-      formatWeight: (lbs: number, decimals: number = 0) => {
+      formatWeight: (lbs: number, decimals?: number) => {
         const unit = get().getWeightUnit();
         const value = get().convertWeight(lbs);
-        const formatted = decimals > 0 ? value.toFixed(decimals) : Math.round(value).toString();
+        let formatted: string;
+
+        if (decimals !== undefined) {
+          formatted = value.toFixed(decimals);
+        } else {
+          // Show up to 1 decimal place if it's not a whole number, otherwise show whole number
+          formatted = value % 1 === 0 ? value.toFixed(0) : value.toFixed(1);
+        }
+
         return `${formatted} ${unit}`;
       },
 
-      formatWeightValue: (lbs: number, decimals: number = 0) => {
+      formatWeightValue: (lbs: number, decimals?: number) => {
         const value = get().convertWeight(lbs);
-        return decimals > 0 ? value.toFixed(decimals) : Math.round(value).toString();
+
+        if (decimals !== undefined) {
+          return value.toFixed(decimals);
+        }
+
+        return value % 1 === 0 ? value.toFixed(0) : value.toFixed(1);
       },
 
       formatDistance: (miles: number, decimals: number = 1) => {

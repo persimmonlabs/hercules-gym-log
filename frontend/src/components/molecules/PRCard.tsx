@@ -15,9 +15,9 @@ interface PRCardProps {
 }
 
 export const PRCard: React.FC<PRCardProps> = ({ exerciseName, weight, reps, date, onReplace }) => {
-  const { weightUnit, convertWeight } = useSettingsStore();
+  const { weightUnit, formatWeightValue } = useSettingsStore();
 
-  const displayWeight = convertWeight(weight);
+  const displayWeightText = formatWeightValue(weight);
   const unitLabel = weightUnit;
 
   const formattedDate = date
@@ -48,7 +48,7 @@ export const PRCard: React.FC<PRCardProps> = ({ exerciseName, weight, reps, date
           <View style={styles.stats}>
             <View style={styles.weightBadge}>
               <Text variant="heading3" color="onAccent">
-                {Math.round(displayWeight * 10) / 10}
+                {displayWeightText}
               </Text>
               <Text variant="captionSmall" color="onAccent" style={styles.unit}>
                 {unitLabel}

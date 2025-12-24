@@ -33,12 +33,18 @@ const styles = StyleSheet.create({
   // Variants
   primary: {
     backgroundColor: colors.accent.primary,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
   },
   accent: {
     backgroundColor: colors.accent.primary,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
   },
   neutral: {
     backgroundColor: colors.surface.elevated,
+    borderWidth: 1,
+    borderColor: colors.border.light,
   },
   outline: {
     backgroundColor: 'transparent',
@@ -47,17 +53,21 @@ const styles = StyleSheet.create({
   },
   success: {
     backgroundColor: colors.accent.success,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
   },
   warning: {
     backgroundColor: colors.accent.warning,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
   },
 });
 
-export const Badge: React.FC<BadgeProps> = ({ 
-  label, 
-  variant = 'neutral', 
-  size = 'sm', 
-  style 
+export const Badge: React.FC<BadgeProps> = ({
+  label,
+  variant = 'neutral',
+  size = 'sm',
+  style
 }) => {
   const getTextColor = () => {
     switch (variant) {
@@ -76,8 +86,8 @@ export const Badge: React.FC<BadgeProps> = ({
 
   return (
     <View style={containerStyles}>
-      <Text 
-        variant={size === 'sm' ? 'caption' : 'body'} 
+      <Text
+        variant={size === 'sm' ? 'caption' : 'body'}
         color={getTextColor()}
         style={{ textTransform: 'capitalize' }}
       >

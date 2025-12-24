@@ -22,9 +22,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     justifyContent: 'space-between',
-    paddingHorizontal: spacing.md,
     paddingTop: spacing.xl,
-    paddingBottom: spacing.lg,
+    paddingBottom: spacing.md,
     gap: spacing.sm,
   },
   backButton: {
@@ -38,15 +37,10 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: spacing.md,
     paddingBottom: spacing['2xl'],
-    gap: spacing.xl,
+    gap: spacing.lg,
   },
   outerCardContent: {
     gap: spacing.lg,
-  },
-  tags: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
   },
   workoutCard: {
     borderRadius: radius.md,
@@ -135,13 +129,7 @@ export default function ProgramDetailsScreen() {
     }
   }, [clonePremadeProgram, isAdding, program!.id, router]);
 
-  const handleWorkoutPress = useCallback((workoutId: string) => {
-    Haptics.selectionAsync().catch(() => { });
-    router.push({
-      pathname: '/(tabs)/review-workout',
-      params: { programId: program!.id, workoutId, from: 'program-details' }
-    } as any);
-  }, [router, program]);
+
 
   const handleSetRotation = useCallback(async () => {
     if (isAdding) return;
@@ -179,95 +167,72 @@ export default function ProgramDetailsScreen() {
 
   return (
     <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom + sizing.tabBarHeight }]}>
-      {/* Header */}
-      <View style={styles.header}>
-        <View style={styles.titleContainer}>
-          <Text variant="heading2" color="primary">
-            {program.name}
-          </Text>
-          <Text variant="body" color="secondary">
-            {program.metadata.description}
-          </Text>
-        </View>
-        <Pressable onPress={handleBack} style={styles.backButton} hitSlop={8}>
-          <IconSymbol name="arrow-back" size={24} color={colors.text.primary} />
-        </Pressable>
-      </View>
-
       {/* Content */}
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        <SurfaceCard padding="xl" tone="neutral">
-          <View style={styles.outerCardContent}>
-            <View style={styles.tags}>
-              <Badge label={program.metadata.goal} variant="accent" />
-              <Badge label={program.metadata.experienceLevel} variant="neutral" />
-              <Badge label={program.metadata.equipment} variant="outline" />
-              <Badge label={`${program.metadata.daysPerWeek} days/week`} variant="primary" />
-            </View>
+        {/* Header */}
+        <View style={styles.header}>
+          <View style={styles.titleContainer}>
+            <Text variant="heading2" color="primary">
+              {program.name}
+            </Text>
+            <Text variant="body" color="secondary">
+              {program.metadata.description}
+            </Text>
           </View>
-        </SurfaceCard>
+          <Pressable onPress={handleBack} style={styles.backButton} hitSlop={8}>
+            <IconSymbol name="arrow-back" size={24} color={colors.text.primary} />
+          </Pressable>
+        </View>
+
+
 
         <SurfaceCard padding="xl" tone="neutral">
           <View style={styles.outerCardContent}>
             <Text variant="heading3" color="primary">Workouts Included</Text>
             <View style={styles.workoutsList}>
-              {program.workouts.map((workout, index) => (
-                <Pressable
-                  key={workout.id}
-                  style={styles.workoutCard}
-                  onPress={() => handleWorkoutPress(workout.id)}
-                  accessibilityRole="button"
-                  accessibilityLabel={`View ${workout.name}`}
-                >
-                  <View style={styles.workoutCardHeader}>
-                    <Text variant="bodySemibold" color="primary">
-                      {index + 1}. {workout.name}
-                    </Text>
-                    <IconSymbol name="chevron-right" size={18} color={colors.text.tertiary} />
-                  </View>
-                  <View style={styles.exerciseCount}>
-                    <IconSymbol name="fitness-center" size={14} color={colors.text.secondary} />
-                    <Text variant="caption" color="secondary">
-                      {workout.exercises.length} exercises
-                    </Text>
-                  </View>
-                  {/* List first 3 exercises as preview */}
-                  <View style={{ marginTop: spacing.xs, paddingLeft: spacing.sm }}>
-                    {workout.exercises.slice(0, 3).map(ex => (
-                      <Text key={ex.id} variant="caption" color="secondary">• {ex.name}</Text>
-                    ))}
-                    {workout.exercises.length > 3 && (
-                      <Text variant="caption" color="tertiary" style={{ marginLeft: spacing.xs }}>
-                        +{workout.exercises.length - 3} more
+              {program.workouts
+                .filter(w => w.exercises.length > 0)
+                .map((workout, index) => (
+                  <View
+                    key={workout.id}
+                    style={styles.workoutCard}
+                  >
+                    <View style={styles.workoutCardHeader}>
+                      <Text variant="heading4" color="primary">
+                        {index + 1}. {workout.name}
                       </Text>
-                    )}
+                    </View>
+
+                    {/* List all exercises */}
+                    <View style={{ marginTop: spacing.xs, paddingLeft: spacing.sm }}>
+                      {workout.exercises.map(ex => (
+                        <Text key={ex.id} variant="body" color="secondary">• {ex.name}</Text>
+                      ))}
+                    </View>
                   </View>
-                </Pressable>
-              ))}
+                ))}
             </View>
           </View>
         </SurfaceCard>
 
-        <SurfaceCard padding="xl" tone="neutral">
-          <View style={styles.outerCardContent}>
-            {isUserProgram ? (
-              <Button
-                label="Start Rotation Schedule"
-                onPress={handleSetRotation}
-                loading={isAdding}
-                size="lg"
-                variant="primary"
-              />
-            ) : (
-              <Button
-                label="Add to My Plans"
-                onPress={handleAddToPlans}
-                loading={isAdding}
-                size="lg"
-              />
-            )}
-          </View>
-        </SurfaceCard>
+        <View style={styles.outerCardContent}>
+          {isUserProgram ? (
+            <Button
+              label="Start Rotation Schedule"
+              onPress={handleSetRotation}
+              loading={isAdding}
+              size="lg"
+              variant="primary"
+            />
+          ) : (
+            <Button
+              label="Add to My Plans"
+              onPress={handleAddToPlans}
+              loading={isAdding}
+              size="lg"
+            />
+          )}
+        </View>
       </ScrollView>
     </View>
   );

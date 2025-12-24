@@ -64,14 +64,14 @@ export const usePlanSaveHandler = ({
   const generateUniqueName = useCallback((baseName: string, excludeId?: string): string => {
     // Collect all existing workout names (case-insensitive)
     const existingNames = new Set<string>();
-    
+
     // Add custom workout names
     plans.forEach(p => {
       if (p.id !== excludeId) {
         existingNames.add(p.name.trim().toLowerCase());
       }
     });
-    
+
     // Add program workout names
     userPrograms.forEach(prog => {
       prog.workouts.forEach(w => {
@@ -91,7 +91,7 @@ export const usePlanSaveHandler = ({
       counter++;
       uniqueName = `${trimmedBase} (${counter})`;
     }
-    
+
     return uniqueName;
   }, [plans, userPrograms]);
 
@@ -117,20 +117,19 @@ export const usePlanSaveHandler = ({
     // For program workouts, allow the name change without auto-renaming
     // (the user is editing their own copy)
     let finalName = trimmedName;
-    
-    // For new workouts or premade reviews, auto-generate unique name if needed
-    if (!isProgramWorkout && (!isEditing || isPremadeReview)) {
-      finalName = generateUniqueName(trimmedName);
-    } else if (!isProgramWorkout && isEditing) {
-      // For editing existing custom workouts, check if name changed and needs uniqueness
-      const originalPlan = plans.find(p => p.id === editingPlanId);
-      const originalName = originalPlan?.name.trim().toLowerCase();
-      
-      // Only auto-rename if the name was actually changed to something that conflicts
-      if (originalName !== trimmedName.toLowerCase()) {
-        finalName = generateUniqueName(trimmedName, editingPlanId ?? undefined);
-      }
-    }
+
+    // NOTE: Auto-renaming is disabled to allow users to use the same workout name 
+    // across multiple plans, which the UI now groups and tags automatically.
+    // if (!isProgramWorkout && (!isEditing || isPremadeReview)) {
+    //   finalName = generateUniqueName(trimmedName);
+    // } else if (!isProgramWorkout && isEditing) {
+    //   const originalPlan = plans.find(p => p.id === editingPlanId);
+    //   const originalName = originalPlan?.name.trim().toLowerCase();
+    //   if (originalName !== trimmedBase.toLowerCase()) {
+    //     finalName = generateUniqueName(trimmedName, editingPlanId ?? undefined);
+    //   }
+    // }
+
 
     const normalizedExercises: PlanExercise[] = selectedExercises.map((exercise) => ({
       id: exercise.id,
@@ -138,10 +137,17 @@ export const usePlanSaveHandler = ({
       sets: DEFAULT_PLAN_SET_COUNT,
     }));
 
+    // Get the name of the workout BEFORE it was edited to find matches in other plans
+    const originalPlan = plans.find(p => p.id === editingPlanId);
+    const originalName = isProgramWorkout ? planName : (originalPlan?.name || finalName);
+
     try {
       if (isProgramWorkout && editingPlanId) {
         const [_, programId, workoutId] = editingPlanId.split(':');
-        await updateWorkoutInProgram(programId, workoutId, {
+
+        // Sync across ALL programs that have a workout with this name
+        const { updateWorkoutsByName } = useProgramsStore.getState();
+        await updateWorkoutsByName(originalName, {
           name: finalName,
           exercises: normalizedExercises,
         });
@@ -154,20 +160,33 @@ export const usePlanSaveHandler = ({
       const createdAtTimestamp = (!isEditing || isPremadeReview) ? Date.now() : (editingPlanCreatedAt ?? Date.now());
 
       if (isEditing && !isPremadeReview) {
-        // Update existing plan - the store handles Supabase sync
+        // Update existing standalone template
         await updatePlan({
           id: editingPlanId!,
           name: finalName,
           exercises: selectedExercises,
           createdAt: createdAtTimestamp,
         });
+
+        // Also sync to all programs that used this template
+        const { updateWorkoutsByName } = useProgramsStore.getState();
+        await updateWorkoutsByName(originalName, {
+          name: finalName,
+          exercises: normalizedExercises,
+        });
       } else {
-        // Creating a new plan (from scratch or from premade review)
-        // The store will create in Supabase and get the generated ID
+        // Creating a new standalone template
         await persistPlan({
           name: finalName,
           exercises: selectedExercises,
           createdAt: createdAtTimestamp,
+        });
+
+        // Even for new ones, check if they should sync to existing plans with same name
+        const { updateWorkoutsByName } = useProgramsStore.getState();
+        await updateWorkoutsByName(finalName, {
+          name: finalName,
+          exercises: normalizedExercises,
         });
       }
 
@@ -185,7 +204,8 @@ export const usePlanSaveHandler = ({
     } finally {
       setIsSaving(false);
     }
-  }, [editingPlanCreatedAt, editingPlanId, generateUniqueName, isEditing, isPremadeReview, isSaving, onSuccess, persistPlan, planName, plans, resetBuilder, selectedExercises, updatePlan, updateWorkoutInProgram]);
+  }, [editingPlanCreatedAt, editingPlanId, isEditing, isPremadeReview, isSaving, onSuccess, persistPlan, planName, plans, resetBuilder, selectedExercises, updatePlan]);
+
 
   // Always use "Save Workout" for consistency across all modes
   const saveLabel = 'Save Workout';

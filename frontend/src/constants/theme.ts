@@ -221,6 +221,11 @@ export const typography = {
     fontWeight: '600',
     lineHeight: 28,
   },
+  heading4: {
+    fontSize: 18,
+    fontWeight: '600',
+    lineHeight: 26,
+  },
   label: {
     fontSize: 14,
     fontWeight: '400',

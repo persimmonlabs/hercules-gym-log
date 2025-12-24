@@ -64,6 +64,7 @@ interface ProgramsState {
   setActiveRotation: (rotation: RotationSchedule | null) => Promise<void>;
   advanceRotation: () => Promise<void>;
   getCurrentRotationWorkout: () => string | null; // Returns workout ID
+  updateWorkoutsByName: (name: string, workoutUpdates: Partial<ProgramWorkout>) => Promise<void>;
 
   hydratePrograms: (userId?: string) => Promise<void>;
 }
@@ -151,11 +152,43 @@ export const useProgramsStore = create<ProgramsState>((set, get) => ({
         return null;
       }
 
-      // Create in Supabase and get the generated UUID
-      const newPlanId = await createUserPlan(user.id, program);
+      // Create in Supabase and get the generated UUIDs
+      const { id: newPlanId, workouts: mappedWorkouts } = await createUserPlan(user.id, program);
 
-      // Update the program with the Supabase-generated ID
-      const programWithId = { ...program, id: newPlanId };
+      // Create a map of old IDs to new IDs for schedule correction
+      const idMap = new Map<string, string>();
+      program.workouts.forEach((pw, idx) => {
+        if (mappedWorkouts[idx]) {
+          idMap.set(pw.id, mappedWorkouts[idx].id);
+        }
+      });
+
+      // Update schedule if it exists
+      let finalSchedule = program.schedule;
+      if (finalSchedule) {
+        finalSchedule = JSON.parse(JSON.stringify(finalSchedule));
+        if (finalSchedule && finalSchedule.rotation?.workoutOrder) {
+          finalSchedule.rotation.workoutOrder = finalSchedule.rotation.workoutOrder.map(
+            oldId => idMap.get(oldId) || oldId
+          );
+        }
+        if (finalSchedule && finalSchedule.weekly) {
+          Object.keys(finalSchedule.weekly).forEach(day => {
+            const oldId = finalSchedule!.weekly![day as keyof WeeklyScheduleConfig];
+            if (oldId && idMap.has(oldId)) {
+              (finalSchedule!.weekly as any)[day] = idMap.get(oldId);
+            }
+          });
+        }
+      }
+
+      // Update the program with the Supabase-generated IDs
+      const programWithId: UserProgram = {
+        ...program,
+        id: newPlanId,
+        workouts: mappedWorkouts,
+        schedule: finalSchedule
+      };
 
       // Update local state
       const nextPrograms = [programWithId, ...get().userPrograms];
@@ -216,16 +249,6 @@ export const useProgramsStore = create<ProgramsState>((set, get) => ({
           lastUsedAt: Date.now(),
         };
 
-        // Set as active rotation
-        const rotationSchedule: RotationSchedule = {
-          id: `rot-${Date.now()}`,
-          name: newName,
-          programId: programId,
-          workoutSequence: newOrder,
-          currentIndex: 0,
-          lastAdvancedAt: Date.now(),
-        };
-        await get().setActiveRotation(rotationSchedule);
 
       } else if (premade.scheduleType === 'weekly' && premade.suggestedSchedule.weekly) {
         const newWeekly: any = {};
@@ -357,7 +380,28 @@ export const useProgramsStore = create<ProgramsState>((set, get) => ({
     const program = programs[programIndex];
     const workouts = program.workouts.filter(w => w.id !== workoutId);
 
-    const updatedProgram = { ...program, workouts, modifiedAt: Date.now() };
+    // Update schedule to remove all references to this workout
+    let updatedSchedule = program.schedule;
+    if (updatedSchedule) {
+      updatedSchedule = JSON.parse(JSON.stringify(updatedSchedule));
+      if (updatedSchedule!.rotation?.workoutOrder) {
+        updatedSchedule!.rotation.workoutOrder = updatedSchedule!.rotation.workoutOrder.filter(id => id !== workoutId);
+      }
+      if (updatedSchedule!.weekly) {
+        Object.keys(updatedSchedule!.weekly).forEach(day => {
+          if (updatedSchedule!.weekly![day as keyof WeeklyScheduleConfig] === workoutId) {
+            (updatedSchedule!.weekly as any)[day] = null;
+          }
+        });
+      }
+    }
+
+    const updatedProgram = {
+      ...program,
+      workouts,
+      schedule: updatedSchedule,
+      modifiedAt: Date.now()
+    };
     await get().updateUserProgram(updatedProgram);
 
     // Also update rotation sequence if needed
@@ -377,9 +421,22 @@ export const useProgramsStore = create<ProgramsState>((set, get) => ({
     const program = programs[programIndex];
     const workouts = [...program.workouts, workout];
 
+    // Update schedule to include this workout in rotation by default
+    let updatedSchedule = program.schedule;
+    if (updatedSchedule && updatedSchedule.type === 'rotation' && updatedSchedule.rotation) {
+      updatedSchedule = {
+        ...updatedSchedule,
+        rotation: {
+          ...updatedSchedule.rotation,
+          workoutOrder: [...updatedSchedule.rotation.workoutOrder, workout.id]
+        }
+      };
+    }
+
     const updatedProgram = {
       ...program,
       workouts,
+      schedule: updatedSchedule,
       modifiedAt: Date.now(),
       metadata: {
         ...program.metadata,
@@ -512,6 +569,12 @@ export const useProgramsStore = create<ProgramsState>((set, get) => ({
 
       if (rotation) {
         // Save rotation state to the plan's rotation_state column
+        // Skip if programId is temporary (starts with "prog-") - wait for real ID
+        if (rotation.programId.startsWith('prog-')) {
+          console.log('[programsStore] Skipping rotation sync for temporary program ID');
+          return;
+        }
+
         const rotationState: RotationStateDB = {
           workoutSequence: rotation.workoutSequence,
           currentIndex: rotation.currentIndex,
@@ -550,6 +613,33 @@ export const useProgramsStore = create<ProgramsState>((set, get) => ({
     const rotation = get().activeRotation;
     if (!rotation || rotation.workoutSequence.length === 0) return null;
     return rotation.workoutSequence[rotation.currentIndex];
+  },
+
+  updateWorkoutsByName: async (name, workoutUpdates) => {
+    const nameKey = name.trim().toLowerCase();
+    const programs = get().userPrograms;
+    const affectedPrograms: UserProgram[] = [];
+
+    programs.forEach(prog => {
+      let hasChange = false;
+      const nextWorkouts = prog.workouts.map(w => {
+        if (w.name.trim().toLowerCase() === nameKey) {
+          hasChange = true;
+          return { ...w, ...workoutUpdates };
+        }
+        return w;
+      });
+
+      if (hasChange) {
+        affectedPrograms.push({ ...prog, workouts: nextWorkouts });
+      }
+    });
+
+    if (affectedPrograms.length > 0) {
+      // Update all affected programs in parallel
+      await Promise.all(affectedPrograms.map(p => get().updateUserProgram(p)));
+      console.log(`[programsStore] Updated ${affectedPrograms.length} programs containing workout: ${name}`);
+    }
   }
 }));
 
