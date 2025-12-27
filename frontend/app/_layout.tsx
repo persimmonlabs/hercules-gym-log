@@ -15,6 +15,7 @@ import { AuthProvider, useAuth } from '@/providers/AuthProvider';
 import { PlanBuilderProvider } from '@/providers/PlanBuilderProvider';
 import { ProgramBuilderProvider } from '@/providers/ProgramBuilderProvider';
 import { useUserProfileStore } from '@/store/userProfileStore';
+import { useActiveScheduleStore } from '@/store/activeScheduleStore';
 
 import './add-exercises';
 
@@ -140,13 +141,15 @@ const RootLayoutNav = ({
   const { session, isLoading, user } = useAuth();
   const segments = useSegments();
   const fetchProfile = useUserProfileStore((state) => state.fetchProfile);
+  const hydrateActiveSchedule = useActiveScheduleStore((state) => state.hydrateActiveSchedule);
 
-  // Fetch profile early when user session is established
+  // Fetch profile and hydrate schedule when user session is established
   useEffect(() => {
     if (user?.id) {
       fetchProfile(user.id);
+      hydrateActiveSchedule(user.id);
     }
-  }, [user?.id, fetchProfile]);
+  }, [user?.id, fetchProfile, hydrateActiveSchedule]);
 
   useProtectedRoute(session, isLoading);
 

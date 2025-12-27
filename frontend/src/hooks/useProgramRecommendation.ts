@@ -10,14 +10,20 @@ export interface QuizPreferences {
 }
 
 export const useProgramRecommendation = () => {
-  const { premadePrograms, premadeWorkouts } = useProgramsStore();
+  const { premadePrograms, premadeWorkouts, userPrograms } = useProgramsStore();
 
   const getRecommendations = useCallback((prefs: QuizPreferences): PremadeProgram[] => {
     if (!prefs.goal || !prefs.experienceLevel || !prefs.equipment || !prefs.daysPerWeek) {
       return [];
     }
 
+    // Get source IDs of already-added plans to filter them out
+    const addedSourceIds = new Set(userPrograms.map(up => up.sourceId).filter(Boolean));
+
     return premadePrograms.filter((program) => {
+      // Skip if this plan has already been added
+      if (addedSourceIds.has(program.id)) return false;
+
       const m = program.metadata;
 
       // 1. Strict match on Goal
@@ -40,7 +46,7 @@ export const useProgramRecommendation = () => {
 
       return true;
     });
-  }, [premadePrograms]);
+  }, [premadePrograms, userPrograms]);
 
   const getWorkoutRecommendations = useCallback((prefs: Omit<QuizPreferences, 'daysPerWeek'>): PremadeWorkout[] => {
     if (!prefs.goal || !prefs.experienceLevel || !prefs.equipment) {

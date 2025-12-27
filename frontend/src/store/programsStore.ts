@@ -32,6 +32,7 @@ import {
   updateRotationState,
   type RotationStateDB,
 } from '@/lib/supabaseQueries';
+import { usePlansStore } from '@/store/plansStore';
 
 interface ProgramsState {
   premadePrograms: PremadeProgram[];
@@ -66,6 +67,9 @@ interface ProgramsState {
   getCurrentRotationWorkout: () => string | null; // Returns workout ID
   updateWorkoutsByName: (name: string, workoutUpdates: Partial<ProgramWorkout>) => Promise<void>;
 
+  // Helper Functions
+  generateUniqueWorkoutName: (baseName: string) => string;
+
   hydratePrograms: (userId?: string) => Promise<void>;
 }
 
@@ -76,6 +80,43 @@ export const useProgramsStore = create<ProgramsState>((set, get) => ({
   activeRotation: null,
   activePlanId: null,
   isLoading: false,
+
+  /**
+   * Generate a unique workout name by checking both custom workouts and program workouts.
+   * If name already exists, appends (2), (3), etc.
+   */
+  generateUniqueWorkoutName: (baseName: string): string => {
+    // Collect all existing workout names (case-insensitive)
+    const existingNames = new Set<string>();
+
+    // Add custom workout names from plansStore
+    const customPlans = usePlansStore.getState().plans;
+    customPlans.forEach(p => {
+      existingNames.add(p.name.trim().toLowerCase());
+    });
+
+    // Add program workout names
+    get().userPrograms.forEach(prog => {
+      prog.workouts.forEach(w => {
+        existingNames.add(w.name.trim().toLowerCase());
+      });
+    });
+
+    const trimmedBase = baseName.trim();
+    if (!existingNames.has(trimmedBase.toLowerCase())) {
+      return trimmedBase;
+    }
+
+    // Find unique suffix
+    let counter = 2;
+    let uniqueName = `${trimmedBase} (${counter})`;
+    while (existingNames.has(uniqueName.toLowerCase())) {
+      counter++;
+      uniqueName = `${trimmedBase} (${counter})`;
+    }
+
+    return uniqueName;
+  },
 
   loadPremadePrograms: () => {
     // Deep clone premade data to prevent accidental mutations
@@ -208,14 +249,14 @@ export const useProgramsStore = create<ProgramsState>((set, get) => ({
     if (!premade) return null;
 
     // Auto-rename if duplicate program name
-    const existingNames = new Set(get().userPrograms.map(p => p.name));
-    let newName = premade.name;
-    let suffix = '';
-    let counter = 2;
-    while (existingNames.has(newName)) {
-      suffix = ` (${counter})`;
-      newName = `${premade.name}${suffix}`;
-      counter++;
+    const existingProgramNames = new Set(get().userPrograms.map(p => p.name));
+    let newProgramName = premade.name;
+    let programSuffix = '';
+    let programCounter = 2;
+    while (existingProgramNames.has(newProgramName)) {
+      programSuffix = ` (${programCounter})`;
+      newProgramName = `${premade.name}${programSuffix}`;
+      programCounter++;
     }
 
     // Generate unique IDs for each workout to prevent ID collisions
@@ -224,10 +265,14 @@ export const useProgramsStore = create<ProgramsState>((set, get) => ({
     const workouts = premade.workouts.map(w => {
       const newId = `workout-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
       workoutIdMap.set(w.id, newId);
+      
+      // Generate unique name for each individual workout
+      const uniqueWorkoutName = get().generateUniqueWorkoutName(w.name);
+      
       return {
         ...w,
         id: newId,
-        name: suffix ? `${w.name}${suffix}` : w.name,
+        name: uniqueWorkoutName,
         sourceWorkoutId: w.id, // Keep reference to original for potential "reset" feature
       };
     });
@@ -271,7 +316,7 @@ export const useProgramsStore = create<ProgramsState>((set, get) => ({
 
     const userProgram: UserProgram = {
       ...premade,
-      name: newName,
+      name: newProgramName,
       workouts,
       id: programId, // Temporary - will be replaced
       isPremade: false,
@@ -292,7 +337,7 @@ export const useProgramsStore = create<ProgramsState>((set, get) => ({
       if (premade.scheduleType === 'rotation' && premade.suggestedSchedule?.rotation && schedule) {
         const rotationSchedule: RotationSchedule = {
           id: `rot-${Date.now()}`,
-          name: newName,
+          name: newProgramName,
           programId: realProgramId,
           workoutSequence: schedule.rotation?.workoutOrder || [],
           currentIndex: 0,

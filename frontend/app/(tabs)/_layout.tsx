@@ -87,6 +87,13 @@ export default function TabLayout() {
           }}
         />
         <Tabs.Screen
+          name="schedule-setup"
+          options={{
+            href: null,
+            title: 'Create Schedule',
+          }}
+        />
+        <Tabs.Screen
           name="schedule-editor"
           options={{
             href: null,

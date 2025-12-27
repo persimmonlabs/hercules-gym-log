@@ -156,7 +156,7 @@ export const CustomTabBar: React.FC<BottomTabBarProps> = ({ state, navigation })
                   const isAddWorkoutScreen = currentRouteName === 'add-workout';
                   const isProgramDetailsScreen = currentRouteName === 'program-details';
                   const isEditPlanScreen = currentRouteName === 'edit-plan';
-                  const isEditScheduleScreen = currentRouteName === 'schedule-editor';
+                  const isEditScheduleScreen = currentRouteName === 'schedule-editor' || currentRouteName === 'schedule-setup';
                   const isPlansTab = route.name === 'plans';
                   const isProfileTab = route.name === 'profile';
                   const isFocused =

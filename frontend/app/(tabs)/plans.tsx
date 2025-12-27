@@ -9,11 +9,11 @@ import { Text } from '@/components/atoms/Text';
 import { ScreenHeader } from '@/components/molecules/ScreenHeader';
 import { TabSwipeContainer } from '@/components/templates/TabSwipeContainer';
 import { Button } from '@/components/atoms/Button';
-import { WEEKDAY_LABELS } from '@/constants/schedule';
+import { MyScheduleCard } from '@/components/molecules/MyScheduleCard';
+import { AddOverrideModal } from '@/components/molecules/AddOverrideModal';
 import { colors, radius, shadows, sizing, spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/useTheme';
 import { usePlansStore, type Plan, type PlansState } from '@/store/plansStore';
-import { useSchedulesStore, type SchedulesState } from '@/store/schedulesStore';
 import { useProgramsStore } from '@/store/programsStore';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { useSessionStore } from '@/store/sessionStore';
@@ -22,8 +22,8 @@ import { WorkoutInProgressModal } from '@/components/molecules/WorkoutInProgress
 import type { WorkoutExercise } from '@/types/workout';
 import { createSetsWithHistory } from '@/utils/workout';
 import { useWorkoutSessionsStore, type WorkoutSessionsState } from '@/store/workoutSessionsStore';
-import type { Schedule } from '@/types/schedule';
-import type { PremadeProgram, WeeklyScheduleConfig, Weekday, UserProgram } from '@/types/premadePlan';
+import { useActiveScheduleStore } from '@/store/activeScheduleStore';
+import type { UserProgram, Weekday, WeeklyScheduleConfig } from '@/types/premadePlan';
 
 const getPlanSummary = (program: UserProgram) => {
   // If no schedule, fallback to basic count
@@ -305,9 +305,7 @@ const PlansScreen: React.FC = () => {
   const [workoutInProgressVisible, setWorkoutInProgressVisible] = useState<boolean>(false);
   const plans = usePlansStore((state: PlansState) => state.plans);
   const removePlan = usePlansStore((state: PlansState) => state.removePlan);
-  const schedules = useSchedulesStore((state: SchedulesState) => state.schedules);
-  const updateSchedule = useSchedulesStore((state: SchedulesState) => state.updateSchedule);
-  const { userPrograms, deleteUserProgram, deleteWorkoutFromProgram, activePlanId } = useProgramsStore();
+    const { userPrograms, deleteUserProgram, deleteWorkoutFromProgram, activePlanId } = useProgramsStore();
   const startSession = useSessionStore((state) => state.startSession);
   const setCompletionOverlayVisible = useSessionStore((state) => state.setCompletionOverlayVisible);
   const isSessionActive = useSessionStore((state) => state.isSessionActive);
@@ -317,6 +315,13 @@ const PlansScreen: React.FC = () => {
   const [expandedPlanId, setExpandedPlanId] = useState<string | null>(null);
   const [isDeleteDialogVisible, setIsDeleteDialogVisible] = useState<boolean>(false);
   const [itemToDelete, setItemToDelete] = useState<any>(null);
+  const [isOverrideModalVisible, setIsOverrideModalVisible] = useState<boolean>(false);
+  const setActiveRule = useActiveScheduleStore((state: any) => state.setActiveRule);
+
+  const handleDeleteSchedule = useCallback(async () => {
+    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+    await setActiveRule(null);
+  }, [setActiveRule]);
 
   const handleAddPlanPress = useCallback(() => {
     void Haptics.selectionAsync();
@@ -373,27 +378,11 @@ const PlansScreen: React.FC = () => {
         }
       }
     } else {
-      schedules.forEach((schedule: Schedule) => {
-        const nextWeekdays = { ...schedule.weekdays };
-        let didUpdate = false;
-
-        (Object.keys(nextWeekdays) as (keyof Schedule['weekdays'])[]).forEach((day) => {
-          if (nextWeekdays[day] === item.id) {
-            nextWeekdays[day] = null;
-            didUpdate = true;
-          }
-        });
-
-        if (didUpdate) {
-          void updateSchedule({ ...schedule, weekdays: nextWeekdays });
-        }
-      });
-
       void removePlan(item.id);
     }
 
     setExpandedPlanId((prev) => (prev === item.id ? null : prev));
-  }, [removePlan, schedules, updateSchedule, deleteWorkoutFromProgram, deleteUserProgram, plans]);
+  }, [removePlan, deleteWorkoutFromProgram, deleteUserProgram, plans]);
 
   const handleDeleteProgram = useCallback((program: any) => {
     void Haptics.selectionAsync();
@@ -457,29 +446,7 @@ const PlansScreen: React.FC = () => {
     [router],
   );
 
-  const handleEditSchedulePress = useCallback(() => {
-    void Haptics.selectionAsync();
-
-    // If there's an active plan, go to edit-plan to edit the schedule
-    // This works for both weekly and rotation schedules
-    if (activePlanId) {
-      router.push({ pathname: '/(tabs)/edit-plan', params: { planId: activePlanId } });
-    } else {
-      // Fall back to the legacy schedule editor for standalone weekly schedules
-      router.push('/(tabs)/schedule-editor');
-    }
-  }, [router, activePlanId]);
-
-
-  const activeSchedule = schedules[0] ?? null;
-
-  const planNameLookup = useMemo(() => {
-    return plans.reduce<Record<string, string>>((acc, plan) => {
-      acc[plan.id] = plan.name;
-      return acc;
-    }, {});
-  }, [plans]);
-
+  
   const myWorkouts = useMemo(() => {
     interface GroupedWorkout {
       id: string;
@@ -545,11 +512,21 @@ const PlansScreen: React.FC = () => {
     return Object.values(workoutsGroupedByName)
       .map((w): GroupedWorkout => ({
         ...w,
-        subtitle: w.programNames.length > 0
-          ? `${w.programNames.join(' • ')} • ${w.exercises.length} exercises`
-          : `${w.exercises.length} exercises`
+        subtitle: w.type === 'custom' 
+          ? `Custom • ${w.exercises.length} exercises`
+          : `${w.programNames.join(' • ')} • ${w.exercises.length} exercises`
       }))
-      .sort((a, b) => a.name.localeCompare(b.name));
+      .sort((a, b) => {
+        // Priority 1: Group by Plan (Custom considered as a plan group)
+        const aPlanGroup = a.type === 'custom' ? 'Custom' : a.programNames[0] || '';
+        const bPlanGroup = b.type === 'custom' ? 'Custom' : b.programNames[0] || '';
+        
+        const planComparison = aPlanGroup.localeCompare(bPlanGroup);
+        if (planComparison !== 0) return planComparison;
+        
+        // Priority 2: Alphabetical within plan group
+        return a.name.localeCompare(b.name);
+      });
   }, [plans, userPrograms]);
 
   const myPlans = useMemo(() => {
@@ -806,210 +783,19 @@ const PlansScreen: React.FC = () => {
         </View>
       </SurfaceCard>
 
-      <SurfaceCard padding="xl" tone="neutral">
-        <View style={styles.scheduleCardContent}>
-          <Text variant="heading3" color="primary">
-            My Schedule
-          </Text>
+      <MyScheduleCard
+          onEditPress={() => {
+            void Haptics.selectionAsync();
+            router.push('/(tabs)/schedule-setup');
+          }}
+          onAddOverridePress={() => setIsOverrideModalVisible(true)}
+          onDeletePress={handleDeleteSchedule}
+        />
 
-          <View style={styles.scheduleSubCard}>
-            {(() => {
-              // Find active plan directly from userPrograms to ensure reactivity
-              const activePlan = activePlanId ? userPrograms.find(p => p.id === activePlanId) : null;
-
-              // Show active plan schedule if available
-              if (activePlan && activePlan.schedule) {
-                const schedule = activePlan.schedule;
-
-                if (schedule.type === 'weekly' && schedule.weekly) {
-                  // Weekly schedule view
-                  const weekdays: { key: Weekday; label: string }[] = [
-                    { key: 'monday', label: 'Monday' },
-                    { key: 'tuesday', label: 'Tuesday' },
-                    { key: 'wednesday', label: 'Wednesday' },
-                    { key: 'thursday', label: 'Thursday' },
-                    { key: 'friday', label: 'Friday' },
-                    { key: 'saturday', label: 'Saturday' },
-                    { key: 'sunday', label: 'Sunday' },
-                  ];
-
-                  return (
-                    <View style={styles.scheduleRows}>
-                      <View style={styles.scheduleRow}>
-                        <Text variant="caption" color="secondary">
-                          Active Plan: {activePlan.name}
-                        </Text>
-                      </View>
-                      {weekdays.map(({ key, label }) => {
-                        const workoutId = schedule.weekly![key];
-                        const workout = workoutId
-                          ? activePlan.workouts.find(w => w.id === workoutId)
-                          : null;
-
-                        return (
-                          <View key={key} style={styles.scheduleRow}>
-                            <Text variant="bodySemibold" color="primary" style={styles.scheduleDayLabel}>
-                              {label}
-                            </Text>
-                            <Text variant="body" color="secondary" style={styles.schedulePlanLabel}>
-                              {workout?.name ?? 'Rest Day'}
-                            </Text>
-                          </View>
-                        );
-                      })}
-                    </View>
-                  );
-                }
-
-                if (schedule.type === 'rotation' && schedule.rotation) {
-                  // Rotation schedule view
-                  let currentIndex = schedule.currentRotationIndex || 0;
-                  let isBeforeStart = false;
-
-                  if (schedule.rotation.startDate) {
-                    const now = new Date();
-                    const start = new Date(schedule.rotation.startDate);
-                    now.setHours(0, 0, 0, 0);
-                    start.setHours(0, 0, 0, 0);
-                    const diffTime = now.getTime() - start.getTime();
-                    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-
-                    if (diffDays < 0) {
-                      // Start date is in the future
-                      isBeforeStart = true;
-                    } else {
-                      // Calculate which day of the rotation we're on
-                      currentIndex = diffDays % schedule.rotation.workoutOrder.length;
-                    }
-                  }
-
-                  if (isBeforeStart) {
-                    const startDate = new Date(schedule.rotation.startDate!);
-                    const formattedDate = startDate.toLocaleDateString('en-US', {
-                      month: 'short',
-                      day: 'numeric',
-                      year: 'numeric',
-                    });
-
-                    return (
-                      <View style={styles.scheduleRows}>
-                        <View style={styles.scheduleRow}>
-                          <Text variant="caption" color="secondary">
-                            Active Plan: {activePlan.name} (Rotation)
-                          </Text>
-                        </View>
-                        <View style={[styles.scheduleRow, { marginTop: spacing.sm }]}>
-                          <Text variant="bodySemibold" color="primary">
-                            Rest Day
-                          </Text>
-                        </View>
-                        <View style={styles.scheduleRow}>
-                          <Text variant="body" color="tertiary">
-                            Plan starts on {formattedDate}
-                          </Text>
-                        </View>
-                      </View>
-                    );
-                  }
-
-                  const totalWorkouts = schedule.rotation.workoutOrder.length;
-                  const currentWorkoutId = schedule.rotation.workoutOrder[currentIndex];
-                  const currentWorkout = activePlan.workouts.find(w => w.id === currentWorkoutId);
-
-                  // Calculate the date for today's workout
-                  let workoutDateLabel = 'Today';
-                  if (schedule.rotation.startDate) {
-                    // Get the actual number of days elapsed since start
-                    const now = new Date();
-                    now.setHours(0, 0, 0, 0);
-                    const startDate = new Date(schedule.rotation.startDate);
-                    startDate.setHours(0, 0, 0, 0);
-                    const diffDays = Math.floor((now.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
-
-                    // The workout date is start date + diffDays
-                    const workoutDate = new Date(startDate);
-                    workoutDate.setDate(startDate.getDate() + diffDays);
-
-                    const today = new Date();
-                    today.setHours(0, 0, 0, 0);
-                    const tomorrow = new Date(today);
-                    tomorrow.setDate(today.getDate() + 1);
-
-                    if (workoutDate.getTime() === today.getTime()) {
-                      workoutDateLabel = 'Today';
-                    } else if (workoutDate.getTime() === tomorrow.getTime()) {
-                      workoutDateLabel = 'Tomorrow';
-                    } else {
-                      workoutDateLabel = workoutDate.toLocaleDateString('en-US', {
-                        month: 'numeric',
-                        day: 'numeric',
-                      });
-                    }
-                  }
-
-                  return (
-                    <View style={styles.scheduleRows}>
-                      <View style={styles.scheduleRow}>
-                        <Text variant="caption" color="secondary">
-                          Active Plan: {activePlan.name} (Rotation)
-                        </Text>
-                      </View>
-                      <View style={[styles.scheduleRow, { marginTop: spacing.sm }]}>
-                        <Text variant="bodySemibold" color="primary">
-                          {currentWorkout?.exercises.length === 0 ? 'Rest Day' : 'Next Workout'}
-                        </Text>
-                        <Text variant="body" color="secondary" style={styles.schedulePlanLabel}>
-                          {currentWorkout?.name ?? 'None'}
-                        </Text>
-                      </View>
-                      <View style={styles.scheduleRow}>
-                        <Text variant="body" color="tertiary">
-                          {workoutDateLabel} • Day {currentIndex + 1} of {totalWorkouts}
-                          {currentWorkout?.exercises.length === 0 && ' (Rest)'}
-                        </Text>
-                      </View>
-                    </View>
-                  );
-                }
-              }
-
-              // Fallback to old schedule system
-              if (activeSchedule) {
-                return (
-                  <View style={styles.scheduleRows}>
-                    {WEEKDAY_LABELS.map(({ key, label }) => {
-                      const assignedPlanId = activeSchedule.weekdays[key];
-                      const assignedName = assignedPlanId ? planNameLookup[assignedPlanId] : null;
-
-                      return (
-                        <View key={key} style={styles.scheduleRow}>
-                          <Text variant="bodySemibold" color="primary" style={styles.scheduleDayLabel}>
-                            {label}
-                          </Text>
-                          <Text variant="body" color="secondary" style={styles.schedulePlanLabel}>
-                            {assignedName ?? 'Rest Day'}
-                          </Text>
-                        </View>
-                      );
-                    })}
-                  </View>
-                );
-              }
-
-              // No schedule
-              return (
-                <Text variant="body" color="secondary" style={styles.scheduleEmptyText}>
-                  No active plan. Set a plan as active from My Plans to see your schedule here.
-                </Text>
-              );
-            })()}
-          </View>
-
-          <View style={styles.scheduleButtonWrapper}>
-            <Button label="Edit Schedule" onPress={handleEditSchedulePress} size="md" />
-          </View>
-        </View>
-      </SurfaceCard>
+      <AddOverrideModal
+        visible={isOverrideModalVisible}
+        onClose={() => setIsOverrideModalVisible(false)}
+      />
 
       <Modal
         transparent

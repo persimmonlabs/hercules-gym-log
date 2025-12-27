@@ -41,6 +41,7 @@ import { WorkoutInProgressModal } from '@/components/molecules/WorkoutInProgress
 import type { Schedule } from '@/types/schedule';
 import type { UserProgram, RotationSchedule, ProgramWorkout } from '@/types/premadePlan';
 import { createSetsWithHistory } from '@/utils/workout';
+import { useActiveScheduleStore } from '@/store/activeScheduleStore';
 
 const QUICK_LINKS: QuickLinkItem[] = [
   { id: 'link-workout', title: 'Start Workout', description: 'Log a new workout session.', icon: 'flash-outline', route: 'workout', variant: 'primary' },
@@ -485,10 +486,46 @@ const DashboardScreen: React.FC = () => {
   const hydratePlans = usePlansStore((state: PlansState) => state.hydratePlans);
   const { activeRotation, getCurrentRotationWorkout, hydratePrograms, userPrograms, getTodayWorkout, activePlanId } = useProgramsStore();
   const hydrateWorkouts = useWorkoutSessionsStore((state: WorkoutSessionsState) => state.hydrateWorkouts);
+  const activeScheduleResult = useActiveScheduleStore((state) => state.getTodaysWorkout());
+  const activeScheduleRule = useActiveScheduleStore((state) => state.state.activeRule);
   const startSession = useSessionStore((state) => state.startSession);
   const setCompletionOverlayVisible = useSessionStore((state) => state.setCompletionOverlayVisible);
   const isSessionActive = useSessionStore((state) => state.isSessionActive);
   const currentSession = useSessionStore((state) => state.currentSession);
+
+  // Helper function to get workout name from ID
+  const getWorkoutName = (workoutId: string | null): string => {
+    if (!workoutId) return 'Rest Day';
+
+    // Check plans (My Workouts)
+    const plan = plans.find((p) => p.id === workoutId);
+    if (plan) return plan.name;
+
+    // Check user programs
+    for (const program of userPrograms) {
+      const workout = program.workouts.find((w) => w.id === workoutId);
+      if (workout) return workout.name;
+    }
+
+    return 'Unknown Workout';
+  };
+
+  // Helper function to get exercise count from workout ID
+  const getExerciseCount = (workoutId: string | null): number => {
+    if (!workoutId) return 0;
+
+    // Check plans (My Workouts)
+    const plan = plans.find((p) => p.id === workoutId);
+    if (plan) return plan.exercises.length;
+
+    // Check user programs
+    for (const program of userPrograms) {
+      const workout = program.workouts.find((w) => w.id === workoutId);
+      if (workout) return workout.exercises.length;
+    }
+
+    return 0;
+  };
 
   useEffect(() => {
     void hydrateSchedules();
@@ -533,7 +570,8 @@ const DashboardScreen: React.FC = () => {
     | { variant: 'rotation'; programName: string; workout: ProgramWorkout; programId: string }
     | { variant: 'standaloneRotation'; dayLabel: string; plan: Plan; dayNumber: number }
     | { variant: 'completed'; workout: Workout }
-    | { variant: 'ongoing'; sessionName: string | null; exerciseCount: number; elapsedMinutes: number };
+    | { variant: 'ongoing'; sessionName: string | null; exerciseCount: number; elapsedMinutes: number }
+    | { variant: 'activeSchedule'; dayLabel: string; workoutId: string | null; context?: string };
 
   const todaysCardState: TodaysCardState = useMemo(() => {
     // PRIORITY 1: Check for ongoing workout session (highest priority)
@@ -566,7 +604,20 @@ const DashboardScreen: React.FC = () => {
       return { variant: 'completed', workout: latestWorkout };
     }
 
-    // Check for active rotation or active plan (New System)
+    // PRIORITY 3: Check new activeScheduleStore (unified schedule system)
+    if (activeScheduleRule && activeScheduleResult.source !== 'none') {
+      const workoutName = getWorkoutName(activeScheduleResult.workoutId);
+      const exerciseCount = getExerciseCount(activeScheduleResult.workoutId);
+      const contextText = activeScheduleResult.workoutId ? `${exerciseCount} ${exerciseCount === 1 ? 'exercise' : 'exercises'}` : 'Take the day off';
+      return {
+        variant: 'activeSchedule',
+        dayLabel: workoutName,
+        workoutId: activeScheduleResult.workoutId,
+        context: contextText,
+      };
+    }
+
+    // Check for active rotation or active plan (Legacy System)
     const todayProgramWorkout = getTodayWorkout();
 
     // Check if there's an active plan
@@ -667,7 +718,7 @@ const DashboardScreen: React.FC = () => {
     }
 
     return { variant: 'plan', dayLabel: todayLabel, plan };
-  }, [activeSchedule, activeRotation, getTodayWorkout, planNameLookup, plans.length, todayKey, todayLabel, userPrograms, workouts, activePlanId, isSessionActive, currentSession]);
+  }, [activeSchedule, activeRotation, getTodayWorkout, planNameLookup, plans.length, todayKey, todayLabel, userPrograms, workouts, activePlanId, isSessionActive, currentSession, activeScheduleRule, activeScheduleResult, getWorkoutName, getExerciseCount]);
 
   const todaysPlan = todaysCardState.variant === 'plan' 
     ? todaysCardState.plan 
@@ -942,6 +993,47 @@ const DashboardScreen: React.FC = () => {
                               </Text>
                             </View>
                           </Pressable>
+                        </View>
+                      </SurfaceCard>
+                    ) : todaysCardState.variant === 'activeSchedule' ? (
+                      <SurfaceCard
+                        tone="neutral"
+                        padding="lg"
+                        showAccentStripe={false}
+                        style={[styles.inlineCard, styles.todaysPlanSubCard]}
+                      >
+                        <View style={styles.quickLinkRow}>
+                          <View style={styles.quickLinkInfo}>
+                            <Text variant="bodySemibold" color="primary">
+                              {todaysCardState.workoutId ? todaysCardState.dayLabel : 'Rest Day'}
+                            </Text>
+                            <Text variant="body" color="secondary">
+                              {todaysCardState.context || (todaysCardState.workoutId ? 'Scheduled workout' : 'Take the day off')}
+                            </Text>
+                          </View>
+                          {todaysCardState.workoutId && (
+                            <Pressable
+                              style={styles.planStartButton}
+                              onPress={() => {
+                                void Haptics.selectionAsync();
+                                router.push('/(tabs)/workout');
+                              }}
+                              accessibilityRole="button"
+                              accessibilityLabel="Start today's workout"
+                            >
+                              <View style={styles.quickLinkButton}>
+                                <LinearGradient
+                                  colors={[theme.accent.gradientStart, theme.accent.gradientEnd]}
+                                  start={{ x: 0, y: 0 }}
+                                  end={{ x: 1, y: 1 }}
+                                  style={styles.planStartButtonGradient}
+                                />
+                                <Text variant="bodySemibold" color="onAccent">
+                                  →
+                                </Text>
+                              </View>
+                            </Pressable>
+                          )}
                         </View>
                       </SurfaceCard>
                     ) : todaysCardState.variant === 'plan' || todaysCardState.variant === 'rotation' || todaysCardState.variant === 'standaloneRotation' ? (

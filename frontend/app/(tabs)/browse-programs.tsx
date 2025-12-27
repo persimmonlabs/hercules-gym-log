@@ -68,18 +68,35 @@ export default function BrowseProgramsScreen() {
   const { mode } = useLocalSearchParams<{ mode?: 'program' | 'workout' }>();
   const isWorkoutMode = mode === 'workout';
 
-  const { premadePrograms, premadeWorkouts } = useProgramsStore();
+  const { premadePrograms, premadeWorkouts, userPrograms } = useProgramsStore();
 
   const [selectedFilter, setSelectedFilter] = useState<ExperienceLevel | 'all'>('all');
 
   const filteredItems = useMemo(() => {
-    const items = isWorkoutMode ? premadeWorkouts : premadePrograms;
+    if (isWorkoutMode) {
+      let filtered = premadeWorkouts;
+      
+      // Apply experience level filter
+      if (selectedFilter !== 'all') {
+        filtered = filtered.filter(p => p.metadata.experienceLevel === selectedFilter);
+      }
 
-    if (selectedFilter === 'all') {
-      return items;
+      return filtered;
+    } else {
+      let filtered = premadePrograms;
+      
+      // Apply experience level filter
+      if (selectedFilter !== 'all') {
+        filtered = filtered.filter(p => p.metadata.experienceLevel === selectedFilter);
+      }
+
+      // Filter out already-added plans
+      const addedSourceIds = new Set(userPrograms.map(up => up.sourceId).filter(Boolean));
+      filtered = filtered.filter(p => !addedSourceIds.has(p.id));
+
+      return filtered;
     }
-    return items.filter(p => p.metadata.experienceLevel === selectedFilter);
-  }, [premadePrograms, premadeWorkouts, selectedFilter, isWorkoutMode]);
+  }, [premadePrograms, premadeWorkouts, selectedFilter, isWorkoutMode, userPrograms]);
 
   const handleBack = useCallback(() => {
     Haptics.selectionAsync().catch(() => { });
@@ -112,7 +129,7 @@ export default function BrowseProgramsScreen() {
   return (
     <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom + sizing.tabBarHeight }]}>
       <FlatList
-        data={filteredItems}
+        data={filteredItems as any}
         contentContainerStyle={styles.listContent}
         keyExtractor={(item) => item.id}
         ListHeaderComponent={
