@@ -105,9 +105,12 @@
       "suggestedSchedule": {
         "rotation": [
           "ppl-push",
+          null,
           "ppl-pull",
+          null,
           "ppl-legs",
-          "ppl-rest"
+          null,
+          null
         ]
       },
       "isPremade": true
@@ -262,7 +265,7 @@
         }
       ],
       "suggestedSchedule": {
-        "rotation": ["ppl-int-push1", "ppl-int-pull1", "ppl-int-legs1", "ppl-int-push2", "ppl-int-pull2", "ppl-int-legs2"]
+        "rotation": ["ppl-int-push1", "ppl-int-pull1", "ppl-int-legs1", "ppl-int-push2", "ppl-int-pull2", "ppl-int-legs2", null]
       },
       "isPremade": true
     },
@@ -354,7 +357,7 @@
         }
       ],
       "suggestedSchedule": {
-        "rotation": ["ppl-adv-push1", "ppl-adv-pull1", "ppl-adv-legs1", "ppl-adv-push2", "ppl-adv-pull2", "ppl-adv-legs2"]
+        "rotation": ["ppl-adv-push1", "ppl-adv-pull1", "ppl-adv-legs1", "ppl-adv-push2", "ppl-adv-pull2", "ppl-adv-legs2", null]
       },
       "isPremade": true
     },
@@ -557,7 +560,7 @@
         }
       ],
       "suggestedSchedule": {
-        "rotation": ["db-ppl-push", "db-ppl-pull", "db-ppl-legs"]
+        "rotation": ["db-ppl-push", null, "db-ppl-pull", null, "db-ppl-legs", null]
       },
       "isPremade": true
     },
@@ -607,7 +610,7 @@
         }
       ],
       "suggestedSchedule": {
-        "rotation": ["bw-hyp-push", "bw-hyp-pull", "bw-hyp-legs"]
+        "rotation": ["bw-hyp-push", null, "bw-hyp-pull", null, "bw-hyp-legs", null, null]
       },
       "isPremade": true
     },
@@ -645,7 +648,7 @@
         }
       ],
       "suggestedSchedule": {
-        "rotation": ["ss-workout-a", "ss-workout-b"]
+        "rotation": ["ss-workout-a", null, "ss-workout-b", null, null]
       },
       "isPremade": true
     },
@@ -854,7 +857,7 @@
         }
       ],
       "suggestedSchedule": {
-        "rotation": ["db-str-upper", "db-str-lower", "db-str-full"]
+        "rotation": ["db-str-upper", null, "db-str-lower", null, "db-str-full", null]
       },
       "isPremade": true
     },
@@ -907,7 +910,7 @@
         }
       ],
       "suggestedSchedule": {
-        "rotation": ["fl-beg-a", "fl-beg-b", "fl-beg-c"]
+        "rotation": ["fl-beg-a", null, "fl-beg-b", null, "fl-beg-c", null, null]
       },
       "isPremade": true
     },
@@ -1101,7 +1104,7 @@
         }
       ],
       "suggestedSchedule": {
-        "rotation": ["gf-int-strength", "gf-int-conditioning", "gf-int-full"]
+        "rotation": ["gf-int-strength", null, "gf-int-conditioning", null, "gf-int-full", null]
       },
       "isPremade": true
     },
@@ -1154,7 +1157,7 @@
         }
       ],
       "suggestedSchedule": {
-        "rotation": ["db-fit-upper", "db-fit-lower", "db-fit-full"]
+        "rotation": ["db-fit-upper", null, "db-fit-lower", null, "db-fit-full", null, null]
       },
       "isPremade": true
     },

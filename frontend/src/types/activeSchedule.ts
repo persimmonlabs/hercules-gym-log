@@ -31,14 +31,16 @@ export interface RotatingScheduleRule {
   startDate: number;
 }
 
-/** Plan-driven schedule rule - sequential progress through a plan */
+/** Plan-driven schedule rule - follows a plan as a rotating cycle */
 export interface PlanDrivenScheduleRule {
   type: 'plan-driven';
-  /** ID of the saved plan to follow */
+  /** ID of the saved plan this schedule is based on */
   planId: string;
-  /** Start date timestamp */
+  /** Start date timestamp (day 0 of the cycle) */
   startDate: number;
-  /** Current position in the plan (0-indexed) */
+  /** Ordered list of workout IDs (null = rest day in cycle), auto-populated from plan */
+  cycleWorkouts: (string | null)[];
+  /** Current position in the plan (0-indexed) - for tracking progression */
   currentIndex: number;
   /** Timestamp of last completed workout (for tracking) */
   lastCompletedAt?: number;

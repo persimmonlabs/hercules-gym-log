@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import * as Haptics from 'expo-haptics';
 
 import { createEmptyWeekdayAssignment, createScheduleId, WEEKDAY_LABELS } from '@/constants/schedule';
@@ -20,10 +20,26 @@ import { useProgramsStore } from '@/store/programsStore';
 
 type ScheduleOption = { label: string; value: string | null };
 
+const MAX_ROTATING_DAYS = 14;
+
 const createEmptyRotatingSchedule = (): RotatingScheduleConfig => ({
   days: [],
   startDate: null,
 });
+
+const normalizeRotatingSchedule = (rotating?: RotatingScheduleConfig): RotatingScheduleConfig => {
+  if (!rotating) {
+    return createEmptyRotatingSchedule();
+  }
+
+  return {
+    ...rotating,
+    days: (rotating.days ?? []).map((day, index) => ({
+      ...day,
+      dayNumber: index + 1,
+    })),
+  };
+};
 
 const createRotatingDayId = (): string => {
   return `day-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -112,6 +128,8 @@ export const useScheduleEditor = (): UseScheduleEditorReturn => {
   const [selectedRotatingDayIndex, setSelectedRotatingDayIndex] = useState<number | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
+  const lastInitializedScheduleIdRef = useRef<string | null>(null);
+
   useEffect(() => {
     void hydrateSchedules();
   }, [hydrateSchedules]);
@@ -119,10 +137,20 @@ export const useScheduleEditor = (): UseScheduleEditorReturn => {
   const activeSchedule = schedules[0] ?? null;
 
   useEffect(() => {
+    const activeId = activeSchedule?.id ?? null;
+
+    // Only initialize drafts when the active schedule changes (prevents overwriting
+    // in-progress edits when schedules re-hydrate).
+    if (activeId === lastInitializedScheduleIdRef.current) {
+      return;
+    }
+
+    lastInitializedScheduleIdRef.current = activeId;
+
     if (activeSchedule) {
       setScheduleType(activeSchedule.type || 'weekly');
       setDraftWeekdays({ ...activeSchedule.weekdays });
-      setDraftRotating(activeSchedule.rotating || createEmptyRotatingSchedule());
+      setDraftRotating(normalizeRotatingSchedule(activeSchedule.rotating));
       return;
     }
 
@@ -223,6 +251,10 @@ export const useScheduleEditor = (): UseScheduleEditorReturn => {
     void Haptics.selectionAsync();
     setSelectedDay(null);
 
+    if (draftRotating.days.length >= MAX_ROTATING_DAYS) {
+      return;
+    }
+
     const newIndex = draftRotating.days.length;
 
     setDraftRotating((prev) => {
@@ -290,14 +322,17 @@ export const useScheduleEditor = (): UseScheduleEditorReturn => {
 
     setIsSaving(true);
     const scheduleName = activeSchedule?.name ?? (scheduleType === 'weekly' ? 'Weekly Schedule' : 'Rotating Schedule');
+
+    const normalizedRotating = normalizeRotatingSchedule(draftRotating);
+
     const nextSchedule: Schedule = {
       id: activeSchedule?.id ?? createScheduleId(),
       name: scheduleName,
       type: scheduleType,
       weekdays: scheduleType === 'rotating'
-        ? getWeekdayAssignmentsFromRotating(draftRotating)
+        ? getWeekdayAssignmentsFromRotating(normalizedRotating)
         : { ...draftWeekdays },
-      rotating: scheduleType === 'rotating' ? { ...draftRotating } : undefined,
+      rotating: scheduleType === 'rotating' ? normalizedRotating : undefined,
     };
 
     try {

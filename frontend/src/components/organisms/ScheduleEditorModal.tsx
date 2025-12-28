@@ -32,6 +32,8 @@ interface ScheduleEditorModalProps {
 
 type EditorStep = 'type-select' | 'configure';
 
+const MAX_ROTATING_DAYS = 14;
+
 const SCHEDULE_TYPES: { type: ScheduleRuleType; label: string; description: string }[] = [
   {
     type: 'weekly',
@@ -79,10 +81,11 @@ const createEmptyRotatingRule = (): RotatingScheduleRule => ({
   startDate: Date.now(),
 });
 
-const createEmptyPlanDrivenRule = (planId: string): PlanDrivenScheduleRule => ({
+const createEmptyPlanDrivenRule = (planId: string, cycleWorkouts: (string | null)[] = [null]): PlanDrivenScheduleRule => ({
   type: 'plan-driven',
   planId,
   startDate: Date.now(),
+  cycleWorkouts,
   currentIndex: 0,
 });
 
@@ -197,6 +200,7 @@ export const ScheduleEditorModal: React.FC<ScheduleEditorModalProps> = ({
 
   const addCycleDay = useCallback(() => {
     if (draftRule?.type !== 'rotating') return;
+    if (draftRule.cycleWorkouts.length >= MAX_ROTATING_DAYS) return;
     setDraftRule({
       ...draftRule,
       cycleWorkouts: [...draftRule.cycleWorkouts, null],
@@ -322,13 +326,13 @@ export const ScheduleEditorModal: React.FC<ScheduleEditorModalProps> = ({
         </Text>
 
         <ScrollView style={styles.daysList} showsVerticalScrollIndicator={false}>
-          {draftRule.cycleWorkouts.map((workoutId, index) => {
+          {draftRule.cycleWorkouts.map((workoutId, visualIndex) => {
             const selectedWorkout = allWorkouts.find((w) => w.id === workoutId);
 
             return (
-              <View key={index} style={styles.cycleRow}>
+              <View key={visualIndex} style={styles.cycleRow}>
                 <Text variant="bodySemibold" color="primary" style={styles.cycleDayNum}>
-                  Day {index + 1}
+                  Day {visualIndex + 1}
                 </Text>
                 <Pressable
                   style={[styles.workoutPicker, { backgroundColor: theme.surface.elevated, flex: 1 }]}
@@ -337,7 +341,7 @@ export const ScheduleEditorModal: React.FC<ScheduleEditorModalProps> = ({
                     const nextIndex = (currentIndex + 1) % (allWorkouts.length + 1);
                     const nextWorkout = nextIndex < allWorkouts.length ? allWorkouts[nextIndex] : null;
                     const newCycle = [...draftRule.cycleWorkouts];
-                    newCycle[index] = nextWorkout?.id || null;
+                    newCycle[visualIndex] = nextWorkout?.id || null;
                     updateRotatingCycle(newCycle);
                   }}
                 >
@@ -351,7 +355,7 @@ export const ScheduleEditorModal: React.FC<ScheduleEditorModalProps> = ({
                 </Pressable>
                 <Pressable
                   style={styles.removeButton}
-                  onPress={() => removeCycleDay(index)}
+                  onPress={() => removeCycleDay(visualIndex)}
                 >
                   <IconSymbol name="close" size={18} color={theme.accent.warning} />
                 </Pressable>
@@ -364,6 +368,7 @@ export const ScheduleEditorModal: React.FC<ScheduleEditorModalProps> = ({
             variant="secondary"
             size="sm"
             onPress={addCycleDay}
+            disabled={draftRule.cycleWorkouts.length >= MAX_ROTATING_DAYS}
           />
         </ScrollView>
       </View>

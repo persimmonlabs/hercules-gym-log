@@ -95,14 +95,30 @@ const createDefaultState = (): ActiveScheduleState => ({
   updatedAt: Date.now(),
 });
 
+const normalizeRotatingCycle = (cycleWorkouts: (string | null)[]): (string | null)[] => {
+  // Remove sparse array holes (undefined) that can cause UI to show Day 1 / Day 5 gaps.
+  return cycleWorkouts.filter((id) => id !== undefined);
+};
+
+const normalizeRule = (rule: ScheduleRule | null): ScheduleRule | null => {
+  if (!rule) return null;
+  if (rule.type !== 'rotating') return rule;
+
+  return {
+    ...rule,
+    cycleWorkouts: normalizeRotatingCycle(rule.cycleWorkouts),
+  };
+};
+
 export const useActiveScheduleStore = create<ActiveScheduleStore>((set, get) => ({
   state: createDefaultState(),
   isLoading: false,
 
   setActiveRule: async (rule) => {
+    const normalizedRule = normalizeRule(rule);
     const newState: ActiveScheduleState = {
       ...get().state,
-      activeRule: rule,
+      activeRule: normalizedRule,
       updatedAt: Date.now(),
     };
     set({ state: newState });
@@ -227,9 +243,13 @@ export const useActiveScheduleStore = create<ActiveScheduleStore>((set, get) => 
         };
       }
       case 'plan-driven': {
+        const cycleLength = activeRule.cycleWorkouts?.length || 0;
+        const workoutCount = activeRule.cycleWorkouts?.filter(id => id !== null).length || 0;
         return {
           typeLabel: 'Plan-Driven',
-          description: 'Following saved plan',
+          description: cycleLength > 0 
+            ? `${workoutCount} workouts in ${cycleLength}-day cycle`
+            : 'Following saved plan',
           isActive: true,
         };
       }
@@ -285,7 +305,11 @@ export const useActiveScheduleStore = create<ActiveScheduleStore>((set, get) => 
 
       if (data?.schedule_data) {
         const scheduleData = data.schedule_data as ActiveScheduleState;
-        set({ state: scheduleData, isLoading: false });
+        const normalizedState: ActiveScheduleState = {
+          ...scheduleData,
+          activeRule: normalizeRule(scheduleData.activeRule),
+        };
+        set({ state: normalizedState, isLoading: false });
         console.log('[activeScheduleStore] Hydrated from Supabase');
       } else {
         set({ state: createDefaultState(), isLoading: false });
@@ -326,7 +350,8 @@ function computeRotatingWorkout(rule: RotatingScheduleRule, date: Date): TodayWo
     };
   }
 
-  const cycleLength = rule.cycleWorkouts.length;
+  const normalizedCycle = normalizeRotatingCycle(rule.cycleWorkouts);
+  const cycleLength = normalizedCycle.length;
   if (cycleLength === 0) {
     return {
       workoutId: null,
@@ -337,7 +362,7 @@ function computeRotatingWorkout(rule: RotatingScheduleRule, date: Date): TodayWo
   }
 
   const cycleDay = daysDiff % cycleLength;
-  const workoutId = rule.cycleWorkouts[cycleDay];
+  const workoutId = normalizedCycle[cycleDay] ?? null;
 
   return {
     workoutId,
@@ -347,7 +372,7 @@ function computeRotatingWorkout(rule: RotatingScheduleRule, date: Date): TodayWo
   };
 }
 
-/** Compute workout for plan-driven schedule */
+/** Compute workout for plan-driven schedule (works like rotating cycle) */
 function computePlanDrivenWorkout(rule: PlanDrivenScheduleRule, date: Date): TodayWorkoutResult {
   const startDate = new Date(rule.startDate);
   const daysDiff = getDaysDiff(startDate, date);
@@ -361,13 +386,27 @@ function computePlanDrivenWorkout(rule: PlanDrivenScheduleRule, date: Date): Tod
     };
   }
 
-  // For plan-driven, we use currentIndex which advances after each completed workout
-  // This is NOT date-based like rotating - it only advances when user completes a workout
+  // Plan-driven now works like rotating cycle with cycleWorkouts array
+  const cycleWorkouts = rule.cycleWorkouts || [];
+  const cycleLength = cycleWorkouts.length;
+  
+  if (cycleLength === 0) {
+    return {
+      workoutId: null,
+      source: 'rule',
+      label: 'Empty cycle',
+      context: 'Add workouts to your plan schedule',
+    };
+  }
+
+  const cycleDay = daysDiff % cycleLength;
+  const workoutId = cycleWorkouts[cycleDay] ?? null;
+
   return {
-    workoutId: rule.planId, // The planId is used to look up the actual workout
+    workoutId,
     source: 'rule',
-    label: `Workout ${rule.currentIndex + 1}`,
-    context: 'Plan-driven schedule',
+    label: `Day ${cycleDay + 1} of ${cycleLength}`,
+    context: workoutId ? 'Plan-driven schedule' : 'Rest day',
   };
 }
 

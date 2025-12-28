@@ -3,7 +3,7 @@
  * Full-screen page for configuring the active schedule rule.
  * Supports Weekly, Rotating Cycle, and Plan-Driven schedule types.
  */
-import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { View, StyleSheet, ScrollView, Pressable, Modal, FlatList } from 'react-native';
 import { PanGestureHandler, State } from 'react-native-gesture-handler';
 import { useRouter } from 'expo-router';
@@ -20,6 +20,7 @@ import { usePlansStore } from '@/store/plansStore';
 import { useTheme } from '@/hooks/useTheme';
 import { useAuth } from '@/providers/AuthProvider';
 import { spacing, radius, colors, shadows } from '@/constants/theme';
+import type { PlanScheduleConfig, UserProgram } from '@/types/premadePlan';
 import type {
   ScheduleRule,
   ScheduleRuleType,
@@ -88,10 +89,67 @@ const createEmptyRotatingRule = (startTime?: number): RotatingScheduleRule => ({
   cycleWorkouts: [null],
 });
 
-const createEmptyPlanDrivenRule = (planId: string): PlanDrivenScheduleRule => ({
+const normalizeCycleWorkouts = (cycleWorkouts: (string | null)[]): (string | null)[] => {
+  // Important: Array holes (sparse arrays) can cause map() to skip indices,
+  // which leads to Day 1 / Day 5 gaps. filter() compacts the array.
+  return cycleWorkouts.filter((id) => id !== undefined);
+};
+
+const normalizeRotatingRule = (rule: RotatingScheduleRule): RotatingScheduleRule => {
+  return {
+    ...rule,
+    cycleWorkouts: normalizeCycleWorkouts(rule.cycleWorkouts),
+  };
+};
+
+const normalizeScheduleRule = (rule: ScheduleRule | null): ScheduleRule | null => {
+  if (!rule) return null;
+  if (rule.type !== 'rotating') return rule;
+  return normalizeRotatingRule(rule);
+};
+
+const MAX_ROTATING_CYCLE_DAYS = 14;
+
+/** Extract cycleWorkouts from a plan's suggested schedule */
+const getPlanCycleWorkouts = (plan: UserProgram): (string | null)[] => {
+  // Prefer the user's saved schedule (already mapped to the user's cloned workout IDs)
+  if (plan.schedule?.type === 'rotation') {
+    const order = plan.schedule.rotation?.workoutOrder as (string | null)[] | undefined;
+    if (order && order.length > 0) return order;
+  }
+
+  if (plan.schedule?.type === 'weekly' && plan.schedule.weekly) {
+    const weekdays = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+    const weekly = plan.schedule.weekly;
+    return weekdays.map((day) => (weekly as unknown as Record<string, string | null>)[day] ?? null);
+  }
+
+  // Fallback to premade suggestedSchedule (may contain source IDs)
+  if (plan.suggestedSchedule?.rotation && plan.suggestedSchedule.rotation.length > 0) {
+    return plan.suggestedSchedule.rotation;
+  }
+
+  if (plan.suggestedSchedule?.weekly) {
+    const weekdays = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+    return weekdays.map((day) => plan.suggestedSchedule?.weekly?.[day] ?? null);
+  }
+
+  // Default: list all workouts with rest days between them
+  const workouts: (string | null)[] = [];
+  plan.workouts.forEach((w, i) => {
+    workouts.push(w.id);
+    if (i < plan.workouts.length - 1) {
+      workouts.push(null);
+    }
+  });
+  return workouts.length > 0 ? workouts : [null];
+};
+
+const createEmptyPlanDrivenRule = (planId: string, cycleWorkouts: (string | null)[] = [null]): PlanDrivenScheduleRule => ({
   type: 'plan-driven',
   planId,
   startDate: Date.now(),
+  cycleWorkouts,
   currentIndex: 0,
 });
 
@@ -110,26 +168,34 @@ const ScheduleSetupScreen: React.FC = () => {
   const hydratePlans = usePlansStore((state) => state.hydratePlans);
   const hydratePrograms = useProgramsStore((state) => state.hydratePrograms);
 
+  const editorScrollRef = useRef<ScrollView>(null);
+
   const [step, setStep] = useState<EditorStep>(isEditing ? 'configure' : 'type-select');
   const [selectedType, setSelectedType] = useState<ScheduleRuleType | null>(
     currentRule?.type || null
   );
-  const [draftRule, setDraftRule] = useState<ScheduleRule | null>(currentRule);
+  const [draftRule, setDraftRule] = useState<ScheduleRule | null>(() => normalizeScheduleRule(currentRule));
 
   const [pickerVisible, setPickerVisible] = useState(false);
   const [pickerContext, setPickerContext] = useState<{
-    type: 'weekly' | 'rotating';
+    type: 'weekly' | 'rotating' | 'plan-driven';
     index: number | WeekdayKey;
   } | null>(null);
   const [startDate, setStartDate] = useState<Date>(
-    currentRule?.type === 'rotating' ? new Date(currentRule.startDate) : new Date()
+    (currentRule?.type === 'rotating' || currentRule?.type === 'plan-driven') 
+      ? new Date(currentRule.startDate) 
+      : new Date()
   );
   const [datePickerVisible, setDatePickerVisible] = useState(false);
   const [datePickerViewDate, setDatePickerViewDate] = useState<Date>(
-    currentRule?.type === 'rotating' ? new Date(currentRule.startDate) : new Date()
+    (currentRule?.type === 'rotating' || currentRule?.type === 'plan-driven') 
+      ? new Date(currentRule.startDate) 
+      : new Date()
   );
   const [pendingStartDate, setPendingStartDate] = useState<Date>(
-    currentRule?.type === 'rotating' ? new Date(currentRule.startDate) : new Date()
+    (currentRule?.type === 'rotating' || currentRule?.type === 'plan-driven') 
+      ? new Date(currentRule.startDate) 
+      : new Date()
   );
 
   // Ensure data is loaded when component mounts
@@ -171,6 +237,15 @@ const ScheduleSetupScreen: React.FC = () => {
     return userPrograms.map((p) => ({ id: p.id, name: p.name }));
   }, [userPrograms]);
 
+  const newestPlan = useMemo(() => {
+    if (userPrograms.length === 0) return null;
+    return [...userPrograms].sort((a, b) => {
+      const aTime = Math.max(a.modifiedAt ?? 0, a.createdAt ?? 0);
+      const bTime = Math.max(b.modifiedAt ?? 0, b.createdAt ?? 0);
+      return bTime - aTime;
+    })[0];
+  }, [userPrograms]);
+
   const handleTypeSelect = useCallback((type: ScheduleRuleType) => {
     void Haptics.selectionAsync();
     setSelectedType(type);
@@ -183,20 +258,50 @@ const ScheduleSetupScreen: React.FC = () => {
         break;
       case 'rotating':
         setDraftRule(
-          currentRule?.type === 'rotating' ? currentRule : createEmptyRotatingRule(startDate.getTime())
+          currentRule?.type === 'rotating'
+            ? normalizeRotatingRule(currentRule)
+            : createEmptyRotatingRule(startDate.getTime())
         );
         break;
       case 'plan-driven':
-        const defaultPlanId = allPlans[0]?.id || '';
-        setDraftRule(
-          currentRule?.type === 'plan-driven'
-            ? currentRule
-            : createEmptyPlanDrivenRule(defaultPlanId)
-        );
+        if (currentRule?.type === 'plan-driven') {
+          setDraftRule(currentRule);
+        } else {
+          const defaultPlan = newestPlan;
+          if (defaultPlan) {
+            const cycleWorkouts = getPlanCycleWorkouts(defaultPlan);
+            setDraftRule(createEmptyPlanDrivenRule(defaultPlan.id, cycleWorkouts));
+          } else {
+            setDraftRule(createEmptyPlanDrivenRule('', [null]));
+          }
+        }
         break;
     }
     setStep('configure');
-  }, [currentRule, allPlans]);
+  }, [currentRule, newestPlan, startDate]);
+
+  useEffect(() => {
+    if (step !== 'configure') return;
+    requestAnimationFrame(() => {
+      editorScrollRef.current?.scrollTo({ y: 0, animated: false });
+    });
+  }, [step, selectedType]);
+
+  useEffect(() => {
+    if (selectedType !== 'plan-driven') return;
+    if (!draftRule || draftRule.type !== 'plan-driven') return;
+    if (!newestPlan) return;
+
+    const isBlankRule = !draftRule.planId || !draftRule.cycleWorkouts || draftRule.cycleWorkouts.length <= 1;
+    if (!isBlankRule) return;
+
+    const cycleWorkouts = getPlanCycleWorkouts(newestPlan);
+    setDraftRule({
+      ...draftRule,
+      planId: newestPlan.id,
+      cycleWorkouts,
+    });
+  }, [draftRule, newestPlan, selectedType]);
 
   const handleBack = useCallback(() => {
     void Haptics.selectionAsync();
@@ -211,9 +316,15 @@ const ScheduleSetupScreen: React.FC = () => {
   const handleSave = useCallback(async () => {
     void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     
-    // Update rotating rule with selected start date
+    // Update rotating/plan-driven rule with selected start date
     let finalRule = draftRule;
     if (draftRule?.type === 'rotating') {
+      finalRule = {
+        ...draftRule,
+        startDate: startDate.getTime(),
+        cycleWorkouts: normalizeCycleWorkouts(draftRule.cycleWorkouts),
+      };
+    } else if (draftRule?.type === 'plan-driven') {
       finalRule = {
         ...draftRule,
         startDate: startDate.getTime(),
@@ -230,7 +341,7 @@ const ScheduleSetupScreen: React.FC = () => {
     router.push('/(tabs)/plans');
   }, [setActiveRule, router]);
 
-  const openWorkoutPicker = useCallback((type: 'weekly' | 'rotating', index: number | WeekdayKey) => {
+  const openWorkoutPicker = useCallback((type: 'weekly' | 'rotating' | 'plan-driven', index: number | WeekdayKey) => {
     void Haptics.selectionAsync();
     setPickerContext({ type, index });
     setPickerVisible(true);
@@ -248,17 +359,45 @@ const ScheduleSetupScreen: React.FC = () => {
       });
     } else if (pickerContext.type === 'rotating' && draftRule.type === 'rotating') {
       const idx = pickerContext.index as number;
+
+      const normalizedCycle = normalizeCycleWorkouts(draftRule.cycleWorkouts);
+
+      if (idx === normalizedCycle.length && normalizedCycle.length >= MAX_ROTATING_CYCLE_DAYS) {
+        setPickerVisible(false);
+        setPickerContext(null);
+        return;
+      }
       
       // Check if this is a new day being added (index equals current length)
-      if (idx === draftRule.cycleWorkouts.length) {
+      if (idx === normalizedCycle.length) {
         // Add the new day with the selected workout
         setDraftRule({
           ...draftRule,
-          cycleWorkouts: [...draftRule.cycleWorkouts, workoutId],
+          cycleWorkouts: normalizeCycleWorkouts([...normalizedCycle, workoutId]),
         });
       } else {
         // Update existing day
-        const newCycle = [...draftRule.cycleWorkouts];
+        const newCycle = [...normalizedCycle];
+        newCycle[idx] = workoutId;
+        setDraftRule({ ...draftRule, cycleWorkouts: normalizeCycleWorkouts(newCycle) });
+      }
+    } else if (pickerContext.type === 'plan-driven' && draftRule.type === 'plan-driven') {
+      const idx = pickerContext.index as number;
+      const cycleWorkouts = draftRule.cycleWorkouts || [];
+
+      if (idx === cycleWorkouts.length && cycleWorkouts.length >= MAX_ROTATING_CYCLE_DAYS) {
+        setPickerVisible(false);
+        setPickerContext(null);
+        return;
+      }
+      
+      if (idx === cycleWorkouts.length) {
+        setDraftRule({
+          ...draftRule,
+          cycleWorkouts: [...cycleWorkouts, workoutId],
+        });
+      } else {
+        const newCycle = [...cycleWorkouts];
         newCycle[idx] = workoutId;
         setDraftRule({ ...draftRule, cycleWorkouts: newCycle });
       }
@@ -271,30 +410,75 @@ const ScheduleSetupScreen: React.FC = () => {
   const addCycleDay = useCallback(() => {
     if (draftRule?.type !== 'rotating') return;
     void Haptics.selectionAsync();
-    const newIndex = draftRule.cycleWorkouts.length;
+    const newIndex = normalizeCycleWorkouts(draftRule.cycleWorkouts).length;
+    if (newIndex >= MAX_ROTATING_CYCLE_DAYS) return;
     // Don't add the day yet, just open the picker
     setTimeout(() => {
       openWorkoutPicker('rotating', newIndex);
     }, 100);
-  }, [openWorkoutPicker]);
+  }, [draftRule, openWorkoutPicker]);
 
   const removeCycleDay = useCallback((index: number) => {
     if (draftRule?.type !== 'rotating') return;
     if (draftRule.cycleWorkouts.length <= 1) return;
     void Haptics.selectionAsync();
-    const newCycle = [...draftRule.cycleWorkouts];
+    const newCycle = [...normalizeCycleWorkouts(draftRule.cycleWorkouts)];
     newCycle.splice(index, 1);
-    setDraftRule({ ...draftRule, cycleWorkouts: newCycle });
+    setDraftRule({ ...draftRule, cycleWorkouts: normalizeCycleWorkouts(newCycle) });
   }, [draftRule]);
 
   const updatePlanDrivenPlan = useCallback((planId: string) => {
     if (draftRule?.type !== 'plan-driven') return;
     void Haptics.selectionAsync();
-    setDraftRule({ ...draftRule, planId });
+    
+    // Find the selected plan and update cycleWorkouts from its suggested schedule
+    const selectedPlan = userPrograms.find(p => p.id === planId);
+    if (selectedPlan) {
+      const cycleWorkouts = getPlanCycleWorkouts(selectedPlan);
+      setDraftRule({ ...draftRule, planId, cycleWorkouts });
+    } else {
+      setDraftRule({ ...draftRule, planId });
+    }
+  }, [draftRule, userPrograms]);
+
+  const addPlanDrivenDay = useCallback(() => {
+    if (draftRule?.type !== 'plan-driven') return;
+    void Haptics.selectionAsync();
+    const cycleWorkouts = draftRule.cycleWorkouts || [];
+    const newIndex = cycleWorkouts.length;
+    if (newIndex >= MAX_ROTATING_CYCLE_DAYS) return;
+    setTimeout(() => {
+      openWorkoutPicker('plan-driven', newIndex);
+    }, 100);
+  }, [draftRule, openWorkoutPicker]);
+
+  const removePlanDrivenDay = useCallback((index: number) => {
+    if (draftRule?.type !== 'plan-driven') return;
+    const cycleWorkouts = draftRule.cycleWorkouts || [];
+    if (cycleWorkouts.length <= 1) return;
+    void Haptics.selectionAsync();
+    const newCycle = [...cycleWorkouts];
+    newCycle.splice(index, 1);
+    setDraftRule({ ...draftRule, cycleWorkouts: newCycle });
   }, [draftRule]);
 
-  const getWorkoutName = (workoutId: string | null): string => {
-    if (!workoutId) return 'Rest Day';
+  const movePlanDrivenDay = useCallback((fromIndex: number, toIndex: number) => {
+    if (draftRule?.type !== 'plan-driven') return;
+    const cycleWorkouts = draftRule.cycleWorkouts || [];
+    if (fromIndex < 0 || toIndex < 0) return;
+    if (fromIndex >= cycleWorkouts.length || toIndex >= cycleWorkouts.length) return;
+    if (fromIndex === toIndex) return;
+
+    void Haptics.selectionAsync();
+    const newCycle = [...cycleWorkouts];
+    const temp = newCycle[fromIndex];
+    newCycle[fromIndex] = newCycle[toIndex];
+    newCycle[toIndex] = temp;
+    setDraftRule({ ...draftRule, cycleWorkouts: newCycle });
+  }, [draftRule]);
+
+  const getWorkoutName = (workoutId: string | null | undefined): string => {
+    if (workoutId == null) return 'Rest Day';
     const workout = allWorkouts.find((w) => w.id === workoutId);
     return workout?.name || 'Unknown';
   };
@@ -401,6 +585,8 @@ const ScheduleSetupScreen: React.FC = () => {
   const renderRotatingEditor = () => {
     if (draftRule?.type !== 'rotating') return null;
 
+    const normalizedCycle = normalizeCycleWorkouts(draftRule.cycleWorkouts);
+
     return (
       <View style={{ gap: spacing.md, marginTop: spacing.md }}>
         <View style={[styles.cycleRow, { backgroundColor: theme.surface.elevated }]}>
@@ -428,18 +614,21 @@ const ScheduleSetupScreen: React.FC = () => {
         </View>
         
         <View style={styles.daysList}>
-          {draftRule.cycleWorkouts.map((workoutId, index) => {
+          {normalizedCycle.map((workoutId, visualIndex) => {
             const workoutName = getWorkoutName(workoutId);
             const isRest = workoutId === null;
 
             return (
-              <View key={index} style={[styles.cycleRow, { backgroundColor: theme.surface.elevated }]}>
+              <View
+                key={`cycle-${visualIndex}-${workoutId ?? 'rest'}`}
+                style={[styles.cycleRow, { backgroundColor: theme.surface.elevated }]}
+              >
                 <Text variant="bodySemibold" color="primary" style={styles.cycleDayNum}>
-                  Day {index + 1}
+                  Day {visualIndex + 1}
                 </Text>
                 <Pressable
                   style={styles.cycleWorkoutPicker}
-                  onPress={() => openWorkoutPicker('rotating', index)}
+                  onPress={() => openWorkoutPicker('rotating', visualIndex)}
                 >
                   <Text
                     variant="body"
@@ -451,10 +640,10 @@ const ScheduleSetupScreen: React.FC = () => {
                   </Text>
                   <IconSymbol name="chevron-right" size={16} color={theme.text.tertiary} />
                 </Pressable>
-                {draftRule.cycleWorkouts.length > 1 && (
+                {normalizedCycle.length > 1 && (
                   <Pressable
                     style={styles.removeButton}
-                    onPress={() => removeCycleDay(index)}
+                    onPress={() => removeCycleDay(visualIndex)}
                   >
                     <IconSymbol name="close" size={18} color={theme.accent.warning} />
                   </Pressable>
@@ -467,6 +656,7 @@ const ScheduleSetupScreen: React.FC = () => {
         <Pressable
           style={[styles.addDayButton, { backgroundColor: theme.surface.elevated }]}
           onPress={addCycleDay}
+          disabled={normalizedCycle.length >= MAX_ROTATING_CYCLE_DAYS}
         >
           <IconSymbol name="add" size={24} color={theme.accent.warning} />
         </Pressable>
@@ -486,8 +676,12 @@ const ScheduleSetupScreen: React.FC = () => {
   const renderPlanDrivenEditor = () => {
     if (draftRule?.type !== 'plan-driven') return null;
 
+    const cycleWorkouts = draftRule.cycleWorkouts || [];
+    const effectiveSelectedPlanId = draftRule.planId || (cycleWorkouts.length > 1 ? newestPlan?.id || '' : '');
+
     return (
       <View style={{ gap: spacing.md, marginTop: spacing.md }}>
+        {/* Plan Selection */}
         <View style={styles.planList}>
           {allPlans.length === 0 ? (
             <SurfaceCard tone="neutral" padding="lg">
@@ -496,30 +690,138 @@ const ScheduleSetupScreen: React.FC = () => {
               </Text>
             </SurfaceCard>
           ) : (
-            allPlans.map((plan) => {
-              const isSelected = draftRule.planId === plan.id;
-              return (
-                <Pressable
-                  key={plan.id}
-                  style={[
-                    styles.planCard,
-                    { backgroundColor: theme.surface.elevated },
-                    isSelected && { borderColor: theme.accent.orange, borderWidth: 2 },
-                  ]}
-                  onPress={() => updatePlanDrivenPlan(plan.id)}
-                >
-                  <Text variant="bodySemibold" color="primary">
-                    {plan.name}
-                  </Text>
-                  {isSelected && (
-                    <IconSymbol name="check-circle" size={20} color={theme.accent.orange} />
-                  )}
-                </Pressable>
-              );
-            })
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.planScrollView}>
+              {allPlans.map((plan) => {
+                const isSelected = effectiveSelectedPlanId === plan.id;
+                return (
+                  <Pressable
+                    key={plan.id}
+                    style={[
+                      styles.planChip,
+                      {
+                        backgroundColor: isSelected ? theme.accent.orange : theme.surface.elevated,
+                        borderColor: isSelected ? theme.accent.orange : theme.border.light,
+                      },
+                    ]}
+                    onPress={() => updatePlanDrivenPlan(plan.id)}
+                  >
+                    <Text 
+                      variant="bodySemibold" 
+                      color={isSelected ? 'onAccent' : 'primary'}
+                    >
+                      {plan.name}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
           )}
         </View>
 
+        {/* Start Date */}
+        <View style={[styles.cycleRow, { backgroundColor: theme.surface.elevated }]}>
+          <Text variant="bodySemibold" color="primary" style={styles.cycleDayNum}>
+            Start Date
+          </Text>
+          <Pressable
+            style={styles.cycleWorkoutPicker}
+            onPress={() => {
+              setDatePickerViewDate(startDate);
+              setPendingStartDate(startDate);
+              setDatePickerVisible(true);
+            }}
+          >
+            <Text
+              variant="body"
+              color="primary"
+              numberOfLines={1}
+              style={[styles.cycleWorkoutText, { textAlignVertical: 'center' }]}
+            >
+              {startDate.toLocaleDateString()}
+            </Text>
+            <IconSymbol name="calendar-today" size={16} color={theme.text.tertiary} />
+          </Pressable>
+        </View>
+
+        {/* Cycle Days */}
+        <View style={styles.daysList}>
+          {cycleWorkouts.map((workoutId, visualIndex) => {
+            const workoutName = getWorkoutName(workoutId);
+            const isRest = workoutId === null;
+            const canMoveUp = visualIndex > 0;
+            const canMoveDown = visualIndex < cycleWorkouts.length - 1;
+
+            return (
+              <View
+                key={`plan-cycle-${visualIndex}-${workoutId ?? 'rest'}`}
+                style={[styles.cycleRow, { backgroundColor: theme.surface.elevated }]}
+              >
+                <Text variant="bodySemibold" color="primary" style={styles.cycleDayNum}>
+                  Day {visualIndex + 1}
+                </Text>
+                <View style={styles.reorderButtonsContainer}>
+                  <Pressable
+                    style={[styles.reorderButton, !canMoveUp && styles.reorderButtonDisabled]}
+                    disabled={!canMoveUp}
+                    onPress={() => movePlanDrivenDay(visualIndex, visualIndex - 1)}
+                    hitSlop={8}
+                  >
+                    <IconSymbol
+                      name="keyboard-arrow-up"
+                      size={20}
+                      color={canMoveUp ? theme.text.secondary : theme.text.tertiary}
+                    />
+                  </Pressable>
+                  <Pressable
+                    style={[styles.reorderButton, !canMoveDown && styles.reorderButtonDisabled]}
+                    disabled={!canMoveDown}
+                    onPress={() => movePlanDrivenDay(visualIndex, visualIndex + 1)}
+                    hitSlop={8}
+                  >
+                    <IconSymbol
+                      name="keyboard-arrow-down"
+                      size={20}
+                      color={canMoveDown ? theme.text.secondary : theme.text.tertiary}
+                    />
+                  </Pressable>
+                </View>
+                <Pressable
+                  style={styles.cycleWorkoutPicker}
+                  onPress={() => openWorkoutPicker('plan-driven', visualIndex)}
+                >
+                  <Text
+                    variant="body"
+                    color={isRest ? 'tertiary' : 'primary'}
+                    numberOfLines={1}
+                    style={styles.cycleWorkoutText}
+                  >
+                    {workoutName}
+                  </Text>
+                  <IconSymbol name="chevron-right" size={16} color={theme.text.tertiary} />
+                </Pressable>
+                {cycleWorkouts.length > 1 && (
+                  <Pressable
+                    style={styles.removeButton}
+                    onPress={() => removePlanDrivenDay(visualIndex)}
+                  >
+                    <IconSymbol name="close" size={18} color={theme.accent.warning} />
+                  </Pressable>
+                )}
+              </View>
+            );
+          })}
+        </View>
+
+        {/* Add Day Button */}
+        <Pressable
+          style={[styles.addDayButton, { backgroundColor: theme.surface.elevated }]}
+          onPress={addPlanDrivenDay}
+          disabled={cycleWorkouts.length >= MAX_ROTATING_CYCLE_DAYS}
+        >
+          <IconSymbol name="add" size={24} color={theme.accent.warning} />
+        </Pressable>
+
+        {/* Save Button */}
         {allPlans.length > 0 && (
           <View style={styles.saveButtonWrapper}>
             <Button
@@ -774,9 +1076,14 @@ const ScheduleSetupScreen: React.FC = () => {
           </Pressable>
         </View>
         
-        <View style={styles.contentContainer}>
+        <ScrollView
+          ref={editorScrollRef}
+          style={styles.editorScroll}
+          contentContainerStyle={styles.contentContainer}
+          showsVerticalScrollIndicator={false}
+        >
           {step === 'type-select' ? renderTypeSelection() : renderConfigureStep()}
-        </View>
+        </ScrollView>
       </View>
 
       {renderWorkoutPicker()}
@@ -805,6 +1112,9 @@ const styles = StyleSheet.create({
     borderRadius: radius.full,
   },
   titleContainer: {
+    flex: 1,
+  },
+  editorScroll: {
     flex: 1,
   },
   contentContainer: {
@@ -913,6 +1223,20 @@ const styles = StyleSheet.create({
   removeButton: {
     padding: spacing.sm,
   },
+  reorderButtonsContainer: {
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 2,
+  },
+  reorderButton: {
+    paddingHorizontal: spacing.xs,
+    paddingVertical: 2,
+    borderRadius: radius.sm,
+  },
+  reorderButtonDisabled: {
+    opacity: 0.5,
+  },
   addDayWrapper: {
     alignItems: 'center',
   },
@@ -921,6 +1245,16 @@ const styles = StyleSheet.create({
   },
   planList: {
     gap: spacing.md,
+  },
+  planScrollView: {
+    flexGrow: 0,
+  },
+  planChip: {
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.lg,
+    borderRadius: radius.full,
+    marginRight: spacing.sm,
+    borderWidth: StyleSheet.hairlineWidth,
   },
   planCard: {
     borderRadius: radius.lg,

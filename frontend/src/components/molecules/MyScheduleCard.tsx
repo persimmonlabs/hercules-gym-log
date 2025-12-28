@@ -44,8 +44,8 @@ export const MyScheduleCard: React.FC<MyScheduleCardProps> = ({
   const userPrograms = useProgramsStore((state) => state.userPrograms);
   const plans = usePlansStore((state) => state.plans);
 
-  const getWorkoutName = (workoutId: string | null): string => {
-    if (!workoutId) return 'Rest';
+  const getWorkoutName = (workoutId: string | null | undefined): string => {
+    if (workoutId == null) return 'Rest';
 
     for (const program of userPrograms) {
       const workout = program.workouts.find((w) => w.id === workoutId);
@@ -56,6 +56,67 @@ export const MyScheduleCard: React.FC<MyScheduleCardProps> = ({
     if (plan) return plan.name;
 
     return 'Unknown';
+  };
+
+  const renderPlanDrivenSchedule = () => {
+    if (activeRule?.type !== 'plan-driven') return null;
+
+    // If plan-driven is active but the user has no saved plans (or the plan was deleted),
+    // treat it like no schedule configured.
+    if (userPrograms.length === 0 || !userPrograms.some((p) => p.id === activeRule.planId)) {
+      return renderEmptyState();
+    }
+
+    const cycleWorkouts = activeRule.cycleWorkouts || [];
+    if (cycleWorkouts.length === 0) {
+      return (
+        <View style={styles.emptyCard}>
+          <Text variant="bodySemibold" color="primary">
+            Plan-Driven Schedule
+          </Text>
+          <Text variant="body" color="secondary">
+            No cycle days yet.
+          </Text>
+        </View>
+      );
+    }
+
+    return (
+      <View style={styles.scheduleList}>
+        {cycleWorkouts.map((workoutId, visualIndex) => {
+          const workoutName = getWorkoutName(workoutId);
+          const isRest = workoutId === null || workoutId === undefined;
+
+          const today = new Date();
+          const daysSinceStart = Math.floor((today.getTime() - activeRule.startDate) / (1000 * 60 * 60 * 24));
+          const currentDayIndex = ((daysSinceStart % cycleWorkouts.length) + cycleWorkouts.length) % cycleWorkouts.length;
+          const isCurrentDay = daysSinceStart >= 0 && visualIndex === currentDayIndex;
+
+          return (
+            <View
+              key={visualIndex}
+              style={[styles.scheduleRow, { backgroundColor: theme.surface.elevated }]}
+            >
+              <Text
+                variant="bodySemibold"
+                color={isCurrentDay ? 'warning' : 'primary'}
+                style={styles.dayLabel}
+              >
+                Day {visualIndex + 1}
+              </Text>
+              <Text
+                variant="body"
+                color={isRest ? 'tertiary' : 'secondary'}
+                numberOfLines={1}
+                style={styles.workoutLabel}
+              >
+                {workoutName}
+              </Text>
+            </View>
+          );
+        })}
+      </View>
+    );
   };
 
   const renderEmptyState = () => (
@@ -120,7 +181,7 @@ export const MyScheduleCard: React.FC<MyScheduleCardProps> = ({
 
     return (
       <View style={styles.scheduleList}>
-        {activeRule.cycleWorkouts.map((workoutId, index) => {
+        {activeRule.cycleWorkouts.map((workoutId, visualIndex) => {
           const workoutName = getWorkoutName(workoutId);
           const isRest = workoutId === null;
 
@@ -128,11 +189,11 @@ export const MyScheduleCard: React.FC<MyScheduleCardProps> = ({
           const today = new Date();
           const daysSinceStart = Math.floor((today.getTime() - activeRule.startDate) / (1000 * 60 * 60 * 24));
           const currentDayIndex = daysSinceStart % activeRule.cycleWorkouts.length;
-          const isCurrentDay = index === currentDayIndex;
+          const isCurrentDay = visualIndex === currentDayIndex;
 
           return (
             <View
-              key={index}
+              key={visualIndex}
               style={[styles.scheduleRow, { backgroundColor: theme.surface.elevated }]}
             >
               <Text 
@@ -140,7 +201,7 @@ export const MyScheduleCard: React.FC<MyScheduleCardProps> = ({
                 color={isCurrentDay ? 'warning' : 'primary'} 
                 style={styles.dayLabel}
               >
-                Day {index + 1}
+                Day {visualIndex + 1}
               </Text>
               <Text
                 variant="body"
@@ -168,16 +229,7 @@ export const MyScheduleCard: React.FC<MyScheduleCardProps> = ({
       case 'rotating':
         return renderRotatingSchedule();
       case 'plan-driven':
-        return (
-          <View style={styles.emptyCard}>
-            <Text variant="bodySemibold" color="primary">
-              Plan-Driven Schedule
-            </Text>
-            <Text variant="body" color="secondary">
-              Following a saved plan in order.
-            </Text>
-          </View>
-        );
+        return renderPlanDrivenSchedule();
       default:
         return renderEmptyState();
     }

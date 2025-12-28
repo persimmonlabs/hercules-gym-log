@@ -516,7 +516,7 @@ const ScheduleEditorScreen: React.FC = () => {
 
                           <View style={styles.rotatingDayBadge}>
                             <Text variant="caption" color="onAccent">
-                              {day.dayNumber}
+                              {index + 1}
                             </Text>
                           </View>
 
@@ -564,6 +564,7 @@ const ScheduleEditorScreen: React.FC = () => {
                     variant="ghost"
                     size="sm"
                     onPress={() => addRotatingDay(false)}
+                    disabled={draftRotating.days.length >= 14}
                   />
                 </View>
               </>
