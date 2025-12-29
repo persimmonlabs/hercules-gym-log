@@ -5,12 +5,18 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
-import { exercises as exerciseCatalog, type Exercise } from '@/constants/exercises';
+import { 
+  exercises as baseExerciseCatalog, 
+  type Exercise, 
+  type ExerciseCatalogItem,
+  createCustomExerciseCatalogItem 
+} from '@/constants/exercises';
 import type { SetLog, Workout, WorkoutExercise } from '@/types/workout';
 import { usePlansStore } from '@/store/plansStore';
 
 import { useWorkoutSessionsStore } from '@/store/workoutSessionsStore';
 import { useSettingsStore } from '@/store/settingsStore';
+import { useCustomExerciseStore } from '@/store/customExerciseStore';
 import { getLastCompletedSetsForExercise } from '@/utils/exerciseHistory';
 
 interface WorkoutEditorHook {
@@ -62,6 +68,7 @@ export const useWorkoutEditor = (workoutId?: string): WorkoutEditorHook => {
   const hydrateWorkouts = useWorkoutSessionsStore((state) => state.hydrateWorkouts);
   const updateWorkout = useWorkoutSessionsStore((state) => state.updateWorkout);
   const plans = usePlansStore((state) => state.plans);
+  const customExercises = useCustomExerciseStore((state) => state.customExercises);
 
   const hydratePlans = usePlansStore((state) => state.hydratePlans);
   const { convertWeight, convertWeightToLbs, weightUnit } = useSettingsStore();
@@ -79,6 +86,14 @@ export const useWorkoutEditor = (workoutId?: string): WorkoutEditorHook => {
   const workout = useMemo<Workout | null>(() => {
     return workouts.find((item) => item.id === workoutId) ?? null;
   }, [workouts, workoutId]);
+
+  // Merge base catalog with custom exercises
+  const allExercises = useMemo<ExerciseCatalogItem[]>(() => {
+    const customCatalogItems = customExercises.map((ce) =>
+      createCustomExerciseCatalogItem(ce.id, ce.name, ce.exerciseType)
+    );
+    return [...baseExerciseCatalog, ...customCatalogItems];
+  }, [customExercises]);
 
   useEffect(() => {
     if (!workout) {
@@ -221,14 +236,14 @@ export const useWorkoutEditor = (workoutId?: string): WorkoutEditorHook => {
     const query = searchTerm.trim().toLowerCase();
 
     if (!query) {
-      return exerciseCatalog;
+      return allExercises;
     }
 
-    return exerciseCatalog.filter((exercise) => (
+    return allExercises.filter((exercise) => (
       exercise.name.toLowerCase().includes(query) ||
       exercise.muscleGroup.toLowerCase().includes(query)
     ));
-  }, [searchTerm]);
+  }, [searchTerm, allExercises]);
 
   const exerciseCount = exerciseDrafts.length;
 

@@ -52,8 +52,7 @@ const DistributionAnalyticsScreen: React.FC = () => {
   };
 
   const handleUpgrade = () => {
-    // TODO: Navigate to premium upgrade screen
-    console.log('Navigate to premium upgrade');
+    router.push('/premium');
   };
 
   return (

@@ -9,6 +9,7 @@ import { Button } from '@/components/atoms/Button';
 import { Badge } from '@/components/atoms';
 import { SurfaceCard } from '@/components/atoms/SurfaceCard';
 import { IconSymbol } from '@/components/ui/icon-symbol';
+import { PremiumLimitModal } from '@/components/molecules/PremiumLimitModal';
 import { colors, spacing, radius, sizing } from '@/constants/theme';
 import { useProgramsStore } from '@/store/programsStore';
 import type { PremadeProgram, UserProgram, RotationSchedule } from '@/types/premadePlan';
@@ -73,6 +74,8 @@ export default function ProgramDetailsScreen() {
   const { programId, from } = useLocalSearchParams<{ programId: string; from?: string }>();
   const { premadePrograms, userPrograms, clonePremadeProgram, setActiveRotation } = useProgramsStore();
   const [isAdding, setIsAdding] = useState(false);
+  const [showLimitModal, setShowLimitModal] = useState(false);
+  const [limitType, setLimitType] = useState<'workout' | 'plan'>('plan');
 
   const program = premadePrograms.find(p => p.id === programId) || userPrograms.find(p => p.id === programId);
   const isUserProgram = program && !program.isPremade;
@@ -121,9 +124,17 @@ export default function ProgramDetailsScreen() {
 
       // Navigate back to Plans tab
       router.replace('/(tabs)/plans');
-    } catch (error) {
-      console.error('Failed to add program:', error);
-      Alert.alert('Error', 'Failed to add program to your library.');
+    } catch (error: any) {
+      if (error?.message === 'FREE_LIMIT_REACHED') {
+        setLimitType('plan');
+        setShowLimitModal(true);
+      } else if (error?.message === 'WORKOUT_LIMIT_REACHED') {
+        setLimitType('workout');
+        setShowLimitModal(true);
+      } else {
+        console.error('Failed to add program:', error);
+        Alert.alert('Error', 'Failed to add program to your library.');
+      }
     } finally {
       setIsAdding(false);
     }
@@ -166,9 +177,15 @@ export default function ProgramDetailsScreen() {
   }, [isAdding, program, setActiveRotation, router]);
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom + sizing.tabBarHeight }]}>
-      {/* Content */}
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+    <>
+      <PremiumLimitModal
+        visible={showLimitModal}
+        onClose={() => setShowLimitModal(false)}
+        limitType={limitType}
+      />
+      <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom + sizing.tabBarHeight }]}>
+        {/* Content */}
+        <ScrollView contentContainerStyle={styles.scrollContent}>
         {/* Header */}
         <View style={styles.header}>
           <View style={styles.titleContainer}>
@@ -235,5 +252,6 @@ export default function ProgramDetailsScreen() {
         </View>
       </ScrollView>
     </View>
+    </>
   );
 }

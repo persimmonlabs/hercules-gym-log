@@ -15,6 +15,7 @@
 import { create } from 'zustand';
 
 import { exercises, type Exercise } from '@/constants/exercises';
+import { canAddWorkout } from '@/utils/premiumLimits';
 import { useWorkoutSessionsStore } from '@/store/workoutSessionsStore';
 import { supabaseClient } from '@/lib/supabaseClient';
 import {
@@ -33,6 +34,7 @@ export interface Plan {
   name: string;
   exercises: Exercise[];
   createdAt: number;
+  source?: 'premade' | 'custom'; // Track if workout came from premade library
 }
 
 /** A Workout is a collection of exercises (e.g., "Push Day", "Pull Day") */
@@ -42,7 +44,7 @@ export type Workout = Plan;
 export interface PlansState {
   plans: Plan[];
   isLoading: boolean;
-  addPlan: (input: { id?: string; name: string; exercises: Exercise[]; createdAt?: number }) => Promise<void>;
+  addPlan: (input: { id?: string; name: string; exercises: Exercise[]; createdAt?: number; source?: 'premade' | 'custom' }) => Promise<void>;
   updatePlan: (plan: Plan) => Promise<void>;
   removePlan: (id: string) => Promise<void>;
   hydratePlans: (userId?: string) => Promise<void>;
@@ -52,7 +54,7 @@ export const usePlansStore = create<PlansState>((set, get) => ({
   plans: [],
   isLoading: false,
 
-  addPlan: async ({ name, exercises: exerciseList }) => {
+  addPlan: async ({ id, name, exercises: exerciseList, source }: { id?: string; name: string; exercises: Exercise[]; source?: 'premade' | 'custom' }) => {
     const trimmedName = name.trim();
     if (!trimmedName) return;
 
@@ -61,6 +63,26 @@ export const usePlansStore = create<PlansState>((set, get) => ({
       if (!user) {
         console.error('[plansStore] No authenticated user');
         return;
+      }
+
+      // Free user limit: max 7 workouts (only for new workouts, not edits)
+      const isEditing = Boolean(id && get().plans.some(p => p.id === id));
+      if (!isEditing) {
+        // Count unique workout names (case-insensitive) to match what user sees in UI
+        const uniqueWorkoutNames = new Set(
+          get().plans.map(p => p.name.trim().toLowerCase())
+        );
+        const currentWorkoutCount = uniqueWorkoutNames.size;
+        console.log('[plansStore] Workout limit check:', { 
+          currentWorkoutCount, 
+          totalRecords: get().plans.length,
+          canAdd: canAddWorkout(currentWorkoutCount), 
+          limit: 7 
+        });
+        if (!canAddWorkout(currentWorkoutCount)) {
+          console.log('[plansStore] Blocking workout creation - limit reached');
+          throw new Error('FREE_LIMIT_REACHED');
+        }
       }
 
       // Create in Supabase
@@ -81,6 +103,7 @@ export const usePlansStore = create<PlansState>((set, get) => ({
         name: trimmedName,
         exercises: [...exerciseList],
         createdAt: Date.now(),
+        source: source || 'custom',
       };
 
       set((state) => ({
@@ -88,10 +111,13 @@ export const usePlansStore = create<PlansState>((set, get) => ({
       }));
 
       console.log('[plansStore] Workout template added to Supabase with ID:', newId);
-    } catch (error) {
-      console.error('[plansStore] Failed to add workout template', error);
-      // Re-hydrate to sync with server state
-      await get().hydratePlans();
+    } catch (error: any) {
+      // Don't log FREE_LIMIT_REACHED errors - they're handled in the UI
+      if (error?.message !== 'FREE_LIMIT_REACHED') {
+        console.error('[plansStore] Failed to add workout template', error);
+      }
+      // Re-throw to let UI handle it
+      throw error;
     }
   },
 

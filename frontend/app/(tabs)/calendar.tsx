@@ -1,6 +1,6 @@
-import React, { useCallback, useMemo, useState } from 'react';
-import { View, StyleSheet, Pressable } from 'react-native';
-import { useFocusEffect } from '@react-navigation/native';
+import React, { useCallback, useMemo, useState, useRef } from 'react';
+import { View, StyleSheet, Pressable, ScrollView } from 'react-native';
+import { useFocusEffect, useScrollToTop } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -32,6 +32,15 @@ const getWorkoutLocalISO = (workout: WorkoutSessionsState['workouts'][number]): 
 const CalendarScreen: React.FC = () => {
   const { theme } = useTheme();
   const router = useRouter();
+  const scrollRef = useRef<ScrollView>(null);
+  useScrollToTop(scrollRef);
+
+  useFocusEffect(
+    useCallback(() => {
+      scrollRef.current?.scrollTo({ y: 0, animated: false });
+    }, [])
+  );
+
   const [selectedDate, setSelectedDate] = useState<string>(() => formatDateToLocalISO(getDeviceCurrentDate()));
   const [currentMonth, setCurrentMonth] = useState<string>(() => formatDateToLocalISO(getDeviceCurrentDate()));
 
@@ -125,7 +134,7 @@ const CalendarScreen: React.FC = () => {
   );
 
   return (
-    <TabSwipeContainer contentContainerStyle={[styles.contentContainer, { backgroundColor: theme.primary.bg }]}>
+    <TabSwipeContainer ref={scrollRef} contentContainerStyle={[styles.contentContainer, { backgroundColor: theme.primary.bg }]}>
       <ScreenHeader
         title="Calendar"
         subtitle="Track workouts and build consistency."

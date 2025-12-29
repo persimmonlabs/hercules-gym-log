@@ -2,13 +2,15 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import * as Haptics from 'expo-haptics';
 
 import {
-  exercises,
+  exercises as baseExercises,
   exerciseFilterOptions,
   type Exercise,
   type ExerciseCatalogItem,
+  createCustomExerciseCatalogItem,
 } from '@/constants/exercises';
 import { usePlansStore, type Plan } from '@/store/plansStore';
 import { useProgramsStore } from '@/store/programsStore';
+import { useCustomExerciseStore } from '@/store/customExerciseStore';
 import { useSemanticExerciseSearch } from '@/hooks/useSemanticExerciseSearch';
 import {
   type ExerciseFilters,
@@ -70,6 +72,15 @@ export const usePlanBuilderState = (editingPlanId: string | null): PlanBuilderSt
 
   const plans = usePlansStore((state) => state.plans);
   const { userPrograms, premadeWorkouts } = useProgramsStore();
+  const customExercises = useCustomExerciseStore((state) => state.customExercises);
+
+  // Merge base catalog with custom exercises
+  const allExercises = useMemo<ExerciseCatalogItem[]>(() => {
+    const customCatalogItems = customExercises.map((ce) =>
+      createCustomExerciseCatalogItem(ce.id, ce.name, ce.exerciseType)
+    );
+    return [...baseExercises, ...customCatalogItems];
+  }, [customExercises]);
 
   const editingPlan = useMemo<Plan | null>(() => {
     if (!editingPlanId) {
@@ -85,7 +96,7 @@ export const usePlanBuilderState = (editingPlanId: string | null): PlanBuilderSt
         // Create fresh copies of exercises to prevent mutations affecting the program data
         const mappedExercises = workout.exercises
           .map(ex => {
-            const found = exercises.find(e => e.name === ex.name);
+            const found = allExercises.find(e => e.name === ex.name);
             return found ? { ...found } : null;
           })
           .filter((e): e is ExerciseCatalogItem => e !== null);
@@ -108,7 +119,7 @@ export const usePlanBuilderState = (editingPlanId: string | null): PlanBuilderSt
         // Create fresh copies of exercises to prevent mutations affecting the original premade data
         const mappedExercises = workout.exercises
           .map(ex => {
-            const found = exercises.find(e => e.id === ex.id);
+            const found = allExercises.find(e => e.id === ex.id);
             return found ? { ...found } : null;
           })
           .filter((e): e is ExerciseCatalogItem => e !== null);
@@ -123,8 +134,20 @@ export const usePlanBuilderState = (editingPlanId: string | null): PlanBuilderSt
       return null;
     }
 
-    return plans.find((plan) => plan.id === editingPlanId) ?? null;
-  }, [editingPlanId, plans, userPrograms, premadeWorkouts]);
+    const plan = plans.find((p) => p.id === editingPlanId);
+    if (!plan) return null;
+
+    // Resolve exercises from all available (including custom)
+    const resolvedExercises = plan.exercises.map(ex => {
+      const found = allExercises.find(e => e.name === ex.name);
+      return found ? { ...found } : ex;
+    });
+
+    return {
+      ...plan,
+      exercises: resolvedExercises,
+    };
+  }, [editingPlanId, plans, userPrograms, premadeWorkouts, allExercises]);
 
   const isEditing = Boolean(editingPlanId);
   const isPremadeReview = useMemo(() => {
@@ -209,8 +232,8 @@ export const usePlanBuilderState = (editingPlanId: string | null): PlanBuilderSt
 
   const availableCatalogExercises = useMemo<ExerciseCatalogItem[]>(() => {
     const selectedIds = new Set(selectedExercises.map((exercise) => exercise.id));
-    return exercises.filter((exercise) => !selectedIds.has(exercise.id));
-  }, [selectedExercises]);
+    return allExercises.filter((exercise) => !selectedIds.has(exercise.id));
+  }, [selectedExercises, allExercises]);
 
   const catalogFilteredByFilters = useMemo<ExerciseCatalogItem[]>(
     () => availableCatalogExercises.filter((exercise) => matchesExerciseFilters(exercise, filters)),

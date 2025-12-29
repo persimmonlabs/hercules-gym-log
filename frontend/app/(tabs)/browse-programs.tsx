@@ -11,6 +11,7 @@ import { QuickFilterChip } from '@/components/atoms/QuickFilterChip';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { colors, spacing, radius, sizing } from '@/constants/theme';
 import { useProgramsStore } from '@/store/programsStore';
+import { usePlansStore } from '@/store/plansStore';
 import type { PremadeProgram, UserProgram, ExperienceLevel, PremadeWorkout } from '@/types/premadePlan';
 
 const FILTERS: { label: string; value: ExperienceLevel | 'all' }[] = [
@@ -69,6 +70,7 @@ export default function BrowseProgramsScreen() {
   const isWorkoutMode = mode === 'workout';
 
   const { premadePrograms, premadeWorkouts, userPrograms } = useProgramsStore();
+  const { plans } = usePlansStore();
 
   const [selectedFilter, setSelectedFilter] = useState<ExperienceLevel | 'all'>('all');
 
@@ -80,6 +82,15 @@ export default function BrowseProgramsScreen() {
       if (selectedFilter !== 'all') {
         filtered = filtered.filter(p => p.metadata.experienceLevel === selectedFilter);
       }
+
+      // Filter out workouts that have been added to My Workouts
+      // Compare by name (case-insensitive) since premade workouts get new IDs when added
+      const addedWorkoutNames = new Set(
+        plans
+          .filter(plan => plan.source === 'premade')
+          .map(plan => plan.name.trim().toLowerCase())
+      );
+      filtered = filtered.filter(w => !addedWorkoutNames.has(w.name.trim().toLowerCase()));
 
       return filtered;
     } else {
@@ -96,7 +107,7 @@ export default function BrowseProgramsScreen() {
 
       return filtered;
     }
-  }, [premadePrograms, premadeWorkouts, selectedFilter, isWorkoutMode, userPrograms]);
+  }, [premadePrograms, premadeWorkouts, selectedFilter, isWorkoutMode, userPrograms, plans]);
 
   const handleBack = useCallback(() => {
     Haptics.selectionAsync().catch(() => { });

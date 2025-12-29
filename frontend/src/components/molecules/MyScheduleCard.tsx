@@ -55,7 +55,7 @@ export const MyScheduleCard: React.FC<MyScheduleCardProps> = ({
     const plan = plans.find((p) => p.id === workoutId);
     if (plan) return plan.name;
 
-    return 'Unknown';
+    return 'Rest';
   };
 
   const renderPlanDrivenSchedule = () => {
@@ -85,7 +85,7 @@ export const MyScheduleCard: React.FC<MyScheduleCardProps> = ({
       <View style={styles.scheduleList}>
         {cycleWorkouts.map((workoutId, visualIndex) => {
           const workoutName = getWorkoutName(workoutId);
-          const isRest = workoutId === null || workoutId === undefined;
+          const isRest = workoutId === null || workoutId === undefined || workoutName === 'Rest';
 
           const today = new Date();
           const daysSinceStart = Math.floor((today.getTime() - activeRule.startDate) / (1000 * 60 * 60 * 24));
@@ -99,7 +99,7 @@ export const MyScheduleCard: React.FC<MyScheduleCardProps> = ({
             >
               <Text
                 variant="bodySemibold"
-                color={isCurrentDay ? 'warning' : 'primary'}
+                color={isCurrentDay ? 'orange' : 'primary'}
                 style={styles.dayLabel}
               >
                 Day {visualIndex + 1}
@@ -150,15 +150,16 @@ export const MyScheduleCard: React.FC<MyScheduleCardProps> = ({
           // Use override if exists, otherwise use base schedule
           const workoutId = override ? override.workoutId : activeRule.days[key];
           const workoutName = getWorkoutName(workoutId);
-          const isRest = workoutId === null;
+          const isRest = workoutId === null || workoutName === 'Rest';
           const hasOverride = !!override;
+          const isCurrentDay = dayIndex === currentDayIndex;
 
           return (
             <View
               key={key}
               style={[styles.scheduleRow, { backgroundColor: theme.surface.elevated }]}
             >
-              <Text variant="bodySemibold" color="primary" style={styles.dayLabel}>
+              <Text variant="bodySemibold" color={isCurrentDay ? 'orange' : 'primary'} style={styles.dayLabel}>
                 {label}
               </Text>
               <Text
@@ -183,7 +184,7 @@ export const MyScheduleCard: React.FC<MyScheduleCardProps> = ({
       <View style={styles.scheduleList}>
         {activeRule.cycleWorkouts.map((workoutId, visualIndex) => {
           const workoutName = getWorkoutName(workoutId);
-          const isRest = workoutId === null;
+          const isRest = workoutId === null || workoutName === 'Rest';
 
           // Calculate if this is the current day in the rotating cycle
           const today = new Date();
@@ -198,7 +199,7 @@ export const MyScheduleCard: React.FC<MyScheduleCardProps> = ({
             >
               <Text 
                 variant="bodySemibold" 
-                color={isCurrentDay ? 'warning' : 'primary'} 
+                color={isCurrentDay ? 'orange' : 'primary'} 
                 style={styles.dayLabel}
               >
                 Day {visualIndex + 1}

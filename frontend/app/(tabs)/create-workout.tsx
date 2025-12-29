@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
@@ -12,6 +12,7 @@ import { IconSymbol } from '@/components/ui/icon-symbol';
 import { PlanSelectedExerciseList } from '@/components/molecules/PlanSelectedExerciseList';
 import { PlanEmptyStateCard } from '@/components/molecules/PlanEmptyStateCard';
 import { PlanNameCard } from '@/components/molecules/PlanNameCard';
+import { PremiumLimitModal } from '@/components/molecules/PremiumLimitModal';
 import { usePlanBuilderContext } from '@/providers/PlanBuilderProvider';
 import { colors, radius, spacing, sizing } from '@/constants/theme';
 
@@ -92,6 +93,7 @@ const styles = StyleSheet.create({
 const CreateWorkoutScreen: React.FC = () => {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const [showLimitModal, setShowLimitModal] = useState(false);
   const { planId, premadeWorkoutId, returnTo } = useLocalSearchParams<{ planId?: string; premadeWorkoutId?: string; returnTo?: string }>();
   const editingPlanId = useMemo(() => {
     // Prioritize planId (Edit Mode) over premadeWorkoutId (Review/Create Mode)
@@ -190,21 +192,22 @@ const CreateWorkoutScreen: React.FC = () => {
 
   const handleSavePlanPress = useCallback(() => {
     void (async () => {
-      const result = await handleSavePlan();
+      try {
+        const result = await handleSavePlan();
 
-      if (result === 'success') {
-        // If returnTo is specified, use it for navigation
-        if (decodedReturnTo) {
-          router.replace(decodedReturnTo as any);
-          return;
+        if (result === 'success') {
+          // If returnTo is specified, use it for navigation
+          if (decodedReturnTo) {
+            router.replace(decodedReturnTo);
+            return;
+          }
+
+          handleBackPress();
         }
-
-        // Check if we are in a nested stack context (e.g. from Edit Plan)
-        const idStr = Array.isArray(planId) ? planId[0] : planId;
-        if (idStr && (idStr.startsWith('program:') || idStr.includes('%3A'))) {
-          router.back();
-        } else {
-          router.push('/(tabs)/plans');
+        // Note: 'duplicate-name' no longer returned - system auto-renames duplicates
+      } catch (error: any) {
+        if (error?.message === 'FREE_LIMIT_REACHED') {
+          setShowLimitModal(true);
         }
       }
       // Note: 'duplicate-name' no longer returned - system auto-renames duplicates
@@ -219,7 +222,13 @@ const CreateWorkoutScreen: React.FC = () => {
   const hasExercises = selectedExercises.length > 0;
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
+    <>
+      <PremiumLimitModal
+        visible={showLimitModal}
+        onClose={() => setShowLimitModal(false)}
+        limitType="workout"
+      />
+      <View style={[styles.container, { paddingTop: insets.top }]}>
       <KeyboardAwareScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
@@ -296,6 +305,7 @@ const CreateWorkoutScreen: React.FC = () => {
         </View>
       </KeyboardAwareScrollView>
     </View>
+    </>
   );
 };
 

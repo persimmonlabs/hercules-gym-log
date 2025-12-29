@@ -29,7 +29,7 @@ import { Button } from '@/components/atoms/Button';
 import { Text } from '@/components/atoms/Text';
 import { ExerciseSetEditor } from '@/components/molecules/ExerciseSetEditor';
 import { ExerciseHistoryModal } from '@/components/molecules/ExerciseHistoryModal';
-import { exercises as exerciseCatalog } from '@/constants/exercises';
+import { exercises as baseExerciseCatalog, createCustomExerciseCatalogItem } from '@/constants/exercises';
 import { springGentle } from '@/constants/animations';
 import { colors, radius, shadows, sizing, spacing, typography, zIndex } from '@/constants/theme';
 import { useElapsedTimer } from '@/hooks/useElapsedTimer';
@@ -38,9 +38,13 @@ import { useSessionStore } from '@/store/sessionStore';
 import { usePlansStore } from '@/store/plansStore';
 import { useWorkoutSessionsStore } from '@/store/workoutSessionsStore';
 import { useProgramsStore } from '@/store/programsStore';
+import { useCustomExerciseStore } from '@/store/customExerciseStore';
+import { CreateExerciseModal } from '@/components/molecules/CreateExerciseModal';
+import { FinishConfirmationModal } from '@/components/molecules/FinishConfirmationModal';
 import { normalizeSearchText } from '@/utils/strings';
 import { createSetsWithHistory } from '@/utils/exerciseHistory';
-import type { Exercise } from '@/constants/exercises';
+import { getExerciseDisplayTagText } from '@/utils/exerciseDisplayTags';
+import type { Exercise, ExerciseCatalogItem } from '@/constants/exercises';
 import type { SetLog, WorkoutExercise } from '@/types/workout';
 import hierarchyData from '@/data/hierarchy.json';
 
@@ -90,10 +94,13 @@ const WorkoutSessionScreen: React.FC = () => {
   const removeExercise = useSessionStore((state) => state.removeExercise);
   const addWorkout = useWorkoutSessionsStore((state) => state.addWorkout);
   const { activeRotation, advanceRotation } = useProgramsStore();
+  const customExercises = useCustomExerciseStore((state) => state.customExercises);
 
   const sessionExercises = sessionToDisplay?.exercises ?? [];
 
   const [pickerVisible, setPickerVisible] = useState<boolean>(false);
+  const [createExerciseModalVisible, setCreateExerciseModalVisible] = useState<boolean>(false);
+  const pickerListRef = useRef<FlatList>(null);
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [expandedExercises, setExpandedExercises] = useState<Set<string>>(
     () => new Set(sessionExercises.length > 0 ? [sessionExercises[0].name] : [])
@@ -101,6 +108,7 @@ const WorkoutSessionScreen: React.FC = () => {
   const [menuExerciseName, setMenuExerciseName] = useState<string | null>(null);
   const [replaceTargetName, setReplaceTargetName] = useState<string | null>(null);
   const [historyModalVisible, setHistoryModalVisible] = useState<boolean>(false);
+  const [finishModalVisible, setFinishModalVisible] = useState<boolean>(false);
   const [historyTargetName, setHistoryTargetName] = useState<string | null>(null);
   const [menuPosition, setMenuPosition] = useState<{ top: number; right: number }>({ top: 0, right: 0 });
 
@@ -126,6 +134,10 @@ const WorkoutSessionScreen: React.FC = () => {
     setReplaceTargetName(null);
     setPickerVisible(true);
     setSearchTerm('');
+    // Ensure list is scrolled to top when opening
+    requestAnimationFrame(() => {
+      pickerListRef.current?.scrollToOffset({ offset: 0, animated: false });
+    });
   }, []);
 
   const { elapsedSeconds } = useElapsedTimer(sessionToDisplay?.startTime ?? null, {
@@ -147,6 +159,14 @@ const WorkoutSessionScreen: React.FC = () => {
   const modalCardInsets = useMemo(() => ({
     paddingBottom: spacing.lg + insets.bottom,
   }), [insets.bottom]);
+
+  // Merge custom exercises with base catalog
+  const exerciseCatalog = useMemo<ExerciseCatalogItem[]>(() => {
+    const customCatalogItems = customExercises.map((ce) =>
+      createCustomExerciseCatalogItem(ce.id, ce.name, ce.exerciseType)
+    );
+    return [...baseExerciseCatalog, ...customCatalogItems];
+  }, [customExercises]);
 
   const semanticResults = useSemanticExerciseSearch(searchTerm, exerciseCatalog, {
     limit: exerciseCatalog.length,
@@ -192,7 +212,8 @@ const WorkoutSessionScreen: React.FC = () => {
 
           if (tokens.length > 0) {
             candidates = exerciseCatalog.filter((exercise) => {
-              const target = exercise.searchIndex;
+              const normalizedName = normalizeSearchText(exercise.name);
+              const target = `${normalizedName} ${exercise.searchIndex}`;
               return tokens.every((token) => target.includes(token));
             });
           }
@@ -221,6 +242,10 @@ const WorkoutSessionScreen: React.FC = () => {
       setReplaceTargetName(exerciseName);
       setPickerVisible(true);
       setSearchTerm('');
+      // Ensure list is scrolled to top when opening
+      requestAnimationFrame(() => {
+        pickerListRef.current?.scrollToOffset({ offset: 0, animated: false });
+      });
       console.log('[WorkoutSession] State updates dispatched');
     },
     [],
@@ -346,12 +371,17 @@ const WorkoutSessionScreen: React.FC = () => {
   }, [updateExercise]);
 
   const handleFinishWorkout = useCallback(async () => {
+    setFinishModalVisible(true);
+  }, []);
+
+  const handleConfirmFinish = useCallback(async () => {
     // Prevent multiple concurrent finish operations
     if (isFinishingWorkout) {
       return;
     }
 
     setIsFinishingWorkout(true);
+    setFinishModalVisible(false);
 
     // Build workout object WITHOUT clearing session state yet
     // This keeps the session active so the UI doesn't flash to "Start your next session"
@@ -398,7 +428,7 @@ const WorkoutSessionScreen: React.FC = () => {
       setIsFinishingWorkout(false);
       router.replace('/(tabs)');
     }
-  }, [isFinishingWorkout, sessionToDisplay, endSession, addWorkout, router]);
+  }, [isFinishingWorkout, sessionToDisplay, endSession, addWorkout, router, activeRotation, advanceRotation]);
 
   const handleCancel = useCallback(() => {
     clearSession();
@@ -537,6 +567,8 @@ const WorkoutSessionScreen: React.FC = () => {
     if (pickerVisible) {
       sheetTranslateY.value = SCREEN_HEIGHT;
       sheetTranslateY.value = withSpring(0, springGentle);
+      // Scroll to top when opening
+      pickerListRef.current?.scrollToOffset({ offset: 0, animated: false });
     } else {
       sheetTranslateY.value = SCREEN_HEIGHT;
     }
@@ -640,10 +672,12 @@ const WorkoutSessionScreen: React.FC = () => {
         ) : (
           <Button
             label="Cancel Workout"
-            variant="secondary"
+            variant="ghost"
             size="md"
             onPress={handleCancel}
             disabled={isFinishingWorkout}
+            contentStyle={styles.cancelButton}
+            textColor={colors.accent.red}
           />
         )}
       </View>
@@ -659,13 +693,11 @@ const WorkoutSessionScreen: React.FC = () => {
         ]}
       >
         <View style={styles.listEmptyCard}>
-          <Text variant="heading3">No exercises yet</Text>
-          <Text color="secondary">Add an exercise to begin tracking your sets and progress.</Text>
-          <Button label="Add Exercise" variant="ghost" size="md" onPress={handleAddExercisePress} />
+          <Text variant="heading3">No exercises yet.</Text>
         </View>
       </View>
     ),
-    [handleAddExercisePress, tabBarTopOffset]
+    [tabBarTopOffset]
   );
   const renderExerciseSeparator = useCallback(() => <View style={styles.exerciseSeparator} />, []);
 
@@ -843,6 +875,7 @@ const WorkoutSessionScreen: React.FC = () => {
             </View>
           </GestureDetector>
           <FlatList
+            ref={pickerListRef}
             data={filteredExercises}
             keyExtractor={(item) => item.id}
             style={styles.modalList}
@@ -857,15 +890,10 @@ const WorkoutSessionScreen: React.FC = () => {
               </View>
             )}
             renderItem={({ item }) => {
-              // Get all muscle names from the exercise's muscles object
-              const muscleNames = Object.keys(item.muscles || {});
-
-              // Map each muscle to its mid-level parent group
-              const midLevelGroups = muscleNames.map(muscle => muscleToMidLevelMap[muscle]).filter(Boolean);
-
-              // Remove duplicates and sort for consistency
-              const uniqueGroups = [...new Set(midLevelGroups)];
-              const midLevelMusclesLabel = uniqueGroups.length > 0 ? uniqueGroups.join(' · ') : 'General';
+              const musclesLabel = getExerciseDisplayTagText({
+                muscles: item.muscles,
+                exerciseType: item.exerciseType,
+              });
 
               return (
                 <Pressable
@@ -878,11 +906,32 @@ const WorkoutSessionScreen: React.FC = () => {
                     {item.name}
                   </Text>
                   <Text variant="caption" color="secondary">
-                    {`${midLevelMusclesLabel} • ${item.movementPattern}`}
+                    {musclesLabel || 'General'}
                   </Text>
                 </Pressable>
               );
             }}
+            ListFooterComponent={(
+              <Pressable
+                style={styles.createExerciseButton}
+                onPress={() => {
+                  void Haptics.selectionAsync();
+                  dismissPicker();
+                  setCreateExerciseModalVisible(true);
+                }}
+                accessibilityRole="button"
+                accessibilityLabel="Create a new custom exercise"
+              >
+                <MaterialCommunityIcons
+                  name="plus-circle-outline"
+                  size={sizing.iconMD}
+                  color={colors.accent.primary}
+                />
+                <Text variant="bodySemibold" style={{ color: colors.accent.primary }}>
+                  Create Exercise
+                </Text>
+              </Pressable>
+            )}
           />
         </AnimatedPressable>
       </Pressable>
@@ -922,6 +971,24 @@ const WorkoutSessionScreen: React.FC = () => {
         visible={historyModalVisible}
         onClose={closeHistoryModal}
         exerciseName={historyTargetName}
+      />
+      <FinishConfirmationModal
+        visible={finishModalVisible}
+        onClose={() => setFinishModalVisible(false)}
+        onConfirm={handleConfirmFinish}
+        isLoading={isFinishingWorkout}
+      />
+      <CreateExerciseModal
+        visible={createExerciseModalVisible}
+        onClose={() => setCreateExerciseModalVisible(false)}
+        onExerciseCreated={(exerciseName, exerciseType) => {
+          // Find the newly created exercise and add it to the session
+          const newExercise = exerciseCatalog.find(e => e.name === exerciseName);
+          if (newExercise) {
+            handleSelectExercise(newExercise);
+          }
+          setCreateExerciseModalVisible(false);
+        }}
       />
     </View>
   );
@@ -982,7 +1049,7 @@ const styles = StyleSheet.create({
     paddingLeft: spacing.md,
     paddingRight: spacing.md,
     paddingVertical: spacing.sm,
-    borderWidth: 1,
+    borderWidth: 2,
     borderColor: colors.accent.orange,
     overflow: 'visible',
     position: 'relative',
@@ -1109,7 +1176,8 @@ const styles = StyleSheet.create({
     gap: spacing.md,
     borderRadius: radius.lg,
     borderWidth: 1,
-    borderColor: colors.border.light,
+    borderColor: '#000000',
+    borderStyle: 'dashed',
     backgroundColor: colors.surface.card,
     padding: spacing.lg,
   },
@@ -1178,7 +1246,7 @@ const styles = StyleSheet.create({
   },
   modalListContent: {
     paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.md,
+    paddingBottom: spacing['2xl'] * 2,
     paddingTop: spacing.xs,
     gap: spacing.xs,
     flexGrow: 1,
@@ -1193,5 +1261,21 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.lg,
     paddingHorizontal: spacing.lg,
     alignItems: 'center',
+  },
+  createExerciseButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.md,
+    marginTop: spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: colors.border.light,
+  },
+  cancelButton: {
+    backgroundColor: colors.surface.card,
+    borderWidth: 1.5,
+    borderColor: colors.accent.red,
+    borderRadius: radius.lg,
   },
 });

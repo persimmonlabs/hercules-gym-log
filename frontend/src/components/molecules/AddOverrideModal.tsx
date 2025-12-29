@@ -68,6 +68,7 @@ export const AddOverrideModal: React.FC<AddOverrideModalProps> = ({
   const { theme } = useTheme();
   const addOverride = useActiveScheduleStore((state) => state.addOverride);
   const removeOverride = useActiveScheduleStore((state) => state.removeOverride);
+  const setActiveRule = useActiveScheduleStore((state) => state.setActiveRule);
   const overrides = useActiveScheduleStore((state) => state.state.overrides);
 
   const userPrograms = useProgramsStore((state) => state.userPrograms);
@@ -134,9 +135,9 @@ export const AddOverrideModal: React.FC<AddOverrideModalProps> = ({
   }, []);
 
   const handleSave = useCallback(async () => {
-    if (!selectedDate) return;
-
     void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+
+    if (!selectedDate) return;
 
     const override: ScheduleOverride = {
       date: selectedDate,
@@ -237,13 +238,13 @@ export const AddOverrideModal: React.FC<AddOverrideModalProps> = ({
                 <IconSymbol
                   name="bedtime"
                   size={24}
-                  color={isRest ? theme.accent.orange : theme.text.tertiary}
+                  color={isRest ? theme.accent.orange : theme.text.primary}
                 />
                 <View style={styles.optionContent}>
                   <Text variant="bodySemibold" color="primary">
                     Rest Day
                   </Text>
-                  <Text variant="caption" color="secondary">
+                  <Text variant="bodySemibold" color="primary">
                     Take the day off from training
                   </Text>
                 </View>
@@ -353,6 +354,8 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
     borderRadius: radius.md,
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.accent.orange,
   },
   optionCard: {
     flexDirection: 'row',
@@ -360,7 +363,7 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
     borderRadius: radius.lg,
     borderWidth: 1,
-    borderColor: 'transparent',
+    borderColor: colors.accent.orange,
     gap: spacing.md,
   },
   optionContent: {

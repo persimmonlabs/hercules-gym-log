@@ -55,7 +55,7 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
   },
   restDay: {
-    opacity: 0.6,
+    opacity: 1,
   },
   modalOverlay: {
     flex: 1,
@@ -145,10 +145,10 @@ export const WeeklyScheduleEditor: React.FC<WeeklyScheduleEditorProps> = ({
             <Text variant="bodySemibold" color="primary" style={styles.dayLabel}>
               {label}
             </Text>
-            <View style={[styles.workoutButton, isRest && styles.restDay]}>
+            <View style={styles.workoutButton}>
               <Text 
-                variant="body" 
-                color={isRest ? 'tertiary' : 'secondary'}
+                variant="bodySemibold" 
+                color="primary"
                 numberOfLines={1}
               >
                 {getWorkoutName(workoutId)}
@@ -156,7 +156,7 @@ export const WeeklyScheduleEditor: React.FC<WeeklyScheduleEditorProps> = ({
               <IconSymbol 
                 name="chevron-right" 
                 size={16} 
-                color={colors.text.tertiary} 
+                color={colors.text.primary} 
               />
             </View>
           </Pressable>
@@ -196,7 +196,7 @@ export const WeeklyScheduleEditor: React.FC<WeeklyScheduleEditorProps> = ({
                 ]}
                 onPress={() => handleSelectWorkout(null)}
               >
-                <Text variant="body" color="tertiary">Rest Day</Text>
+                <Text variant="body" color="primary">Rest Day</Text>
                 {selectedDay && !schedule[selectedDay] && (
                   <IconSymbol name="check" size={20} color={colors.accent.primary} />
                 )}

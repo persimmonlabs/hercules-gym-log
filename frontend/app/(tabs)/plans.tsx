@@ -1,6 +1,7 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Alert, Modal, Pressable, StyleSheet, View, type ViewStyle } from 'react-native';
+import React, { useCallback, useEffect, useMemo, useState, useRef } from 'react';
+import { Alert, Modal, Pressable, StyleSheet, View, ScrollView, type ViewStyle } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useScrollToTop, useFocusEffect } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
 import Animated, { Easing, useAnimatedStyle, useSharedValue, withSpring, withTiming, type AnimatedStyle } from 'react-native-reanimated';
 
@@ -226,6 +227,10 @@ const styles = StyleSheet.create({
   planCardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
+    flex: 1,
+  },
+  planCardHeaderText: {
+    flex: 1,
   },
   scheduleSubCard: {
     borderRadius: radius.lg,
@@ -302,6 +307,15 @@ const styles = StyleSheet.create({
 const PlansScreen: React.FC = () => {
   const { theme } = useTheme();
   const router = useRouter();
+  const scrollRef = useRef<ScrollView>(null);
+  useScrollToTop(scrollRef);
+
+  useFocusEffect(
+    useCallback(() => {
+      scrollRef.current?.scrollTo({ y: 0, animated: false });
+    }, [])
+  );
+
   const [workoutInProgressVisible, setWorkoutInProgressVisible] = useState<boolean>(false);
   const plans = usePlansStore((state: PlansState) => state.plans);
   const removePlan = usePlansStore((state: PlansState) => state.removePlan);
@@ -453,6 +467,7 @@ const PlansScreen: React.FC = () => {
       name: string;
       exercises: any[];
       type: 'custom' | 'program';
+      source?: 'premade' | 'custom';
       programNames: string[];
       programIds: string[];
       programId?: string;
@@ -471,6 +486,7 @@ const PlansScreen: React.FC = () => {
           name: plan.name,
           exercises: plan.exercises,
           type: 'custom',
+          source: plan.source || 'custom',
           programNames: [],
           programIds: [],
           uniqueId: `template-${plan.id}`,
@@ -513,7 +529,7 @@ const PlansScreen: React.FC = () => {
       .map((w): GroupedWorkout => ({
         ...w,
         subtitle: w.type === 'custom' 
-          ? `Custom • ${w.exercises.length} exercises`
+          ? `${w.source === 'premade' ? 'Added' : 'Custom'} • ${w.exercises.length} exercises`
           : `${w.programNames.join(' • ')} • ${w.exercises.length} exercises`
       }))
       .sort((a, b) => {
@@ -567,7 +583,7 @@ const PlansScreen: React.FC = () => {
 
 
   return (
-    <TabSwipeContainer contentContainerStyle={[styles.contentContainer, { backgroundColor: theme.primary.bg }]}>
+    <TabSwipeContainer ref={scrollRef} contentContainerStyle={[styles.contentContainer, { backgroundColor: theme.primary.bg }]}>
       <WorkoutInProgressModal
         visible={workoutInProgressVisible}
         sessionName={currentSession?.name ?? 'Current Workout'}
@@ -602,7 +618,7 @@ const PlansScreen: React.FC = () => {
                   {expandedPlanId === item.uniqueId ? (
                     <View style={styles.planExpandedContent}>
                       <View style={styles.planCardHeader}>
-                        <Text variant="bodySemibold" color="primary">
+                        <Text variant="bodySemibold" color="primary" style={styles.planCardHeaderText}>
                           {item.name}
                         </Text>
                       </View>
@@ -660,7 +676,7 @@ const PlansScreen: React.FC = () => {
                   ) : (
                     <View style={styles.planCardContent}>
                       <View style={styles.planCardHeader}>
-                        <Text variant="bodySemibold" color="primary">
+                        <Text variant="bodySemibold" color="primary" style={styles.planCardHeaderText}>
                           {item.name}
                         </Text>
                       </View>

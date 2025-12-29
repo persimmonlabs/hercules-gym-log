@@ -33,6 +33,7 @@ import {
   type RotationStateDB,
 } from '@/lib/supabaseQueries';
 import { usePlansStore } from '@/store/plansStore';
+import { canAddPlan, canAddWorkout, getProgramLimitType, FREE_LIMITS } from '@/utils/premiumLimits';
 
 interface ProgramsState {
   premadePrograms: PremadeProgram[];
@@ -193,6 +194,12 @@ export const useProgramsStore = create<ProgramsState>((set, get) => ({
         return null;
       }
 
+      // Free user limit: max 1 plan
+      const currentPlanCount = get().userPrograms.length;
+      if (!canAddPlan(currentPlanCount)) {
+        throw new Error('FREE_LIMIT_REACHED');
+      }
+
       // Create in Supabase and get the generated UUIDs
       const { id: newPlanId, workouts: mappedWorkouts } = await createUserPlan(user.id, program);
 
@@ -237,16 +244,33 @@ export const useProgramsStore = create<ProgramsState>((set, get) => ({
 
       console.log('[programsStore] Program added to Supabase with ID:', newPlanId);
       return newPlanId;
-    } catch (error) {
-      console.error('[programsStore] Failed to add program', error);
-      await get().hydratePrograms();
-      return null;
+    } catch (error: any) {
+      // Don't log FREE_LIMIT_REACHED errors - they're handled in the UI
+      if (error?.message !== 'FREE_LIMIT_REACHED') {
+        console.error('[programsStore] Failed to add program', error);
+        await get().hydratePrograms();
+      }
+      // Re-throw to let UI handle it
+      throw error;
     }
   },
 
   clonePremadeProgram: async (premadeId) => {
     const premade = get().premadePrograms.find(p => p.id === premadeId);
     if (!premade) return null;
+
+    // Check free user limits
+    const currentPlanCount = get().userPrograms.length;
+    const currentWorkoutCount = usePlansStore.getState().plans.length;
+    const programWorkoutCount = premade.workouts.filter(w => w.exercises.length > 0).length;
+    
+    // Determine which limit would be exceeded
+    const limitType = getProgramLimitType(currentPlanCount, currentWorkoutCount, programWorkoutCount);
+    if (limitType === 'plan') {
+      throw new Error('FREE_LIMIT_REACHED');
+    } else if (limitType === 'workout') {
+      throw new Error('WORKOUT_LIMIT_REACHED');
+    }
 
     // Auto-rename if duplicate program name
     const existingProgramNames = new Set(get().userPrograms.map(p => p.name));
@@ -327,7 +351,8 @@ export const useProgramsStore = create<ProgramsState>((set, get) => ({
     };
 
     // Add to Supabase and get the real UUID
-    const realProgramId = await get().addUserProgram(userProgram);
+    try {
+      const realProgramId = await get().addUserProgram(userProgram);
 
     // Set as active using the real ID from Supabase
     if (realProgramId) {
@@ -349,7 +374,11 @@ export const useProgramsStore = create<ProgramsState>((set, get) => ({
       return { ...userProgram, id: realProgramId };
     }
 
-    return null;
+      return null;
+    } catch (error: any) {
+      // Re-throw to let UI handle it (don't log here, addUserProgram already handles it)
+      throw error;
+    }
   },
 
   updateUserProgram: async (program) => {

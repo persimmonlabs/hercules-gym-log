@@ -177,7 +177,7 @@ export const useActiveScheduleStore = create<ActiveScheduleStore>((set, get) => 
       return {
         workoutId: override.workoutId,
         source: 'override',
-        label: override.note || (override.workoutId ? 'Override' : 'Rest (Override)'),
+        label: override.note || (override.workoutId ? 'Override' : 'Rest'),
         context: 'Manual override',
       };
     }

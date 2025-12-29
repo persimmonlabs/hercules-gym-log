@@ -1,6 +1,7 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { View, StyleSheet, Pressable } from 'react-native';
+import React, { useCallback, useEffect, useMemo, useState, useRef } from 'react';
+import { View, StyleSheet, Pressable, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useScrollToTop, useFocusEffect } from '@react-navigation/native';
 import type { Href } from 'expo-router';
 import type { ViewStyle } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -42,6 +43,7 @@ import type { Schedule } from '@/types/schedule';
 import type { UserProgram, RotationSchedule, ProgramWorkout } from '@/types/premadePlan';
 import { createSetsWithHistory } from '@/utils/workout';
 import { useActiveScheduleStore } from '@/store/activeScheduleStore';
+import { formatDateToLocalISO } from '@/utils/date';
 
 const QUICK_LINKS: QuickLinkItem[] = [
   { id: 'link-workout', title: 'Start Workout', description: 'Log a new workout session.', icon: 'flash-outline', route: 'workout', variant: 'primary' },
@@ -480,6 +482,15 @@ const DashboardScreen: React.FC = () => {
   ];
 
   const router = useRouter();
+  const scrollRef = useRef<ScrollView>(null);
+  useScrollToTop(scrollRef);
+
+  useFocusEffect(
+    useCallback(() => {
+      scrollRef.current?.scrollTo({ y: 0, animated: false });
+    }, [])
+  );
+
   const schedules = useSchedulesStore((state: SchedulesState) => state.schedules);
   const hydrateSchedules = useSchedulesStore((state: SchedulesState) => state.hydrateSchedules);
   const plans = usePlansStore((state: PlansState) => state.plans);
@@ -846,7 +857,7 @@ const DashboardScreen: React.FC = () => {
   const recentWorkoutLifts = [recentWorkoutLiftOne, recentWorkoutLiftTwo, recentWorkoutLiftThree];
 
   return (
-    <TabSwipeContainer>
+    <TabSwipeContainer ref={scrollRef}>
       <LinearGradient
         colors={[theme.primary.bg, theme.primary.light, theme.primary.bg]}
         locations={[0, 0.55, 1]}
@@ -908,8 +919,28 @@ const DashboardScreen: React.FC = () => {
                       ];
                       const dayNumberColor: 'primary' | 'onAccent' = isWorkoutDay ? 'onAccent' : 'primary';
 
+                      const handleDayPress = () => {
+                        if (day.hasWorkout) {
+                          // Extract ISO date from day.id (format: YYYY-MM-DD-label)
+                          const dayISO = day.id.split('-').slice(0, 3).join('-');
+                          
+                          // Find the workout for this day by comparing ISO dates
+                          const workout = workouts.find(w => {
+                            const workoutISO = w.startTime 
+                              ? formatDateToLocalISO(new Date(w.startTime))
+                              : w.date ? formatDateToLocalISO(new Date(w.date)) : null;
+                            return workoutISO === dayISO;
+                          });
+                          
+                          if (workout) {
+                            void Haptics.selectionAsync();
+                            router.push({ pathname: '/(tabs)/workout-detail', params: { workoutId: workout.id } });
+                          }
+                        }
+                      };
+
                       return (
-                        <View key={day.id} style={styles.dayBubbleWrapper}>
+                        <Pressable key={day.id} style={styles.dayBubbleWrapper} onPress={handleDayPress}>
                           <Animated.View style={[styles.dayBubbleBase, dayAnimatedStyles[index]]}>
                             <View style={borderStyle}>
                               <View style={contentStyle}>
@@ -928,7 +959,7 @@ const DashboardScreen: React.FC = () => {
                               {day.label}
                             </Text>
                           )}
-                        </View>
+                        </Pressable>
                       );
                     })}
                   </View>
@@ -1016,6 +1047,43 @@ const DashboardScreen: React.FC = () => {
                               style={styles.planStartButton}
                               onPress={() => {
                                 void Haptics.selectionAsync();
+                                
+                                // Find the workout from either plans or user programs
+                                let targetWorkout: Plan | ProgramWorkout | null = null;
+                                let planId = '';
+                                let sessionName = '';
+
+                                const plan = plans.find((p) => p.id === todaysCardState.workoutId);
+                                if (plan) {
+                                  targetWorkout = plan;
+                                  planId = plan.id;
+                                  sessionName = plan.name;
+                                } else {
+                                  for (const program of userPrograms) {
+                                    const workout = program.workouts.find((w) => w.id === todaysCardState.workoutId);
+                                    if (workout) {
+                                      targetWorkout = workout;
+                                      planId = program.id;
+                                      sessionName = workout.name;
+                                      break;
+                                    }
+                                  }
+                                }
+
+                                if (targetWorkout) {
+                                  const historySetCounts: Record<string, number> = {};
+                                  const workoutExercises: WorkoutExercise[] = targetWorkout.exercises.map((exercise) => {
+                                    const { sets, historySetCount } = createSetsWithHistory(exercise.name, workouts);
+                                    historySetCounts[exercise.name] = historySetCount;
+                                    return {
+                                      name: exercise.name,
+                                      sets,
+                                    };
+                                  });
+
+                                  startSession(planId, workoutExercises, sessionName, historySetCounts);
+                                }
+                                
                                 router.push('/(tabs)/workout');
                               }}
                               accessibilityRole="button"

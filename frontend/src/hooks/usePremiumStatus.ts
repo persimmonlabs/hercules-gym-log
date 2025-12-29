@@ -18,8 +18,9 @@ const FREE_STATUS: PremiumStatus = {
   tier: 'free',
 };
 
-// DEV MODE: Set to true to test premium features
-const DEV_PREMIUM_ENABLED = __DEV__;
+// DEV MODE: Set to false to test free tier by default
+// Use the dev toggle in Profile settings to switch between free/premium
+const DEV_PREMIUM_ENABLED = false;
 
 // Mock premium status for development/testing
 const MOCK_PREMIUM_STATUS: PremiumStatus = {
@@ -53,13 +54,13 @@ export const usePremiumStatus = (options: UsePremiumStatusOptions = {}) => {
       // Simulate network delay
       await new Promise((resolve) => setTimeout(resolve, 100));
 
-      if (__DEV__ && premiumOverride !== 'default') {
-        if (premiumOverride === 'premium') {
-          setStatus(MOCK_PREMIUM_STATUS);
-        } else {
-          setStatus(FREE_STATUS);
-        }
+      // Check dev tools override first
+      if (premiumOverride === 'premium') {
+        setStatus(MOCK_PREMIUM_STATUS);
+      } else if (premiumOverride === 'free') {
+        setStatus(FREE_STATUS);
       } else if (mockPremium || DEV_PREMIUM_ENABLED) {
+        // Default behavior when no override is set
         setStatus(MOCK_PREMIUM_STATUS);
       } else {
         setStatus(FREE_STATUS);

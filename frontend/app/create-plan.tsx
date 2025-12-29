@@ -26,6 +26,7 @@ import { IconSymbol } from '@/components/ui/icon-symbol';
 import { PlanQuickBuilderCard } from '@/components/molecules/PlanQuickBuilderCard';
 import type { PlanQuickBuilderField } from '@/types/planQuickBuilder';
 import { PlanSelectedExerciseList } from '@/components/molecules/PlanSelectedExerciseList';
+import { PremiumLimitModal } from '@/components/molecules/PremiumLimitModal';
 import { useSemanticExerciseSearch } from '@/hooks/useSemanticExerciseSearch';
 import { type Plan, type PlansState, usePlansStore } from '@/store/plansStore';
 import { useProgramsStore } from '@/store/programsStore';
@@ -131,6 +132,7 @@ const CreatePlanScreen: React.FC = () => {
   const [focusedField, setFocusedField] = useState<PlanQuickBuilderField | null>(null);
   const hasInitializedFromPlan = useRef<boolean>(false);
   const [isNameDuplicate, setIsNameDuplicate] = useState<boolean>(false);
+  const [showLimitModal, setShowLimitModal] = useState<boolean>(false);
 
   const persistPlan = usePlansStore((state: PlansState) => state.addPlan);
   const updatePlanStore = usePlansStore((state: PlansState) => state.updatePlan);
@@ -307,12 +309,17 @@ const CreatePlanScreen: React.FC = () => {
           name: trimmedName,
           exercises: selectedExercises,
           createdAt: createdAtTimestamp,
+          source: isPremadeReview ? 'premade' : 'custom',
         });
       }
 
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       return 'success';
-    } catch (error) {
+    } catch (error: any) {
+      if (error?.message === 'FREE_LIMIT_REACHED') {
+        setShowLimitModal(true);
+        return 'error';
+      }
       console.error('[create-plan] Failed to persist plan', error);
       return 'error';
     }
@@ -358,7 +365,13 @@ const CreatePlanScreen: React.FC = () => {
   }, [containerTranslateY, router]);
 
   return (
-    <Animated.View style={[styles.container, { paddingTop: spacing.lg + insets.top, paddingBottom: insets.bottom + sizing.tabBarHeight }, animatedContainerStyle]}>
+    <>
+      <PremiumLimitModal
+        visible={showLimitModal}
+        onClose={() => setShowLimitModal(false)}
+        limitType="workout"
+      />
+      <Animated.View style={[styles.container, { paddingTop: spacing.lg + insets.top, paddingBottom: insets.bottom + sizing.tabBarHeight }, animatedContainerStyle]}>
       <KeyboardAvoidingView
         style={styles.keyboardAvoider}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -444,6 +457,7 @@ const CreatePlanScreen: React.FC = () => {
         </ScrollView>
       </KeyboardAvoidingView>
     </Animated.View>
+    </>
   );
 };
 

@@ -227,3 +227,57 @@ export const exerciseFilterOptions = {
 
 export type { Exercise, ExerciseCatalogItem } from '@/types/exercise';
 
+/**
+ * Creates an ExerciseCatalogItem from a custom exercise.
+ * Custom exercises have minimal metadata since they're user-defined.
+ */
+export const createCustomExerciseCatalogItem = (
+  id: string,
+  name: string,
+  exerciseType: ExerciseType
+): ExerciseCatalogItem => ({
+  id,
+  name,
+  muscles: {},
+  muscleGroup: 'Full Body' as MuscleGroup,
+  filterMuscleGroup: 'Upper Body' as FilterMuscleGroup,
+  secondaryMuscleGroups: [],
+  equipment: [] as EquipmentType[],
+  movementPattern: 'Isometric' as MovementPattern,
+  difficulty: 'Intermediate' as DifficultyLevel,
+  isCompound: false,
+  isBodyweight: exerciseType === 'bodyweight',
+  exerciseType,
+  searchIndex: normalizeSearchText(`${name} custom`),
+});
+
+/**
+ * Checks if an exercise is a custom (user-created) exercise.
+ * Custom exercise IDs are UUIDs from Supabase, while built-in exercises
+ * have short alphanumeric IDs.
+ */
+export const isCustomExercise = (exerciseId: string): boolean => {
+  // Supabase UUIDs are 36 characters with dashes
+  return exerciseId.length === 36 && exerciseId.includes('-');
+};
+
+/**
+ * Gets exercise type for an exercise by name, checking custom exercises first.
+ */
+export const getExerciseTypeByName = (
+  exerciseName: string,
+  customExercises: Array<{ name: string; exerciseType: ExerciseType }>
+): ExerciseType => {
+  const customExercise = customExercises.find(
+    (e) => e.name.toLowerCase() === exerciseName.toLowerCase()
+  );
+  if (customExercise) {
+    return customExercise.exerciseType;
+  }
+
+  const catalogExercise = exercises.find(
+    (e) => e.name.toLowerCase() === exerciseName.toLowerCase()
+  );
+  return catalogExercise?.exerciseType || 'weight';
+};
+

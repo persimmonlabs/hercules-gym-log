@@ -198,7 +198,11 @@ export const usePlanSaveHandler = ({
 
       onSuccess?.();
       return 'success';
-    } catch (error) {
+    } catch (error: any) {
+      // Re-throw limit errors so UI can handle them
+      if (error?.message === 'FREE_LIMIT_REACHED') {
+        throw error;
+      }
       console.error('[usePlanSaveHandler] Failed to save plan', error);
       return 'error';
     } finally {

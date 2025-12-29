@@ -16,6 +16,7 @@ import { PlanBuilderProvider } from '@/providers/PlanBuilderProvider';
 import { ProgramBuilderProvider } from '@/providers/ProgramBuilderProvider';
 import { useUserProfileStore } from '@/store/userProfileStore';
 import { useActiveScheduleStore } from '@/store/activeScheduleStore';
+import { useCustomExerciseStore } from '@/store/customExerciseStore';
 
 import './add-exercises';
 
@@ -142,14 +143,16 @@ const RootLayoutNav = ({
   const segments = useSegments();
   const fetchProfile = useUserProfileStore((state) => state.fetchProfile);
   const hydrateActiveSchedule = useActiveScheduleStore((state) => state.hydrateActiveSchedule);
+  const hydrateCustomExercises = useCustomExerciseStore((state) => state.hydrateCustomExercises);
 
-  // Fetch profile and hydrate schedule when user session is established
+  // Fetch profile and hydrate stores when user session is established
   useEffect(() => {
     if (user?.id) {
       fetchProfile(user.id);
       hydrateActiveSchedule(user.id);
+      hydrateCustomExercises(user.id);
     }
-  }, [user?.id, fetchProfile, hydrateActiveSchedule]);
+  }, [user?.id, fetchProfile, hydrateActiveSchedule, hydrateCustomExercises]);
 
   useProtectedRoute(session, isLoading);
 

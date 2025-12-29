@@ -175,20 +175,20 @@ export const RotationScheduleEditor: React.FC<RotationScheduleEditorProps> = ({
               </Text>
             </View>
 
-            <Pressable 
-              style={styles.workoutInfo}
-              onPress={() => item.workout.exercises.length > 0 && onWorkoutPress(item.workout)}
-            >
-              <Text variant="bodySemibold" color="primary">
-                {item.workout.name}
-              </Text>
-              <Text variant="caption" color="secondary">
-                {item.workout.exercises.length > 0 
-                  ? `${item.workout.exercises.length} exercises`
-                  : 'Rest day'
-                }
-              </Text>
-            </Pressable>
+              <Pressable 
+                style={styles.workoutInfo}
+                onPress={() => item.workout.exercises.length > 0 && onWorkoutPress(item.workout)}
+              >
+                <Text variant="bodySemibold" color="primary">
+                  {item.workout.name}
+                </Text>
+                <Text variant="bodySemibold" color="primary">
+                  {item.workout.exercises.length > 0 
+                    ? `${item.workout.exercises.length} exercises`
+                    : 'Rest day'
+                  }
+                </Text>
+              </Pressable>
 
             <View style={styles.actionButtons}>
               {item.workout.exercises.length > 0 && (

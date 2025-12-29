@@ -785,3 +785,84 @@ export async function deleteSchedule(userId: string, scheduleId: string): Promis
         }
     });
 }
+
+// ============================================================================
+// CUSTOM EXERCISES
+// ============================================================================
+
+export interface CustomExerciseDB {
+    id: string;
+    name: string;
+    exercise_type: string;
+    created_at: string;
+    updated_at: string;
+}
+
+export async function fetchCustomExercises(userId: string): Promise<CustomExerciseDB[]> {
+    console.log('[Supabase] Fetching custom exercises for user:', userId);
+
+    return withGracefulRetry(
+        async () => {
+            const { data, error } = await supabaseClient
+                .from('custom_exercises')
+                .select('*')
+                .eq('user_id', userId)
+                .order('created_at', { ascending: false });
+
+            if (error) {
+                throw error;
+            }
+
+            console.log('[Supabase] Successfully fetched', data?.length ?? 0, 'custom exercises');
+
+            return (data || []).map((row) => ({
+                id: row.id,
+                name: row.name,
+                exercise_type: row.exercise_type,
+                created_at: row.created_at,
+                updated_at: row.updated_at,
+            }));
+        },
+        [],
+        'fetchCustomExercises'
+    );
+}
+
+export async function createCustomExercise(
+    userId: string,
+    exercise: { name: string; exerciseType: string }
+): Promise<string> {
+    return withRetry(async () => {
+        const { data, error } = await supabaseClient
+            .from('custom_exercises')
+            .insert({
+                user_id: userId,
+                name: exercise.name,
+                exercise_type: exercise.exerciseType,
+            })
+            .select('id')
+            .single();
+
+        if (error) {
+            console.error('[Supabase] Error creating custom exercise:', error);
+            throw error;
+        }
+
+        return data.id;
+    });
+}
+
+export async function deleteCustomExercise(userId: string, exerciseId: string): Promise<void> {
+    return withRetry(async () => {
+        const { error } = await supabaseClient
+            .from('custom_exercises')
+            .delete()
+            .eq('id', exerciseId)
+            .eq('user_id', userId);
+
+        if (error) {
+            console.error('[Supabase] Error deleting custom exercise:', error);
+            throw error;
+        }
+    });
+}

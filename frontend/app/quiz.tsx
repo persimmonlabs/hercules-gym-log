@@ -12,6 +12,8 @@ import { Text } from '@/components/atoms/Text';
 import { Button } from '@/components/atoms/Button';
 import { SurfaceCard } from '@/components/atoms/SurfaceCard';
 import { IconSymbol } from '@/components/ui/icon-symbol';
+import { useProgramsStore } from '@/store/programsStore';
+import { usePlansStore } from '@/store/plansStore';
 import { ProgramCard } from '@/components/molecules/ProgramCard';
 import { colors, spacing, radius } from '@/constants/theme';
 import { useProgramRecommendation, type QuizPreferences } from '@/hooks/useProgramRecommendation';
@@ -136,6 +138,7 @@ export default function QuizScreen() {
   const totalQuestions = isWorkoutMode ? 3 : 4;
 
   const { getRecommendations, getWorkoutRecommendations } = useProgramRecommendation();
+  const { plans } = usePlansStore();
 
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [recommendations, setRecommendations] = useState<PremadeProgram[]>([]);
@@ -198,7 +201,14 @@ export default function QuizScreen() {
     if (isLastQuestion) {
       if (isWorkoutMode) {
         const results = getWorkoutRecommendations(preferences);
-        setWorkoutRecommendations(results);
+        // Filter out workouts that have been added to My Workouts
+        const addedWorkoutNames = new Set(
+          plans
+            .filter(plan => plan.source === 'premade')
+            .map(plan => plan.name.trim().toLowerCase())
+        );
+        const filteredResults = results.filter(w => !addedWorkoutNames.has(w.name.trim().toLowerCase()));
+        setWorkoutRecommendations(filteredResults);
       } else {
         const results = getRecommendations(preferences);
         setRecommendations(results);

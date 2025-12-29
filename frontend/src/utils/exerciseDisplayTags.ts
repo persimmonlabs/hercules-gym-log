@@ -69,5 +69,10 @@ export const getExerciseDisplayTagText = (
   options?: ExerciseDisplayTagsOptions
 ): string => {
   const tags = getExerciseDisplayTags(input, options);
-  return tags.length > 0 ? tags.join(' · ') : '';
+  if (tags.length > 0) {
+    return tags.join(' · ');
+  }
+  
+  // For custom exercises (which have empty muscles object)
+  return 'Custom';
 };

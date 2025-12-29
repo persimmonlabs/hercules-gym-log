@@ -1,7 +1,7 @@
-import React, { useCallback, useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import React, { useCallback, useState, useRef } from 'react';
+import { Pressable, StyleSheet, View, ScrollView } from 'react-native';
 import * as Haptics from 'expo-haptics';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useScrollToTop } from '@react-navigation/native';
 import { Button } from '@/components/atoms/Button';
 import { Text } from '@/components/atoms/Text';
 import { IconSymbol } from '@/components/ui/icon-symbol';
@@ -68,6 +68,15 @@ const styles = StyleSheet.create({
 
 const WorkoutScreen: React.FC = () => {
   const { theme } = useTheme();
+  const scrollRef = useRef<ScrollView>(null);
+  useScrollToTop(scrollRef);
+
+  useFocusEffect(
+    useCallback(() => {
+      scrollRef.current?.scrollTo({ y: 0, animated: false });
+    }, [])
+  );
+
   const [workoutInProgressVisible, setWorkoutInProgressVisible] = useState<boolean>(false);
   const [showPlansList, setShowPlansList] = useState<boolean>(false);
   const plans = usePlansStore((state: PlansState) => state.plans);
@@ -154,7 +163,7 @@ const WorkoutScreen: React.FC = () => {
   }
 
   return (
-    <TabSwipeContainer contentContainerStyle={styles.contentContainer}>
+    <TabSwipeContainer ref={scrollRef} contentContainerStyle={styles.contentContainer}>
       <WorkoutInProgressModal
         visible={workoutInProgressVisible}
         sessionName={currentSession?.name ?? 'Current Workout'}

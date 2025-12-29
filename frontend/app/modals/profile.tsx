@@ -25,6 +25,7 @@ import { supabaseClient } from '@/lib/supabaseClient';
 import { useUserProfileStore } from '@/store/userProfileStore';
 import { useSettingsStore } from '@/store/settingsStore';
 import { useNotificationStore } from '@/store/notificationStore';
+import { useDevToolsStore } from '@/store/devToolsStore';
 
 const ProfileModal: React.FC = () => {
   const router = useRouter();
@@ -39,6 +40,7 @@ const ProfileModal: React.FC = () => {
   const [isAppearanceModalVisible, setIsAppearanceModalVisible] = useState(false);
   const { weightUnit, distanceUnit, sizeUnit, formatWeight } = useSettingsStore();
   const { notificationsEnabled, configs } = useNotificationStore();
+  const { premiumOverride, setPremiumOverride } = useDevToolsStore();
   const backScale = useSharedValue(1);
 
   const handleBackPress = () => {
@@ -354,6 +356,46 @@ const ProfileModal: React.FC = () => {
           </View>
         </SurfaceCard>
 
+        {/* Dev Tools (only in development) */}
+        {__DEV__ && (
+          <SurfaceCard tone="card" padding="lg" style={{ borderWidth: 0 }}>
+            <View style={styles.section}>
+              <Text variant="heading3" color="primary" style={styles.sectionTitle}>
+                Developer Tools
+              </Text>
+
+              <View style={styles.preferencesList}>
+                <Pressable
+                  style={styles.devToggleRow}
+                  onPress={() => {
+                    void Haptics.selectionAsync();
+                    const newValue = premiumOverride === 'premium' ? 'free' : 'premium';
+                    setPremiumOverride(newValue);
+                  }}
+                >
+                  <View style={styles.devToggleInfo}>
+                    <IconSymbol name="star" size={24} color={theme.accent.orange} />
+                    <View style={{ marginLeft: spacing.md, flex: 1 }}>
+                      <Text variant="bodySemibold" color="primary">Premium Status</Text>
+                      <Text variant="caption" color="secondary">
+                        {premiumOverride === 'premium' ? 'Premium (tap to switch to Free)' : 'Free (tap to switch to Premium)'}
+                      </Text>
+                    </View>
+                  </View>
+                  <View style={[
+                    styles.devToggleBadge,
+                    { backgroundColor: premiumOverride === 'premium' ? theme.accent.orange : theme.surface.elevated }
+                  ]}>
+                    <Text variant="captionSmall" style={{ color: premiumOverride === 'premium' ? '#FFF' : theme.text.secondary }}>
+                      {premiumOverride === 'premium' ? 'PRO' : 'FREE'}
+                    </Text>
+                  </View>
+                </Pressable>
+              </View>
+            </View>
+          </SurfaceCard>
+        )}
+
         {/* Sign Out Button */}
         <View style={styles.signOutSection}>
           <SurfaceCard tone="neutral" padding="lg" style={styles.signOutCard}>
@@ -584,6 +626,23 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.sm,
+  },
+  devToggleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.sm,
+  },
+  devToggleInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  devToggleBadge: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    borderRadius: radius.full,
   },
 });
 

@@ -298,8 +298,8 @@ export const ScheduleEditorModal: React.FC<ScheduleEditorModalProps> = ({
                   }}
                 >
                   <Text
-                    variant="body"
-                    color={selectedWorkout ? 'primary' : 'tertiary'}
+                    variant="bodySemibold"
+                    color="primary"
                     numberOfLines={1}
                   >
                     {selectedWorkout?.name || 'Rest Day'}
@@ -346,8 +346,8 @@ export const ScheduleEditorModal: React.FC<ScheduleEditorModalProps> = ({
                   }}
                 >
                   <Text
-                    variant="body"
-                    color={selectedWorkout ? 'primary' : 'tertiary'}
+                    variant="bodySemibold"
+                    color="primary"
                     numberOfLines={1}
                   >
                     {selectedWorkout?.name || 'Rest Day'}

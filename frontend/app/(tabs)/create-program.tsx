@@ -11,6 +11,7 @@ import { Button } from '@/components/atoms/Button';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { PlanNameCard } from '@/components/molecules/PlanNameCard';
 import { PlanEmptyStateCard } from '@/components/molecules/PlanEmptyStateCard';
+import { PremiumLimitModal } from '@/components/molecules/PremiumLimitModal';
 import { colors, radius, spacing, sizing } from '@/constants/theme';
 import { usePlansStore } from '@/store/plansStore';
 import { useProgramsStore } from '@/store/programsStore';
@@ -116,6 +117,7 @@ const CreatePlanScreen: React.FC = () => {
   } = useProgramBuilderContext();
   
   const [isSaving, setIsSaving] = useState(false);
+  const [showLimitModal, setShowLimitModal] = useState(false);
 
   // Reset builder when component unmounts
   useEffect(() => {
@@ -203,9 +205,13 @@ const CreatePlanScreen: React.FC = () => {
       
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       router.push('/(tabs)/plans');
-    } catch (error) {
-      console.error('[CreateProgramScreen] Failed to save program:', error);
-      Alert.alert('Error', 'Failed to save program. Please try again.');
+    } catch (error: any) {
+      if (error?.message === 'FREE_LIMIT_REACHED') {
+        setShowLimitModal(true);
+      } else {
+        console.error('[CreateProgramScreen] Failed to save program:', error);
+        Alert.alert('Error', 'Failed to save program. Please try again.');
+      }
     } finally {
       setIsSaving(false);
     }
@@ -222,7 +228,13 @@ const CreatePlanScreen: React.FC = () => {
   // If user has no workouts, show a message
   if (!hasUserWorkouts) {
     return (
-      <View style={[styles.container, { paddingTop: insets.top }]}>
+      <>
+        <PremiumLimitModal
+          visible={showLimitModal}
+          onClose={() => setShowLimitModal(false)}
+          limitType="plan"
+        />
+        <View style={[styles.container, { paddingTop: insets.top }]}>
         <KeyboardAwareScrollView
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
@@ -261,11 +273,18 @@ const CreatePlanScreen: React.FC = () => {
           </SurfaceCard>
         </KeyboardAwareScrollView>
       </View>
+      </>
     );
   }
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
+    <>
+      <PremiumLimitModal
+        visible={showLimitModal}
+        onClose={() => setShowLimitModal(false)}
+        limitType="plan"
+      />
+      <View style={[styles.container, { paddingTop: insets.top }]}>
       <KeyboardAwareScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
@@ -366,6 +385,7 @@ const CreatePlanScreen: React.FC = () => {
         </View>
       </KeyboardAwareScrollView>
     </View>
+    </>
   );
 };
 

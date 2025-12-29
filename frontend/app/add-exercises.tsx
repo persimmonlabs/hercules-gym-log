@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 import { Text } from '@/components/atoms/Text';
 import { InputField } from '@/components/atoms/InputField';
@@ -13,6 +14,9 @@ import { FilterChip } from '@/components/atoms/FilterChip';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { ExerciseSelectionRow } from '@/components/molecules/ExerciseSelectionRow';
 import { FilterBottomSheet } from '@/components/molecules/FilterBottomSheet';
+import { CreateExerciseModal } from '@/components/molecules/CreateExerciseModal';
+import { createCustomExerciseCatalogItem } from '@/constants/exercises';
+import { useCustomExerciseStore } from '@/store/customExerciseStore';
 import type { Exercise } from '@/constants/exercises';
 import type { ExerciseFilters } from '@/types/exercise';
 import { colors, radius, spacing, sizing, shadows } from '@/constants/theme';
@@ -141,6 +145,15 @@ const styles = StyleSheet.create({
     borderColor: colors.accent.primary,
     opacity: 1,
   },
+  createExerciseRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingVertical: spacing.md,
+    marginTop: spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: colors.border.light,
+  },
 });
 
 const AddExercisesScreen: React.FC = () => {
@@ -165,6 +178,8 @@ const AddExercisesScreen: React.FC = () => {
 
   const [selectedMap, setSelectedMap] = useState<SelectedExerciseMap>({});
   const [isFilterSheetVisible, setIsFilterSheetVisible] = useState(false);
+  const [isCreateExerciseModalVisible, setIsCreateExerciseModalVisible] = useState(false);
+  const customExercises = useCustomExerciseStore((state) => state.customExercises);
 
   useEffect(() => {
     resetFilters();
@@ -370,6 +385,24 @@ const AddExercisesScreen: React.FC = () => {
               </Text>
             </View>
           )}
+          <Pressable
+            style={styles.createExerciseRow}
+            onPress={() => {
+              void Haptics.selectionAsync();
+              setIsCreateExerciseModalVisible(true);
+            }}
+            accessibilityRole="button"
+            accessibilityLabel="Create a new custom exercise"
+          >
+            <MaterialCommunityIcons
+              name="plus-circle-outline"
+              size={sizing.iconMD}
+              color={colors.accent.primary}
+            />
+            <Text variant="bodySemibold" style={{ color: colors.accent.primary }}>
+              Create Exercise
+            </Text>
+          </Pressable>
         </SurfaceCard>
 
         <View style={[styles.listFooterSpacer, { height: floatingAreaHeight }]} />
@@ -406,6 +439,32 @@ const AddExercisesScreen: React.FC = () => {
           />
         </View>
       </View>
+      <CreateExerciseModal
+        visible={isCreateExerciseModalVisible}
+        onClose={() => setIsCreateExerciseModalVisible(false)}
+        onExerciseCreated={(exerciseName, exerciseType) => {
+          // Create a catalog item for the new exercise and select it
+          const newExercise = createCustomExerciseCatalogItem(
+            `temp-${Date.now()}`,
+            exerciseName,
+            exerciseType
+          );
+          // Find the actual exercise from the store (it will have the real ID)
+          const actualExercise = customExercises.find(e => e.name === exerciseName);
+          if (actualExercise) {
+            const catalogItem = createCustomExerciseCatalogItem(
+              actualExercise.id,
+              actualExercise.name,
+              actualExercise.exerciseType
+            );
+            setSelectedMap((prev) => ({
+              ...prev,
+              [catalogItem.id]: catalogItem,
+            }));
+          }
+          setIsCreateExerciseModalVisible(false);
+        }}
+      />
     </View>
   );
 };

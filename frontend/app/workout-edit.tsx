@@ -3,22 +3,26 @@
  * Screen for editing an existing workout session.
  */
 
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { FlatList, Pressable, StyleSheet, TextInput, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 import { Button } from '@/components/atoms/Button';
 import { SurfaceCard } from '@/components/atoms/SurfaceCard';
 import { Text } from '@/components/atoms/Text';
 import { EditableWorkoutExerciseCard } from '@/components/molecules/EditableWorkoutExerciseCard';
-import { colors, radius, spacing } from '@/constants/theme';
+import { CreateExerciseModal } from '@/components/molecules/CreateExerciseModal';
+import { colors, radius, spacing, sizing } from '@/constants/theme';
 import { useWorkoutEditor } from '@/hooks/useWorkoutEditor';
-import { exercises } from '@/constants/exercises';
+import { exercises, createCustomExerciseCatalogItem } from '@/constants/exercises';
+import { useCustomExerciseStore } from '@/store/customExerciseStore';
 import { useWorkoutSessionsStore } from '@/store/workoutSessionsStore';
 import { normalizeSearchText } from '@/utils/strings';
+import { getExerciseDisplayTagText } from '@/utils/exerciseDisplayTags';
 import type { Exercise } from '@/constants/exercises';
 import hierarchyData from '@/data/hierarchy.json';
 
@@ -90,9 +94,32 @@ const WorkoutEditScreen: React.FC = () => {
 
   const [isInteractionLocked, setInteractionLocked] = React.useState(false);
   const [isPickerVisible, setIsPickerVisible] = React.useState(false);
+  const [isCreateExerciseModalVisible, setIsCreateExerciseModalVisible] = useState(false);
+  const pickerListRef = useRef<FlatList>(null);
+  const customExercises = useCustomExerciseStore((state) => state.customExercises);
+
+  // Merge custom exercises with filtered exercises
+  const allFilteredExercises = useMemo(() => {
+    const customCatalogItems = customExercises.map((ce) =>
+      createCustomExerciseCatalogItem(ce.id, ce.name, ce.exerciseType)
+    );
+    const combinedExercises = [...filteredExercises, ...customCatalogItems];
+    // Filter by search term if present
+    if (!searchTerm.trim()) {
+      return combinedExercises;
+    }
+    const query = searchTerm.toLowerCase();
+    return combinedExercises.filter((e) =>
+      e.name.toLowerCase().includes(query)
+    );
+  }, [filteredExercises, customExercises, searchTerm]);
 
   const handleOpenPicker = useCallback(() => {
     setIsPickerVisible(true);
+    // Scroll to top on next frame to ensure list is rendered
+    requestAnimationFrame(() => {
+      pickerListRef.current?.scrollToOffset({ offset: 0, animated: false });
+    });
   }, []);
 
   const handleClosePicker = useCallback(() => {
@@ -192,20 +219,16 @@ const WorkoutEditScreen: React.FC = () => {
               style={styles.searchInput}
             />
             <FlatList
-              data={filteredExercises}
+              ref={pickerListRef}
+              data={allFilteredExercises}
               keyExtractor={(item) => item.id}
               style={styles.modalList}
               keyboardShouldPersistTaps="handled"
               renderItem={({ item }) => {
-                // Get all muscle names from the exercise's muscles object
-                const muscleNames = Object.keys(item.muscles || {});
-                
-                // Map each muscle to its mid-level parent group
-                const midLevelGroups = muscleNames.map(muscle => muscleToMidLevelMap[muscle]).filter(Boolean);
-                
-                // Remove duplicates and sort for consistency
-                const uniqueGroups = [...new Set(midLevelGroups)];
-                const midLevelMusclesLabel = uniqueGroups.length > 0 ? uniqueGroups.join(' · ') : 'General';
+                const musclesLabel = getExerciseDisplayTagText({
+                  muscles: item.muscles,
+                  exerciseType: item.exerciseType || 'weight',
+                });
 
                 return (
                   <Pressable
@@ -217,16 +240,54 @@ const WorkoutEditScreen: React.FC = () => {
                       {item.name}
                     </Text>
                     <Text variant="caption" color="secondary">
-                      {midLevelMusclesLabel}
+                      {musclesLabel || 'General'}
                     </Text>
                   </Pressable>
                 );
               }}
+              ListFooterComponent={(
+                <Pressable
+                  style={styles.createExerciseButton}
+                  onPress={() => {
+                    void Haptics.selectionAsync();
+                    setIsPickerVisible(false);
+                    setIsCreateExerciseModalVisible(true);
+                  }}
+                  accessibilityRole="button"
+                  accessibilityLabel="Create a new custom exercise"
+                >
+                  <MaterialCommunityIcons
+                    name="plus-circle-outline"
+                    size={sizing.iconMD}
+                    color={colors.accent.primary}
+                  />
+                  <Text variant="bodySemibold" style={{ color: colors.accent.primary }}>
+                    Create Exercise
+                  </Text>
+                </Pressable>
+              )}
             />
             <Button label="Close" variant="ghost" onPress={handleClosePicker} />
           </Pressable>
         </Pressable>
       ) : null}
+      <CreateExerciseModal
+        visible={isCreateExerciseModalVisible}
+        onClose={() => setIsCreateExerciseModalVisible(false)}
+        onExerciseCreated={(exerciseName, exerciseType) => {
+          // Find the newly created exercise and add it
+          const newExercise = customExercises.find(e => e.name === exerciseName);
+          if (newExercise) {
+            const catalogItem = createCustomExerciseCatalogItem(
+              newExercise.id,
+              newExercise.name,
+              newExercise.exerciseType
+            );
+            handleSelectExercise(catalogItem);
+          }
+          setIsCreateExerciseModalVisible(false);
+        }}
+      />
     </View>
   );
 };
@@ -295,7 +356,7 @@ const styles = StyleSheet.create({
     color: colors.text.primary,
   },
   modalList: {
-    maxHeight: 280,
+    maxHeight: 400,
   },
   modalItem: {
     paddingVertical: spacing.sm,
@@ -312,5 +373,14 @@ const styles = StyleSheet.create({
   },
   emptyCard: {
     gap: spacing.md,
+  },
+  createExerciseButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingVertical: spacing.md,
+    marginTop: spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: colors.border.light,
   },
 });
