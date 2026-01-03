@@ -127,10 +127,12 @@ export const PersonalRecordsSection: React.FC = () => {
   };
 
   const filteredExercises = useMemo(() => {
-    return exercisesData.filter(ex =>
-      ex.name.toLowerCase().includes(searchQuery.toLowerCase()) &&
-      !trackedExercises.includes(ex.name)
-    );
+    return exercisesData
+      .filter(ex =>
+        ex.name.toLowerCase().includes(searchQuery.toLowerCase()) &&
+        !trackedExercises.includes(ex.name)
+      )
+      .sort((a, b) => a.name.localeCompare(b.name));
   }, [searchQuery, trackedExercises]);
 
   return (
@@ -217,7 +219,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingBottom: spacing.xs,
     borderBottomWidth: 1,
-    borderBottomColor: colors.border.light,
+    borderBottomColor: colors.accent.orange + '40',
   },
   list: {
     gap: spacing.lg,

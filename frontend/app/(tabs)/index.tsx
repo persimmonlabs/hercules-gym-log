@@ -23,8 +23,7 @@ import { ScreenHeader } from '@/components/molecules/ScreenHeader';
 import { TabSwipeContainer } from '@/components/templates/TabSwipeContainer';
 import { colors, spacing, radius, shadows, sizing } from '@/constants/theme';
 import { useTheme } from '@/hooks/useTheme';
-import { MainTabRoute } from '@/constants/navigation';
-import { QuickLinkItem, RecentWorkoutSummary, WeekDayTracker } from '@/types/dashboard';
+import { RecentWorkoutSummary, WeekDayTracker } from '@/types/dashboard';
 import { createWeekTracker } from '@/utils/dashboard';
 import { useSchedulesStore, type SchedulesState } from '@/store/schedulesStore';
 import { usePlansStore, type Plan, type PlansState } from '@/store/plansStore';
@@ -45,20 +44,9 @@ import { createSetsWithHistory } from '@/utils/workout';
 import { useActiveScheduleStore } from '@/store/activeScheduleStore';
 import { formatDateToLocalISO } from '@/utils/date';
 
-const QUICK_LINKS: QuickLinkItem[] = [
-  { id: 'link-workout', title: 'Start Workout', description: 'Log a new workout session.', icon: 'flash-outline', route: 'workout', variant: 'primary' },
-  { id: 'link-calendar', title: 'View Calendar', description: 'Review past workout sessions.', icon: 'calendar-outline', route: 'calendar' },
-  { id: 'link-plans', title: 'Edit Programs', description: 'Customize your workout routines.', icon: 'document-text-outline', route: 'plans' },
-  { id: 'link-stats', title: 'Analyze Performance', description: 'Explore your workout analytics.', icon: 'stats-chart-outline', route: 'profile' },
-];
 
-const TAB_ROUTE_PATHS: Record<MainTabRoute, Href> = {
-  index: '/(tabs)',
-  calendar: '/(tabs)/calendar',
-  workout: '/(tabs)/workout',
-  plans: '/(tabs)/plans',
-  profile: '/(tabs)/profile',
-};
+
+
 
 const SCHEDULE_DAY_KEYS: ScheduleDayKey[] = [
   'sunday',
@@ -176,15 +164,13 @@ const styles = StyleSheet.create({
   pressableStretch: {
     width: '100%',
   },
-  streakHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: spacing.md,
-  },
   streakTitle: {
-    flex: 1,
+    width: '100%',
     gap: spacing.xs,
+    paddingBottom: spacing.xs,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.accent.orange + '40',
+    marginBottom: spacing.md,
   },
   weekRow: {
     flexDirection: 'row',
@@ -229,24 +215,34 @@ const styles = StyleSheet.create({
   dayLabelToday: {
     textAlign: 'center',
   },
-  sectionHeading: { marginBottom: spacing.md },
+  sectionHeading: {
+    marginBottom: spacing.xs,
+  },
+  sectionHeader: {
+    width: '100%',
+    gap: spacing.xs,
+    paddingBottom: spacing.xs,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.accent.orange + '40',
+    marginBottom: spacing.lg,
+  },
   todaysPlanCard: {
     borderRadius: radius.lg,
     overflow: 'hidden',
     ...shadows.md,
   },
-  todaysPlanAccentStripe: {
-    position: 'absolute',
-    left: 0,
-    top: 0,
-    bottom: 0,
-    width: spacing.xs,
-    borderTopLeftRadius: radius.lg,
-    borderBottomLeftRadius: radius.lg,
-  },
+
   todaysPlanContent: {
     padding: spacing.xl,
     gap: spacing.md,
+  },
+  todaysPlanHeader: {
+    width: '100%',
+    gap: spacing.xs,
+    paddingBottom: spacing.xs,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.accent.orange + '40',
+    marginBottom: spacing.md,
   },
   planStartButton: {
     alignItems: 'center',
@@ -330,12 +326,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: spacing.sm,
   },
-  todaysPlanHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: spacing.md,
-  },
+
   todaysPlanInfo: {
     flex: 1,
     gap: spacing.xs,
@@ -396,8 +387,7 @@ const DashboardScreen: React.FC = () => {
   const weeklyTrackerOpacity = useSharedValue<number>(1);
   const todaysPlanTranslateY = useSharedValue<number>(0);
   const todaysPlanOpacity = useSharedValue<number>(1);
-  const quickLinksTranslateY = useSharedValue<number>(0);
-  const quickLinksOpacity = useSharedValue<number>(1);
+
   const recentWorkoutsTranslateY = useSharedValue<number>(0);
   const recentWorkoutsOpacity = useSharedValue<number>(1);
   const sunScale = useSharedValue<number>(0);
@@ -433,10 +423,7 @@ const DashboardScreen: React.FC = () => {
     opacity: todaysPlanOpacity.value,
   }));
 
-  const quickLinksAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: quickLinksTranslateY.value }],
-    opacity: quickLinksOpacity.value,
-  }));
+
 
   const recentWorkoutsAnimatedStyle = useAnimatedStyle(() => ({
     transform: [{ translateY: recentWorkoutsTranslateY.value }],
@@ -671,7 +658,7 @@ const DashboardScreen: React.FC = () => {
     // Check for standalone rotating schedule
     if (activeSchedule.type === 'rotating' && activeSchedule.rotating) {
       const { days, startDate } = activeSchedule.rotating;
-      
+
       if (days.length === 0) {
         return { variant: 'rest', dayLabel: todayLabel };
       }
@@ -731,10 +718,10 @@ const DashboardScreen: React.FC = () => {
     return { variant: 'plan', dayLabel: todayLabel, plan };
   }, [activeSchedule, activeRotation, getTodayWorkout, planNameLookup, plans.length, todayKey, todayLabel, userPrograms, workouts, activePlanId, isSessionActive, currentSession, activeScheduleRule, activeScheduleResult, getWorkoutName, getExerciseCount]);
 
-  const todaysPlan = todaysCardState.variant === 'plan' 
-    ? todaysCardState.plan 
-    : todaysCardState.variant === 'standaloneRotation' 
-      ? todaysCardState.plan 
+  const todaysPlan = todaysCardState.variant === 'plan'
+    ? todaysCardState.plan
+    : todaysCardState.variant === 'standaloneRotation'
+      ? todaysCardState.plan
       : null;
   const rotationWorkout = todaysCardState.variant === 'rotation' ? todaysCardState.workout : null;
 
@@ -751,7 +738,7 @@ const DashboardScreen: React.FC = () => {
     }
 
     if (todaysCardState.variant === 'completed') {
-      router.push({ pathname: '/(tabs)/workout-detail', params: { workoutId: todaysCardState.workout.id } });
+      router.push({ pathname: '/(tabs)/workout-detail', params: { workoutId: todaysCardState.workout.id, from: 'dashboard' } });
       return;
     }
 
@@ -786,11 +773,11 @@ const DashboardScreen: React.FC = () => {
         };
       });
 
-      const planId = todaysCardState.variant === 'rotation' 
-        ? todaysCardState.programId 
+      const planId = todaysCardState.variant === 'rotation'
+        ? todaysCardState.programId
         : (todaysPlan?.id ?? '');
-      const sessionName = todaysCardState.variant === 'rotation' 
-        ? (rotationWorkout?.name ?? null) 
+      const sessionName = todaysCardState.variant === 'rotation'
+        ? (rotationWorkout?.name ?? null)
         : todaysCardState.variant === 'standaloneRotation'
           ? `${todaysCardState.dayLabel}: ${todaysPlan?.name ?? 'Workout'}`
           : (todaysPlan?.name ?? null);
@@ -846,11 +833,7 @@ const DashboardScreen: React.FC = () => {
     });
   }, []);
 
-  const quickLinkLiftOne = useCardLiftAnimation(shadowConfigs.sm, shadowConfigs.md);
-  const quickLinkLiftTwo = useCardLiftAnimation(shadowConfigs.sm, shadowConfigs.md);
-  const quickLinkLiftThree = useCardLiftAnimation(shadowConfigs.sm, shadowConfigs.md);
-  const quickLinkLiftFour = useCardLiftAnimation(shadowConfigs.sm, shadowConfigs.md);
-  const quickLinkLifts = [quickLinkLiftOne, quickLinkLiftTwo, quickLinkLiftThree, quickLinkLiftFour];
+
   const recentWorkoutLiftOne = useCardLiftAnimation(shadowConfigs.sm, shadowConfigs.md);
   const recentWorkoutLiftTwo = useCardLiftAnimation(shadowConfigs.sm, shadowConfigs.md);
   const recentWorkoutLiftThree = useCardLiftAnimation(shadowConfigs.sm, shadowConfigs.md);
@@ -881,20 +864,18 @@ const DashboardScreen: React.FC = () => {
           <View style={styles.contentContainer}>
             <ScreenHeader
               title={firstName ? `Welcome, ${firstName}!` : 'Welcome!'}
-              subtitle="Stay on top of your training journey."
+              subtitle="Your fitness journey starts here."
               onProfilePress={() => router.push('/modals/profile')}
               userInitial={userInitial}
             />
 
             <Animated.View style={weeklyTrackerAnimatedStyle}>
               <Pressable style={styles.pressableStretch}>
-                <SurfaceCard tone="card" padding="lg" style={{ borderWidth: 0, marginTop: -spacing.md }}>
-                  <View style={styles.streakHeader}>
-                    <View style={styles.streakTitle}>
-                      <Text variant="heading3" color="primary">
-                        Your Week
-                      </Text>
-                    </View>
+                <SurfaceCard tone="card" padding="lg" showAccentStripe={false} style={{ borderWidth: 0, marginTop: -spacing.md }}>
+                  <View style={styles.streakTitle}>
+                    <Text variant="heading3" color="primary">
+                      Your Week
+                    </Text>
                   </View>
 
                   <View style={styles.weekRow}>
@@ -904,13 +885,13 @@ const DashboardScreen: React.FC = () => {
                       const isToday = day.isToday;
                       const borderStyle = isWorkoutDay
                         ? [
-                            styles.dayBubbleBorder,
-                            { backgroundColor: theme.accent.orange, borderColor: theme.accent.orange },
-                          ]
+                          styles.dayBubbleBorder,
+                          { backgroundColor: theme.accent.orange, borderColor: theme.accent.orange },
+                        ]
                         : [
-                            styles.dayBubbleBorder,
-                            { backgroundColor: theme.surface.elevated, borderColor: theme.accent.orange },
-                          ];
+                          styles.dayBubbleBorder,
+                          { backgroundColor: theme.surface.elevated, borderColor: theme.accent.orange },
+                        ];
                       const contentStyle = [
                         styles.dayBubbleContent,
                         isWorkoutDay
@@ -923,18 +904,18 @@ const DashboardScreen: React.FC = () => {
                         if (day.hasWorkout) {
                           // Extract ISO date from day.id (format: YYYY-MM-DD-label)
                           const dayISO = day.id.split('-').slice(0, 3).join('-');
-                          
+
                           // Find the workout for this day by comparing ISO dates
                           const workout = workouts.find(w => {
-                            const workoutISO = w.startTime 
+                            const workoutISO = w.startTime
                               ? formatDateToLocalISO(new Date(w.startTime))
                               : w.date ? formatDateToLocalISO(new Date(w.date)) : null;
                             return workoutISO === dayISO;
                           });
-                          
+
                           if (workout) {
                             void Haptics.selectionAsync();
-                            router.push({ pathname: '/(tabs)/workout-detail', params: { workoutId: workout.id } });
+                            router.push({ pathname: '/(tabs)/workout-detail', params: { workoutId: workout.id, from: 'dashboard' } });
                           }
                         }
                       };
@@ -979,17 +960,13 @@ const DashboardScreen: React.FC = () => {
                 }}
               >
                 <Animated.View style={[styles.todaysPlanCard, { backgroundColor: theme.surface.card }]}>
-                  <LinearGradient
-                    colors={[theme.accent.gradientStart, theme.accent.gradientEnd]}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 0, y: 1 }}
-                    style={styles.todaysPlanAccentStripe}
-                    pointerEvents="none"
-                  />
+
                   <View style={styles.todaysPlanContent}>
-                    <Text variant="heading3" color="primary">
-                      Today's Workout
-                    </Text>
+                    <View style={styles.todaysPlanHeader}>
+                      <Text variant="heading3" color="primary">
+                        Today's Workout
+                      </Text>
+                    </View>
                     {todaysCardState.variant === 'ongoing' ? (
                       <SurfaceCard
                         tone="neutral"
@@ -1047,7 +1024,7 @@ const DashboardScreen: React.FC = () => {
                               style={styles.planStartButton}
                               onPress={() => {
                                 void Haptics.selectionAsync();
-                                
+
                                 // Find the workout from either plans or user programs
                                 let targetWorkout: Plan | ProgramWorkout | null = null;
                                 let planId = '';
@@ -1083,7 +1060,7 @@ const DashboardScreen: React.FC = () => {
 
                                   startSession(planId, workoutExercises, sessionName, historySetCounts);
                                 }
-                                
+
                                 router.push('/(tabs)/workout');
                               }}
                               accessibilityRole="button"
@@ -1211,65 +1188,15 @@ const DashboardScreen: React.FC = () => {
               </Pressable>
             </Animated.View>
 
-            <Animated.View style={quickLinksAnimatedStyle}>
-              <SurfaceCard tone="card" padding="xl" style={{ borderWidth: 0 }}>
-                <Text variant="heading3" color="primary" style={styles.sectionHeading}>
-                  Quick Links
-                </Text>
-                <View style={styles.quickLinksList}>
-                  {QUICK_LINKS.map((link, index) => (
-                    <Pressable
-                      key={link.id}
-                      style={styles.pressableStretch}
-                      onPressIn={quickLinkLifts[index].onPressIn}
-                      onPressOut={quickLinkLifts[index].onPressOut}
-                      onPress={() => {
-                        quickLinkLifts[index].onPressOut();
-                        router.push(TAB_ROUTE_PATHS[link.route]);
-                      }}
-                    >
-                      <SurfaceCard
-                        tone="neutral"
-                        padding="lg"
-                        showAccentStripe={false}
-                        style={[styles.inlineCard, quickLinkLifts[index].animatedStyle]}
-                      >
-                        <View style={styles.quickLinkRow}>
-                          <View style={styles.quickLinkInfo}>
-                            <Text variant="bodySemibold" color="primary">
-                              {link.title}
-                            </Text>
-                          </View>
-                          <View style={styles.quickLinkButton}>
-                            <LinearGradient
-                              colors={[theme.accent.gradientStart, theme.accent.gradientEnd]}
-                              start={{ x: 0, y: 0 }}
-                              end={{ x: 1, y: 1 }}
-                              style={{
-                                width: '100%',
-                                height: '100%',
-                                borderRadius: radius.full,
-                                opacity: link.variant === 'primary' ? 1 : 0.12,
-                                position: 'absolute',
-                              }}
-                            />
-                            <Text variant="bodySemibold" color={link.variant === 'primary' ? 'onAccent' : 'orange'}>
-                              →
-                            </Text>
-                          </View>
-                        </View>
-                      </SurfaceCard>
-                    </Pressable>
-                  ))}
-                </View>
-              </SurfaceCard>
-            </Animated.View>
+
 
             <Animated.View style={recentWorkoutsAnimatedStyle}>
-              <SurfaceCard tone="card" padding="xl" style={{ borderWidth: 0 }}>
-                <Text variant="heading3" color="primary" style={styles.sectionHeading}>
-                  Recent Workouts
-                </Text>
+              <SurfaceCard tone="card" padding="xl" showAccentStripe={false} style={{ borderWidth: 0 }}>
+                <View style={styles.sectionHeader}>
+                  <Text variant="heading3" color="primary" style={styles.sectionHeading}>
+                    Recent Workouts
+                  </Text>
+                </View>
                 <View style={styles.recentWorkoutsList}>
                   {recentWorkouts.length > 0 ? (
                     recentWorkouts.map((workout, index) => {
@@ -1286,7 +1213,7 @@ const DashboardScreen: React.FC = () => {
                           onPress={() => {
                             lift?.onPressOut?.();
                             void Haptics.selectionAsync();
-                            router.push({ pathname: '/workout-detail', params: { workoutId: workout.id } });
+                            router.push({ pathname: '/(tabs)/workout-detail', params: { workoutId: workout.id, from: 'dashboard' } });
                           }}
                         >
                           <SurfaceCard

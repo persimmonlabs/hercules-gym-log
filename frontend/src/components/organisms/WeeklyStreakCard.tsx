@@ -86,7 +86,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: colors.surface.card,
-    borderWidth: 2,
+    borderWidth: 1,
     borderColor: colors.accent.orange,
   },
   dayBubbleCompleted: {

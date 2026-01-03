@@ -60,7 +60,7 @@ const WorkoutEditScreen: React.FC = () => {
         Object.entries(l1Data.muscles).forEach(([midLevel, midLevelData]: [string, any]) => {
           // Map the mid-level group to itself
           map[midLevel] = midLevel;
-          
+
           // Map all low-level muscles to their mid-level parent
           if (midLevelData?.muscles) {
             Object.keys(midLevelData.muscles).forEach(lowLevel => {
@@ -105,13 +105,15 @@ const WorkoutEditScreen: React.FC = () => {
     );
     const combinedExercises = [...filteredExercises, ...customCatalogItems];
     // Filter by search term if present
-    if (!searchTerm.trim()) {
-      return combinedExercises;
+    let result = combinedExercises;
+    if (searchTerm.trim()) {
+      const query = searchTerm.toLowerCase();
+      result = combinedExercises.filter((e) =>
+        e.name.toLowerCase().includes(query)
+      );
     }
-    const query = searchTerm.toLowerCase();
-    return combinedExercises.filter((e) =>
-      e.name.toLowerCase().includes(query)
-    );
+    // Sort alphabetically A-Z by name
+    return result.sort((a, b) => a.name.localeCompare(b.name));
   }, [filteredExercises, customExercises, searchTerm]);
 
   const handleOpenPicker = useCallback(() => {

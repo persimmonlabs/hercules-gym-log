@@ -165,7 +165,15 @@ const styles = StyleSheet.create({
     gap: spacing['2xl'],
   },
   outerCardContent: {
-    gap: spacing.lg,
+    gap: spacing.md,
+  },
+  sectionHeader: {
+    width: '100%',
+    gap: spacing.xs,
+    paddingBottom: spacing.xs,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.accent.orange + '40',
+    marginBottom: spacing.md,
   },
   scheduleCardContent: {
     gap: spacing.lg,
@@ -319,7 +327,7 @@ const PlansScreen: React.FC = () => {
   const [workoutInProgressVisible, setWorkoutInProgressVisible] = useState<boolean>(false);
   const plans = usePlansStore((state: PlansState) => state.plans);
   const removePlan = usePlansStore((state: PlansState) => state.removePlan);
-    const { userPrograms, deleteUserProgram, deleteWorkoutFromProgram, activePlanId } = useProgramsStore();
+  const { userPrograms, deleteUserProgram, deleteWorkoutFromProgram, activePlanId } = useProgramsStore();
   const startSession = useSessionStore((state) => state.startSession);
   const setCompletionOverlayVisible = useSessionStore((state) => state.setCompletionOverlayVisible);
   const isSessionActive = useSessionStore((state) => state.isSessionActive);
@@ -460,7 +468,7 @@ const PlansScreen: React.FC = () => {
     [router],
   );
 
-  
+
   const myWorkouts = useMemo(() => {
     interface GroupedWorkout {
       id: string;
@@ -528,7 +536,7 @@ const PlansScreen: React.FC = () => {
     return Object.values(workoutsGroupedByName)
       .map((w): GroupedWorkout => ({
         ...w,
-        subtitle: w.type === 'custom' 
+        subtitle: w.type === 'custom'
           ? `${w.source === 'premade' ? 'Added' : 'Custom'} • ${w.exercises.length} exercises`
           : `${w.programNames.join(' • ')} • ${w.exercises.length} exercises`
       }))
@@ -536,10 +544,10 @@ const PlansScreen: React.FC = () => {
         // Priority 1: Group by Plan (Custom considered as a plan group)
         const aPlanGroup = a.type === 'custom' ? 'Custom' : a.programNames[0] || '';
         const bPlanGroup = b.type === 'custom' ? 'Custom' : b.programNames[0] || '';
-        
+
         const planComparison = aPlanGroup.localeCompare(bPlanGroup);
         if (planComparison !== 0) return planComparison;
-        
+
         // Priority 2: Alphabetical within plan group
         return a.name.localeCompare(b.name);
       });
@@ -597,13 +605,18 @@ const PlansScreen: React.FC = () => {
           setWorkoutInProgressVisible(false);
         }}
       />
-      <ScreenHeader title="My Programs" subtitle="Create and manage your workout plans." />
+      <ScreenHeader
+        title="Programs"
+        subtitle="Manage your personalized training library"
+      />
 
-      <SurfaceCard padding="xl" tone="neutral" style={{ marginTop: -spacing.md }}>
+      <SurfaceCard padding="xl" tone="neutral" showAccentStripe={false} style={{ borderWidth: 0, marginTop: -spacing.md }}>
         <View style={styles.outerCardContent}>
-          <Text variant="heading3" color="primary">
-            My Workouts
-          </Text>
+          <View style={styles.sectionHeader}>
+            <Text variant="heading3" color="primary">
+              My Workouts
+            </Text>
+          </View>
 
           <View style={styles.planCards}>
             {myWorkouts.length > 0 ? (
@@ -705,11 +718,13 @@ const PlansScreen: React.FC = () => {
         </View>
       </SurfaceCard>
 
-      <SurfaceCard padding="xl" tone="neutral">
+      <SurfaceCard padding="xl" tone="neutral" showAccentStripe={false} style={{ borderWidth: 0 }}>
         <View style={styles.outerCardContent}>
-          <Text variant="heading3" color="primary">
-            My Plans
-          </Text>
+          <View style={styles.sectionHeader}>
+            <Text variant="heading3" color="primary">
+              My Plans
+            </Text>
+          </View>
 
           <View style={styles.planCards}>
             {myPlans.length > 0 ? (
@@ -784,10 +799,10 @@ const PlansScreen: React.FC = () => {
             ) : (
               <View style={[styles.planCardShell, styles.planCardContent]}>
                 <Text variant="bodySemibold" color="primary">
-                  No programs yet
+                  No plans yet
                 </Text>
                 <Text variant="body" color="secondary">
-                  Add a program from the library to see it here.
+                  Add a plan from the library to see it here.
                 </Text>
               </View>
             )}
@@ -800,13 +815,13 @@ const PlansScreen: React.FC = () => {
       </SurfaceCard>
 
       <MyScheduleCard
-          onEditPress={() => {
-            void Haptics.selectionAsync();
-            router.push('/(tabs)/schedule-setup');
-          }}
-          onAddOverridePress={() => setIsOverrideModalVisible(true)}
-          onDeletePress={handleDeleteSchedule}
-        />
+        onEditPress={() => {
+          void Haptics.selectionAsync();
+          router.push('/(tabs)/schedule-setup');
+        }}
+        onAddOverridePress={() => setIsOverrideModalVisible(true)}
+        onDeletePress={handleDeleteSchedule}
+      />
 
       <AddOverrideModal
         visible={isOverrideModalVisible}

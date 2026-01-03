@@ -17,7 +17,6 @@ import { NameEditModal } from '@/components/molecules/NameEditModal';
 import { BodyMetricsModal } from '@/components/molecules/BodyMetricsModal';
 import { UnitsModal } from '@/components/molecules/UnitsModal';
 import { NotificationsModal } from '@/components/molecules/NotificationsModal';
-import { AppearanceModal } from '@/components/molecules/AppearanceModal';
 import { colors, spacing, radius, shadows, sizing } from '@/constants/theme';
 import { useTheme } from '@/hooks/useTheme';
 import { useAuth } from '@/providers/AuthProvider';
@@ -37,7 +36,6 @@ const ProfileModal: React.FC = () => {
   const [isBodyMetricsModalVisible, setIsBodyMetricsModalVisible] = useState(false);
   const [isUnitsModalVisible, setIsUnitsModalVisible] = useState(false);
   const [isNotificationsModalVisible, setIsNotificationsModalVisible] = useState(false);
-  const [isAppearanceModalVisible, setIsAppearanceModalVisible] = useState(false);
   const { weightUnit, distanceUnit, sizeUnit, formatWeight } = useSettingsStore();
   const { notificationsEnabled, configs } = useNotificationStore();
   const { premiumOverride, setPremiumOverride } = useDevToolsStore();
@@ -282,27 +280,6 @@ const ProfileModal: React.FC = () => {
               />
 
               <PreferenceItem
-                icon="palette"
-                title="Appearance"
-                subtitle="Customize app theme"
-                onPress={() => {
-                  void Haptics.selectionAsync();
-                  setIsAppearanceModalVisible(true);
-                }}
-              />
-                          </View>
-          </View>
-        </SurfaceCard>
-
-        {/* Workout Preferences */}
-        <SurfaceCard tone="card" padding="lg" style={{ borderWidth: 0 }}>
-          <View style={styles.section}>
-            <Text variant="heading3" color="primary" style={styles.sectionTitle}>
-              Workout Preferences
-            </Text>
-
-            <View style={styles.preferencesList}>
-              <PreferenceItem
                 icon="fitness-center"
                 title="Units of Measurement"
                 subtitle={`${weightUnit === 'kg' ? 'kg' : 'lbs'} • ${distanceUnit === 'km' ? 'km' : 'mi'} • ${sizeUnit === 'cm' ? 'cm' : 'in'}`}
@@ -311,18 +288,7 @@ const ProfileModal: React.FC = () => {
                   setIsUnitsModalVisible(true);
                 }}
               />
-
-              <PreferenceItem
-                icon="straighten"
-                title="Body Metrics"
-                subtitle={getBodyMetricsSubtitle()}
-                onPress={() => {
-                  void Haptics.selectionAsync();
-                  setIsBodyMetricsModalVisible(true);
-                }}
-              />
-
-                                        </View>
+                          </View>
           </View>
         </SurfaceCard>
 
@@ -450,11 +416,6 @@ const ProfileModal: React.FC = () => {
       <NotificationsModal
         visible={isNotificationsModalVisible}
         onClose={() => setIsNotificationsModalVisible(false)}
-      />
-
-      <AppearanceModal
-        visible={isAppearanceModalVisible}
-        onClose={() => setIsAppearanceModalVisible(false)}
       />
     </SafeAreaView>
   );

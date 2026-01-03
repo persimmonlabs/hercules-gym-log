@@ -25,7 +25,7 @@ import type { Workout } from '@/types/workout';
 
 const WorkoutDetailScreen: React.FC = () => {
   const router = useRouter();
-  const { workoutId } = useLocalSearchParams<{ workoutId?: string }>();
+  const { workoutId, from } = useLocalSearchParams<{ workoutId?: string; from?: string }>();
   const workouts = useWorkoutSessionsStore((state: WorkoutSessionsState) => state.workouts);
   const hydrateWorkouts = useWorkoutSessionsStore((state: WorkoutSessionsState) => state.hydrateWorkouts);
   const deleteWorkout = useWorkoutSessionsStore((state: WorkoutSessionsState) => state.deleteWorkout);
@@ -40,7 +40,7 @@ const WorkoutDetailScreen: React.FC = () => {
   }, [hydratePlans, hydrateWorkouts]);
 
   const workoutFromStore = useMemo(() => workouts.find((item) => item.id === workoutId) ?? null, [workouts, workoutId]);
-  
+
   useEffect(() => {
     if (workoutFromStore) {
       setLastKnownWorkout(workoutFromStore);
@@ -57,10 +57,17 @@ const WorkoutDetailScreen: React.FC = () => {
   }, [plans, workout?.planId]);
   const workoutTitle = useMemo(() => formatWorkoutTitle(workout, planName), [planName, workout]);
   const sessionDateTime = useMemo(() => formatSessionDateTime(workout), [workout]);
+
   const handleDismiss = useCallback(() => {
-    router.back();
-  }, [router]);
-  
+    if (from === 'calendar') {
+      router.replace('/(tabs)/calendar');
+    } else if (from === 'dashboard') {
+      router.replace('/(tabs)');
+    } else {
+      router.back();
+    }
+  }, [router, from]);
+
   // We keep the button animation but remove container animation since we are now in the tab flow
   const { animatedBackStyle, handleBackPress } = useWorkoutDetailAnimation({
     onDismiss: handleDismiss,
@@ -87,8 +94,8 @@ const WorkoutDetailScreen: React.FC = () => {
     await deleteWorkout(workout.id);
     void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setIsDeleteDialogVisible(false);
-    router.back();
-  }, [deleteWorkout, router, workout]);
+    handleDismiss();
+  }, [deleteWorkout, handleDismiss, workout]);
 
   return (
     <TabSwipeContainer
@@ -105,7 +112,7 @@ const WorkoutDetailScreen: React.FC = () => {
               {sessionDateTime}
             </Text>
           </View>
-          <View style={styles.actionIcons}> 
+          <View style={styles.actionIcons}>
             <Animated.View style={[styles.backButtonContainer, animatedBackStyle]}>
               <Pressable
                 accessibilityRole="button"
@@ -208,10 +215,14 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     justifyContent: 'space-between',
     gap: spacing.md,
+    paddingBottom: spacing.sm,
   },
   headerContent: { flex: 1, gap: spacing.xs },
+  titleWrapper: {
+    paddingBottom: spacing.xs,
+  },
   timestampText: {
-    marginTop: spacing.xs,
+    marginTop: spacing.xxs,
   },
   actionIcons: {
     flexDirection: 'row',

@@ -276,28 +276,31 @@ export const usePlanBuilderState = (editingPlanId: string | null): PlanBuilderSt
   });
 
   const filteredAvailableExercises = useMemo<Exercise[]>(() => {
+    let result: Exercise[];
+
     if (searchTokens.length === 0) {
-      return catalogFilteredByFilters;
+      result = catalogFilteredByFilters;
+    } else {
+      const tokenMatches = catalogFilteredByFilters.filter(matchesSearchTokens);
+
+      if (semanticFilteredAvailable.length === 0) {
+        result = tokenMatches;
+      } else if (tokenMatches.length === 0) {
+        result = semanticFilteredAvailable;
+      } else {
+        const tokenMatchIds = new Set(tokenMatches.map((exercise) => exercise.id));
+        const intersection = semanticFilteredAvailable.filter((exercise) => tokenMatchIds.has(exercise.id));
+
+        if (intersection.length > 0) {
+          result = intersection;
+        } else {
+          result = semanticFilteredAvailable;
+        }
+      }
     }
 
-    const tokenMatches = catalogFilteredByFilters.filter(matchesSearchTokens);
-
-    if (semanticFilteredAvailable.length === 0) {
-      return tokenMatches;
-    }
-
-    if (tokenMatches.length === 0) {
-      return semanticFilteredAvailable;
-    }
-
-    const tokenMatchIds = new Set(tokenMatches.map((exercise) => exercise.id));
-    const intersection = semanticFilteredAvailable.filter((exercise) => tokenMatchIds.has(exercise.id));
-
-    if (intersection.length > 0) {
-      return intersection;
-    }
-
-    return semanticFilteredAvailable;
+    // Sort alphabetically A-Z by name
+    return result.sort((a, b) => a.name.localeCompare(b.name));
   }, [
     catalogFilteredByFilters,
     matchesSearchTokens,

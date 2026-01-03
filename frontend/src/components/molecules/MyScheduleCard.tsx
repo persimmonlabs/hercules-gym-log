@@ -40,7 +40,7 @@ export const MyScheduleCard: React.FC<MyScheduleCardProps> = ({
   const { theme } = useTheme();
   const activeRule = useActiveScheduleStore((state) => state.state.activeRule);
   const overrides = useActiveScheduleStore((state) => state.state.overrides);
-  
+
   const userPrograms = useProgramsStore((state) => state.userPrograms);
   const plans = usePlansStore((state) => state.plans);
 
@@ -143,10 +143,10 @@ export const MyScheduleCard: React.FC<MyScheduleCardProps> = ({
           const currentDayIndex = today.getDay();
           const daysDiff = (dayIndex - currentDayIndex + 7) % 7;
           targetDate.setDate(today.getDate() + daysDiff);
-          
+
           const dateKey = targetDate.toISOString().split('T')[0];
           const override = overrides.find((o: any) => o.date === dateKey);
-          
+
           // Use override if exists, otherwise use base schedule
           const workoutId = override ? override.workoutId : activeRule.days[key];
           const workoutName = getWorkoutName(workoutId);
@@ -197,9 +197,9 @@ export const MyScheduleCard: React.FC<MyScheduleCardProps> = ({
               key={visualIndex}
               style={[styles.scheduleRow, { backgroundColor: theme.surface.elevated }]}
             >
-              <Text 
-                variant="bodySemibold" 
-                color={isCurrentDay ? 'orange' : 'primary'} 
+              <Text
+                variant="bodySemibold"
+                color={isCurrentDay ? 'orange' : 'primary'}
                 style={styles.dayLabel}
               >
                 Day {visualIndex + 1}
@@ -237,11 +237,13 @@ export const MyScheduleCard: React.FC<MyScheduleCardProps> = ({
   };
 
   return (
-    <SurfaceCard padding="xl" tone="neutral">
+    <SurfaceCard padding="xl" tone="neutral" showAccentStripe={false} style={{ borderWidth: 0 }}>
       <View style={styles.content}>
-        <Text variant="heading3" color="primary">
-          My Schedule
-        </Text>
+        <View style={styles.cardHeader}>
+          <Text variant="heading3" color="primary">
+            My Schedule
+          </Text>
+        </View>
 
         {renderScheduleContent()}
 
@@ -284,7 +286,15 @@ export const MyScheduleCard: React.FC<MyScheduleCardProps> = ({
 
 const styles = StyleSheet.create({
   content: {
-    gap: spacing.lg,
+    gap: spacing.md,
+  },
+  cardHeader: {
+    width: '100%',
+    gap: spacing.xs,
+    paddingBottom: spacing.xs,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.accent.orange + '40',
+    marginBottom: spacing.md,
   },
   emptyCard: {
     borderRadius: radius.lg,

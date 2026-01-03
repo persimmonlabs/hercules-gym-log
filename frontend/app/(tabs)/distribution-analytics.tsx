@@ -26,10 +26,10 @@ const DistributionAnalyticsScreen: React.FC = () => {
   const [timeRange, setTimeRange] = React.useState<TimeRange>('week');
   const { hierarchicalVolumeDistribution } = useAnalyticsData({ timeRange });
   const { isPremium, isLoading } = usePremiumStatus();
-  
+
   // Key to force FractalBubbleChart to reset when page is revisited
   const [chartKey, setChartKey] = React.useState(0);
-  
+
   // Reset chart to Overview and time range when page gains focus
   useFocusEffect(
     useCallback(() => {
@@ -37,7 +37,7 @@ const DistributionAnalyticsScreen: React.FC = () => {
       setTimeRange('week');
     }, [])
   );
-  
+
   // Show loading screen while checking premium status to avoid paywall flash
   if (isLoading) {
     return (
@@ -144,6 +144,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingBottom: spacing.sm,
+  },
+  titleWrapper: {
+    paddingBottom: spacing.xxs,
   },
   selectorContainer: {
     alignItems: 'center',

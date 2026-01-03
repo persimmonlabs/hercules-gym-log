@@ -59,20 +59,24 @@ export const ScreenHeader: React.FC<ScreenHeaderProps> = ({ title, subtitle, onP
             <Pressable
               style={[
                 userInitial ? styles.profileButtonWithInitial : styles.profileButton,
-                { backgroundColor: theme.surface.card, borderColor: theme.accent.orange }
+                {
+                  backgroundColor: userInitial ? theme.accent.orange : theme.surface.card,
+                  borderColor: theme.accent.orange,
+                  borderWidth: userInitial ? 0 : 1
+                }
               ]}
               onPress={handleProfilePress}
               accessibilityRole="button"
               accessibilityLabel="Profile"
             >
               {userInitial ? (
-                <Text variant="bodySemibold" style={[styles.initialText, { color: theme.text.primary }]}>
+                <Text variant="bodySemibold" style={[styles.initialText, { color: theme.text.onAccent }]}>
                   {userInitial}
                 </Text>
               ) : (
                 <IconSymbol
                   name="person"
-                  color={theme.text.primary}
+                  color={theme.accent.orange}
                   size={24}
                 />
               )}
@@ -92,10 +96,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     justifyContent: 'space-between',
+    paddingBottom: spacing.sm,
   },
   textContainer: {
     flex: 1,
     gap: spacing.xs,
+  },
+  titleWrapper: {
+    gap: spacing.xxs,
+    paddingBottom: spacing.xs,
   },
   profileButton: {
     width: 40,
@@ -103,7 +112,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.full,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 2,
+    borderWidth: 1,
   },
   profileButtonWithInitial: {
     width: 40,
@@ -111,7 +120,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.full,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 2,
+    borderWidth: 1,
   },
   initialText: {
     fontSize: 18,

@@ -122,13 +122,20 @@ const CalendarScreen: React.FC = () => {
       setSelectedDate(today);
       setCurrentMonth(today);
       void hydrateWorkouts();
-    }, [])
+
+      return () => {
+        // Reset to current date when leaving the screen to prevent flash on return
+        const endToday = formatDateToLocalISO(getDeviceCurrentDate());
+        setSelectedDate(endToday);
+        setCurrentMonth(endToday);
+      };
+    }, [hydrateWorkouts])
   );
 
   const handleViewWorkout = useCallback(
     (workoutId: string) => {
       void Haptics.selectionAsync();
-      router.push({ pathname: '/(tabs)/workout-detail', params: { workoutId } });
+      router.push({ pathname: '/(tabs)/workout-detail', params: { workoutId, from: 'calendar' } });
     },
     [router],
   );
@@ -137,7 +144,7 @@ const CalendarScreen: React.FC = () => {
     <TabSwipeContainer ref={scrollRef} contentContainerStyle={[styles.contentContainer, { backgroundColor: theme.primary.bg }]}>
       <ScreenHeader
         title="Calendar"
-        subtitle="Track workouts and build consistency."
+        subtitle="Visualize your training consistency."
       />
 
       <View style={styles.calendarSection}>
@@ -166,7 +173,7 @@ const CalendarScreen: React.FC = () => {
                 accessibilityLabel="View workout details"
                 onPress={() => handleViewWorkout(workout.id)}
               >
-                <SurfaceCard tone="card" padding="lg" showAccentStripe={true} style={styles.workoutCard}>
+                <SurfaceCard tone="card" padding="lg" showAccentStripe={false} style={styles.workoutCard}>
                   <View style={styles.workoutHeader}>
                     <Text variant="bodySemibold" color="primary">
                       {title}

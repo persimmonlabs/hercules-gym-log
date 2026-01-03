@@ -153,7 +153,7 @@ const styles = StyleSheet.create({
     paddingTop: spacing.md,
     paddingBottom: spacing.xs,
     borderBottomWidth: 1,
-    borderBottomColor: colors.border.light,
+    borderBottomColor: colors.accent.orange + '40',
   },
   headerText: {
     flex: 1,

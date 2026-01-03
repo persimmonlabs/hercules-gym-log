@@ -61,7 +61,7 @@ export const MonthlyCalendar: React.FC<MonthlyCalendarProps> = ({ onDayLongPress
   );
 
   return (
-    <SurfaceCard tone="neutral" padding="lg">
+    <SurfaceCard tone="neutral" padding="lg" showAccentStripe={false}>
       <View style={styles.header}>
         <TouchableOpacity
           style={styles.navButton}

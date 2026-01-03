@@ -60,6 +60,11 @@ export const CustomTabBar: React.FC<BottomTabBarProps> = ({ state, navigation })
     bottom: bottomOffset,
   };
 
+  const currentRouteName = state.routes[state.index]?.name;
+  const isWorkoutSessionPage = isSessionActive && currentRouteName === 'workout';
+  const fillBackgroundColor = isWorkoutSessionPage ? 'transparent' : theme.primary.bg;
+
+
   const focusTab = (index: number, routeName: string) => {
     const route = state.routes[index];
     const event = navigation.emit({
@@ -103,7 +108,7 @@ export const CustomTabBar: React.FC<BottomTabBarProps> = ({ state, navigation })
           left: 0,
           right: 0,
           height: bottomOffset,
-          backgroundColor: theme.primary.bg,
+          backgroundColor: fillBackgroundColor,
           zIndex: zIndex.modal - 1,
         }}
       />
@@ -117,7 +122,7 @@ export const CustomTabBar: React.FC<BottomTabBarProps> = ({ state, navigation })
             left: 0,
             width: radius.xl,
             height: radius.xl + 1,
-            backgroundColor: theme.primary.bg,
+            backgroundColor: fillBackgroundColor,
           }}
         />
         <View
@@ -128,7 +133,7 @@ export const CustomTabBar: React.FC<BottomTabBarProps> = ({ state, navigation })
             right: 0,
             width: radius.xl,
             height: radius.xl + 1,
-            backgroundColor: theme.primary.bg,
+            backgroundColor: fillBackgroundColor,
           }}
         />
         <View style={[styles.shadowWrapper, { backgroundColor: TAB_SURFACE_COLOR }]}>

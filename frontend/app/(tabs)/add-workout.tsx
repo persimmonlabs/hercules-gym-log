@@ -23,6 +23,9 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.lg,
     gap: spacing.sm,
   },
+  titleWrapper: {
+    paddingBottom: spacing.xs,
+  },
   backButton: {
     padding: spacing.sm,
     paddingTop: spacing.xs,
@@ -204,7 +207,7 @@ export default function AddWorkoutScreen() {
             <IconSymbol name="arrow-back" size={24} color={colors.text.primary} />
           </Pressable>
         </View>
-        
+
         <View style={styles.contentContainer}>
           <View style={{ gap: spacing.md, marginTop: spacing.md }}>
             <Animated.View style={browseLiftAnimation.animatedStyle}>

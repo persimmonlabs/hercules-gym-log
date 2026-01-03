@@ -4,6 +4,7 @@ import {
   Dimensions,
   FlatList,
   Keyboard,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -23,6 +24,8 @@ import Animated, {
   withTiming,
   Layout,
 } from 'react-native-reanimated';
+import { StatusBar } from 'expo-status-bar';
+import * as NavigationBar from 'expo-navigation-bar';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 
 import { Button } from '@/components/atoms/Button';
@@ -32,6 +35,7 @@ import { ExerciseHistoryModal } from '@/components/molecules/ExerciseHistoryModa
 import { exercises as baseExerciseCatalog, createCustomExerciseCatalogItem } from '@/constants/exercises';
 import { springGentle } from '@/constants/animations';
 import { colors, radius, shadows, sizing, spacing, typography, zIndex } from '@/constants/theme';
+import { useTheme } from '@/hooks/useTheme';
 import { useElapsedTimer } from '@/hooks/useElapsedTimer';
 import { useSemanticExerciseSearch } from '@/hooks/useSemanticExerciseSearch';
 import { useSessionStore } from '@/store/sessionStore';
@@ -68,6 +72,7 @@ const formatElapsed = (seconds: number): string => {
 
 const WorkoutSessionScreen: React.FC = () => {
   const router = useRouter();
+  const { theme } = useTheme();
   const currentSession = useSessionStore((state) => state.currentSession);
   const lastKnownSessionRef = useRef(currentSession);
   if (currentSession) {
@@ -120,6 +125,11 @@ const WorkoutSessionScreen: React.FC = () => {
   useEffect(() => {
     console.log('[WorkoutSession] pickerVisible changed to:', pickerVisible);
   }, [pickerVisible]);
+
+  // Dismiss keyboard on component mount to prevent unwanted keyboard popup on app re-entry
+  useEffect(() => {
+    Keyboard.dismiss();
+  }, []);
   const [exerciseProgress, setExerciseProgress] = useState<Record<string, ExerciseProgressSnapshot>>({});
   const insets = useSafeAreaInsets();
   const sheetTranslateY = useSharedValue(SCREEN_HEIGHT);
@@ -144,13 +154,24 @@ const WorkoutSessionScreen: React.FC = () => {
     isActive: isSessionActive,
   });
 
-  // Cleanup effect: reset states on unmount to prevent stale state blocking future sessions
+  // Reset isFinishingWorkout is not strictly needed since we are navigating away,
+  // but good for cleanup if component stays mounted for any reason
   useEffect(() => {
     return () => {
       setIsFinishingWorkout(false);
       setCompletionOverlayVisible(false);
     };
   }, [setCompletionOverlayVisible]);
+
+  useEffect(() => {
+    if (Platform.OS === 'android') {
+      void NavigationBar.setBackgroundColorAsync(theme.surface.tint);
+      return () => {
+        // Restore to current theme background color when leaving
+        void NavigationBar.setBackgroundColorAsync(theme.primary.bg);
+      };
+    }
+  }, [theme.primary.bg]);
 
   const sheetAnimatedStyle = useAnimatedStyle(() => ({
     transform: [{ translateY: sheetTranslateY.value }],
@@ -223,7 +244,10 @@ const WorkoutSessionScreen: React.FC = () => {
 
     // Filter out exercises that are already in the session to prevent duplicates
     const existingNames = new Set(sessionExercises.map((e) => e.name));
-    return candidates.filter((exercise) => !existingNames.has(exercise.name));
+    const filtered = candidates.filter((exercise) => !existingNames.has(exercise.name));
+
+    // Sort alphabetically A-Z by name
+    return filtered.sort((a, b) => a.name.localeCompare(b.name));
   }, [searchTerm, semanticResults, sessionExercises]);
 
   const dismissPicker = useCallback(() => {
@@ -604,19 +628,19 @@ const WorkoutSessionScreen: React.FC = () => {
   const listHeaderComponent = useMemo(() => (
     <View style={styles.listHeader}>
       <View style={styles.headerCard}>
-        <Text variant="heading2">{activePlanName ?? 'Current Session'}</Text>
+        <Text variant="heading2" color="primary">{activePlanName ?? 'Current Session'}</Text>
         <View style={styles.headerRow}>
           <View style={styles.headerStat}>
-            <Text variant="label" color="tertiary">
+            <Text variant="label" color="secondary">
               Elapsed Time
             </Text>
-            <Text variant="heading3">{formatElapsed(elapsedSeconds)}</Text>
+            <Text variant="heading3" color="primary">{formatElapsed(elapsedSeconds)}</Text>
           </View>
           <View style={styles.headerStat}>
-            <Text variant="label" color="tertiary">
+            <Text variant="label" color="secondary">
               Completed Exercises
             </Text>
-            <Text variant="heading3">{completedExercisesCount}/{exerciseCount}</Text>
+            <Text variant="heading3" color="primary">{completedExercisesCount}/{exerciseCount}</Text>
           </View>
         </View>
       </View>
@@ -627,8 +651,7 @@ const WorkoutSessionScreen: React.FC = () => {
     </View>
   ), [activePlanName, elapsedSeconds, exerciseCount, completedExercisesCount]);
 
-  const tabBarBottomOffset = useMemo(() => Math.max(insets.bottom - spacing.lg, 0), [insets.bottom]);
-  const bottomSafeFillHeight = useMemo(() => tabBarBottomOffset, [tabBarBottomOffset]);
+  const tabBarBottomOffset = useMemo(() => insets.bottom + spacing.sm, [insets.bottom]);
   const tabBarMaskHeight = useMemo(
     () => sizing.iconLG + spacing.xs * 2 + spacing.xxxs * 2,
     [],
@@ -643,16 +666,16 @@ const WorkoutSessionScreen: React.FC = () => {
       styles.listContent,
       {
         paddingTop: spacing.sm,
-        paddingBottom: spacing.md + tabBarTopOffset,
+        paddingBottom: spacing.xl,
       },
     ],
-    [tabBarTopOffset]
+    []
   );
 
   const listFooterComponent = useMemo(
     () => (
       <View
-        style={[styles.footerStack, { paddingBottom: spacing.xl + tabBarTopOffset }]}
+        style={[styles.footerStack, { paddingBottom: spacing.xl }]}
       >
         <Button
           label="Add Exercise"
@@ -682,14 +705,14 @@ const WorkoutSessionScreen: React.FC = () => {
         )}
       </View>
     ),
-    [handleAddExercisePress, handleFinishWorkout, handleCancel, hasExercises, isFinishingWorkout, tabBarTopOffset]
+    [handleAddExercisePress, handleFinishWorkout, handleCancel, hasExercises, isFinishingWorkout]
   );
   const listEmptyComponent = useMemo(
     () => (
       <View
         style={[
           styles.listEmptyContainer,
-          { paddingBottom: spacing['2xl'] + tabBarTopOffset },
+          { paddingBottom: spacing['2xl'] },
         ]}
       >
         <View style={styles.listEmptyCard}>
@@ -708,7 +731,8 @@ const WorkoutSessionScreen: React.FC = () => {
   }
 
   return (
-    <View style={[styles.safeAreaRoot, { paddingTop: insets.top }]}>
+    <View style={[styles.safeAreaRoot, { paddingTop: insets.top, backgroundColor: theme.surface.tint }]}>
+      <StatusBar style="dark" backgroundColor="transparent" translucent />
       <View style={styles.root}>
         {menuExerciseName ? (
           <Pressable style={styles.menuBackdrop} onPress={closeExerciseMenu} accessibilityLabel="Dismiss exercise menu" />
@@ -716,6 +740,7 @@ const WorkoutSessionScreen: React.FC = () => {
         <FlatList
           data={sessionExercises}
           keyExtractor={(item) => item.name}
+          style={[styles.list, { marginBottom: tabBarTopOffset }]}
           contentContainerStyle={listContentStyle}
           extraData={{ expandedExercises: Array.from(expandedExercises), exerciseProgress, menuExerciseName }}
           maintainVisibleContentPosition={{
@@ -833,20 +858,6 @@ const WorkoutSessionScreen: React.FC = () => {
               </Animated.View>
             );
           }}
-        />
-
-        <View pointerEvents="none" style={[styles.bottomSafeFill, { height: bottomSafeFillHeight }]} />
-        <View
-          pointerEvents="none"
-          style={[
-            styles.bottomTabMask,
-            {
-              bottom: tabBarBottomOffset,
-              height: tabBarMaskHeight,
-              left: spacing.sm,
-              right: spacing.sm,
-            },
-          ]}
         />
       </View>
 
@@ -999,21 +1010,22 @@ export default WorkoutSessionScreen;
 const styles = StyleSheet.create({
   safeAreaRoot: {
     flex: 1,
-    backgroundColor: colors.primary.bg,
   },
   root: {
     flex: 1,
-    backgroundColor: colors.primary.bg,
   },
   listContent: {
     paddingHorizontal: spacing.md,
     paddingTop: spacing.sm,
   },
+  list: {
+    flex: 1,
+  },
   headerCard: {
     paddingVertical: spacing.mdCompact,
     gap: spacing.sm,
     borderRadius: radius.lg,
-    borderWidth: 2,
+    borderWidth: 1,
     borderColor: colors.accent.orange,
     backgroundColor: colors.surface.card,
     paddingHorizontal: spacing.lg,
@@ -1049,7 +1061,7 @@ const styles = StyleSheet.create({
     paddingLeft: spacing.md,
     paddingRight: spacing.md,
     paddingVertical: spacing.sm,
-    borderWidth: 2,
+    borderWidth: 1,
     borderColor: colors.accent.orange,
     overflow: 'visible',
     position: 'relative',
@@ -1087,7 +1099,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: colors.surface.card,
-    borderWidth: 2,
+    borderWidth: 1,
     borderColor: colors.accent.orange,
   },
   cardBody: {
@@ -1147,13 +1159,11 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: colors.primary.bg,
     zIndex: zIndex.base,
   },
   bottomTabMask: {
     position: 'absolute',
     bottom: 0,
-    backgroundColor: colors.primary.bg,
     borderTopLeftRadius: radius.xl,
     borderTopRightRadius: radius.xl,
     zIndex: zIndex.dropdown,
@@ -1176,8 +1186,7 @@ const styles = StyleSheet.create({
     gap: spacing.md,
     borderRadius: radius.lg,
     borderWidth: 1,
-    borderColor: '#000000',
-    borderStyle: 'dashed',
+    borderColor: colors.accent.orange,
     backgroundColor: colors.surface.card,
     padding: spacing.lg,
   },
@@ -1199,11 +1208,11 @@ const styles = StyleSheet.create({
     height: '80%',
     overflow: 'hidden',
     flexDirection: 'column',
-    borderTopWidth: 2,
+    borderTopWidth: 1,
     borderTopColor: colors.accent.orange,
-    borderLeftWidth: 2,
+    borderLeftWidth: 1,
     borderLeftColor: colors.accent.orange,
-    borderRightWidth: 2,
+    borderRightWidth: 1,
     borderRightColor: colors.accent.orange,
   },
   modalTopIndicator: {

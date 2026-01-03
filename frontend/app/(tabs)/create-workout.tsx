@@ -38,11 +38,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     justifyContent: 'space-between',
+    paddingBottom: spacing.sm,
   },
   headerContent: {
     gap: spacing.sm,
     alignItems: 'flex-start',
     flex: 1,
+  },
+  titleWrapper: {
+    paddingBottom: spacing.xs,
   },
   headerTitle: {
     textAlign: 'left',
@@ -229,82 +233,82 @@ const CreateWorkoutScreen: React.FC = () => {
         limitType="workout"
       />
       <View style={[styles.container, { paddingTop: insets.top }]}>
-      <KeyboardAwareScrollView
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
-        keyboardDismissMode="on-drag"
-        enableOnAndroid
-        extraScrollHeight={spacing['2xl'] * 4}
-        keyboardOpeningTime={0}
-        enableAutomaticScroll={false}
-      >
-        <View style={styles.topSection}>
-          <View style={styles.headerContent}>
-            <Text variant="heading2" color="primary" style={styles.headerTitle} fadeIn>
-              {headerTitle}
-            </Text>
-            <Text variant="body" color="secondary" style={styles.headerSubtitle} fadeIn>
-              {headerSubtitle}
-            </Text>
+        <KeyboardAwareScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+          enableOnAndroid
+          extraScrollHeight={spacing['2xl'] * 4}
+          keyboardOpeningTime={0}
+          enableAutomaticScroll={false}
+        >
+          <View style={styles.topSection}>
+            <View style={styles.headerContent}>
+              <Text variant="heading2" color="primary" style={styles.headerTitle} fadeIn>
+                {headerTitle}
+              </Text>
+              <Text variant="body" color="secondary" style={styles.headerSubtitle} fadeIn>
+                {headerSubtitle}
+              </Text>
+            </View>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Go Back"
+              onPress={handleBackPress}
+              style={{ padding: spacing.sm, paddingTop: spacing.xs, borderRadius: radius.full }}
+            >
+              <IconSymbol name="arrow-back" size={sizing.iconMD} color={colors.text.primary} />
+            </Pressable>
           </View>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Go Back"
-            onPress={handleBackPress}
-            style={{ padding: spacing.sm, paddingTop: spacing.xs, borderRadius: radius.full }}
-          >
-            <IconSymbol name="arrow-back" size={sizing.iconMD} color={colors.text.primary} />
-          </Pressable>
-        </View>
 
-        {isEditing && isEditingPlanMissing ? (
-          <SurfaceCard tone="neutral" padding="xl" showAccentStripe={false} style={styles.missingPlanCard}>
-            <Text variant="bodySemibold" color="primary">
-              Plan unavailable
-            </Text>
-            <Text variant="body" color="secondary">
-              We couldn’t find the plan you’re trying to edit. Please go back and select another plan.
-            </Text>
-            <Button label="Go Back" variant="secondary" onPress={router.back} />
-          </SurfaceCard>
-        ) : null}
+          {isEditing && isEditingPlanMissing ? (
+            <SurfaceCard tone="neutral" padding="xl" showAccentStripe={false} style={styles.missingPlanCard}>
+              <Text variant="bodySemibold" color="primary">
+                Plan unavailable
+              </Text>
+              <Text variant="body" color="secondary">
+                We couldn’t find the plan you’re trying to edit. Please go back and select another plan.
+              </Text>
+              <Button label="Go Back" variant="secondary" onPress={router.back} />
+            </SurfaceCard>
+          ) : null}
 
-        <View style={styles.nameCardContainer}>
-          <PlanNameCard value={planName} onChange={setPlanName} label="Name" placeholder="e.g. Push Day" />
-        </View>
+          <View style={styles.nameCardContainer}>
+            <PlanNameCard value={planName} onChange={setPlanName} label="Name" placeholder="e.g. Push Day" />
+          </View>
 
-        {hasExercises ? (
-          <PlanSelectedExerciseList
-            exercises={selectedExercises}
-            onRemoveExercise={handleRemoveExercise}
-            onAddExercises={handleAddExercisesPress}
-            title={selectedListTitle}
-            subtitle={selectedListSubtitle}
-            addLabel="Add exercises"
-            onReorderExercises={handleReorderExercises}
-          />
-        ) : (
-          <PlanEmptyStateCard
-            title="No exercises yet"
-            buttonLabel="Add exercises"
-            onPress={handleAddExercisesPress}
-            style={styles.emptyCard}
-          />
-        )}
+          {hasExercises ? (
+            <PlanSelectedExerciseList
+              exercises={selectedExercises}
+              onRemoveExercise={handleRemoveExercise}
+              onAddExercises={handleAddExercisesPress}
+              title={selectedListTitle}
+              subtitle={selectedListSubtitle}
+              addLabel="Add exercises"
+              onReorderExercises={handleReorderExercises}
+            />
+          ) : (
+            <PlanEmptyStateCard
+              title="No exercises yet"
+              buttonLabel="Add exercises"
+              onPress={handleAddExercisesPress}
+              style={styles.emptyCard}
+            />
+          )}
 
-        <View style={styles.addButtonContainer}>
-          <Button
-            label={saveLabel}
-            variant="primary"
-            size="lg"
-            onPress={handleSavePlanPress}
-            disabled={isSaveDisabled}
-            loading={isSaving}
-          />
-        </View>
-      </KeyboardAwareScrollView>
-    </View>
+          <View style={styles.addButtonContainer}>
+            <Button
+              label={saveLabel}
+              variant="primary"
+              size="lg"
+              onPress={handleSavePlanPress}
+              disabled={isSaveDisabled}
+              loading={isSaving}
+            />
+          </View>
+        </KeyboardAwareScrollView>
+      </View>
     </>
   );
 };

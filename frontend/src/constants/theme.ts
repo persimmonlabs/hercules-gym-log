@@ -23,7 +23,7 @@ export const colors = {
     card: '#FFFFFF',                       // Primary card surface
     elevated: '#FFFFFF',                   // Same as card for light mode (nested cards stay white)
     subtle: '#FFFFFF',                     // Same as card for light mode
-    tint: 'rgba(255, 107, 74, 0.08)',      // Coral wash for accents
+    tint: 'rgba(255, 107, 74, 0.15)',      // Coral wash for accents
   },
 
   // Neutral utility colors
@@ -97,7 +97,7 @@ export const darkColors = {
     card: '#1C1C1E',                       // Dark gray for main cards (level 1)
     elevated: '#2C2C2E',                   // Lighter gray for nested elements (level 2)
     subtle: '#1C1C1E',                     // Same as card for subtle panels
-    tint: 'rgba(255, 107, 74, 0.15)',      // Coral wash for accents
+    tint: 'rgba(255, 107, 74, 0.2)',      // Coral wash for accents
   },
 
   // Neutral utility colors

@@ -37,7 +37,9 @@ const DEFAULT_NEW_SET: SetLog = {
 interface SetDraft extends SetLog {
   weightInput: string;
   repsInput: string;
-  durationInput: string;      // For cardio (minutes) and duration (seconds)
+  durationInput: string;      // For cardio (minutes) and duration (seconds) - format MM:SS
+  minutesInput: string;       // Minutes portion (2 digits max)
+  secondsInput: string;       // Seconds portion (2 digits max, 0-59)
   distanceInput: string;      // For cardio
   assistanceWeightInput: string; // For assisted
 }
@@ -51,7 +53,15 @@ const formatWeightInputValue = (value: number): string => {
   return value.toFixed(1);
 };
 
+// Format duration for session input (always MM:SS with 2 digits each)
 const formatDuration = (seconds: number): string => {
+  const mins = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+};
+
+// Format duration for summary display (drop leading zero on minutes)
+const formatDurationForSummary = (seconds: number): string => {
   const mins = Math.floor(seconds / 60);
   const secs = seconds % 60;
   return `${mins}:${secs.toString().padStart(2, '0')}`;
@@ -66,14 +76,52 @@ const parseDuration = (input: string): number => {
   return parseInt(input, 10) || 0;
 };
 
-const createDraftFromSet = (set: SetLog): SetDraft => ({
-  ...set,
-  weightInput: formatWeightInputValue(set.weight ?? 0),
-  repsInput: String(set.reps ?? 0),
-  durationInput: set.duration ? formatDuration(set.duration) : '0:00',
-  distanceInput: String(set.distance ?? 0),
-  assistanceWeightInput: formatWeightInputValue(set.assistanceWeight ?? 0),
-});
+// Parse minutes and seconds into total seconds
+const parseDurationFromParts = (minutes: string, seconds: string): number => {
+  const mins = parseInt(minutes, 10) || 0;
+  let secs = parseInt(seconds, 10) || 0;
+  // Clamp seconds to 0-59
+  if (secs > 59) secs = 59;
+  return mins * 60 + secs;
+};
+
+// Sanitize time input (digits only, max 2 characters)
+const sanitizeTimeInput = (value: string, maxVal?: number): string => {
+  // Keep only digits
+  const digits = value.replace(/[^0-9]/g, '');
+  // Limit to 2 digits
+  let result = digits.slice(0, 2);
+  // If maxVal provided, clamp the value
+  if (maxVal !== undefined && result.length > 0) {
+    const num = parseInt(result, 10);
+    if (num > maxVal) {
+      result = maxVal.toString().padStart(2, '0');
+    }
+  }
+  return result;
+};
+
+// Format distance with 2 decimal places (hundredths)
+const formatDistanceValue = (value: number): string => {
+  return value.toFixed(2);
+};
+
+const createDraftFromSet = (set: SetLog): SetDraft => {
+  const duration = set.duration ?? 0;
+  const mins = Math.floor(duration / 60);
+  const secs = duration % 60;
+
+  return {
+    ...set,
+    weightInput: formatWeightInputValue(set.weight ?? 0),
+    repsInput: String(set.reps ?? 0),
+    durationInput: formatDuration(duration),
+    minutesInput: mins.toString().padStart(2, '0'),
+    secondsInput: secs.toString().padStart(2, '0'),
+    distanceInput: formatDistanceValue(set.distance ?? 0),
+    assistanceWeightInput: formatWeightInputValue(set.assistanceWeight ?? 0),
+  };
+};
 
 const sanitizeWeightInput = (value: string): string => {
   if (!value) {
@@ -157,6 +205,8 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
   const repsInputRefs = useRef<Record<number, TextInput | null>>({});
   const distanceInputRefs = useRef<Record<number, TextInput | null>>({});
   const durationInputRefs = useRef<Record<number, TextInput | null>>({});
+  const minutesInputRefs = useRef<Record<number, TextInput | null>>({});
+  const secondsInputRefs = useRef<Record<number, TextInput | null>>({});
   const setsRef = useRef<SetDraft[]>([]);
   const completedSetsRef = useRef(0);
   const totalSetsRef = useRef(0);
@@ -205,6 +255,8 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
         const repsRef = repsInputRefs.current[index];
         const distanceRef = distanceInputRefs.current[index];
         const durationRef = durationInputRefs.current[index];
+        const minutesRef = minutesInputRefs.current[index];
+        const secondsRef = secondsInputRefs.current[index];
 
         if (weightRef) {
           const text = exerciseType === 'assisted' ? draft.assistanceWeightInput : draft.weightInput;
@@ -221,6 +273,14 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
 
         if (durationRef) {
           durationRef.setNativeProps({ text: draft.durationInput });
+        }
+
+        if (minutesRef) {
+          minutesRef.setNativeProps({ text: draft.minutesInput });
+        }
+
+        if (secondsRef) {
+          secondsRef.setNativeProps({ text: draft.secondsInput });
         }
       });
     }, 0);
@@ -339,28 +399,21 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
         sourceSet = prev[lastHistoryIndex];
       }
 
-      const newSetValues: SetDraft = sourceSet
-        ? {
+      let newSetLog: SetLog;
+      if (sourceSet) {
+        newSetLog = {
           weight: sourceSet.weight ?? 0,
           reps: sourceSet.reps ?? 8,
           duration: sourceSet.duration ?? 0,
           distance: sourceSet.distance ?? 0,
           assistanceWeight: sourceSet.assistanceWeight ?? 0,
           completed: false,
-          weightInput: formatWeightInputValue(sourceSet.weight ?? 0),
-          repsInput: String(sourceSet.reps ?? 8),
-          durationInput: sourceSet.durationInput ?? '0:00',
-          distanceInput: sourceSet.distanceInput ?? '0',
-          assistanceWeightInput: sourceSet.assistanceWeightInput ?? '0.0',
-        }
-        : {
-          ...DEFAULT_NEW_SET,
-          weightInput: formatWeightInputValue(DEFAULT_NEW_SET.weight ?? 0),
-          repsInput: String(DEFAULT_NEW_SET.reps ?? 8),
-          durationInput: '0:00',
-          distanceInput: '0',
-          assistanceWeightInput: '0.0',
         };
+      } else {
+        newSetLog = DEFAULT_NEW_SET;
+      }
+
+      const newSetValues = createDraftFromSet(newSetLog);
 
       const next = [...prev, newSetValues];
       setsRef.current = next;
@@ -724,10 +777,10 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
                               }
 
                               const currentDisplayValue = convertDistance(current.distance ?? 0);
-                              const newDisplayValue = Math.max(0, currentDisplayValue - 0.1);
+                              const newDisplayValue = Math.max(0, currentDisplayValue - 0.25);
                               const newMiles = convertDistanceToMiles(newDisplayValue);
                               const nextDistance = Math.round(newMiles * 100) / 100;
-                              const nextText = newDisplayValue.toFixed(1);
+                              const nextText = formatDistanceValue(newDisplayValue);
 
                               const distanceRef = distanceInputRefs.current[index];
                               if (distanceRef) {
@@ -755,10 +808,23 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
                                 distance: Math.round(distanceInMiles * 100) / 100
                               });
                             }}
+                            onBlur={() => {
+                              // Format to 2 decimal places on blur
+                              const current = setsRef.current[index];
+                              if (current) {
+                                const displayValue = convertDistance(current.distance ?? 0);
+                                const nextText = formatDistanceValue(displayValue);
+                                const distanceRef = distanceInputRefs.current[index];
+                                if (distanceRef) {
+                                  distanceRef.setNativeProps({ text: nextText });
+                                }
+                                updateSet(index, { distanceInput: nextText });
+                              }
+                            }}
                             keyboardType="decimal-pad"
                             style={styles.metricValue}
                             textAlign="center"
-                            placeholder="0"
+                            placeholder="0.00"
                             placeholderTextColor={colors.text.tertiary}
                             cursorColor={colors.accent.primary}
                             selectionColor={colors.accent.orangeLight}
@@ -774,10 +840,10 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
                               }
 
                               const currentDisplayValue = convertDistance(current.distance ?? 0);
-                              const newDisplayValue = Math.round((currentDisplayValue + 0.1) * 10) / 10;
+                              const newDisplayValue = Math.round((currentDisplayValue + 0.25) * 100) / 100;
                               const newMiles = convertDistanceToMiles(newDisplayValue);
                               const nextDistance = Math.round(newMiles * 100) / 100;
-                              const nextText = newDisplayValue.toFixed(1);
+                              const nextText = formatDistanceValue(newDisplayValue);
 
                               const distanceRef = distanceInputRefs.current[index];
                               if (distanceRef) {
@@ -810,42 +876,95 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
                                 return;
                               }
 
-                              const decrement = exerciseType === 'cardio' ? 60 : 5;
+                              const decrement = 15; // 15 seconds
                               const newDuration = Math.max(0, (current.duration ?? 0) - decrement);
                               const nextText = formatDuration(newDuration);
+                              const mins = Math.floor(newDuration / 60);
+                              const secs = newDuration % 60;
 
                               const durationRef = durationInputRefs.current[index];
-                              if (durationRef) {
-                                durationRef.setNativeProps({ text: nextText });
-                              }
+                              const minutesRef = minutesInputRefs.current[index];
+                              const secondsRef = secondsInputRefs.current[index];
+
+                              if (durationRef) durationRef.setNativeProps({ text: nextText });
+                              if (minutesRef) minutesRef.setNativeProps({ text: mins.toString().padStart(2, '0') });
+                              if (secondsRef) secondsRef.setNativeProps({ text: secs.toString().padStart(2, '0') });
 
                               updateSet(index, {
                                 duration: newDuration,
                                 durationInput: nextText,
+                                minutesInput: mins.toString().padStart(2, '0'),
+                                secondsInput: secs.toString().padStart(2, '0'),
                               });
                             }}
                           />
-                          <TextInput
-                            ref={(ref) => {
-                              durationInputRefs.current[index] = ref;
-                            }}
-                            defaultValue={set.durationInput}
-                            onChangeText={(value) => {
-                              const sanitized = value.replace(/[^0-9:]/g, '');
-                              const seconds = parseDuration(sanitized);
-                              updateSet(index, {
-                                durationInput: sanitized,
-                                duration: seconds
-                              });
-                            }}
-                            keyboardType="numeric"
-                            style={styles.metricValue}
-                            textAlign="center"
-                            placeholder={exerciseType === 'cardio' ? '0:00' : '0'}
-                            placeholderTextColor={colors.text.tertiary}
-                            cursorColor={colors.accent.primary}
-                            selectionColor={colors.accent.orangeLight}
-                          />
+
+                          <View style={styles.timeInputContainer}>
+                            <TextInput
+                              ref={(ref) => {
+                                minutesInputRefs.current[index] = ref;
+                              }}
+                              defaultValue={set.minutesInput}
+                              onChangeText={(value) => {
+                                const sanitized = sanitizeTimeInput(value);
+                                if (value !== sanitized) {
+                                  minutesInputRefs.current[index]?.setNativeProps({ text: sanitized });
+                                }
+
+                                const current = setsRef.current[index];
+                                const currentSecs = current?.secondsInput || '00';
+
+                                const totalSeconds = parseDurationFromParts(sanitized, currentSecs);
+
+                                updateSet(index, {
+                                  minutesInput: sanitized,
+                                  durationInput: formatDuration(totalSeconds),
+                                  duration: totalSeconds
+                                });
+                              }}
+                              keyboardType="numeric"
+                              style={styles.timeInput}
+                              textAlign="center"
+                              placeholder="00"
+                              placeholderTextColor={colors.text.tertiary}
+                              cursorColor={colors.accent.primary}
+                              selectionColor={colors.accent.orangeLight}
+                              maxLength={2}
+                            />
+                            <Text style={styles.timeSeparator}>:</Text>
+                            <TextInput
+                              ref={(ref) => {
+                                secondsInputRefs.current[index] = ref;
+                              }}
+                              defaultValue={set.secondsInput}
+                              onChangeText={(value) => {
+                                const sanitized = sanitizeTimeInput(value, 59);
+                                if (value !== sanitized) {
+                                  secondsInputRefs.current[index]?.setNativeProps({ text: sanitized });
+                                }
+
+                                const current = setsRef.current[index];
+                                const currentMins = current?.minutesInput || '00';
+
+                                const totalSeconds = parseDurationFromParts(currentMins, sanitized);
+
+                                updateSet(index, {
+                                  secondsInput: sanitized,
+                                  durationInput: formatDuration(totalSeconds),
+                                  duration: totalSeconds
+                                });
+                              }}
+                              keyboardType="numeric"
+                              style={styles.timeInput}
+                              textAlign="center"
+                              placeholder="00"
+                              placeholderTextColor={colors.text.tertiary}
+                              cursorColor={colors.accent.primary}
+                              selectionColor={colors.accent.orangeLight}
+                              maxLength={2} // Limit to 2 chars, value clamping handled in logic
+                            />
+                          </View>
+
                           <HoldRepeatIconButton
                             iconName="plus"
                             style={styles.adjustButton}
@@ -856,18 +975,25 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
                                 return;
                               }
 
-                              const increment = exerciseType === 'cardio' ? 60 : 5;
+                              const increment = 15; // 15 seconds
                               const newDuration = (current.duration ?? 0) + increment;
                               const nextText = formatDuration(newDuration);
+                              const mins = Math.floor(newDuration / 60);
+                              const secs = newDuration % 60;
 
                               const durationRef = durationInputRefs.current[index];
-                              if (durationRef) {
-                                durationRef.setNativeProps({ text: nextText });
-                              }
+                              const minutesRef = minutesInputRefs.current[index];
+                              const secondsRef = secondsInputRefs.current[index];
+
+                              if (durationRef) durationRef.setNativeProps({ text: nextText });
+                              if (minutesRef) minutesRef.setNativeProps({ text: mins.toString().padStart(2, '0') });
+                              if (secondsRef) secondsRef.setNativeProps({ text: secs.toString().padStart(2, '0') });
 
                               updateSet(index, {
                                 duration: newDuration,
                                 durationInput: nextText,
+                                minutesInput: mins.toString().padStart(2, '0'),
+                                secondsInput: secs.toString().padStart(2, '0'),
                               });
                             }}
                           />
@@ -886,6 +1012,7 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
                             style={styles.adjustButton}
                             accessibilityLabel={`Decrease reps for set ${index + 1}`}
                             onStep={() => adjustSetValue(index, 'reps', -1)}
+                            triggerOnRelease
                           />
                           <TextInput
                             ref={(ref) => {
@@ -913,6 +1040,7 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
                             style={styles.adjustButton}
                             accessibilityLabel={`Increase reps for set ${index + 1}`}
                             onStep={() => adjustSetValue(index, 'reps', 1)}
+                            triggerOnRelease
                           />
                         </View>
                       </View>
@@ -1108,5 +1236,31 @@ const styles = StyleSheet.create({
   },
   setCardSpacer: {
     marginTop: spacing.md,
+  },
+  timeInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.surface.card,
+    borderRadius: radius.md,
+    paddingHorizontal: spacing.xs,
+    paddingVertical: spacing.xxxs,
+    minHeight: sizing.iconLG + spacing.xxxs * 2,
+    borderWidth: 1,
+    borderColor: 'transparent', // Match other inputs visually if needed, or keep clean
+  },
+  timeInput: {
+    fontSize: sizing.iconLG,
+    color: colors.text.primary,
+    fontWeight: '600',
+    minWidth: 32, // Enough for 2 digits
+    padding: 0,
+    textAlign: 'center',
+  },
+  timeSeparator: {
+    fontSize: sizing.iconLG,
+    color: colors.text.primary,
+    fontWeight: '600',
+    marginHorizontal: 1,
+    textAlignVertical: 'center',
   },
 });

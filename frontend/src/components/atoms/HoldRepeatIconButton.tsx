@@ -11,6 +11,8 @@ interface HoldRepeatIconButtonProps {
   accessibilityLabel: string;
   disabled?: boolean;
   style?: StyleProp<ViewStyle>;
+  /** If true, triggers onStep on release instead of press (useful to avoid accidental triggers during swipes) */
+  triggerOnRelease?: boolean;
 }
 
 const HoldRepeatIconButtonInner: React.FC<HoldRepeatIconButtonProps> = ({
@@ -19,11 +21,13 @@ const HoldRepeatIconButtonInner: React.FC<HoldRepeatIconButtonProps> = ({
   accessibilityLabel,
   disabled = false,
   style,
+  triggerOnRelease = false,
 }): React.ReactElement => {
   const onStepRef = useRef(onStep);
   onStepRef.current = onStep;
 
   const scale = useSharedValue(1);
+  const wasPressed = useRef(false);
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
@@ -33,15 +37,26 @@ const HoldRepeatIconButtonInner: React.FC<HoldRepeatIconButtonProps> = ({
     if (disabled) return;
     // Instant visual feedback
     scale.value = withTiming(0.85, { duration: 40 });
-    // Instant haptic feedback - fire synchronously
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    // Instant callback
-    onStepRef.current();
-  }, [disabled, scale]);
+    wasPressed.current = true;
+
+    if (!triggerOnRelease) {
+      // Instant haptic feedback - fire synchronously
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      // Instant callback
+      onStepRef.current();
+    }
+  }, [disabled, scale, triggerOnRelease]);
 
   const handlePressOut = useCallback(() => {
     scale.value = withTiming(1, { duration: 80 });
-  }, [scale]);
+
+    if (triggerOnRelease && wasPressed.current && !disabled) {
+      // Trigger on release for reps buttons to avoid accidental triggers during swipes
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      onStepRef.current();
+    }
+    wasPressed.current = false;
+  }, [scale, triggerOnRelease, disabled]);
 
   return (
     <Pressable
@@ -63,6 +78,7 @@ const HoldRepeatIconButtonInner: React.FC<HoldRepeatIconButtonProps> = ({
     </Pressable>
   );
 };
+
 const styles = StyleSheet.create({
   button: {
     width: sizing.iconLG,

@@ -35,6 +35,9 @@ const styles = StyleSheet.create({
   titleContainer: {
     flex: 1,
   },
+  titleWrapper: {
+    paddingBottom: spacing.xs,
+  },
   scrollContent: {
     paddingHorizontal: spacing.md,
     paddingBottom: spacing['2xl'],
@@ -186,72 +189,72 @@ export default function ProgramDetailsScreen() {
       <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom + sizing.tabBarHeight }]}>
         {/* Content */}
         <ScrollView contentContainerStyle={styles.scrollContent}>
-        {/* Header */}
-        <View style={styles.header}>
-          <View style={styles.titleContainer}>
-            <Text variant="heading2" color="primary">
-              {program.name}
-            </Text>
-            <Text variant="body" color="secondary">
-              {program.metadata.description}
-            </Text>
-          </View>
-          <Pressable onPress={handleBack} style={styles.backButton} hitSlop={8}>
-            <IconSymbol name="arrow-back" size={24} color={colors.text.primary} />
-          </Pressable>
-        </View>
-
-
-
-        <SurfaceCard padding="xl" tone="neutral">
-          <View style={styles.outerCardContent}>
-            <Text variant="heading3" color="primary">Workouts Included</Text>
-            <View style={styles.workoutsList}>
-              {program.workouts
-                .filter(w => w.exercises.length > 0)
-                .map((workout, index) => (
-                  <View
-                    key={workout.id}
-                    style={styles.workoutCard}
-                  >
-                    <View style={styles.workoutCardHeader}>
-                      <Text variant="heading4" color="primary">
-                        {index + 1}. {workout.name}
-                      </Text>
-                    </View>
-
-                    {/* List all exercises */}
-                    <View style={{ marginTop: spacing.xs, paddingLeft: spacing.sm }}>
-                      {workout.exercises.map(ex => (
-                        <Text key={ex.id} variant="body" color="secondary">• {ex.name}</Text>
-                      ))}
-                    </View>
-                  </View>
-                ))}
+          {/* Header */}
+          <View style={styles.header}>
+            <View style={styles.titleContainer}>
+              <Text variant="heading2" color="primary">
+                {program.name}
+              </Text>
+              <Text variant="body" color="secondary">
+                {program.metadata.description}
+              </Text>
             </View>
+            <Pressable onPress={handleBack} style={styles.backButton} hitSlop={8}>
+              <IconSymbol name="arrow-back" size={24} color={colors.text.primary} />
+            </Pressable>
           </View>
-        </SurfaceCard>
 
-        <View style={styles.outerCardContent}>
-          {isUserProgram ? (
-            <Button
-              label="Start Rotation Schedule"
-              onPress={handleSetRotation}
-              loading={isAdding}
-              size="lg"
-              variant="primary"
-            />
-          ) : (
-            <Button
-              label="Add to My Plans"
-              onPress={handleAddToPlans}
-              loading={isAdding}
-              size="lg"
-            />
-          )}
-        </View>
-      </ScrollView>
-    </View>
+
+
+          <SurfaceCard padding="xl" tone="neutral">
+            <View style={styles.outerCardContent}>
+              <Text variant="heading3" color="primary">Workouts Included</Text>
+              <View style={styles.workoutsList}>
+                {program.workouts
+                  .filter(w => w.exercises.length > 0)
+                  .map((workout, index) => (
+                    <View
+                      key={workout.id}
+                      style={styles.workoutCard}
+                    >
+                      <View style={styles.workoutCardHeader}>
+                        <Text variant="heading4" color="primary">
+                          {index + 1}. {workout.name}
+                        </Text>
+                      </View>
+
+                      {/* List all exercises */}
+                      <View style={{ marginTop: spacing.xs, paddingLeft: spacing.sm }}>
+                        {workout.exercises.map(ex => (
+                          <Text key={ex.id} variant="body" color="secondary">• {ex.name}</Text>
+                        ))}
+                      </View>
+                    </View>
+                  ))}
+              </View>
+            </View>
+          </SurfaceCard>
+
+          <View style={styles.outerCardContent}>
+            {isUserProgram ? (
+              <Button
+                label="Start Rotation Schedule"
+                onPress={handleSetRotation}
+                loading={isAdding}
+                size="lg"
+                variant="primary"
+              />
+            ) : (
+              <Button
+                label="Add to My Plans"
+                onPress={handleAddToPlans}
+                loading={isAdding}
+                size="lg"
+              />
+            )}
+          </View>
+        </ScrollView>
+      </View>
     </>
   );
 }

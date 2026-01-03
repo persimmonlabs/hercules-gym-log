@@ -78,11 +78,11 @@ export const CalendarDayCell: React.FC<CalendarDayCellProps> = ({
     }
 
     if (isSelected) {
-      states.push({ backgroundColor: theme.surface.elevated });
-    }
-
-    if (showSelectedTodayMarkerFill) {
-      states.push({ backgroundColor: theme.accent.orange, borderColor: theme.accent.orange });
+      // Selected always has orange outline and tinted background (matching workout session background)
+      states.push({
+        backgroundColor: theme.surface.tint,
+        borderColor: theme.accent.orange
+      });
     }
 
     if (!isCurrentMonth) {
@@ -90,35 +90,32 @@ export const CalendarDayCell: React.FC<CalendarDayCellProps> = ({
     }
 
     return states;
-  }, [isCurrentMonth, isSelected, isToday, showMarkerFill, showSelectedTodayMarkerFill, theme]);
+  }, [isCurrentMonth, isSelected, isToday, showMarkerFill, theme]);
 
   const textColor = useMemo(() => {
     if (!isCurrentMonth) {
       return 'tertiary';
     }
 
-    if (showMarkerFill || showSelectedTodayMarkerFill) {
-      return 'onAccent';
-    }
-
+    // Selected always uses primary text now because background is tinted, not solid orange
     if (isSelected) {
       return 'primary';
     }
 
-    if (isToday) {
-      return 'primary';
+    if (showMarkerFill || showSelectedTodayMarkerFill) {
+      return 'onAccent';
     }
 
     return 'primary';
-  }, [isCurrentMonth, isSelected, isToday, showMarkerFill, showSelectedTodayMarkerFill]);
+  }, [isCurrentMonth, isSelected, showMarkerFill, showSelectedTodayMarkerFill]);
 
   const todayLabelStyle = useMemo(() => {
-    if (isToday && !showMarkerFill && !showSelectedTodayMarkerFill) {
+    if (isToday && !showMarkerFill && !showSelectedTodayMarkerFill && !isSelected) {
       return styles.todayLabelText;
     }
 
     return undefined;
-  }, [isToday, showMarkerFill, showSelectedTodayMarkerFill]);
+  }, [isToday, showMarkerFill, showSelectedTodayMarkerFill, isSelected]);
 
   const dayContent = (
     <View style={dayContainerStyle}>
@@ -140,9 +137,9 @@ export const CalendarDayCell: React.FC<CalendarDayCellProps> = ({
         onLongPress={
           onLongPress
             ? () => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                onLongPress(isoDate);
-              }
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+              onLongPress(isoDate);
+            }
             : undefined
         }
         delayLongPress={150}
@@ -171,7 +168,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     gap: 0,
-    borderWidth: 2,
+    borderWidth: 1,
     overflow: 'hidden',
   },
   outsideMonthDay: {

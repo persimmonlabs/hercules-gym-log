@@ -43,6 +43,9 @@ const styles = StyleSheet.create({
   titleContainer: {
     flex: 1,
   },
+  titleWrapper: {
+    paddingBottom: spacing.xs,
+  },
   filtersContainer: {
     paddingHorizontal: spacing.md,
     paddingBottom: spacing.lg,
@@ -77,7 +80,7 @@ export default function BrowseProgramsScreen() {
   const filteredItems = useMemo(() => {
     if (isWorkoutMode) {
       let filtered = premadeWorkouts;
-      
+
       // Apply experience level filter
       if (selectedFilter !== 'all') {
         filtered = filtered.filter(p => p.metadata.experienceLevel === selectedFilter);
@@ -95,7 +98,7 @@ export default function BrowseProgramsScreen() {
       return filtered;
     } else {
       let filtered = premadePrograms;
-      
+
       // Apply experience level filter
       if (selectedFilter !== 'all') {
         filtered = filtered.filter(p => p.metadata.experienceLevel === selectedFilter);

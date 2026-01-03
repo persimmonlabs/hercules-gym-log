@@ -27,10 +27,10 @@ const VolumeAnalyticsScreen: React.FC = () => {
   const { hierarchicalVolumeDistribution } = useAnalyticsData({ timeRange });
   const { isPremium, isLoading } = usePremiumStatus();
   const weightUnit = useSettingsStore((state) => state.weightUnit);
-  
+
   // Key to force charts to reset when page is revisited
   const [chartKey, setChartKey] = React.useState(0);
-  
+
   // Reset time range and charts when page is revisited
   useFocusEffect(
     useCallback(() => {
@@ -38,7 +38,7 @@ const VolumeAnalyticsScreen: React.FC = () => {
       setChartKey(prev => prev + 1);
     }, [])
   );
-  
+
   // Show loading screen while checking premium status to avoid paywall flash
   if (isLoading) {
     return (
@@ -147,6 +147,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingBottom: spacing.sm,
+  },
+  titleWrapper: {
+    paddingBottom: spacing.xxs,
   },
   backButton: {
     width: 40,

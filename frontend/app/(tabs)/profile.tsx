@@ -30,10 +30,10 @@ interface CardioStatsContentProps {
 const CardioStatsContent: React.FC<CardioStatsContentProps> = ({ stats, timeRange }) => {
   const { formatDistance } = useSettingsStore();
   const { totalDuration, totalDistanceByType } = stats;
-  
+
   // Check if there's any cardio data
   const hasData = totalDuration > 0 || Object.keys(totalDistanceByType).length > 0;
-  
+
   if (!hasData) {
     return (
       <View style={cardioStyles.emptyState}>
@@ -47,7 +47,7 @@ const CardioStatsContent: React.FC<CardioStatsContentProps> = ({ stats, timeRang
   const formatDuration = (totalSeconds: number): string => {
     const hours = Math.floor(totalSeconds / 3600);
     const minutes = Math.floor((totalSeconds % 3600) / 60);
-    
+
     if (hours > 0) {
       return `${hours} hr ${minutes} min`;
     }
@@ -73,11 +73,11 @@ const CardioStatsContent: React.FC<CardioStatsContentProps> = ({ stats, timeRang
             Distance by Activity
           </Text>
           {distanceEntries.map(([exerciseName, distance]) => (
-            <View key={exerciseName} style={{ 
-              flexDirection: 'row', 
-              justifyContent: 'space-between', 
+            <View key={exerciseName} style={{
+              flexDirection: 'row',
+              justifyContent: 'space-between',
               alignItems: 'center',
-              paddingVertical: spacing.xs 
+              paddingVertical: spacing.xs
             }}>
               <Text variant="body" color="primary" style={{ flex: 1 }}>
                 {exerciseName}
@@ -128,11 +128,11 @@ const StatsScreen: React.FC = () => {
       gap: spacing['2xl'],
     },
   });
-  
+
   // Independent state for each card
   const [volumeTimeRange, setVolumeTimeRange] = useState<TimeRange>('week');
   const [cardioTimeRange, setCardioTimeRange] = useState<TimeRange>('week');
-  
+
   // Reset time ranges to 'week' when page gains focus
   useFocusEffect(
     useCallback(() => {
@@ -140,7 +140,7 @@ const StatsScreen: React.FC = () => {
       setCardioTimeRange('week');
     }, [])
   );
-  
+
   // Fetch data separately for each time range
   const { hasFilteredData: hasVolumeData } = useAnalyticsData({ timeRange: volumeTimeRange });
   const weightUnit = useSettingsStore((state) => state.weightUnit);
@@ -158,7 +158,7 @@ const StatsScreen: React.FC = () => {
     <TabSwipeContainer ref={scrollRef} contentContainerStyle={styles.contentContainer}>
       <ScreenHeader
         title="Performance"
-        subtitle="View your training metrics and personal records."
+        subtitle="Track your gains and personal records"
       />
 
       <View style={{ marginTop: -spacing.lg }}>
