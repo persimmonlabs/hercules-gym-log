@@ -1,0 +1,363 @@
+/**
+ * GpsActivityTracker
+ * GPS-based activity tracker for outdoor cardio exercises.
+ * Shows Start button initially, then live timer/distance with Pause/Stop controls.
+ */
+import React, { useCallback, useEffect } from 'react';
+import { StyleSheet, View } from 'react-native';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+  FadeIn,
+  FadeOut,
+} from 'react-native-reanimated';
+import * as Haptics from 'expo-haptics';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+
+import { Text } from '@/components/atoms/Text';
+import { radius, spacing } from '@/constants/theme';
+import { useTheme } from '@/hooks/useTheme';
+import { useGpsTracking, GpsTrackingState } from '@/hooks/useGpsTracking';
+import { springBouncy } from '@/constants/animations';
+import { useSettingsStore } from '@/store/settingsStore';
+
+interface GpsActivityTrackerProps {
+  onComplete: (durationSeconds: number, distanceMiles: number) => void;
+  distanceUnit?: 'miles' | 'meters' | 'floors';
+}
+
+const formatTime = (seconds: number): string => {
+  const hrs = Math.floor(seconds / 3600);
+  const mins = Math.floor((seconds % 3600) / 60);
+  const secs = seconds % 60;
+
+  if (hrs > 0) {
+    return `${hrs}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  }
+  return `${mins}:${secs.toString().padStart(2, '0')}`;
+};
+
+interface ActionButtonProps {
+  iconName: keyof typeof MaterialCommunityIcons.glyphMap;
+  label: string;
+  onPress: () => void;
+  variant: 'start' | 'pause' | 'resume' | 'stop';
+}
+
+const ActionButton: React.FC<ActionButtonProps> = ({ iconName, label, onPress, variant }) => {
+  const { theme } = useTheme();
+  const scale = useSharedValue(1);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+
+  const handlePressIn = useCallback(() => {
+    scale.value = withSpring(0.92, springBouncy);
+  }, [scale]);
+
+  const handlePressOut = useCallback(() => {
+    scale.value = withSpring(1, springBouncy);
+  }, [scale]);
+
+  const handlePress = useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    onPress();
+  }, [onPress]);
+
+  const getButtonStyle = () => {
+    switch (variant) {
+      case 'start':
+        return { 
+          backgroundColor: theme.accent.orange,
+          borderWidth: 0,
+        };
+      case 'pause':
+        return { 
+          backgroundColor: '#FFFFFF',
+          borderWidth: 2,
+          borderColor: theme.accent.orange,
+        };
+      case 'resume':
+        return { 
+          backgroundColor: theme.accent.orange,
+          borderWidth: 0,
+        };
+      case 'stop':
+        return { 
+          backgroundColor: '#FFFFFF',
+          borderWidth: 2,
+          borderColor: '#FF0000',
+        };
+      default:
+        return { 
+          backgroundColor: theme.accent.orange,
+          borderWidth: 0,
+        };
+    }
+  };
+
+  const getIconColor = () => {
+    switch (variant) {
+      case 'pause':
+        return theme.accent.orange;
+      case 'stop':
+        return '#FF0000';
+      default:
+        return '#FFFFFF';
+    }
+  };
+
+  const getTextColor = () => {
+    switch (variant) {
+      case 'pause':
+        return theme.accent.orange;
+      case 'stop':
+        return '#FF0000';
+      default:
+        return '#FFFFFF';
+    }
+  };
+
+  const isFullWidth = variant === 'start';
+
+  return (
+    <Animated.View
+      style={[
+        animatedStyle,
+        styles.actionButton,
+        getButtonStyle(),
+        isFullWidth && styles.fullWidthButton,
+      ]}
+    >
+      <Animated.View
+        style={styles.actionButtonInner}
+        onTouchStart={handlePressIn}
+        onTouchEnd={handlePressOut}
+        onTouchCancel={handlePressOut}
+      >
+        <View style={styles.actionButtonContent} onTouchEnd={handlePress}>
+          <MaterialCommunityIcons name={iconName} size={24} color={getIconColor()} />
+          <Text style={[styles.actionButtonLabel, { color: getTextColor() }]}>{label}</Text>
+        </View>
+      </Animated.View>
+    </Animated.View>
+  );
+};
+
+export const GpsActivityTracker: React.FC<GpsActivityTrackerProps> = ({
+  onComplete,
+  distanceUnit = 'miles',
+}) => {
+  const { theme } = useTheme();
+  const { convertDistance, getDistanceUnitShort } = useSettingsStore();
+  const {
+    state,
+    elapsedSeconds,
+    distanceMiles,
+    permissionDenied,
+    start,
+    pause,
+    resume,
+    stop,
+  } = useGpsTracking();
+
+  const handleStop = useCallback(() => {
+    stop();
+    onComplete(elapsedSeconds, distanceMiles);
+  }, [stop, onComplete, elapsedSeconds, distanceMiles]);
+
+  const displayDistance = convertDistance(distanceMiles);
+  const unitLabel = getDistanceUnitShort();
+
+  if (permissionDenied) {
+    return (
+      <View style={[styles.container, { backgroundColor: theme.surface.elevated }]}>
+        <View style={styles.permissionDenied}>
+          <MaterialCommunityIcons
+            name="map-marker-off"
+            size={32}
+            color={theme.accent.warning}
+          />
+          <Text variant="body" color="secondary" style={styles.permissionText}>
+            Location permission required for GPS tracking
+          </Text>
+        </View>
+      </View>
+    );
+  }
+
+  if (state === 'idle') {
+    return (
+      <View style={[styles.container, { backgroundColor: theme.surface.elevated }]}>
+        <ActionButton
+          iconName="play"
+          label="Start Activity"
+          onPress={start}
+          variant="start"
+        />
+      </View>
+    );
+  }
+
+  if (state === 'stopped') {
+    return (
+      <Animated.View
+        entering={FadeIn.duration(200)}
+        style={[styles.container, { backgroundColor: theme.surface.elevated }]}
+      >
+        <View style={styles.completedContainer}>
+          <MaterialCommunityIcons
+            name="check-circle"
+            size={28}
+            color={theme.accent.success}
+          />
+          <View style={styles.completedStats}>
+            <View style={styles.statItem}>
+              <Text variant="label" color="tertiary">Time</Text>
+              <Text variant="heading3" color="primary">{formatTime(elapsedSeconds)}</Text>
+            </View>
+            <View style={styles.statDivider} />
+            <View style={styles.statItem}>
+              <Text variant="label" color="tertiary">Distance</Text>
+              <Text variant="heading3" color="primary">
+                {displayDistance.toFixed(2)} {unitLabel}
+              </Text>
+            </View>
+          </View>
+        </View>
+      </Animated.View>
+    );
+  }
+
+  return (
+    <Animated.View
+      entering={FadeIn.duration(200)}
+      style={[styles.container, { backgroundColor: theme.surface.elevated }]}
+    >
+      <View style={styles.liveStats}>
+        <View style={styles.statItem}>
+          <Text variant="label" color="tertiary">Time</Text>
+          <Text style={[styles.liveValue, { color: theme.text.primary }]}>
+            {formatTime(elapsedSeconds)}
+          </Text>
+        </View>
+        <View style={[styles.statDivider, { backgroundColor: theme.border.light }]} />
+        <View style={styles.statItem}>
+          <Text variant="label" color="tertiary">Distance</Text>
+          <Text style={[styles.liveValue, { color: theme.text.primary }]}>
+            {displayDistance.toFixed(2)} {unitLabel}
+          </Text>
+        </View>
+      </View>
+
+      <View style={styles.controls}>
+        {state === 'running' ? (
+          <ActionButton
+            iconName="pause"
+            label="Pause"
+            onPress={pause}
+            variant="pause"
+          />
+        ) : (
+          <ActionButton
+            iconName="play"
+            label="Resume"
+            onPress={resume}
+            variant="resume"
+          />
+        )}
+        <ActionButton
+          iconName="stop"
+          label="Stop"
+          onPress={handleStop}
+          variant="stop"
+        />
+      </View>
+    </Animated.View>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    borderRadius: radius.lg,
+    padding: spacing.lg,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  permissionDenied: {
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingVertical: spacing.md,
+    width: '100%',
+  },
+  permissionText: {
+    textAlign: 'center',
+  },
+  liveStats: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'center',
+    marginBottom: spacing.lg,
+    width: '100%',
+    paddingHorizontal: spacing.md,
+  },
+  statItem: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  statDivider: {
+    width: 1,
+    height: 40,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+  },
+  liveValue: {
+    fontSize: 28,
+    fontWeight: '700',
+    marginTop: spacing.xs,
+  },
+  controls: {
+    flexDirection: 'row',
+    gap: spacing.md,
+    width: '100%',
+    justifyContent: 'center',
+  },
+  actionButton: {
+    flex: 1,
+    borderRadius: radius.lg,
+    overflow: 'hidden',
+    maxWidth: 200,
+  },
+  fullWidthButton: {
+    width: '100%',
+    maxWidth: '100%',
+  },
+  actionButtonInner: {
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+  },
+  actionButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+  },
+  actionButtonLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  completedContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    width: '100%',
+    paddingHorizontal: spacing.sm,
+  },
+  completedStats: {
+    flex: 1,
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'center',
+  },
+});

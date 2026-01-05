@@ -85,19 +85,13 @@ const styles = StyleSheet.create({
 const CreatePlanScreen: React.FC = () => {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { planId, premadeWorkoutId } = useLocalSearchParams<{ planId?: string; premadeWorkoutId?: string }>();
+  const { planId } = useLocalSearchParams<{ planId?: string }>();
   const editingPlanId = useMemo(() => {
-    if (premadeWorkoutId) {
-      const id = Array.isArray(premadeWorkoutId) ? premadeWorkoutId[0] : premadeWorkoutId;
-      return `premade:${id}`;
-    }
-
     if (!planId) {
       return null;
     }
-
     return Array.isArray(planId) ? planId[0] ?? null : planId;
-  }, [planId, premadeWorkoutId]);
+  }, [planId]);
   const {
     planName,
     setPlanName,
@@ -132,7 +126,6 @@ const CreatePlanScreen: React.FC = () => {
     router.prefetch('/add-exercises');
   }, [router]);
 
-  const isPremadeReview = Boolean(premadeWorkoutId);
 
   const handleBackPress = useCallback(() => {
     void Haptics.selectionAsync();

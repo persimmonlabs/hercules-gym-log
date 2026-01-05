@@ -4420,7 +4420,8 @@
     "difficulty": "Beginner",
     "is_compound": false,
     "push_pull": null,
-    "upper_lower": null
+    "upper_lower": null,
+    "supports_gps_tracking": true
   },
   {
     "id": "cardio_007",
@@ -4435,10 +4436,27 @@
     "difficulty": "Beginner",
     "is_compound": false,
     "push_pull": null,
-    "upper_lower": null
+    "upper_lower": null,
+    "supports_gps_tracking": true
   },
   {
     "id": "cardio_008",
+    "name": "Outdoor Cycling",
+    "exercise_type": "cardio",
+    "distance_unit": "miles",
+    "muscles": {},
+    "equipment": [
+      "Bodyweight"
+    ],
+    "movement_pattern": "Cardio",
+    "difficulty": "Beginner",
+    "is_compound": false,
+    "push_pull": null,
+    "upper_lower": null,
+    "supports_gps_tracking": true
+  },
+  {
+    "id": "cardio_009",
     "name": "Sprint Intervals",
     "exercise_type": "cardio",
     "distance_unit": "meters",

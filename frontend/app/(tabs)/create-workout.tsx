@@ -1,11 +1,11 @@
-import React, { useCallback, useEffect, useMemo, useState, useRef } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import React, { useCallback, useEffect, useMemo, useState, useRef, useLayoutEffect } from 'react';
+import { Pressable, StyleSheet, View, InteractionManager } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
-import { ActivityIndicator, InteractionManager } from 'react-native';
+import { ActivityIndicator } from 'react-native';
 
 import { Text } from '@/components/atoms/Text';
 import { SurfaceCard } from '@/components/atoms/SurfaceCard';
@@ -112,22 +112,19 @@ const CreateWorkoutScreen: React.FC = () => {
   const [showLimitModal, setShowLimitModal] = useState(false);
   const [customLoadingText, setCustomLoadingText] = useState<string | null>(null);
   const scrollRef = useRef<KeyboardAwareScrollView>(null);
-  const { planId, premadeWorkoutId, returnTo, from } = useLocalSearchParams<{ planId?: string; premadeWorkoutId?: string; returnTo?: string; from?: string }>();
+  const { planId, returnTo } = useLocalSearchParams<{ 
+    planId?: string; 
+    returnTo?: string; 
+  }>();
+  
+  // Compute editingPlanId from URL params
   const editingPlanId = useMemo(() => {
-    // Prioritize planId (Edit Mode) over premadeWorkoutId (Review/Create Mode)
-    // This fixes an issue where residual params might trigger Review mode when Edit is intended
     if (planId) {
       const id = Array.isArray(planId) ? planId[0] : planId;
       if (id) return id;
     }
-
-    if (premadeWorkoutId) {
-      const id = Array.isArray(premadeWorkoutId) ? premadeWorkoutId[0] : premadeWorkoutId;
-      if (id) return `premade:${id}`;
-    }
-
     return null;
-  }, [planId, premadeWorkoutId]);
+  }, [planId]);
   const {
     planName,
     setPlanName,
@@ -152,13 +149,31 @@ const CreateWorkoutScreen: React.FC = () => {
     setSearchTerm,
   } = usePlanBuilderContext();
 
-  useEffect(() => {
+  // Track if we're returning from add-exercises
+  const isReturningFromAddExercises = useRef(false);
+
+  useLayoutEffect(() => {
+    // Set editing plan ID immediately on mount
     setEditingPlanId(editingPlanId);
 
     return () => {
       resetSession();
     };
   }, [editingPlanId, resetSession, setEditingPlanId]);
+
+  // Handle returning from add-exercises screen
+  useFocusEffect(
+    useCallback(() => {
+      if (isReturningFromAddExercises.current) {
+        // Wait for navigation animations to complete before hiding loading
+        const task = InteractionManager.runAfterInteractions(() => {
+          setIsLoading(false);
+        });
+        isReturningFromAddExercises.current = false;
+        return () => task.cancel();
+      }
+    }, [setIsLoading])
+  );
 
   useEffect(() => {
     router.prefetch('/add-exercises');
@@ -170,37 +185,6 @@ const CreateWorkoutScreen: React.FC = () => {
       setCustomLoadingText(null);
     }
   }, [isLoading]);
-
-  // Turn off loading state when screen gains focus
-  // This handles the return transition from "Add Exercises" or other screens
-  useFocusEffect(
-    useCallback(() => {
-      if (isLoading) {
-        // Defer hiding the loading screen until interactions (navigation animations) are complete
-        // and add a small buffer to ensure the UI has time to paint and prevent visual pop-in
-        const task = InteractionManager.runAfterInteractions(() => {
-          // A short timeout ensures the frame has actually painted
-          setTimeout(() => {
-            setIsLoading(false);
-          }, 100);
-        });
-
-        return () => task.cancel();
-      }
-    }, [isLoading, setIsLoading])
-  );
-
-  const isPremadeReview = Boolean(premadeWorkoutId);
-
-  // Scroll to top when entering review mode
-  useEffect(() => {
-    if (isPremadeReview && scrollRef.current) {
-      // Small delay to ensure the component has mounted
-      setTimeout(() => {
-        scrollRef.current?.scrollToPosition(0, 0, false);
-      }, 100);
-    }
-  }, [isPremadeReview]);
 
   // Decode returnTo if provided
   const decodedReturnTo = useMemo(() => {
@@ -232,25 +216,6 @@ const CreateWorkoutScreen: React.FC = () => {
 
       // If editing, go explicitly to My Programs (Plans tab)
       router.push('/(tabs)/plans');
-    } else if (premadeWorkoutId) {
-      // If reviewing a premade workout and coming from browse, go back to Browse Workouts
-      if (from === 'browse') {
-        router.replace({
-          pathname: '/(tabs)/browse-programs',
-          params: { mode: 'workout' }
-        });
-        return;
-      }
-      
-      // If reviewing a premade workout and coming from quiz, go back to Quiz results
-      if (from === 'quiz') {
-        router.back();
-        return;
-      }
-      
-      // Otherwise, go to Programs Page after saving
-      // Using explicit push instead of back() because back() was navigating to dashboard in Tabs layout
-      router.push('/(tabs)/plans');
     } else {
       // If creating, go back to Add Workout
       router.replace({
@@ -258,7 +223,7 @@ const CreateWorkoutScreen: React.FC = () => {
         params: { mode: 'workout' }
       });
     }
-  }, [router, planId, decodedReturnTo, premadeWorkoutId, from]);
+  }, [router, planId, decodedReturnTo]);
 
   const handleSavePlanPress = useCallback(() => {
     void (async () => {
@@ -289,15 +254,14 @@ const CreateWorkoutScreen: React.FC = () => {
     setEditingPlanId(editingPlanId); // Ensure context is synced
     setCustomLoadingText('Loading exercises...');
     setIsLoading(true); // Trigger immediate loading feedback
+    isReturningFromAddExercises.current = true; // Mark that we're going to add-exercises
 
     // Reset filters and search BEFORE navigating so the next screen is clean on mount
     resetFilters();
     setSearchTerm('');
 
-    // Defer navigation slightly to allow the UI to render the loading state first
-    setTimeout(() => {
-      router.push('/add-exercises');
-    }, 10);
+    // Navigate immediately - loading state is already set
+    router.push('/add-exercises');
   }, [router, setIsLoading, setEditingPlanId, editingPlanId, resetFilters, setSearchTerm]);
 
   const hasExercises = selectedExercises.length > 0;

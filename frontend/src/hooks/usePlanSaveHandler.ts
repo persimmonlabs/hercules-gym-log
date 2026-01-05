@@ -51,13 +51,6 @@ export const usePlanSaveHandler = ({
   const globalSearchParams = useGlobalSearchParams<{ source?: 'library' | 'recommended' }>();
 
   const isEditing = Boolean(editingPlanId);
-  const isPremadeReview = useMemo(() => {
-    if (!editingPlanId?.startsWith('premade:')) {
-      return false;
-    }
-    const existsInPlans = plans.some(p => p.id === editingPlanId);
-    return !existsInPlans;
-  }, [editingPlanId, plans]);
 
   /**
    * Generate a unique workout name by checking both custom workouts and program workouts.
@@ -159,9 +152,9 @@ export const usePlanSaveHandler = ({
         return 'success';
       }
 
-      const createdAtTimestamp = (!isEditing || isPremadeReview) ? Date.now() : (editingPlanCreatedAt ?? Date.now());
+      const createdAtTimestamp = !isEditing ? Date.now() : (editingPlanCreatedAt ?? Date.now());
 
-      if (isEditing && !isPremadeReview) {
+      if (isEditing) {
         // Update existing standalone template
         await updatePlan({
           id: editingPlanId!,
@@ -184,8 +177,6 @@ export const usePlanSaveHandler = ({
         const sourceParam = globalSearchParams.source;
         if (sourceParam === 'library' || sourceParam === 'recommended') {
           workoutSource = sourceParam;
-        } else if (isPremadeReview) {
-          workoutSource = 'premade';
         }
         
         await persistPlan({
@@ -221,7 +212,7 @@ export const usePlanSaveHandler = ({
     } finally {
       setIsSaving(false);
     }
-  }, [editingPlanCreatedAt, editingPlanId, isEditing, isPremadeReview, isSaving, onSuccess, persistPlan, planName, plans, resetBuilder, selectedExercises, updatePlan]);
+  }, [editingPlanCreatedAt, editingPlanId, isEditing, isSaving, onSuccess, persistPlan, planName, plans, resetBuilder, selectedExercises, updatePlan]);
 
 
   // Always use "Save Workout" for consistency across all modes

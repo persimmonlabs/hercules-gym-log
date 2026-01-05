@@ -132,7 +132,14 @@ const styles = StyleSheet.create({
 export default function QuizScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { mode } = useLocalSearchParams<{ mode?: 'program' | 'workout' }>();
+  const { mode, resume, goal, experience, equipment, days } = useLocalSearchParams<{ 
+    mode?: 'program' | 'workout'; 
+    resume?: 'results';
+    goal?: TrainingGoal;
+    experience?: ExperienceLevel;
+    equipment?: EquipmentType;
+    days?: string;
+  }>();
   const isWorkoutMode = mode === 'workout';
   const STEPS = isWorkoutMode ? WORKOUT_STEPS : PLAN_STEPS;
   const totalQuestions = isWorkoutMode ? 3 : 4;
@@ -140,16 +147,50 @@ export default function QuizScreen() {
   const { getRecommendations, getWorkoutRecommendations } = useProgramRecommendation();
   const { plans } = usePlansStore();
 
-  const [currentStepIndex, setCurrentStepIndex] = useState(0);
+  // Determine initial step index - if resuming results, start at results step
+  const initialStepIndex = resume === 'results' ? STEPS.indexOf('results') : 0;
+  const [currentStepIndex, setCurrentStepIndex] = useState(initialStepIndex);
   const [recommendations, setRecommendations] = useState<PremadeProgram[]>([]);
   const [workoutRecommendations, setWorkoutRecommendations] = useState<PremadeWorkout[]>([]);
+  const hasResumedRef = React.useRef(false);
 
-  const [preferences, setPreferences] = useState<QuizPreferences>({
-    goal: null,
-    experienceLevel: null,
-    equipment: null,
-    daysPerWeek: null,
-  });
+  // Initialize preferences from URL params if resuming
+  const [preferences, setPreferences] = useState<QuizPreferences>(() => ({
+    goal: goal || null,
+    experienceLevel: experience || null,
+    equipment: equipment || null,
+    daysPerWeek: days ? parseInt(days, 10) : null,
+  }));
+
+  // Re-run recommendations when resuming to results step
+  React.useEffect(() => {
+    if (resume === 'results' && !hasResumedRef.current) {
+      hasResumedRef.current = true;
+      
+      if (isWorkoutMode) {
+        // Re-fetch workout recommendations using stored/passed preferences
+        const prefs = { goal, experienceLevel: experience, equipment };
+        if (prefs.goal && prefs.experienceLevel && prefs.equipment) {
+          const results = getWorkoutRecommendations(prefs as QuizPreferences);
+          // Filter out workouts that have been added to My Workouts
+          const addedWorkoutNames = new Set(
+            plans
+              .filter(plan => plan.source === 'premade' || plan.source === 'library' || plan.source === 'recommended')
+              .map(plan => plan.name.trim().toLowerCase())
+          );
+          const filteredResults = results.filter(w => !addedWorkoutNames.has(w.name.trim().toLowerCase()));
+          setWorkoutRecommendations(filteredResults);
+        }
+      } else {
+        // Re-fetch program recommendations
+        const prefs = { goal, experienceLevel: experience, equipment, daysPerWeek: days ? parseInt(days, 10) : null };
+        if (prefs.goal && prefs.experienceLevel && prefs.equipment && prefs.daysPerWeek) {
+          const results = getRecommendations(prefs as QuizPreferences);
+          setRecommendations(results);
+        }
+      }
+    }
+  }, [resume, isWorkoutMode, goal, experience, equipment, days, getWorkoutRecommendations, getRecommendations, plans]);
 
   const currentStep = STEPS[currentStepIndex];
   const isLastQuestion = isWorkoutMode ? currentStep === 'equipment' : currentStep === 'days';
@@ -220,8 +261,29 @@ export default function QuizScreen() {
 
   const handleBack = useCallback(() => {
     Haptics.selectionAsync().catch(() => { });
+    
+    // If we're on results (whether resumed or arrived naturally), go back to intro to retake quiz
+    if (currentStep === 'results') {
+      // Reset all preferences and go to intro step
+      setPreferences({
+        goal: null,
+        experienceLevel: null,
+        equipment: null,
+        daysPerWeek: null,
+      });
+      setRecommendations([]);
+      setWorkoutRecommendations([]);
+      hasResumedRef.current = false;
+      setCurrentStepIndex(0);
+      return;
+    }
+    
+    // If we're on the intro step, always navigate to Add Workout page to prevent loops
     if (currentStepIndex === 0) {
-      router.back();
+      router.replace({
+        pathname: '/(tabs)/add-workout',
+        params: { mode: isWorkoutMode ? 'workout' : 'program' }
+      });
       return;
     }
 
@@ -245,7 +307,7 @@ export default function QuizScreen() {
     }
 
     setCurrentStepIndex((prev) => Math.max(prev - 1, 0));
-  }, [currentStepIndex, router]);
+  }, [currentStepIndex, router, currentStep, isWorkoutMode]);
 
   const updatePreference = useCallback((key: keyof QuizPreferences, value: any) => {
     setPreferences((prev) => ({ ...prev, [key]: value }));
@@ -256,16 +318,31 @@ export default function QuizScreen() {
       // It's a PremadeProgram
       router.push({
         pathname: '/program-view',
-        params: { programId: program.id, from: 'quiz' }
+        params: { 
+          programId: program.id, 
+          from: 'quiz',
+          // Pass preferences for back navigation
+          goal: preferences.goal || undefined,
+          experience: preferences.experienceLevel || undefined,
+          equipment: preferences.equipment || undefined,
+          days: preferences.daysPerWeek?.toString() || undefined,
+        }
       });
     } else {
-      // It's a PremadeWorkout
+      // It's a PremadeWorkout - navigate to preview (take-it-or-leave-it style)
       router.push({
-        pathname: '/(tabs)/create-workout',
-        params: { premadeWorkoutId: program.id, source: 'recommended', from: 'quiz' }
+        pathname: '/(tabs)/workout-preview',
+        params: { 
+          workoutId: program.id, 
+          from: 'quiz',
+          // Pass preferences for back navigation
+          goal: preferences.goal || undefined,
+          experience: preferences.experienceLevel || undefined,
+          equipment: preferences.equipment || undefined,
+        }
       });
     }
-  }, [router]);
+  }, [router, preferences]);
 
   const renderOption = (label: string, description: string, isSelected: boolean, onPress: () => void) => (
     <Pressable onPress={() => { Haptics.selectionAsync().catch(() => { }); onPress(); }}>
@@ -375,7 +452,7 @@ export default function QuizScreen() {
                 <Text variant="heading2" color="primary">{resultsTitle}</Text>
                 <Text variant="body" color="secondary">Based on your preferences</Text>
               </View>
-              <Pressable onPress={() => router.back()} style={styles.backButton} hitSlop={8}>
+              <Pressable onPress={handleBack} style={styles.backButton} hitSlop={8}>
                 <IconSymbol name="arrow-back" size={24} color={colors.text.primary} />
               </Pressable>
             </View>

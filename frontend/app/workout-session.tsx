@@ -808,6 +808,7 @@ const WorkoutSessionScreen: React.FC = () => {
                         exerciseType={exerciseCatalog.find(e => e.name === item.name)?.exerciseType || 'weight'}
                         distanceUnit={exerciseCatalog.find(e => e.name === item.name)?.distanceUnit}
                         historySetCount={sessionToDisplay?.historySetCounts?.[item.name] ?? 0}
+                        supportsGpsTracking={exerciseCatalog.find(e => e.name === item.name)?.supportsGpsTracking ?? false}
                       />
                     </View>
                   ) : null}

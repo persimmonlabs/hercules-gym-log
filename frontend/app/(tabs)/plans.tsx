@@ -466,7 +466,7 @@ const PlansScreen: React.FC = () => {
       // Trigger immediate loading for the destination screen with the RAW ID
       setEditingPlanId(rawPlanId);
 
-      router.push(`/(tabs)/create-workout?planId=${encodedPlanId}&premadeWorkoutId=`);
+      router.push(`/(tabs)/create-workout?planId=${encodedPlanId}`);
     },
     [router, setEditingPlanId],
   );

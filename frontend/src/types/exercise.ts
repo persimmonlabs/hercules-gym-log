@@ -153,6 +153,8 @@ export interface Exercise {
   exerciseType: ExerciseType;
   // For cardio exercises - unit for distance tracking
   distanceUnit?: 'miles' | 'meters' | 'floors';
+  // For outdoor cardio exercises - enables GPS-based tracking
+  supportsGpsTracking?: boolean;
 }
 
 export interface ExerciseCatalogItem extends Exercise {

@@ -30,6 +30,8 @@ interface RawExercise {
   // New fields for exercise types
   exercise_type?: ExerciseType;
   distance_unit?: 'miles' | 'meters' | 'floors';
+  // For outdoor cardio exercises - enables GPS-based tracking
+  supports_gps_tracking?: boolean;
 }
 
 // --- Hierarchy Mapping Logic ---
@@ -199,6 +201,7 @@ const toExercise = (exercise: RawExercise): ExerciseCatalogItem => {
     isBodyweight,
     exerciseType: exercise.exercise_type || 'weight',
     distanceUnit: exercise.distance_unit,
+    supportsGpsTracking: exercise.supports_gps_tracking,
     searchIndex: buildSearchIndex(exercise, primaryMuscleName, muscleGroup, filterMuscleGroup, secondaryMuscleGroups),
   };
 };

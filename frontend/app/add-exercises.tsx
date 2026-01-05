@@ -1,5 +1,5 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import React, { useCallback, useEffect, useMemo, useState, useRef } from 'react';
+import { Pressable, StyleSheet, View, InteractionManager } from 'react-native';
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -192,19 +192,42 @@ const AddExercisesScreen: React.FC = () => {
 
   const [selectedMap, setSelectedMap] = useState<SelectedExerciseMap>({});
   const [isFilterSheetVisible, setIsFilterSheetVisible] = useState(false);
-  // Removed local isNavigating state to prevent double loaders
+  const [isReady, setIsReady] = useState(false); // Track when content is ready to show
   const [isCreateExerciseModalVisible, setIsCreateExerciseModalVisible] = useState(false);
   const customExercises = useCustomExerciseStore((state) => state.customExercises);
+  const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
+
+  // Debounce search term for better performance
+  useEffect(() => {
+    if (searchDebounceRef.current) {
+      clearTimeout(searchDebounceRef.current);
+    }
+    searchDebounceRef.current = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 150);
+    return () => {
+      if (searchDebounceRef.current) {
+        clearTimeout(searchDebounceRef.current);
+      }
+    };
+  }, [searchTerm]);
 
   useEffect(() => {
-    // Immediately clear global loading state on mount so it doesn't block other things
-    // We don't use it for our local overlay anymore
-    setIsLoading(false);
-
+    // Reset state on mount
     resetFilters();
     setSearchTerm('');
 
+    // Wait for content to be ready before showing
+    const task = InteractionManager.runAfterInteractions(() => {
+      requestAnimationFrame(() => {
+        setIsReady(true);
+        setIsLoading(false);
+      });
+    });
+
     return () => {
+      task.cancel();
       resetFilters();
       setSearchTerm('');
       setSelectedMap({});
@@ -245,15 +268,8 @@ const AddExercisesScreen: React.FC = () => {
     void Haptics.selectionAsync();
     resetFilters();
     setSearchTerm('');
-
-    // Trigger global loading for next screen
-    setIsLoading(true);
-
-    // Use a small timeout to allow state to propagate before navigation
-    // This ensures the next screen sees isLoading=true immediately
-    setTimeout(() => {
-      router.back();
-    }, 10);
+    setIsLoading(true); // Show loading on create-workout while navigating back
+    router.back();
   }, [resetFilters, router, setSearchTerm, setIsLoading]);
 
   const handleSavePress = useCallback(() => {
@@ -265,13 +281,8 @@ const AddExercisesScreen: React.FC = () => {
     resetFilters();
     setSearchTerm('');
     setSelectedMap({});
-
-    // Trigger global loading for next screen
-    setIsLoading(true);
-
-    setTimeout(() => {
-      router.back();
-    }, 10);
+    setIsLoading(true); // Show loading on create-workout while navigating back
+    router.back();
   }, [handleAddExercises, resetFilters, router, selectedCount, selectedExercises, setSearchTerm, setIsLoading]);
 
   const handleOpenFilters = useCallback(() => {
@@ -319,9 +330,22 @@ const AddExercisesScreen: React.FC = () => {
     ],
   );
 
+  // Show loading until content is ready
+  if (!isReady) {
+    return (
+      <View style={[styles.container, { paddingTop: insets.top }]}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={colors.accent.primary} />
+          <Text variant="body" color="secondary" style={styles.loadingText}>
+            Loading exercises...
+          </Text>
+        </View>
+      </View>
+    );
+  }
+
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
-      {/* Local loading overlay removed to prevent double loading screens */}
       <KeyboardAwareScrollView
         contentContainerStyle={[styles.scrollContent, { paddingBottom: floatingAreaHeight + spacing.lg }]}
         showsVerticalScrollIndicator={false}

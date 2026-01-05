@@ -96,6 +96,16 @@ export const createSetsWithHistory = (
 ): SetsWithHistoryResult => {
     const exercise = exerciseCatalog.find(e => e.name === exerciseName);
     const exerciseType: ExerciseType = exercise?.exerciseType || 'weight';
+    const supportsGpsTracking = exercise?.supportsGpsTracking ?? false;
+
+    // GPS-enabled exercises should never be pre-populated with history
+    // They always start fresh with the GPS tracker
+    if (supportsGpsTracking) {
+        return { 
+            sets: [{ duration: 0, distance: 0, completed: false }], 
+            historySetCount: 0 
+        };
+    }
 
     // Filter out current workout to avoid using incomplete data
     const historicalWorkouts = currentWorkoutId

@@ -33,7 +33,7 @@ const TAB_FLOAT_LIFT = spacing.lg;
 const BLUR_METHOD: ExperimentalBlurMethod | undefined = Platform.OS === 'android' ? 'dimezisBlurView' : undefined;
 const BLUR_REDUCTION_FACTOR: number | undefined = Platform.OS === 'android' ? 1 : undefined;
 const SCALE_ACTIVE = 1.1;
-const PROFILE_CHILD_ROUTES = ['profile', 'distribution-analytics', 'volume-analytics', 'muscle-detail'] as const;
+const PROFILE_CHILD_ROUTES = ['profile', 'distribution-analytics', 'volume-analytics'] as const;
 type ProfileChildRoute = typeof PROFILE_CHILD_ROUTES[number];
 const isProfileChildRoute = (routeName?: string): routeName is ProfileChildRoute =>
   Boolean(routeName && PROFILE_CHILD_ROUTES.includes(routeName as ProfileChildRoute));

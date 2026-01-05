@@ -66,23 +66,65 @@ export const usePlanBuilderState = (editingPlanId: string | null): PlanBuilderSt
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [selectedExercises, setSelectedExercises] = useState<Exercise[]>([]);
   const [filters, setFilters] = useState<ExerciseFilters>(() => createDefaultExerciseFilters());
-  const [isLoading, setIsLoading] = useState<boolean>(true); // Start with loading true to prevent flash, will be corrected immediately if not editing
+  const [isLoading, setIsLoadingState] = useState<boolean>(true); // Start with loading true to prevent flash
   const hasInitializedFromPlan = useRef<boolean>(false);
+  const loadingStartTime = useRef<number>(Date.now());
+  const pendingLoadingChange = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Minimum loading duration to prevent flash (ms)
+  const MIN_LOADING_DURATION = 150;
+
+  // Wrapper for setIsLoading that ensures minimum duration and waits for next paint
+  const setIsLoading = useCallback((loading: boolean) => {
+    // Clear any pending loading change
+    if (pendingLoadingChange.current) {
+      clearTimeout(pendingLoadingChange.current);
+      pendingLoadingChange.current = null;
+    }
+
+    if (loading) {
+      // When turning ON loading, do it immediately
+      loadingStartTime.current = Date.now();
+      setIsLoadingState(true);
+    } else {
+      // When turning OFF loading, ensure minimum duration and wait for next frame
+      const elapsed = Date.now() - loadingStartTime.current;
+      const remaining = Math.max(0, MIN_LOADING_DURATION - elapsed);
+
+      pendingLoadingChange.current = setTimeout(() => {
+        // Wait for next animation frame to ensure content is painted
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            setIsLoadingState(false);
+          });
+        });
+      }, remaining);
+    }
+  }, []);
 
   useLayoutEffect(() => {
     hasInitializedFromPlan.current = false;
     // Always start with loading true when editingPlanId changes
-    // This ensures loading state is active immediately when entering review mode
+    // This ensures loading state is active immediately when entering edit mode
     if (editingPlanId) {
-      setIsLoading(true);
+      loadingStartTime.current = Date.now();
+      setIsLoadingState(true);
     } else {
+      // For create mode, hide loading after ensuring content is ready
       setIsLoading(false);
     }
-  }, [editingPlanId]);
+
+    // Cleanup pending loading changes on unmount
+    return () => {
+      if (pendingLoadingChange.current) {
+        clearTimeout(pendingLoadingChange.current);
+      }
+    };
+  }, [editingPlanId, setIsLoading]);
 
   const plans = usePlansStore((state) => state.plans);
   const arePlansLoading = usePlansStore((state) => state.isLoading);
-  const { userPrograms, premadeWorkouts, isLoading: areProgramsLoading } = useProgramsStore();
+  const { userPrograms, isLoading: areProgramsLoading } = useProgramsStore();
   const customExercises = useCustomExerciseStore((state) => state.customExercises);
 
   // Merge base catalog with custom exercises
@@ -98,6 +140,7 @@ export const usePlanBuilderState = (editingPlanId: string | null): PlanBuilderSt
       return null;
     }
 
+    // Handle program workout editing (program:programId:workoutId)
     if (editingPlanId.startsWith('program:')) {
       const [_, programId, workoutId] = editingPlanId.split(':');
       const program = userPrograms.find(p => p.id === programId);
@@ -122,29 +165,7 @@ export const usePlanBuilderState = (editingPlanId: string | null): PlanBuilderSt
       return null;
     }
 
-    if (editingPlanId.startsWith('premade:')) {
-      const [_, premadeId] = editingPlanId.split(':');
-      const workout = premadeWorkouts.find(w => w.id === premadeId);
-
-      if (workout) {
-        // Create fresh copies of exercises to prevent mutations affecting the original premade data
-        const mappedExercises = workout.exercises
-          .map(ex => {
-            const found = allExercises.find(e => e.id === ex.id);
-            return found ? { ...found } : null;
-          })
-          .filter((e): e is ExerciseCatalogItem => e !== null);
-
-        return {
-          id: workout.id,
-          name: workout.name,
-          exercises: mappedExercises,
-          createdAt: Date.now(),
-        } as Plan;
-      }
-      return null;
-    }
-
+    // Regular plan lookup from plansStore
     const plan = plans.find((p) => p.id === editingPlanId);
     if (!plan) return null;
 
@@ -158,16 +179,9 @@ export const usePlanBuilderState = (editingPlanId: string | null): PlanBuilderSt
       ...plan,
       exercises: resolvedExercises,
     };
-  }, [editingPlanId, plans, userPrograms, premadeWorkouts, allExercises]);
+  }, [editingPlanId, plans, userPrograms, allExercises]);
 
   const isEditing = Boolean(editingPlanId);
-  const isPremadeReview = useMemo(() => {
-    if (!editingPlanId?.startsWith('premade:')) {
-      return false;
-    }
-    const existsInPlans = plans.some(p => p.id === editingPlanId);
-    return !existsInPlans;
-  }, [editingPlanId, plans]);
 
   const hasActiveFilters = useMemo<boolean>(() => countActiveFilters(filters) > 0, [filters]);
 
@@ -181,17 +195,13 @@ export const usePlanBuilderState = (editingPlanId: string | null): PlanBuilderSt
 
     if (editingPlan && !hasInitializedFromPlan.current) {
       // We have the plan data and haven't initialized yet
-      // Small delay to ensure smooth loading experience
-      const delay = editingPlanId.startsWith('premade:') ? 150 : 100;
-
-      setTimeout(() => {
-        setPlanName(editingPlan.name);
-        setSelectedExercises(editingPlan.exercises);
-        setSearchTerm('');
-        setFilters(createDefaultExerciseFilters());
-        hasInitializedFromPlan.current = true;
-        setIsLoading(false);
-      }, delay);
+      // Initialize immediately for fast, responsive loading
+      setPlanName(editingPlan.name);
+      setSelectedExercises(editingPlan.exercises);
+      setSearchTerm('');
+      setFilters(createDefaultExerciseFilters());
+      hasInitializedFromPlan.current = true;
+      setIsLoading(false);
     } else if (!arePlansLoading && !areProgramsLoading && !editingPlan && !hasInitializedFromPlan.current) {
       // Stores are loaded but plan is missing, show error state
       setIsLoading(false);
@@ -431,13 +441,8 @@ export const usePlanBuilderState = (editingPlanId: string | null): PlanBuilderSt
   let headerSubtitle = 'Build your workout template';
 
   if (isEditing) {
-    if (isPremadeReview) {
-      headerTitle = 'Review Workout';
-      headerSubtitle = 'Review and customize this workout template';
-    } else {
-      headerTitle = 'Edit Workout';
-      headerSubtitle = 'Update your workout template';
-    }
+    headerTitle = 'Edit Workout';
+    headerSubtitle = 'Update your workout template';
   }
   const editingPlanCreatedAt = editingPlan?.createdAt ?? null;
   const isEditingPlanMissing = isEditing && !editingPlan;

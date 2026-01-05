@@ -9,8 +9,10 @@ import * as Haptics from 'expo-haptics';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 import { Text } from '@/components/atoms/Text';
+import { Button } from '@/components/atoms/Button';
 import { HoldRepeatIconButton } from '@/components/atoms/HoldRepeatIconButton';
 import { HyperResponsiveButton } from '@/components/atoms/HyperResponsiveButton';
+import { GpsActivityTracker } from '@/components/molecules/GpsActivityTracker';
 import { springGentle } from '@/constants/animations';
 import { colors, radius, shadows, sizing, spacing, zIndex } from '@/constants/theme';
 import type { SetLog } from '@/types/workout';
@@ -27,6 +29,7 @@ interface ExerciseSetEditorProps {
   exerciseType?: ExerciseType;
   distanceUnit?: 'miles' | 'meters' | 'floors';
   historySetCount?: number;
+  supportsGpsTracking?: boolean;
 }
 
 const DEFAULT_NEW_SET: SetLog = {
@@ -184,6 +187,7 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
   exerciseType = 'weight',
   distanceUnit = 'miles',
   historySetCount = 0,
+  supportsGpsTracking = false,
 }) => {
   const { getWeightUnit, formatWeight, getDistanceUnitShort, formatDistance, convertDistance, convertDistanceToMiles } = useSettingsStore();
   const weightUnit = getWeightUnit();
@@ -642,8 +646,307 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
     setActiveSelection({ type: 'reps', index });
   }, []);
 
+  const handleGpsActivityComplete = useCallback((durationSeconds: number, distanceMiles: number) => {
+    const completedSet: SetDraft = {
+      completed: true,
+      duration: durationSeconds,
+      distance: distanceMiles,
+      weightInput: '0',
+      repsInput: '0',
+      durationInput: formatDuration(durationSeconds),
+      minutesInput: Math.floor(durationSeconds / 60).toString().padStart(2, '0'),
+      secondsInput: (durationSeconds % 60).toString().padStart(2, '0'),
+      distanceInput: distanceMiles.toFixed(2),
+      assistanceWeightInput: '0',
+    };
+
+    const updatedSets = [completedSet];
+    setsRef.current = updatedSets;
+    totalSetsRef.current = 1;
+    completedSetsRef.current = 1;
+    setSets(updatedSets);
+    emitProgress();
+  }, [emitProgress]);
+
   if (!isExpanded) {
     return null;
+  }
+
+  if (supportsGpsTracking) {
+    const existingSet = sets[0];
+    const isCompleted = existingSet?.completed ?? false;
+    const hasData = (existingSet?.duration ?? 0) > 0 || (existingSet?.distance ?? 0) > 0;
+
+    return (
+      <Animated.View style={containerStyle}>
+        <View style={contentStyle}>
+          {embedded ? null : (
+            <View style={styles.headerRow}>
+              <Text variant="heading2" color="primary">
+                {exerciseName}
+              </Text>
+            </View>
+          )}
+          {isCompleted ? (
+            <View style={[styles.setCard, isCompleted ? styles.setCardCompleted : null]}>
+              <Pressable
+                style={styles.completedRow}
+                onPress={() => toggleSetCompletion(0)}
+                accessibilityRole="button"
+                accessibilityLabel="Edit activity"
+              >
+                <Text variant="bodySemibold" color="onAccent">
+                  {formatDistance(existingSet.distance ?? 0)} • {formatDurationForSummary(existingSet.duration ?? 0)}
+                </Text>
+              </Pressable>
+            </View>
+          ) : hasData && existingSet ? (
+            <View style={styles.setCard}>
+              <View style={styles.setHeader} pointerEvents="box-none">
+                <Text variant="bodySemibold" color="primary">
+                  Activity
+                </Text>
+              </View>
+
+              <View style={styles.metricSection} pointerEvents="box-none">
+                <Text variant="label" color="neutral" style={styles.metricLabel}>
+                  Distance ({distanceUnitLabel})
+                </Text>
+                <View style={styles.metricControls}>
+                  <HoldRepeatIconButton
+                    iconName="minus"
+                    style={styles.adjustButton}
+                    accessibilityLabel="Decrease distance"
+                    onStep={() => {
+                      const current = setsRef.current[0];
+                      if (!current) return;
+
+                      const currentDisplayValue = convertDistance(current.distance ?? 0);
+                      const newDisplayValue = Math.max(0, currentDisplayValue - 0.25);
+                      const newMiles = convertDistanceToMiles(newDisplayValue);
+                      const nextDistance = Math.round(newMiles * 100) / 100;
+                      const nextText = formatDistanceValue(newDisplayValue);
+
+                      const distanceRef = distanceInputRefs.current[0];
+                      if (distanceRef) {
+                        distanceRef.setNativeProps({ text: nextText });
+                      }
+
+                      updateSet(0, {
+                        distance: nextDistance,
+                        distanceInput: nextText,
+                      });
+                    }}
+                  />
+                  <TextInput
+                    ref={(ref) => {
+                      distanceInputRefs.current[0] = ref;
+                    }}
+                    defaultValue={existingSet.distanceInput}
+                    onChangeText={(value) => {
+                      const sanitized = sanitizeWeightInput(value);
+                      const displayValue = parseFloat(sanitized) || 0;
+                      const distanceInMiles = convertDistanceToMiles(displayValue);
+                      updateSet(0, {
+                        distanceInput: sanitized,
+                        distance: Math.round(distanceInMiles * 100) / 100
+                      });
+                    }}
+                    onBlur={() => {
+                      const current = setsRef.current[0];
+                      if (current) {
+                        const displayValue = convertDistance(current.distance ?? 0);
+                        const nextText = formatDistanceValue(displayValue);
+                        const distanceRef = distanceInputRefs.current[0];
+                        if (distanceRef) {
+                          distanceRef.setNativeProps({ text: nextText });
+                        }
+                        updateSet(0, { distanceInput: nextText });
+                      }
+                    }}
+                    keyboardType="decimal-pad"
+                    style={styles.metricValue}
+                    textAlign="center"
+                    placeholder="0.00"
+                    placeholderTextColor={colors.text.tertiary}
+                    cursorColor={colors.accent.primary}
+                    selectionColor={colors.accent.orangeLight}
+                  />
+                  <HoldRepeatIconButton
+                    iconName="plus"
+                    style={styles.adjustButton}
+                    accessibilityLabel="Increase distance"
+                    onStep={() => {
+                      const current = setsRef.current[0];
+                      if (!current) return;
+
+                      const currentDisplayValue = convertDistance(current.distance ?? 0);
+                      const newDisplayValue = Math.round((currentDisplayValue + 0.25) * 100) / 100;
+                      const newMiles = convertDistanceToMiles(newDisplayValue);
+                      const nextDistance = Math.round(newMiles * 100) / 100;
+                      const nextText = formatDistanceValue(newDisplayValue);
+
+                      const distanceRef = distanceInputRefs.current[0];
+                      if (distanceRef) {
+                        distanceRef.setNativeProps({ text: nextText });
+                      }
+
+                      updateSet(0, {
+                        distance: nextDistance,
+                        distanceInput: nextText,
+                      });
+                    }}
+                  />
+                </View>
+              </View>
+
+              <View style={styles.metricSection} pointerEvents="box-none">
+                <Text variant="label" color="neutral" style={styles.metricLabel}>
+                  Time (min:sec)
+                </Text>
+                <View style={styles.metricControls}>
+                  <HoldRepeatIconButton
+                    iconName="minus"
+                    style={styles.adjustButton}
+                    accessibilityLabel="Decrease duration"
+                    onStep={() => {
+                      const current = setsRef.current[0];
+                      if (!current) return;
+
+                      const decrement = 15;
+                      const newDuration = Math.max(0, (current.duration ?? 0) - decrement);
+                      const nextText = formatDuration(newDuration);
+                      const mins = Math.floor(newDuration / 60);
+                      const secs = newDuration % 60;
+
+                      const minutesRef = minutesInputRefs.current[0];
+                      const secondsRef = secondsInputRefs.current[0];
+
+                      if (minutesRef) minutesRef.setNativeProps({ text: mins.toString().padStart(2, '0') });
+                      if (secondsRef) secondsRef.setNativeProps({ text: secs.toString().padStart(2, '0') });
+
+                      updateSet(0, {
+                        duration: newDuration,
+                        durationInput: nextText,
+                        minutesInput: mins.toString().padStart(2, '0'),
+                        secondsInput: secs.toString().padStart(2, '0'),
+                      });
+                    }}
+                  />
+
+                  <View style={styles.timeInputContainer}>
+                    <TextInput
+                      ref={(ref) => {
+                        minutesInputRefs.current[0] = ref;
+                      }}
+                      defaultValue={existingSet.minutesInput}
+                      onChangeText={(value) => {
+                        const sanitized = sanitizeTimeInput(value);
+                        if (value !== sanitized) {
+                          minutesInputRefs.current[0]?.setNativeProps({ text: sanitized });
+                        }
+
+                        const current = setsRef.current[0];
+                        const currentSecs = current?.secondsInput || '00';
+
+                        const totalSeconds = parseDurationFromParts(sanitized, currentSecs);
+
+                        updateSet(0, {
+                          minutesInput: sanitized,
+                          durationInput: formatDuration(totalSeconds),
+                          duration: totalSeconds
+                        });
+                      }}
+                      keyboardType="numeric"
+                      style={styles.timeInput}
+                      textAlign="center"
+                      placeholder="00"
+                      placeholderTextColor={colors.text.tertiary}
+                      cursorColor={colors.accent.primary}
+                      selectionColor={colors.accent.orangeLight}
+                      maxLength={2}
+                    />
+                    <Text style={styles.timeSeparator}>:</Text>
+                    <TextInput
+                      ref={(ref) => {
+                        secondsInputRefs.current[0] = ref;
+                      }}
+                      defaultValue={existingSet.secondsInput}
+                      onChangeText={(value) => {
+                        const sanitized = sanitizeTimeInput(value, 59);
+                        if (value !== sanitized) {
+                          secondsInputRefs.current[0]?.setNativeProps({ text: sanitized });
+                        }
+
+                        const current = setsRef.current[0];
+                        const currentMins = current?.minutesInput || '00';
+
+                        const totalSeconds = parseDurationFromParts(currentMins, sanitized);
+
+                        updateSet(0, {
+                          secondsInput: sanitized,
+                          durationInput: formatDuration(totalSeconds),
+                          duration: totalSeconds
+                        });
+                      }}
+                      keyboardType="numeric"
+                      style={styles.timeInput}
+                      textAlign="center"
+                      placeholder="00"
+                      placeholderTextColor={colors.text.tertiary}
+                      cursorColor={colors.accent.primary}
+                      selectionColor={colors.accent.orangeLight}
+                      maxLength={2}
+                    />
+                  </View>
+
+                  <HoldRepeatIconButton
+                    iconName="plus"
+                    style={styles.adjustButton}
+                    accessibilityLabel="Increase duration"
+                    onStep={() => {
+                      const current = setsRef.current[0];
+                      if (!current) return;
+
+                      const increment = 15;
+                      const newDuration = (current.duration ?? 0) + increment;
+                      const nextText = formatDuration(newDuration);
+                      const mins = Math.floor(newDuration / 60);
+                      const secs = newDuration % 60;
+
+                      const minutesRef = minutesInputRefs.current[0];
+                      const secondsRef = secondsInputRefs.current[0];
+
+                      if (minutesRef) minutesRef.setNativeProps({ text: mins.toString().padStart(2, '0') });
+                      if (secondsRef) secondsRef.setNativeProps({ text: secs.toString().padStart(2, '0') });
+
+                      updateSet(0, {
+                        duration: newDuration,
+                        durationInput: nextText,
+                        minutesInput: mins.toString().padStart(2, '0'),
+                        secondsInput: secs.toString().padStart(2, '0'),
+                      });
+                    }}
+                  />
+                </View>
+              </View>
+
+              <Button
+                label="Complete"
+                onPress={() => handleCompleteSetPress(0)}
+                variant="primary"
+                size="md"
+              />
+            </View>
+          ) : (
+            <GpsActivityTracker
+              onComplete={handleGpsActivityComplete}
+              distanceUnit={distanceUnit}
+            />
+          )}
+        </View>
+      </Animated.View>
+    );
   }
 
   return (
@@ -1139,7 +1442,7 @@ const styles = StyleSheet.create({
     borderColor: colors.accent.orange,
     borderRadius: radius.lg,
     paddingHorizontal: spacing.md,
-    paddingVertical: spacing.mdCompact,
+    paddingVertical: spacing.md,
     backgroundColor: colors.surface.card,
     gap: spacing.md,
   },
@@ -1147,7 +1450,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.accent.orange,
     borderColor: colors.accent.orange,
     paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
+    paddingVertical: spacing.md,
   },
   completedRow: {
     flexDirection: 'row',

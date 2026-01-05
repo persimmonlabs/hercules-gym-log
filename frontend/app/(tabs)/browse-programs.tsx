@@ -122,10 +122,11 @@ export default function BrowseProgramsScreen() {
     Haptics.selectionAsync().catch(() => { });
 
     if (isWorkoutMode) {
+      // Navigate to workout preview (take-it-or-leave-it style, like program-details)
       const workout = item as PremadeWorkout;
       router.push({
-        pathname: '/(tabs)/create-workout',
-        params: { premadeWorkoutId: workout.id, source: 'library', from: 'browse' }
+        pathname: '/(tabs)/workout-preview',
+        params: { workoutId: workout.id, from: 'browse' }
       });
     } else {
       router.push({

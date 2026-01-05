@@ -1,10 +1,12 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { Stack, useSegments, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as NavigationBar from 'expo-navigation-bar';
 import { Platform, StyleSheet, ActivityIndicator } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { MaterialIcons } from '@expo/vector-icons';
+import * as Font from 'expo-font';
 import 'react-native-reanimated';
 import { View } from 'react-native';
 
@@ -45,7 +47,22 @@ const useProtectedRoute = (session: any, isLoading: boolean) => {
 };
 
 const RootLayout: React.FC = () => {
+  const [fontsLoaded, setFontsLoaded] = useState(false);
   const { colorScheme, isDarkMode, theme } = useTheme();
+
+  // Preload MaterialIcons font to prevent icon lag on first render
+  useEffect(() => {
+    const loadFonts = async () => {
+      try {
+        await Font.loadAsync(MaterialIcons.font);
+        setFontsLoaded(true);
+      } catch (error) {
+        console.warn('[RootLayout] Failed to load MaterialIcons font:', error);
+        setFontsLoaded(true); // Continue anyway to not block the app
+      }
+    };
+    loadFonts();
+  }, []);
 
   const statusBarStyle: 'light' | 'dark' = isDarkMode ? 'light' : 'dark';
   const statusBarBackgroundColor = Platform.OS === 'android'
@@ -123,6 +140,7 @@ const RootLayout: React.FC = () => {
             statusBarBackgroundColor={statusBarBackgroundColor}
             statusBarStyle={statusBarStyle}
             androidStatusBarStyle={androidStatusBarStyle}
+            fontsLoaded={fontsLoaded}
           />
         </ProgramBuilderProvider>
       </PlanBuilderProvider>
@@ -137,7 +155,8 @@ const RootLayoutNav = ({
   theme,
   statusBarBackgroundColor,
   statusBarStyle,
-  androidStatusBarStyle
+  androidStatusBarStyle,
+  fontsLoaded,
 }: any) => {
   const { session, isLoading, user } = useAuth();
   const segments = useSegments();
@@ -158,7 +177,7 @@ const RootLayoutNav = ({
 
   const inAuthGroup = segments[0] === 'auth';
 
-  if (isLoading || (!session && !inAuthGroup)) {
+  if (isLoading || !fontsLoaded || (!session && !inAuthGroup)) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: theme.primary.bg }}>
         <ActivityIndicator size="large" color={theme.accent.primary} />
@@ -223,7 +242,7 @@ const RootLayoutNav = ({
             name="quiz"
             options={{
               headerShown: false,
-              animation: 'slide_from_bottom',
+              animation: 'none',
             }}
           />
           <Stack.Screen

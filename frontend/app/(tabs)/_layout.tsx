@@ -114,14 +114,7 @@ export default function TabLayout() {
             title: 'Weekly Volume',
           }}
         />
-        <Tabs.Screen
-          name="muscle-detail"
-          options={{
-            href: null,
-            title: 'Muscle Detail',
-          }}
-        />
-      </Tabs>
+              </Tabs>
     </View>
   );
 }
