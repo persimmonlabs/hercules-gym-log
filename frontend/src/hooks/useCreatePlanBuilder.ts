@@ -23,6 +23,7 @@ interface CreatePlanBuilderState {
   selectedExercises: Exercise[];
   isEditing: boolean;
   isEditingPlanMissing: boolean;
+  isLoading: boolean;
   suggestions: Exercise[];
   availableExercises: Exercise[];
   filteredAvailableExercises: Exercise[];
@@ -45,6 +46,7 @@ interface CreatePlanBuilderState {
   resetFilters: () => void;
   updateFilters: (newFilters: ExerciseFilters) => void;
   filterOptions: ReturnType<typeof usePlanBuilderState>['filterOptions'];
+  setIsLoading: (loading: boolean) => void;
 }
 
 interface CreatePlanPersistenceState {

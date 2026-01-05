@@ -1,9 +1,5 @@
-/**
- * AddOverrideModal
- * Modal for adding or editing a manual schedule override for a specific date.
- */
 import React, { useState, useCallback, useMemo } from 'react';
-import { View, StyleSheet, Modal, Pressable, ScrollView } from 'react-native';
+import { View, StyleSheet, Pressable, ScrollView } from 'react-native';
 import * as Haptics from 'expo-haptics';
 
 import { Text } from '@/components/atoms/Text';
@@ -15,22 +11,13 @@ import { usePlansStore } from '@/store/plansStore';
 import { useTheme } from '@/hooks/useTheme';
 import { spacing, radius, colors } from '@/constants/theme';
 import type { ScheduleOverride } from '@/types/activeSchedule';
+import { SheetModal } from './SheetModal';
 
 interface AddOverrideModalProps {
   visible: boolean;
   onClose: () => void;
   editingOverride?: ScheduleOverride | null;
 }
-
-const formatDateForDisplay = (dateStr: string): string => {
-  const [year, month, day] = dateStr.split('-').map(Number);
-  const date = new Date(year, month - 1, day);
-  return date.toLocaleDateString('en-US', {
-    weekday: 'long',
-    month: 'short',
-    day: 'numeric',
-  });
-};
 
 const getNextSevenDays = (): { date: string; label: string; isToday: boolean }[] => {
   const days: { date: string; label: string; isToday: boolean }[] = [];
@@ -68,7 +55,6 @@ export const AddOverrideModal: React.FC<AddOverrideModalProps> = ({
   const { theme } = useTheme();
   const addOverride = useActiveScheduleStore((state) => state.addOverride);
   const removeOverride = useActiveScheduleStore((state) => state.removeOverride);
-  const setActiveRule = useActiveScheduleStore((state) => state.setActiveRule);
   const overrides = useActiveScheduleStore((state) => state.state.overrides);
 
   const userPrograms = useProgramsStore((state) => state.userPrograms);
@@ -111,7 +97,7 @@ export const AddOverrideModal: React.FC<AddOverrideModalProps> = ({
   const handleDateSelect = useCallback((date: string) => {
     void Haptics.selectionAsync();
     setSelectedDate(date);
-    
+
     // If this date has an existing override, load it for editing
     const existingOverride = overrides.find(o => o.date === date);
     if (existingOverride) {
@@ -165,180 +151,141 @@ export const AddOverrideModal: React.FC<AddOverrideModalProps> = ({
   }, [onClose]);
 
   const canSave = selectedDate !== null;
+  const isEditing = selectedDate && overrides.find(o => o.date === selectedDate);
 
   return (
-    <Modal
+    <SheetModal
       visible={visible}
-      transparent
-      animationType="slide"
-      onRequestClose={handleClose}
+      onClose={handleClose}
+      title={isEditing ? 'Edit Override' : 'Add Override'}
     >
-      <View style={[styles.overlay, { backgroundColor: colors.overlay.scrim }]}>
-        <View style={[styles.modalContainer, { backgroundColor: theme.surface.card }]}>
-          <View style={styles.header}>
-            <Text variant="heading3" color="primary" style={styles.headerTitle}>
-              {selectedDate && overrides.find(o => o.date === selectedDate) ? 'Edit Override' : 'Add Override'}
-            </Text>
-            <Pressable style={styles.closeButton} onPress={handleClose}>
-              <IconSymbol name="close" size={24} color={theme.text.primary} />
-            </Pressable>
-          </View>
+      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        <View style={styles.section}>
+          <Text variant="bodySemibold" color="primary">
+            Select Date
+          </Text>
+          <View style={styles.dateGrid}>
+            {nextSevenDays.map(({ date, label, isToday }) => {
+              const isSelected = selectedDate === date;
+              const hasExistingOverride = existingOverrideDates.has(date);
 
-          <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-            <View style={styles.section}>
-              <Text variant="bodySemibold" color="primary">
-                Select Date
-              </Text>
-              <View style={styles.dateGrid}>
-                {nextSevenDays.map(({ date, label, isToday }) => {
-                  const isSelected = selectedDate === date;
-                  const hasExistingOverride = existingOverrideDates.has(date);
-
-                  return (
-                    <Pressable
-                      key={date}
-                      style={[
-                        styles.dateChip,
-                        { backgroundColor: theme.surface.elevated },
-                        isSelected && { backgroundColor: theme.accent.orange },
-                        hasExistingOverride && !isSelected && { backgroundColor: theme.accent.warning + '20' },
-                      ]}
-                      onPress={() => handleDateSelect(date)}
-                    >
-                      <Text
-                        variant="caption"
-                        color={isSelected ? 'onAccent' : 'primary'}
-                      >
-                        {label}
-                      </Text>
-                      {hasExistingOverride && (
-                        <Text variant="captionSmall" color="tertiary">
-                          (has override)
-                        </Text>
-                      )}
-                    </Pressable>
-                  );
-                })}
-              </View>
-            </View>
-
-            <View style={styles.section}>
-              <Text variant="bodySemibold" color="primary">
-                What to Schedule
-              </Text>
-
-              <Pressable
-                style={[
-                  styles.optionCard,
-                  { backgroundColor: theme.surface.elevated },
-                  isRest && { borderColor: theme.accent.orange, borderWidth: 2 },
-                ]}
-                onPress={() => handleWorkoutSelect(null)}
-              >
-                <IconSymbol
-                  name="bedtime"
-                  size={24}
-                  color={isRest ? theme.accent.orange : theme.text.primary}
-                />
-                <View style={styles.optionContent}>
-                  <Text variant="bodySemibold" color="primary">
-                    Rest Day
+              return (
+                <Pressable
+                  key={date}
+                  style={[
+                    styles.dateChip,
+                    { backgroundColor: theme.surface.elevated },
+                    isSelected && { backgroundColor: theme.accent.orange },
+                    hasExistingOverride && !isSelected && { backgroundColor: theme.accent.warning + '20' },
+                  ]}
+                  onPress={() => handleDateSelect(date)}
+                >
+                  <Text
+                    variant="caption"
+                    color={isSelected ? 'onAccent' : 'primary'}
+                  >
+                    {label}
                   </Text>
-                  <Text variant="bodySemibold" color="primary">
-                    Take the day off from training
-                  </Text>
-                </View>
-              </Pressable>
-
-              <View style={styles.workoutList}>
-                {allWorkouts.map((workout) => {
-                  const isSelected = !isRest && selectedWorkoutId === workout.id;
-
-                  return (
-                    <Pressable
-                      key={workout.id}
-                      style={[
-                        styles.optionCard,
-                        { backgroundColor: theme.surface.elevated },
-                        isSelected && { borderColor: theme.accent.orange, borderWidth: 2 },
-                      ]}
-                      onPress={() => handleWorkoutSelect(workout.id)}
-                    >
-                      <IconSymbol
-                        name="fitness-center"
-                        size={24}
-                        color={isSelected ? theme.accent.orange : theme.text.tertiary}
-                      />
-                      <View style={styles.optionContent}>
-                        <Text variant="bodySemibold" color="primary">
-                          {workout.name}
-                        </Text>
-                        <Text variant="caption" color="secondary">
-                          {workout.source}
-                        </Text>
-                      </View>
-                    </Pressable>
-                  );
-                })}
-              </View>
-            </View>
-          </ScrollView>
-
-          <View style={styles.footer}>
-            {selectedDate && overrides.find(o => o.date === selectedDate) && (
-              <Button
-                label="Remove Override"
-                variant="ghost"
-                size="md"
-                onPress={handleRemove}
-                textColor={colors.accent.warning}
-                style={styles.removeButton}
-              />
-            )}
-            <Button
-              label={selectedDate && overrides.find(o => o.date === selectedDate) ? 'Update' : 'Add Override'}
-              variant="primary"
-              size="lg"
-              onPress={handleSave}
-              disabled={!canSave}
-            />
+                  {hasExistingOverride && (
+                    <Text variant="captionSmall" color="tertiary">
+                      (has override)
+                    </Text>
+                  )}
+                </Pressable>
+              );
+            })}
           </View>
         </View>
+
+        <View style={styles.section}>
+          <Text variant="bodySemibold" color="primary">
+            What to Schedule
+          </Text>
+
+          <Pressable
+            style={[
+              styles.optionCard,
+              { backgroundColor: theme.surface.elevated },
+              isRest && { borderColor: theme.accent.orange, borderWidth: 2 },
+            ]}
+            onPress={() => handleWorkoutSelect(null)}
+          >
+            <IconSymbol
+              name="bedtime"
+              size={24}
+              color={isRest ? theme.accent.orange : theme.text.primary}
+            />
+            <View style={styles.optionContent}>
+              <Text variant="bodySemibold" color="primary">
+                Rest Day
+              </Text>
+              <Text variant="bodySemibold" color="primary">
+                Take the day off from training
+              </Text>
+            </View>
+          </Pressable>
+
+          <View style={styles.workoutList}>
+            {allWorkouts.map((workout) => {
+              const isSelected = !isRest && selectedWorkoutId === workout.id;
+
+              return (
+                <Pressable
+                  key={workout.id}
+                  style={[
+                    styles.optionCard,
+                    { backgroundColor: theme.surface.elevated },
+                    isSelected && { borderColor: theme.accent.orange, borderWidth: 2 },
+                  ]}
+                  onPress={() => handleWorkoutSelect(workout.id)}
+                >
+                  <IconSymbol
+                    name="fitness-center"
+                    size={24}
+                    color={isSelected ? theme.accent.orange : theme.text.tertiary}
+                  />
+                  <View style={styles.optionContent}>
+                    <Text variant="bodySemibold" color="primary">
+                      {workout.name}
+                    </Text>
+                    <Text variant="caption" color="secondary">
+                      {workout.source}
+                    </Text>
+                  </View>
+                </Pressable>
+              );
+            })}
+          </View>
+        </View>
+      </ScrollView>
+
+      <View style={styles.footer}>
+        {isEditing && (
+          <Button
+            label="Remove Override"
+            variant="ghost"
+            size="md"
+            onPress={handleRemove}
+            textColor={colors.accent.warning}
+            style={styles.removeButton}
+          />
+        )}
+        <Button
+          label={isEditing ? 'Update' : 'Add Override'}
+          variant="primary"
+          size="lg"
+          onPress={handleSave}
+          disabled={!canSave}
+        />
       </View>
-    </Modal>
+    </SheetModal>
   );
 };
 
 const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    justifyContent: 'flex-end',
-  },
-  modalContainer: {
-    borderTopLeftRadius: radius.xl,
-    borderTopRightRadius: radius.xl,
-    maxHeight: '85%',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: spacing.lg,
-    paddingHorizontal: spacing.lg,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.border.light,
-  },
-  headerTitle: {
-    flex: 1,
-    textAlign: 'center',
-  },
-  closeButton: {
-    position: 'absolute',
-    right: spacing.lg,
-    padding: spacing.xs,
-  },
   content: {
     padding: spacing.lg,
+    paddingBottom: spacing.md,
   },
   section: {
     marginBottom: spacing.xl,
@@ -374,7 +321,7 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   footer: {
-    padding: spacing.lg,
+    padding: spacing.md,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: colors.border.light,
     gap: spacing.sm,

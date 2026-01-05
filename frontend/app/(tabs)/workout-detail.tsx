@@ -108,7 +108,7 @@ const WorkoutDetailScreen: React.FC = () => {
             <Text variant="heading1" color="primary">
               {workoutTitle}
             </Text>
-            <Text variant="caption" color="primary" style={styles.timestampText}>
+            <Text style={{ fontSize: 16, fontWeight: '500', color: colors.text.primary, marginTop: spacing.xxs }}>
               {sessionDateTime}
             </Text>
           </View>

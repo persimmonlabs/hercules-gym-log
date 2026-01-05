@@ -137,3 +137,35 @@ export const getWorkoutTotals = (
     { totalSets: 0, completedSets: 0 },
   );
 };
+
+/**
+ * Calculates total volume for weight exercises in a workout.
+ * Volume is calculated as weight × reps for each completed set of weight exercises.
+ */
+export const getWorkoutVolume = (workout: Workout | null): number => {
+  if (!workout) {
+    return 0;
+  }
+
+  return workout.exercises.reduce((totalVolume, exercise) => {
+    // Look up exercise type from catalog
+    const catalogEntry = exerciseCatalog.find(e => e.name === exercise.name);
+    const exerciseType: ExerciseType = catalogEntry?.exerciseType || 'weight';
+
+    // Only calculate volume for weight exercises
+    if (exerciseType !== 'weight') {
+      return totalVolume;
+    }
+
+    // Calculate volume for completed sets only
+    const exerciseVolume = exercise.sets
+      .filter(set => set.completed)
+      .reduce((exerciseTotal, set) => {
+        const weight = set.weight ?? 0;
+        const reps = set.reps ?? 0;
+        return exerciseTotal + (weight * reps);
+      }, 0);
+
+    return totalVolume + exerciseVolume;
+  }, 0);
+};

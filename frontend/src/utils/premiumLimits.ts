@@ -4,12 +4,42 @@
  */
 
 import { useDevToolsStore } from '@/store/devToolsStore';
+import { usePlansStore } from '@/store/plansStore';
+import { useProgramsStore } from '@/store/programsStore';
 
 // Free tier limits
 export const FREE_LIMITS = {
   MAX_WORKOUTS: 7,
   MAX_PLANS: 1,
 } as const;
+
+/**
+ * Get the total number of unique workouts across both custom workouts and program workouts.
+ * This matches how the "My Workouts" UI displays and counts workouts.
+ */
+export const getTotalUniqueWorkoutCount = (): number => {
+  const plans = usePlansStore.getState().plans;
+  const userPrograms = useProgramsStore.getState().userPrograms;
+  
+  const workoutsGroupedByName: Record<string, boolean> = {};
+
+  // 1. Collect all standalone templates (custom workouts)
+  plans.forEach(plan => {
+    const nameKey = plan.name.trim().toLowerCase();
+    workoutsGroupedByName[nameKey] = true;
+  });
+
+  // 2. Collect all plan-specific workouts (program workouts)
+  userPrograms.forEach(prog => {
+    prog.workouts.forEach(w => {
+      if (w.exercises.length === 0) return; // Skip empty workouts
+      const nameKey = w.name.trim().toLowerCase();
+      workoutsGroupedByName[nameKey] = true;
+    });
+  });
+
+  return Object.keys(workoutsGroupedByName).length;
+};
 
 /**
  * Check if user is premium (for use in stores/non-hook contexts)

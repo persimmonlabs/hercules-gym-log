@@ -5,6 +5,7 @@ import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { ActivityIndicator } from 'react-native';
 
 import { Text } from '@/components/atoms/Text';
 import { InputField } from '@/components/atoms/InputField';
@@ -154,6 +155,17 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: colors.border.light,
   },
+  loadingContainer: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 100,
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: spacing.md,
+    backgroundColor: colors.primary.bg,
+  },
+  loadingText: {
+    textAlign: 'center',
+  },
 });
 
 const AddExercisesScreen: React.FC = () => {
@@ -174,14 +186,21 @@ const AddExercisesScreen: React.FC = () => {
     toggleCompoundOnly,
     resetFilters,
     updateFilters,
+    setIsLoading,
+    isLoading,
   } = usePlanBuilderContext();
 
   const [selectedMap, setSelectedMap] = useState<SelectedExerciseMap>({});
   const [isFilterSheetVisible, setIsFilterSheetVisible] = useState(false);
+  // Removed local isNavigating state to prevent double loaders
   const [isCreateExerciseModalVisible, setIsCreateExerciseModalVisible] = useState(false);
   const customExercises = useCustomExerciseStore((state) => state.customExercises);
 
   useEffect(() => {
+    // Immediately clear global loading state on mount so it doesn't block other things
+    // We don't use it for our local overlay anymore
+    setIsLoading(false);
+
     resetFilters();
     setSearchTerm('');
 
@@ -190,7 +209,7 @@ const AddExercisesScreen: React.FC = () => {
       setSearchTerm('');
       setSelectedMap({});
     };
-  }, [resetFilters, setSearchTerm]);
+  }, [resetFilters, setSearchTerm, setIsLoading]);
 
   const selectedExercises = useMemo(() => Object.values(selectedMap), [selectedMap]);
   const selectedCount = selectedExercises.length;
@@ -226,8 +245,16 @@ const AddExercisesScreen: React.FC = () => {
     void Haptics.selectionAsync();
     resetFilters();
     setSearchTerm('');
-    router.back();
-  }, [resetFilters, router, setSearchTerm]);
+
+    // Trigger global loading for next screen
+    setIsLoading(true);
+
+    // Use a small timeout to allow state to propagate before navigation
+    // This ensures the next screen sees isLoading=true immediately
+    setTimeout(() => {
+      router.back();
+    }, 10);
+  }, [resetFilters, router, setSearchTerm, setIsLoading]);
 
   const handleSavePress = useCallback(() => {
     if (selectedCount === 0) {
@@ -238,8 +265,14 @@ const AddExercisesScreen: React.FC = () => {
     resetFilters();
     setSearchTerm('');
     setSelectedMap({});
-    router.back();
-  }, [handleAddExercises, resetFilters, router, selectedCount, selectedExercises, setSearchTerm]);
+
+    // Trigger global loading for next screen
+    setIsLoading(true);
+
+    setTimeout(() => {
+      router.back();
+    }, 10);
+  }, [handleAddExercises, resetFilters, router, selectedCount, selectedExercises, setSearchTerm, setIsLoading]);
 
   const handleOpenFilters = useCallback(() => {
     void Haptics.selectionAsync();
@@ -288,6 +321,7 @@ const AddExercisesScreen: React.FC = () => {
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
+      {/* Local loading overlay removed to prevent double loading screens */}
       <KeyboardAwareScrollView
         contentContainerStyle={[styles.scrollContent, { paddingBottom: floatingAreaHeight + spacing.lg }]}
         showsVerticalScrollIndicator={false}
@@ -301,10 +335,10 @@ const AddExercisesScreen: React.FC = () => {
         <View style={styles.headerRow}>
           <View style={styles.titleGroup}>
             <Text variant="heading1" color="primary" style={styles.headerTitle} fadeIn>
-              Add exercises
+              Add Exercises
             </Text>
             <Text variant="body" color="secondary" style={styles.headerSubtitle} fadeIn>
-              Choose movements to include in your plan. Already-added exercises are hidden.
+              Choose from our library of exercises to include in your workout.
             </Text>
           </View>
 
@@ -321,7 +355,7 @@ const AddExercisesScreen: React.FC = () => {
         <SurfaceCard tone="card" padding="xl" showAccentStripe style={styles.searchCard}>
           <View style={styles.searchSection}>
             <InputField
-              label="Search exercises"
+              label="Search Exercises"
               value={searchTerm}
               onChangeText={setSearchTerm}
               placeholder="Search by movement or muscle"
@@ -378,10 +412,12 @@ const AddExercisesScreen: React.FC = () => {
           ) : (
             <View style={styles.emptyState}>
               <Text variant="bodySemibold" color="primary" style={styles.emptyStateText}>
-                All set!
+                {searchTerm || hasActiveFilters ? 'No Exercises Found' : 'All Set!'}
               </Text>
               <Text variant="body" color="secondary" style={styles.emptyStateText}>
-                You’ve already added every available exercise to this plan.
+                {searchTerm || hasActiveFilters
+                  ? 'Try adjusting your search or filters to find what you’re looking for.'
+                  : 'You’ve already added every available exercise to this plan.'}
               </Text>
             </View>
           )}
@@ -428,7 +464,7 @@ const AddExercisesScreen: React.FC = () => {
       >
         <View style={styles.floatingCard}>
           <Button
-            label={selectedCount > 0 ? `Save exercises (${selectedCount})` : 'Save exercises'}
+            label={selectedCount > 0 ? `Save Exercises (${selectedCount})` : 'Save Exercises'}
             variant={selectedCount > 0 ? 'primary' : 'ghost'}
             size="xl"
             onPress={handleSavePress}

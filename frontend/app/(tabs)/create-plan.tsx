@@ -220,13 +220,13 @@ const CreatePlanScreen: React.FC = () => {
             onAddExercises={handleAddExercisesPress}
             title={selectedListTitle}
             subtitle={selectedListSubtitle}
-            addLabel="Add exercises"
+            addLabel="Add Exercises"
             onReorderExercises={handleReorderExercises}
           />
         ) : (
           <PlanEmptyStateCard
             title="No exercises yet"
-            buttonLabel="Add exercises"
+            buttonLabel="Add Exercises"
             onPress={handleAddExercisesPress}
             style={styles.emptyCard}
           />

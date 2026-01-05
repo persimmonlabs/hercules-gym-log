@@ -78,9 +78,9 @@ export const CalendarDayCell: React.FC<CalendarDayCellProps> = ({
     }
 
     if (isSelected) {
-      // Selected always has orange outline and tinted background (matching workout session background)
+      // Selected always has muted orange fill and orange outline
       states.push({
-        backgroundColor: theme.surface.tint,
+        backgroundColor: theme.accent.orangeMuted,
         borderColor: theme.accent.orange
       });
     }

@@ -15,7 +15,7 @@
 import { create } from 'zustand';
 
 import { exercises, type Exercise } from '@/constants/exercises';
-import { canAddWorkout } from '@/utils/premiumLimits';
+import { canAddWorkout, getTotalUniqueWorkoutCount } from '@/utils/premiumLimits';
 import { useWorkoutSessionsStore } from '@/store/workoutSessionsStore';
 import { supabaseClient } from '@/lib/supabaseClient';
 import {
@@ -34,7 +34,7 @@ export interface Plan {
   name: string;
   exercises: Exercise[];
   createdAt: number;
-  source?: 'premade' | 'custom'; // Track if workout came from premade library
+  source?: 'premade' | 'custom' | 'library' | 'recommended'; // Track workout source
 }
 
 /** A Workout is a collection of exercises (e.g., "Push Day", "Pull Day") */
@@ -44,7 +44,7 @@ export type Workout = Plan;
 export interface PlansState {
   plans: Plan[];
   isLoading: boolean;
-  addPlan: (input: { id?: string; name: string; exercises: Exercise[]; createdAt?: number; source?: 'premade' | 'custom' }) => Promise<void>;
+  addPlan: (input: { id?: string; name: string; exercises: Exercise[]; createdAt?: number; source?: 'premade' | 'custom' | 'library' | 'recommended' }) => Promise<void>;
   updatePlan: (plan: Plan) => Promise<void>;
   removePlan: (id: string) => Promise<void>;
   hydratePlans: (userId?: string) => Promise<void>;
@@ -54,7 +54,7 @@ export const usePlansStore = create<PlansState>((set, get) => ({
   plans: [],
   isLoading: false,
 
-  addPlan: async ({ id, name, exercises: exerciseList, source }: { id?: string; name: string; exercises: Exercise[]; source?: 'premade' | 'custom' }) => {
+  addPlan: async ({ id, name, exercises: exerciseList, source }: { id?: string; name: string; exercises: Exercise[]; source?: 'premade' | 'custom' | 'library' | 'recommended' }) => {
     const trimmedName = name.trim();
     if (!trimmedName) return;
 
@@ -68,14 +68,12 @@ export const usePlansStore = create<PlansState>((set, get) => ({
       // Free user limit: max 7 workouts (only for new workouts, not edits)
       const isEditing = Boolean(id && get().plans.some(p => p.id === id));
       if (!isEditing) {
-        // Count unique workout names (case-insensitive) to match what user sees in UI
-        const uniqueWorkoutNames = new Set(
-          get().plans.map(p => p.name.trim().toLowerCase())
-        );
-        const currentWorkoutCount = uniqueWorkoutNames.size;
+        // Count total unique workouts across both custom and program workouts
+        // This matches what the user sees in "My Workouts"
+        const currentWorkoutCount = getTotalUniqueWorkoutCount();
         console.log('[plansStore] Workout limit check:', { 
           currentWorkoutCount, 
-          totalRecords: get().plans.length,
+          customWorkouts: get().plans.length,
           canAdd: canAddWorkout(currentWorkoutCount), 
           limit: 7 
         });

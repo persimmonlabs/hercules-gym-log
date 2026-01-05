@@ -25,6 +25,7 @@ import { createSetsWithHistory } from '@/utils/workout';
 import { useWorkoutSessionsStore, type WorkoutSessionsState } from '@/store/workoutSessionsStore';
 import { useActiveScheduleStore } from '@/store/activeScheduleStore';
 import type { UserProgram, Weekday, WeeklyScheduleConfig } from '@/types/premadePlan';
+import { usePlanBuilderContext } from '@/providers/PlanBuilderProvider';
 
 const getPlanSummary = (program: UserProgram) => {
   // If no schedule, fallback to basic count
@@ -170,10 +171,7 @@ const styles = StyleSheet.create({
   sectionHeader: {
     width: '100%',
     gap: spacing.xs,
-    paddingBottom: spacing.xs,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.accent.orange + '40',
-    marginBottom: spacing.md,
+    paddingBottom: spacing.sm,
   },
   scheduleCardContent: {
     gap: spacing.lg,
@@ -183,6 +181,7 @@ const styles = StyleSheet.create({
   },
   planCreateButtonWrapper: {
     width: '100%',
+    marginTop: spacing.md,
   },
   planCardContent: {
     gap: spacing.xs,
@@ -239,6 +238,8 @@ const styles = StyleSheet.create({
   },
   planCardHeaderText: {
     flex: 1,
+    minWidth: 200,
+    minHeight: 24,
   },
   scheduleSubCard: {
     borderRadius: radius.lg,
@@ -339,6 +340,7 @@ const PlansScreen: React.FC = () => {
   const [itemToDelete, setItemToDelete] = useState<any>(null);
   const [isOverrideModalVisible, setIsOverrideModalVisible] = useState<boolean>(false);
   const setActiveRule = useActiveScheduleStore((state: any) => state.setActiveRule);
+  const { setEditingPlanId } = usePlanBuilderContext();
 
   const handleDeleteSchedule = useCallback(async () => {
     void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
@@ -408,19 +410,10 @@ const PlansScreen: React.FC = () => {
 
   const handleDeleteProgram = useCallback((program: any) => {
     void Haptics.selectionAsync();
-    Alert.alert(
-      'Delete Plan',
-      `Are you sure you want to delete "${program.name}"? This cannot be undone.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: () => executeDelete({ ...program, type: 'program' })
-        }
-      ]
-    );
-  }, [executeDelete]);
+    // Mark as program so we can distinguish in the modal
+    setItemToDelete({ ...program, type: 'program_deletion' });
+    setIsDeleteDialogVisible(true);
+  }, []);
 
   const handlePlanPress = useCallback(
     (planId: string) => {
@@ -441,7 +434,14 @@ const PlansScreen: React.FC = () => {
 
   const handleConfirmDelete = useCallback(async () => {
     if (!itemToDelete) return;
-    await executeDelete(itemToDelete);
+
+    // If it was marked as a full program deletion (from My Plans)
+    if (itemToDelete.type === 'program_deletion') {
+      await executeDelete({ ...itemToDelete, type: 'program' });
+    } else {
+      await executeDelete(itemToDelete);
+    }
+
     setIsDeleteDialogVisible(false);
     setItemToDelete(null);
   }, [executeDelete, itemToDelete]);
@@ -457,15 +457,18 @@ const PlansScreen: React.FC = () => {
       void Haptics.selectionAsync();
       setExpandedPlanId(null);
 
-      if (item.type === 'program') {
-        const programId = item.programId || (item.programIds && item.programIds[0]);
-        const compositeId = encodeURIComponent(`program:${programId}:${item.id}`);
-        router.push(`/(tabs)/create-workout?planId=${compositeId}&premadeWorkoutId=`);
-      } else {
-        router.push(`/(tabs)/create-workout?planId=${encodeURIComponent(item.id)}&premadeWorkoutId=`);
-      }
+      const rawPlanId = item.type === 'program'
+        ? `program:${item.programId || (item.programIds && item.programIds[0])}:${item.id}`
+        : item.id;
+
+      const encodedPlanId = encodeURIComponent(rawPlanId);
+
+      // Trigger immediate loading for the destination screen with the RAW ID
+      setEditingPlanId(rawPlanId);
+
+      router.push(`/(tabs)/create-workout?planId=${encodedPlanId}&premadeWorkoutId=`);
     },
-    [router],
+    [router, setEditingPlanId],
   );
 
 
@@ -475,7 +478,7 @@ const PlansScreen: React.FC = () => {
       name: string;
       exercises: any[];
       type: 'custom' | 'program';
-      source?: 'premade' | 'custom';
+      source?: 'premade' | 'custom' | 'library' | 'recommended';
       programNames: string[];
       programIds: string[];
       programId?: string;
@@ -537,7 +540,7 @@ const PlansScreen: React.FC = () => {
       .map((w): GroupedWorkout => ({
         ...w,
         subtitle: w.type === 'custom'
-          ? `${w.source === 'premade' ? 'Added' : 'Custom'} • ${w.exercises.length} exercises`
+          ? `${w.source === 'library' ? 'Library' : w.source === 'recommended' ? 'Recommended' : 'Custom'} • ${w.exercises.length} exercises`
           : `${w.programNames.join(' • ')} • ${w.exercises.length} exercises`
       }))
       .sort((a, b) => {
@@ -610,7 +613,7 @@ const PlansScreen: React.FC = () => {
         subtitle="Manage your personalized training library"
       />
 
-      <SurfaceCard padding="xl" tone="neutral" showAccentStripe={false} style={{ borderWidth: 0, marginTop: -spacing.md }}>
+      <SurfaceCard padding="xl" tone="neutral" showAccentStripe={true} style={{ borderWidth: 0, marginTop: -spacing.md }}>
         <View style={styles.outerCardContent}>
           <View style={styles.sectionHeader}>
             <Text variant="heading3" color="primary">
@@ -718,7 +721,7 @@ const PlansScreen: React.FC = () => {
         </View>
       </SurfaceCard>
 
-      <SurfaceCard padding="xl" tone="neutral" showAccentStripe={false} style={{ borderWidth: 0 }}>
+      <SurfaceCard padding="xl" tone="neutral" showAccentStripe={true} style={{ borderWidth: 0 }}>
         <View style={styles.outerCardContent}>
           <View style={styles.sectionHeader}>
             <Text variant="heading3" color="primary">
@@ -841,10 +844,10 @@ const PlansScreen: React.FC = () => {
             <SurfaceCard tone="neutral" padding="lg" showAccentStripe={false} style={styles.dialogCard}>
               <View style={styles.dialogContent}>
                 <Text variant="heading3" color="primary">
-                  Remove Workout
+                  {itemToDelete?.type === 'program_deletion' ? 'Delete Plan' : 'Remove Workout'}
                 </Text>
                 <Text variant="body" color="secondary">
-                  Are you sure you want to remove "{itemToDelete?.name}"?
+                  Are you sure you want to {itemToDelete?.type === 'program_deletion' ? 'delete' : 'remove'} "{itemToDelete?.name}"?
                 </Text>
               </View>
               <View style={styles.dialogActions}>
@@ -857,7 +860,7 @@ const PlansScreen: React.FC = () => {
                   style={[styles.dialogActionButton, styles.dialogCancelButton]}
                 />
                 <Button
-                  label="Remove"
+                  label={itemToDelete?.type === 'program_deletion' ? 'Delete' : 'Remove'}
                   variant="primary"
                   onPress={handleConfirmDelete}
                   size="md"

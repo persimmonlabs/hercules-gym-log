@@ -23,7 +23,7 @@ export const colors = {
     card: '#FFFFFF',                       // Primary card surface
     elevated: '#FFFFFF',                   // Same as card for light mode (nested cards stay white)
     subtle: '#FFFFFF',                     // Same as card for light mode
-    tint: 'rgba(255, 107, 74, 0.15)',      // Coral wash for accents
+    tint: '#FFFFFF',      // White background
   },
 
   // Neutral utility colors
@@ -40,6 +40,7 @@ export const colors = {
     orange: '#FF6B4A',    // Primary orange energy
     red: '#FF4581',       // Pink-red complement
     orangeLight: '#FFB88C', // Lighter orange (hover, subtle)
+    orangeMuted: 'rgba(255, 107, 74, 0.15)', // Muted orange for selection backgrounds
     success: '#2A9D8F',   // Teal (completed, achievements)
     warning: '#E76F51',   // Burnt orange (caution)
     info: '#457B9D',      // Muted blue (information)
@@ -97,7 +98,7 @@ export const darkColors = {
     card: '#1C1C1E',                       // Dark gray for main cards (level 1)
     elevated: '#2C2C2E',                   // Lighter gray for nested elements (level 2)
     subtle: '#1C1C1E',                     // Same as card for subtle panels
-    tint: 'rgba(255, 107, 74, 0.2)',      // Coral wash for accents
+    tint: '#000000',      // Dark background
   },
 
   // Neutral utility colors
@@ -114,6 +115,7 @@ export const darkColors = {
     orange: '#FF6B4A',      // Primary orange energy
     red: '#FF4581',         // Pink-red complement
     orangeLight: '#FFB88C', // Lighter orange (hover, subtle)
+    orangeMuted: 'rgba(255, 107, 74, 0.25)', // Muted orange for selection backgrounds (more visible in dark mode)
     success: '#30D158',     // Bright green for dark mode
     warning: '#FF9F0A',     // Bright orange (caution)
     info: '#64D2FF',        // Bright blue for dark mode

@@ -21,6 +21,8 @@ interface PlanBuilderContextValue extends ReturnType<typeof useCreatePlanBuilder
   editingPlanId: string | null;
   setEditingPlanId: (planId: string | null) => void;
   resetSession: () => void;
+  isLoading: boolean;
+  setIsLoading: (loading: boolean) => void;
 }
 
 const PlanBuilderContext = createContext<PlanBuilderContextValue | null>(null);
@@ -43,7 +45,10 @@ export const PlanBuilderProvider: React.FC<PlanBuilderProviderProps> = ({ childr
 
   const setEditingPlanId = useCallback((planId: string | null) => {
     setEditingPlanIdState(planId);
-  }, []);
+    if (planId) {
+      builderState.setIsLoading(true);
+    }
+  }, [builderState.setIsLoading]);
 
   const resetSession = useCallback(() => {
     setEditingPlanIdState(null);
@@ -56,6 +61,8 @@ export const PlanBuilderProvider: React.FC<PlanBuilderProviderProps> = ({ childr
       editingPlanId,
       setEditingPlanId,
       resetSession,
+      isLoading: builderState.isLoading || false,
+      setIsLoading: builderState.setIsLoading,
     }),
     [builderState, editingPlanId, resetSession, setEditingPlanId],
   );

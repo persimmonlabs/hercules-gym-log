@@ -204,7 +204,7 @@ export default function QuizScreen() {
         // Filter out workouts that have been added to My Workouts
         const addedWorkoutNames = new Set(
           plans
-            .filter(plan => plan.source === 'premade')
+            .filter(plan => plan.source === 'premade' || plan.source === 'library' || plan.source === 'recommended')
             .map(plan => plan.name.trim().toLowerCase())
         );
         const filteredResults = results.filter(w => !addedWorkoutNames.has(w.name.trim().toLowerCase()));
@@ -255,14 +255,14 @@ export default function QuizScreen() {
     if ('workouts' in program) {
       // It's a PremadeProgram
       router.push({
-        pathname: '/(tabs)/program-details',
+        pathname: '/program-view',
         params: { programId: program.id, from: 'quiz' }
       });
     } else {
       // It's a PremadeWorkout
       router.push({
         pathname: '/(tabs)/create-workout',
-        params: { premadeWorkoutId: program.id }
+        params: { premadeWorkoutId: program.id, source: 'recommended', from: 'quiz' }
       });
     }
   }, [router]);

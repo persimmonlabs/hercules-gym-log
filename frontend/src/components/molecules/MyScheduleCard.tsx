@@ -237,7 +237,7 @@ export const MyScheduleCard: React.FC<MyScheduleCardProps> = ({
   };
 
   return (
-    <SurfaceCard padding="xl" tone="neutral" showAccentStripe={false} style={{ borderWidth: 0 }}>
+    <SurfaceCard padding="xl" tone="neutral" showAccentStripe={true} style={{ borderWidth: 0 }}>
       <View style={styles.content}>
         <View style={styles.cardHeader}>
           <Text variant="heading3" color="primary">
@@ -291,10 +291,7 @@ const styles = StyleSheet.create({
   cardHeader: {
     width: '100%',
     gap: spacing.xs,
-    paddingBottom: spacing.xs,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.accent.orange + '40',
-    marginBottom: spacing.md,
+    paddingBottom: spacing.sm,
   },
   emptyCard: {
     borderRadius: radius.lg,
@@ -327,6 +324,7 @@ const styles = StyleSheet.create({
   },
   buttonRow: {
     gap: spacing.sm,
+    marginTop: spacing.md,
   },
   buttonWrapper: {
     // Remove flex: 1 to allow full width buttons

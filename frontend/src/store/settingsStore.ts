@@ -60,6 +60,8 @@ interface SettingsState {
   formatDistance: (miles: number, decimals?: number) => string;
   /** Format distance without unit (just the number) */
   formatDistanceValue: (miles: number, decimals?: number) => string;
+  /** Format number with commas for better readability */
+  formatNumberWithCommas: (num: number) => string;
   /** Sync settings from Supabase */
   syncFromSupabase: () => Promise<void>;
 }
@@ -219,6 +221,9 @@ export const useSettingsStore = create<SettingsState>()(
           formatted = value % 1 === 0 ? value.toFixed(0) : value.toFixed(1);
         }
 
+        // Add commas for better readability
+        formatted = get().formatNumberWithCommas(parseFloat(formatted));
+
         return `${formatted} ${unit}`;
       },
 
@@ -226,21 +231,28 @@ export const useSettingsStore = create<SettingsState>()(
         const value = get().convertWeight(lbs);
 
         if (decimals !== undefined) {
-          return value.toFixed(decimals);
+          return get().formatNumberWithCommas(parseFloat(value.toFixed(decimals)));
         }
 
-        return value % 1 === 0 ? value.toFixed(0) : value.toFixed(1);
+        const formatted = value % 1 === 0 ? value.toFixed(0) : value.toFixed(1);
+        return get().formatNumberWithCommas(parseFloat(formatted));
+      },
+
+      formatNumberWithCommas: (num: number): string => {
+        return num.toLocaleString('en-US');
       },
 
       formatDistance: (miles: number, decimals: number = 1) => {
         const unit = get().getDistanceUnitShort();
         const value = get().convertDistance(miles);
-        return `${value.toFixed(decimals)} ${unit}`;
+        const formatted = value.toFixed(decimals);
+        return `${get().formatNumberWithCommas(parseFloat(formatted))} ${unit}`;
       },
 
       formatDistanceValue: (miles: number, decimals: number = 1) => {
         const value = get().convertDistance(miles);
-        return value.toFixed(decimals);
+        const formatted = value.toFixed(decimals);
+        return get().formatNumberWithCommas(parseFloat(formatted));
       },
     }),
     {

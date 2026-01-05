@@ -16,6 +16,7 @@ import {
 import * as Haptics from 'expo-haptics';
 
 import { Text } from '@/components/atoms/Text';
+import { Button } from '@/components/atoms/Button';
 import { InputField } from '@/components/atoms/InputField';
 import { colors, radius, spacing, shadows } from '@/constants/theme';
 import { supabaseClient } from '@/lib/supabaseClient';
@@ -158,31 +159,21 @@ export const NameEditModal: React.FC<NameEditModalProps> = ({
               </View>
 
               <View style={styles.actions}>
-                <TouchableOpacity
-                  style={[styles.cancelButton, isSaving && styles.disabledButton]}
+                <Button
+                  label="Cancel"
+                  variant="ghost"
                   onPress={handleCancel}
-                  activeOpacity={0.7}
+                  style={styles.button}
                   disabled={isSaving}
-                >
-                  <Text variant="bodySemibold" color={isSaving ? "tertiary" : "secondary"}>
-                    Cancel
-                  </Text>
-                </TouchableOpacity>
+                />
 
-                <TouchableOpacity
-                  style={[styles.saveButton, isSaving && styles.disabledButton]}
+                <Button
+                  label="Save"
+                  variant="primary"
                   onPress={handleSave}
-                  activeOpacity={0.7}
-                  disabled={isSaving}
-                >
-                  {isSaving ? (
-                    <ActivityIndicator color={colors.text.onAccent} size="small" />
-                  ) : (
-                    <Text variant="bodySemibold" style={styles.saveButtonText}>
-                      Save
-                    </Text>
-                  )}
-                </TouchableOpacity>
+                  style={styles.button}
+                  loading={isSaving}
+                />
               </View>
             </View>
           </TouchableWithoutFeedback>
@@ -219,23 +210,11 @@ const styles = StyleSheet.create({
   actions: {
     flexDirection: 'row',
     gap: spacing.md,
-    justifyContent: 'flex-end',
+    justifyContent: 'center',
   },
-  cancelButton: {
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
-    borderRadius: radius.md,
-  },
-  saveButton: {
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.lg,
-    borderRadius: radius.md,
-    backgroundColor: colors.accent.orange,
-  },
-  saveButtonText: {
-    color: colors.text.onAccent,
-  },
-  disabledButton: {
-    opacity: 0.5,
+  button: {
+    flex: 1,
+    minWidth: 120,
+    minHeight: 44,
   },
 });

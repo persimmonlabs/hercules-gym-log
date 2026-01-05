@@ -161,6 +161,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     gap: spacing['2xl'],
   },
+  dashboardCardHeader: {
+    width: '100%',
+    gap: spacing.xs,
+    paddingBottom: spacing.xs,
+    marginBottom: spacing.md,
+  },
   pressableStretch: {
     width: '100%',
   },
@@ -168,8 +174,6 @@ const styles = StyleSheet.create({
     width: '100%',
     gap: spacing.xs,
     paddingBottom: spacing.xs,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.accent.orange + '40',
     marginBottom: spacing.md,
   },
   weekRow: {
@@ -216,15 +220,12 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   sectionHeading: {
-    marginBottom: spacing.xs,
+    marginBottom: 0,
   },
   sectionHeader: {
     width: '100%',
     gap: spacing.xs,
-    paddingBottom: spacing.xs,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.accent.orange + '40',
-    marginBottom: spacing.lg,
+    paddingBottom: 0,
   },
   todaysPlanCard: {
     borderRadius: radius.lg,
@@ -232,17 +233,12 @@ const styles = StyleSheet.create({
     ...shadows.md,
   },
 
-  todaysPlanContent: {
-    padding: spacing.xl,
-    gap: spacing.md,
-  },
-  todaysPlanHeader: {
+  todaysPlanContainer: {
     width: '100%',
-    gap: spacing.xs,
-    paddingBottom: spacing.xs,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.accent.orange + '40',
-    marginBottom: spacing.md,
+  },
+  todaysPlanBody: {
+    width: '100%',
+    gap: spacing.lg,
   },
   planStartButton: {
     alignItems: 'center',
@@ -256,6 +252,7 @@ const styles = StyleSheet.create({
   },
   todaysPlanSubCard: {
     borderColor: 'transparent',
+    borderWidth: 0,
   },
   todaysPlanEmptyContent: {
     gap: spacing.sm,
@@ -318,7 +315,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   recentWorkoutsList: {
-    gap: spacing.lg,
+    gap: spacing.md,
   },
   recentCardHeader: {
     flexDirection: 'row',
@@ -871,8 +868,8 @@ const DashboardScreen: React.FC = () => {
 
             <Animated.View style={weeklyTrackerAnimatedStyle}>
               <Pressable style={styles.pressableStretch}>
-                <SurfaceCard tone="card" padding="lg" showAccentStripe={false} style={{ borderWidth: 0, marginTop: -spacing.md }}>
-                  <View style={styles.streakTitle}>
+                <SurfaceCard tone="card" padding="xl" showAccentStripe={true} style={{ borderWidth: 0, marginTop: -spacing.md }}>
+                  <View style={styles.dashboardCardHeader}>
                     <Text variant="heading3" color="primary">
                       Your Week
                     </Text>
@@ -959,110 +956,155 @@ const DashboardScreen: React.FC = () => {
                   handleTodaysCardPress();
                 }}
               >
-                <Animated.View style={[styles.todaysPlanCard, { backgroundColor: theme.surface.card }]}>
-
-                  <View style={styles.todaysPlanContent}>
-                    <View style={styles.todaysPlanHeader}>
+                <SurfaceCard tone="card" padding="xl" showAccentStripe={true} style={{ borderWidth: 0, marginTop: -spacing.md }}>
+                  <View style={styles.todaysPlanContainer}>
+                    <View style={styles.dashboardCardHeader}>
                       <Text variant="heading3" color="primary">
                         Today's Workout
                       </Text>
                     </View>
-                    {todaysCardState.variant === 'ongoing' ? (
-                      <SurfaceCard
-                        tone="neutral"
-                        padding="lg"
-                        showAccentStripe={false}
-                        style={[styles.inlineCard, styles.todaysPlanSubCard]}
-                      >
-                        <View style={styles.quickLinkRow}>
-                          <View style={styles.quickLinkInfo}>
-                            <Text variant="bodySemibold" color="primary">
-                              {todaysCardState.sessionName ?? 'Workout in Progress'}
-                            </Text>
-                            <Text variant="body" color="secondary">
-                              {todaysCardState.exerciseCount} {todaysCardState.exerciseCount === 1 ? 'exercise' : 'exercises'} · {todaysCardState.elapsedMinutes} min elapsed
-                            </Text>
-                          </View>
-                          <Pressable
-                            style={styles.planStartButton}
-                            onPress={handleTodaysCardPress}
-                            accessibilityRole="button"
-                            accessibilityLabel="Resume ongoing workout"
-                          >
-                            <View style={styles.quickLinkButton}>
-                              <LinearGradient
-                                colors={[theme.accent.gradientStart, theme.accent.gradientEnd]}
-                                start={{ x: 0, y: 0 }}
-                                end={{ x: 1, y: 1 }}
-                                style={styles.planStartButtonGradient}
-                              />
-                              <Text variant="bodySemibold" color="onAccent">
-                                →
+                    <View style={styles.todaysPlanBody}>
+                      {todaysCardState.variant === 'ongoing' ? (
+                        <SurfaceCard
+                          tone="neutral"
+                          padding="lg"
+                          showAccentStripe={false}
+                          style={styles.inlineCard}
+                        >
+                          <View style={styles.quickLinkRow}>
+                            <View style={styles.quickLinkInfo}>
+                              <Text variant="bodySemibold" color="primary">
+                                {todaysCardState.sessionName ?? 'Workout in Progress'}
+                              </Text>
+                              <Text variant="body" color="secondary">
+                                {todaysCardState.exerciseCount} {todaysCardState.exerciseCount === 1 ? 'exercise' : 'exercises'} · {todaysCardState.elapsedMinutes} min elapsed
                               </Text>
                             </View>
-                          </Pressable>
-                        </View>
-                      </SurfaceCard>
-                    ) : todaysCardState.variant === 'activeSchedule' ? (
-                      <SurfaceCard
-                        tone="neutral"
-                        padding="lg"
-                        showAccentStripe={false}
-                        style={[styles.inlineCard, styles.todaysPlanSubCard]}
-                      >
-                        <View style={styles.quickLinkRow}>
-                          <View style={styles.quickLinkInfo}>
-                            <Text variant="bodySemibold" color="primary">
-                              {todaysCardState.workoutId ? todaysCardState.dayLabel : 'Rest Day'}
-                            </Text>
-                            <Text variant="body" color="secondary">
-                              {todaysCardState.context || (todaysCardState.workoutId ? 'Scheduled workout' : 'Take the day off')}
-                            </Text>
-                          </View>
-                          {todaysCardState.workoutId && (
                             <Pressable
                               style={styles.planStartButton}
-                              onPress={() => {
-                                void Haptics.selectionAsync();
+                              onPress={handleTodaysCardPress}
+                              accessibilityRole="button"
+                              accessibilityLabel="Resume ongoing workout"
+                            >
+                              <View style={styles.quickLinkButton}>
+                                <LinearGradient
+                                  colors={[theme.accent.gradientStart, theme.accent.gradientEnd]}
+                                  start={{ x: 0, y: 0 }}
+                                  end={{ x: 1, y: 1 }}
+                                  style={styles.planStartButtonGradient}
+                                />
+                                <Text variant="bodySemibold" color="onAccent">
+                                  →
+                                </Text>
+                              </View>
+                            </Pressable>
+                          </View>
+                        </SurfaceCard>
+                      ) : todaysCardState.variant === 'activeSchedule' ? (
+                        <SurfaceCard
+                          tone="neutral"
+                          padding="lg"
+                          showAccentStripe={false}
+                          style={styles.inlineCard}
+                        >
+                          <View style={styles.quickLinkRow}>
+                            <View style={styles.quickLinkInfo}>
+                              <Text variant="bodySemibold" color="primary">
+                                {todaysCardState.workoutId ? todaysCardState.dayLabel : 'Rest Day'}
+                              </Text>
+                              <Text variant="body" color="secondary">
+                                {todaysCardState.context || (todaysCardState.workoutId ? 'Scheduled workout' : 'Take the day off')}
+                              </Text>
+                            </View>
+                            {todaysCardState.workoutId && (
+                              <Pressable
+                                style={styles.planStartButton}
+                                onPress={() => {
+                                  void Haptics.selectionAsync();
 
-                                // Find the workout from either plans or user programs
-                                let targetWorkout: Plan | ProgramWorkout | null = null;
-                                let planId = '';
-                                let sessionName = '';
+                                  // Find the workout from either plans or user programs
+                                  let targetWorkout: Plan | ProgramWorkout | null = null;
+                                  let planId = '';
+                                  let sessionName = '';
 
-                                const plan = plans.find((p) => p.id === todaysCardState.workoutId);
-                                if (plan) {
-                                  targetWorkout = plan;
-                                  planId = plan.id;
-                                  sessionName = plan.name;
-                                } else {
-                                  for (const program of userPrograms) {
-                                    const workout = program.workouts.find((w) => w.id === todaysCardState.workoutId);
-                                    if (workout) {
-                                      targetWorkout = workout;
-                                      planId = program.id;
-                                      sessionName = workout.name;
-                                      break;
+                                  const plan = plans.find((p) => p.id === todaysCardState.workoutId);
+                                  if (plan) {
+                                    targetWorkout = plan;
+                                    planId = plan.id;
+                                    sessionName = plan.name;
+                                  } else {
+                                    for (const program of userPrograms) {
+                                      const workout = program.workouts.find((w) => w.id === todaysCardState.workoutId);
+                                      if (workout) {
+                                        targetWorkout = workout;
+                                        planId = program.id;
+                                        sessionName = workout.name;
+                                        break;
+                                      }
                                     }
                                   }
-                                }
 
-                                if (targetWorkout) {
-                                  const historySetCounts: Record<string, number> = {};
-                                  const workoutExercises: WorkoutExercise[] = targetWorkout.exercises.map((exercise) => {
-                                    const { sets, historySetCount } = createSetsWithHistory(exercise.name, workouts);
-                                    historySetCounts[exercise.name] = historySetCount;
-                                    return {
-                                      name: exercise.name,
-                                      sets,
-                                    };
-                                  });
+                                  if (targetWorkout) {
+                                    const historySetCounts: Record<string, number> = {};
+                                    const workoutExercises: WorkoutExercise[] = targetWorkout.exercises.map((exercise) => {
+                                      const { sets, historySetCount } = createSetsWithHistory(exercise.name, workouts);
+                                      historySetCounts[exercise.name] = historySetCount;
+                                      return {
+                                        name: exercise.name,
+                                        sets,
+                                      };
+                                    });
 
-                                  startSession(planId, workoutExercises, sessionName, historySetCounts);
-                                }
+                                    startSession(planId, workoutExercises, sessionName, historySetCounts);
+                                  }
 
-                                router.push('/(tabs)/workout');
-                              }}
+                                  router.push('/(tabs)/workout');
+                                }}
+                                accessibilityRole="button"
+                                accessibilityLabel="Start today's workout"
+                              >
+                                <View style={styles.quickLinkButton}>
+                                  <LinearGradient
+                                    colors={[theme.accent.gradientStart, theme.accent.gradientEnd]}
+                                    start={{ x: 0, y: 0 }}
+                                    end={{ x: 1, y: 1 }}
+                                    style={styles.planStartButtonGradient}
+                                  />
+                                  <Text variant="bodySemibold" color="onAccent">
+                                    →
+                                  </Text>
+                                </View>
+                              </Pressable>
+                            )}
+                          </View>
+                        </SurfaceCard>
+                      ) : todaysCardState.variant === 'plan' || todaysCardState.variant === 'rotation' || todaysCardState.variant === 'standaloneRotation' ? (
+                        <SurfaceCard
+                          tone="neutral"
+                          padding="lg"
+                          showAccentStripe={false}
+                          style={styles.inlineCard}
+                        >
+                          <View style={styles.quickLinkRow}>
+                            <View style={styles.quickLinkInfo}>
+                              <Text variant="bodySemibold" color="primary">
+                                {todaysCardState.variant === 'rotation'
+                                  ? `${todaysCardState.programName}: ${todaysCardState.workout.name}`
+                                  : todaysCardState.variant === 'standaloneRotation'
+                                    ? `${todaysCardState.dayLabel}: ${todaysCardState.plan.name}`
+                                    : todaysCardState.plan.name}
+                              </Text>
+                              <Text variant="body" color="secondary">
+                                {todaysCardState.variant === 'rotation'
+                                  ? `${todaysCardState.workout.exercises.length} exercises`
+                                  : todaysCardState.variant === 'standaloneRotation'
+                                    ? `${todaysCardState.plan.exercises.length} exercises`
+                                    : `${todaysCardState.plan.exercises.length} exercises`}
+                              </Text>
+                            </View>
+                            <Pressable
+                              style={styles.planStartButton}
+                              onPress={handlePlanActionStart}
                               accessibilityRole="button"
                               accessibilityLabel="Start today's workout"
                             >
@@ -1078,122 +1120,69 @@ const DashboardScreen: React.FC = () => {
                                 </Text>
                               </View>
                             </Pressable>
-                          )}
-                        </View>
-                      </SurfaceCard>
-                    ) : todaysCardState.variant === 'plan' || todaysCardState.variant === 'rotation' || todaysCardState.variant === 'standaloneRotation' ? (
-                      <SurfaceCard
-                        tone="neutral"
-                        padding="lg"
-                        showAccentStripe={false}
-                        style={[styles.inlineCard, styles.todaysPlanSubCard]}
-                      >
-                        <View style={styles.quickLinkRow}>
-                          <View style={styles.quickLinkInfo}>
+                          </View>
+                        </SurfaceCard>
+                      ) : todaysCardState.variant === 'completed' ? (
+                        <SurfaceCard
+                          tone="neutral"
+                          padding="lg"
+                          showAccentStripe={false}
+                          style={styles.inlineCard}
+                        >
+                          <View style={styles.recentCardHeader}>
                             <Text variant="bodySemibold" color="primary">
-                              {todaysCardState.variant === 'rotation'
-                                ? `${todaysCardState.programName}: ${todaysCardState.workout.name}`
-                                : todaysCardState.variant === 'standaloneRotation'
-                                  ? `${todaysCardState.dayLabel}: ${todaysCardState.plan.name}`
-                                  : todaysCardState.plan.name}
+                              {todaysCardState.workout.name
+                                ? todaysCardState.workout.name
+                                : todaysCardState.workout.planId
+                                  ? planNameLookup[todaysCardState.workout.planId]?.name ?? `${formatWorkoutDateLabel(todaysCardState.workout)} Session`
+                                  : `${formatWorkoutDateLabel(todaysCardState.workout)} Session`}
                             </Text>
                             <Text variant="body" color="secondary">
-                              {todaysCardState.variant === 'rotation'
-                                ? `${todaysCardState.workout.exercises.length} exercises`
-                                : todaysCardState.variant === 'standaloneRotation'
-                                  ? `${todaysCardState.plan.exercises.length} exercises`
-                                  : `${todaysCardState.plan.exercises.length} exercises`}
+                              {formatWorkoutDateLabel(todaysCardState.workout)}
                             </Text>
                           </View>
-                          <Pressable
-                            style={styles.planStartButton}
-                            onPress={handlePlanActionStart}
-                            accessibilityRole="button"
-                            accessibilityLabel="Start today's workout"
-                          >
-                            <View style={styles.quickLinkButton}>
-                              <LinearGradient
-                                colors={[theme.accent.gradientStart, theme.accent.gradientEnd]}
-                                start={{ x: 0, y: 0 }}
-                                end={{ x: 1, y: 1 }}
-                                style={styles.planStartButtonGradient}
-                              />
-                              <Text variant="bodySemibold" color="onAccent">
-                                →
-                              </Text>
+                          <Text variant="body" color="secondary">
+                            {formatWorkoutSubtitle(todaysCardState.workout)}
+                          </Text>
+                        </SurfaceCard>
+                      ) : todaysCardState.variant === 'noPlans' ? (
+                        <SurfaceCard
+                          tone="neutral"
+                          padding="lg"
+                          showAccentStripe={false}
+                          style={styles.inlineCard}
+                        >
+                          <View style={styles.todaysPlanEmptyContent}>
+                            <Text variant="bodySemibold" color="primary">
+                              Create a workout plan
+                            </Text>
+                            <Text variant="body" color="secondary">
+                              No workout plans yet. Build one to see it here.
+                            </Text>
+                            <View style={styles.todaysPlanActions}>
+                              <Button label="Create Workout Plan" size="md" onPress={handleCreatePlanPress} />
                             </View>
-                          </Pressable>
-                        </View>
-                      </SurfaceCard>
-                    ) : todaysCardState.variant === 'completed' ? (
-                      <SurfaceCard
-                        tone="neutral"
-                        padding="lg"
-                        showAccentStripe={false}
-                        style={[styles.inlineCard, styles.todaysPlanSubCard]}
-                      >
-                        <View style={styles.recentCardHeader}>
-                          <Text variant="bodySemibold" color="primary">
-                            {todaysCardState.workout.name
-                              ? todaysCardState.workout.name
-                              : todaysCardState.workout.planId
-                                ? planNameLookup[todaysCardState.workout.planId]?.name ?? `${formatWorkoutDateLabel(todaysCardState.workout)} Session`
-                                : `${formatWorkoutDateLabel(todaysCardState.workout)} Session`}
-                          </Text>
-                          <Text variant="body" color="secondary">
-                            {formatWorkoutDateLabel(todaysCardState.workout)}
-                          </Text>
-                        </View>
-                        <Text variant="body" color="secondary">
-                          {formatWorkoutSubtitle(todaysCardState.workout)}
-                        </Text>
-                      </SurfaceCard>
-                    ) : todaysCardState.variant === 'rest' ? (
-                      <>
-                        <Text variant="heading3" color="primary">
-                          Rest Day
-                        </Text>
-                        <Text variant="body" color="secondary">
-                          Recharge and get ready for your next workout.
-                        </Text>
-                      </>
-                    ) : todaysCardState.variant === 'noPlans' ? (
-                      <SurfaceCard
-                        tone="neutral"
-                        padding="lg"
-                        showAccentStripe={false}
-                        style={[styles.inlineCard, styles.todaysPlanSubCard]}
-                      >
-                        <View style={styles.todaysPlanEmptyContent}>
-                          <Text variant="bodySemibold" color="primary">
-                            Create a workout plan
-                          </Text>
-                          <Text variant="body" color="secondary">
-                            No workout plans yet. Build one to see it here.
-                          </Text>
-                          <View style={styles.todaysPlanActions}>
-                            <Button label="Create Workout Plan" size="md" onPress={handleCreatePlanPress} />
                           </View>
-                        </View>
-                      </SurfaceCard>
-                    ) : (
-                      <>
-                        <Text variant="body" color="secondary">
-                          Assign workouts to your schedule to see them here.
-                        </Text>
-                      </>
-                    )}
+                        </SurfaceCard>
+                      ) : (
+                        <>
+                          <Text variant="body" color="secondary">
+                            Assign workouts to your schedule to see them here.
+                          </Text>
+                        </>
+                      )}
+                    </View>
                   </View>
-                </Animated.View>
+                </SurfaceCard>
               </Pressable>
             </Animated.View>
 
 
 
             <Animated.View style={recentWorkoutsAnimatedStyle}>
-              <SurfaceCard tone="card" padding="xl" showAccentStripe={false} style={{ borderWidth: 0 }}>
-                <View style={styles.sectionHeader}>
-                  <Text variant="heading3" color="primary" style={styles.sectionHeading}>
+              <SurfaceCard tone="card" padding="xl" showAccentStripe={true} style={{ borderWidth: 0 }}>
+                <View style={styles.dashboardCardHeader}>
+                  <Text variant="heading3" color="primary">
                     Recent Workouts
                   </Text>
                 </View>
@@ -1242,7 +1231,7 @@ const DashboardScreen: React.FC = () => {
                       tone="neutral"
                       padding="lg"
                       showAccentStripe={false}
-                      style={[styles.inlineCard, styles.recentEmptyCard]}
+                      style={styles.inlineCard}
                     >
                       <Text variant="bodySemibold" color="primary">
                         No workouts yet

@@ -1,21 +1,21 @@
 /**
  * FilterBottomSheet
- * Bottom sheet modal for exercise filtering with all filter categories
+ * Bottom sheet modal for exercise filtering with all filter categories using the shared SheetModal
  */
-import React, { useEffect, useRef } from 'react';
-import { Animated, Dimensions, Easing, Modal, PanResponder, Pressable, ScrollView, StyleSheet, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import React, { useEffect } from 'react';
+import { ScrollView, StyleSheet, View } from 'react-native';
 
 import { Button } from '@/components/atoms/Button';
 import { Text } from '@/components/atoms/Text';
 import { QuickFilterChip } from '@/components/atoms/QuickFilterChip';
 import { ExerciseFilterGroup } from '@/components/molecules/ExerciseFilterGroup';
-import { colors, radius, spacing, shadows } from '@/constants/theme';
+import { colors, spacing } from '@/constants/theme';
 import type { ExerciseFilters, ExerciseType, FilterDifficulty, FilterEquipment, FilterMuscleGroup, MuscleGroup } from '@/types/exercise';
 import { EXERCISE_TYPES, EXERCISE_TYPE_LABELS } from '@/types/exercise';
 import type { exerciseFilterOptions } from '@/constants/exercises';
 import hierarchyData from '@/data/hierarchy.json';
 import { toggleFilterValue } from '@/utils/exerciseFilters';
+import { SheetModal } from '@/components/molecules/SheetModal';
 
 const MUSCLE_HIERARCHY = hierarchyData.muscle_hierarchy as unknown as Record<string, { muscles: Record<string, any> }>;
 
@@ -25,7 +25,7 @@ interface FilterBottomSheetProps {
   filterOptions: typeof exerciseFilterOptions;
   onClose: () => void;
   onApply: (filters: ExerciseFilters) => void;
-  // Legacy props (unused in new implementation but kept for type compatibility if needed, or made optional)
+  // Legacy props (unused in new implementation)
   toggleMuscleGroupFilter?: (value: FilterMuscleGroup) => void;
   toggleSpecificMuscleFilter?: (value: MuscleGroup) => void;
   toggleEquipmentFilter?: (value: FilterEquipment) => void;
@@ -41,12 +41,6 @@ export const FilterBottomSheet: React.FC<FilterBottomSheetProps> = ({
   onClose,
   onApply,
 }) => {
-  const insets = useSafeAreaInsets();
-  const headerHeight = 140; // Height covering drag handle + header text area
-  const translateY = useRef(new Animated.Value(0)).current;
-  const hasActiveGesture = useRef(false);
-  const closeDistance = useRef(Dimensions.get('window').height).current;
-
   // Local state for buffering filter changes
   const [localFilters, setLocalFilters] = React.useState<ExerciseFilters>(filters);
 
@@ -100,7 +94,7 @@ export const FilterBottomSheet: React.FC<FilterBottomSheetProps> = ({
   // Calculate active specific muscles for display
   const activeSpecificOptions = React.useMemo(() => {
     const options: { group: FilterMuscleGroup; muscles: MuscleGroup[] }[] = [];
-    
+
     localFilters.muscleGroups.forEach((group) => {
       const hierarchy = MUSCLE_HIERARCHY[group];
       if (hierarchy && hierarchy.muscles) {
@@ -110,234 +104,113 @@ export const FilterBottomSheet: React.FC<FilterBottomSheetProps> = ({
         });
       }
     });
-    
+
     return options;
   }, [localFilters.muscleGroups]);
 
-  useEffect(() => {
-    if (visible) {
-      translateY.setValue(closeDistance);
-      hasActiveGesture.current = false;
-      Animated.timing(translateY, {
-        toValue: 0,
-        duration: 220,
-        easing: Easing.out(Easing.quad),
-        useNativeDriver: true,
-      }).start();
-    }
-  }, [translateY, visible, closeDistance]);
-
-  const panResponder = useRef(
-    PanResponder.create({
-      onStartShouldSetPanResponder: (evt) => {
-        // Only start gesture from top part of sheet (header area)
-        const isWithinHeader = evt.nativeEvent.locationY <= headerHeight;
-        hasActiveGesture.current = isWithinHeader;
-        return isWithinHeader;
-      },
-      onMoveShouldSetPanResponder: (evt, gestureState) => {
-        // Only respond to downward swipes from header area
-        const isFromTop = hasActiveGesture.current;
-        const isDownwardSwipe = gestureState.dy > 5 && Math.abs(gestureState.vx) < Math.abs(gestureState.vy);
-        hasActiveGesture.current = isFromTop && isDownwardSwipe;
-        return hasActiveGesture.current;
-      },
-      onPanResponderMove: (evt, gestureState) => {
-        // Move sheet down with finger in real-time
-        if (hasActiveGesture.current && gestureState.dy > 0) {
-          translateY.setValue(gestureState.dy);
-        }
-      },
-      onPanResponderRelease: (evt, gestureState) => {
-        // Close if swiped down more than 50 pixels or with velocity
-        if (hasActiveGesture.current && (gestureState.dy > 50 || gestureState.vy > 0.5)) {
-          Animated.timing(translateY, {
-            toValue: closeDistance,
-            duration: 200,
-            useNativeDriver: true,
-            easing: Easing.in(Easing.cubic),
-          }).start(({ finished }) => {
-            if (finished) {
-              hasActiveGesture.current = false;
-              onClose();
-              requestAnimationFrame(() => {
-                translateY.setValue(0);
-              });
-            }
-          });
-        } else {
-          // Snap back to top
-          Animated.spring(translateY, {
-            toValue: 0,
-            useNativeDriver: true,
-            tension: 50,
-            friction: 8,
-          }).start(() => {
-            hasActiveGesture.current = false;
-          });
-        }
-      },
-    }),
-  ).current;
-
   return (
-    <Modal
-      animationType="none"
-      transparent
+    <SheetModal
       visible={visible}
-      onRequestClose={onClose}
+      onClose={onClose}
+      title="Filter exercises"
+      height="92%"
     >
-      <View style={styles.overlay}>
-        <Pressable style={styles.scrim} onPress={onClose} accessibilityRole="button" />
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
+        <View style={styles.filterGroups}>
+          <ExerciseFilterGroup
+            title="Muscle group"
+            values={filterOptions.muscleGroups}
+            selected={localFilters.muscleGroups}
+            onToggle={handleToggleMuscleGroup}
+            testIDPrefix="filter-muscle"
+          />
 
-        <Animated.View
-          style={[
-            styles.container,
-            { 
-              paddingBottom: insets.bottom,
-              transform: [{ translateY }],
-            },
-          ]}
-          {...panResponder.panHandlers}
-        >
-          <View style={styles.dragHandle} />
-
-          <View style={styles.header}>
-            <Text variant="heading3" color="primary">
-              Filter exercises
-            </Text>
-          </View>
-
-          <ScrollView
-            style={styles.scrollView}
-            contentContainerStyle={styles.scrollContent}
-            showsVerticalScrollIndicator={false}
-            keyboardShouldPersistTaps="handled"
-          >
-            <View style={styles.filterGroups}>
+          {activeSpecificOptions.map(({ group, muscles }) => (
+            <View key={group} style={styles.nestedFilterGroup}>
               <ExerciseFilterGroup
-                title="Muscle group"
-                values={filterOptions.muscleGroups}
-                selected={localFilters.muscleGroups}
-                onToggle={handleToggleMuscleGroup}
-                testIDPrefix="filter-muscle"
+                title={group}
+                values={muscles}
+                selected={localFilters.specificMuscles}
+                onToggle={handleToggleSpecificMuscle}
+                testIDPrefix={`filter-specific-${group}`}
               />
-
-              {activeSpecificOptions.map(({ group, muscles }) => (
-                <View key={group} style={styles.nestedFilterGroup}>
-                  <ExerciseFilterGroup
-                    title={group}
-                    values={muscles}
-                    selected={localFilters.specificMuscles}
-                    onToggle={handleToggleSpecificMuscle}
-                    testIDPrefix={`filter-specific-${group}`}
-                  />
-                </View>
-              ))}
-
-              <ExerciseFilterGroup
-                title="Equipment"
-                values={filterOptions.equipment}
-                selected={localFilters.equipment}
-                onToggle={handleToggleEquipment}
-                testIDPrefix="filter-equipment"
-              />
-
-              <ExerciseFilterGroup
-                title="Difficulty"
-                values={filterOptions.difficulty}
-                selected={localFilters.difficulty}
-                onToggle={handleToggleDifficulty}
-                testIDPrefix="filter-difficulty"
-              />
-
-              <ExerciseFilterGroup
-                title="Exercise Type"
-                values={EXERCISE_TYPES.map(t => EXERCISE_TYPE_LABELS[t])}
-                selected={localFilters.exerciseTypes.map(t => EXERCISE_TYPE_LABELS[t])}
-                onToggle={(label) => {
-                  const type = (Object.keys(EXERCISE_TYPE_LABELS) as ExerciseType[]).find(
-                    t => EXERCISE_TYPE_LABELS[t] === label
-                  );
-                  if (type) {
-                    setLocalFilters((prev) => ({
-                      ...prev,
-                      exerciseTypes: toggleFilterValue(prev.exerciseTypes, type),
-                    }));
-                  }
-                }}
-                testIDPrefix="filter-exercisetype"
-              />
-
-              <View style={styles.toggleSection}>
-                <Text variant="caption" color="secondary">
-                  Special filters
-                </Text>
-                <View style={styles.toggleRow}>
-                  <QuickFilterChip
-                    label="Bodyweight"
-                    active={localFilters.bodyweightOnly}
-                    onPress={handleToggleBodyweight}
-                    testID="filter-bodyweight"
-                  />
-                  <QuickFilterChip
-                    label="Compound"
-                    active={localFilters.compoundOnly}
-                    onPress={handleToggleCompound}
-                    testID="filter-compound"
-                  />
-                </View>
-              </View>
             </View>
-          </ScrollView>
+          ))}
 
-          <View style={styles.footer}>
-            <Button
-              label="Apply Filters"
-              variant="primary"
-              size="lg"
-              onPress={handleApply}
-            />
+          <ExerciseFilterGroup
+            title="Equipment"
+            values={filterOptions.equipment}
+            selected={localFilters.equipment}
+            onToggle={handleToggleEquipment}
+            testIDPrefix="filter-equipment"
+          />
+
+          <ExerciseFilterGroup
+            title="Difficulty"
+            values={filterOptions.difficulty}
+            selected={localFilters.difficulty}
+            onToggle={handleToggleDifficulty}
+            testIDPrefix="filter-difficulty"
+          />
+
+          <ExerciseFilterGroup
+            title="Exercise Type"
+            values={EXERCISE_TYPES.map(t => EXERCISE_TYPE_LABELS[t])}
+            selected={localFilters.exerciseTypes.map(t => EXERCISE_TYPE_LABELS[t])}
+            onToggle={(label) => {
+              const type = (Object.keys(EXERCISE_TYPE_LABELS) as ExerciseType[]).find(
+                t => EXERCISE_TYPE_LABELS[t] === label
+              );
+              if (type) {
+                setLocalFilters((prev) => ({
+                  ...prev,
+                  exerciseTypes: toggleFilterValue(prev.exerciseTypes, type),
+                }));
+              }
+            }}
+            testIDPrefix="filter-exercisetype"
+          />
+
+          <View style={styles.toggleSection}>
+            <Text variant="caption" color="secondary">
+              Special filters
+            </Text>
+            <View style={styles.toggleRow}>
+              <QuickFilterChip
+                label="Bodyweight"
+                active={localFilters.bodyweightOnly}
+                onPress={handleToggleBodyweight}
+                testID="filter-bodyweight"
+              />
+              <QuickFilterChip
+                label="Compound"
+                active={localFilters.compoundOnly}
+                onPress={handleToggleCompound}
+                testID="filter-compound"
+              />
+            </View>
           </View>
-        </Animated.View>
+        </View>
+      </ScrollView>
+
+      <View style={styles.footer}>
+        <Button
+          label="Apply Filters"
+          variant="primary"
+          size="lg"
+          onPress={handleApply}
+        />
       </View>
-    </Modal>
+    </SheetModal>
   );
 };
 
 const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: colors.overlay.scrimTransparent,
-    justifyContent: 'flex-end',
-  },
-  scrim: {
-    ...StyleSheet.absoluteFillObject,
-  },
-  container: {
-    flex: 1,
-    maxHeight: '92%',
-    borderTopLeftRadius: radius.xl,
-    borderTopRightRadius: radius.xl,
-    backgroundColor: colors.surface.card,
-    ...shadows.cardSoft,
-    flexDirection: 'column',
-  },
-  dragHandle: {
-    width: 40,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: colors.border.medium,
-    alignSelf: 'center',
-    marginTop: spacing.sm,
-    marginBottom: spacing.sm,
-  },
-  header: {
-    paddingHorizontal: spacing.xl,
-    paddingBottom: spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border.light,
-  },
   scrollView: {
     flex: 1,
     minHeight: 0,
@@ -371,3 +244,4 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.xs,
   },
 });
+

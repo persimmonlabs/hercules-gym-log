@@ -9,7 +9,7 @@ import Animated, { Layout } from 'react-native-reanimated';
 
 import { Text } from '@/components/atoms/Text';
 import { SurfaceCard } from '@/components/atoms/SurfaceCard';
-import { colors, radius, spacing } from '@/constants/theme';
+import { colors, radius, spacing, sizing } from '@/constants/theme';
 import { exercises as exerciseCatalog } from '@/constants/exercises';
 import type { WorkoutExercise, SetLog } from '@/types/workout';
 import type { ExerciseType } from '@/types/exercise';
@@ -101,10 +101,10 @@ export const WorkoutExerciseSummaryCard: React.FC<WorkoutExerciseSummaryCardProp
 
   return (
     <Animated.View layout={Layout.springify()} style={styles.wrapper}>
-      <SurfaceCard tone="card" padding="lg" style={styles.card}>
+      <SurfaceCard tone="card" padding="lg" showAccentStripe={false} style={styles.card}>
         <View style={styles.header}>
           <View style={styles.titleGroup}>
-            <Text variant="bodySemibold" color="primary">
+            <Text style={{ fontSize: 18, fontWeight: '500', color: colors.text.primary }}>
               {exercise.name}
             </Text>
           </View>
@@ -116,14 +116,14 @@ export const WorkoutExerciseSummaryCard: React.FC<WorkoutExerciseSummaryCardProp
 
             return (
               <View key={`${exercise.name}-${originalIndex}`} style={styles.setRow}>
-                <View style={styles.setMeta}>
-                  <Text variant="bodySemibold" color="primary">
-                    {`Set ${displayIndex + 1}`}
-                  </Text>
-                  <Text variant="body" color="secondary">
-                    {effortLabel}
+                <View style={styles.setCircle}>
+                  <Text variant="bodySemibold" style={styles.setCircleText}>
+                    {displayIndex + 1}
                   </Text>
                 </View>
+                <Text variant="bodySemibold" color="primary" style={styles.setEffort}>
+                  {effortLabel}
+                </Text>
               </View>
             );
           })}
@@ -155,16 +155,40 @@ const styles = StyleSheet.create({
   setRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: spacing.xs,
-    paddingHorizontal: spacing.md,
+    justifyContent: 'flex-start',
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.lg,
     borderRadius: radius.mdCompact,
     backgroundColor: colors.surface.card,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.accent.orangeLight,
+    gap: spacing.sm,
   },
-  setMeta: {
+  setCircle: {
+    width: sizing.iconLG,
+    height: sizing.iconLG,
+    borderRadius: radius.full,
+    backgroundColor: colors.surface.card,
+    borderWidth: 1,
+    borderColor: colors.accent.orange,
+    justifyContent: 'center',
+    alignItems: 'center',
+    flexShrink: 0,
+    display: 'flex',
+  },
+  setCircleText: {
+    color: colors.text.primary,
+    fontSize: 16,
+    fontWeight: '600',
+    lineHeight: 16,
+    textAlign: 'center',
+    includeFontPadding: false,
+  },
+  setEffort: {
     flex: 1,
-    gap: spacing.xxxs,
+    fontSize: 16,
+    fontWeight: '600',
+    lineHeight: 32,
+    includeFontPadding: false,
   },
 });

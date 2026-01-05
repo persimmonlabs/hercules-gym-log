@@ -5,11 +5,11 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
-import { 
-  exercises as baseExerciseCatalog, 
-  type Exercise, 
+import {
+  exercises as baseExerciseCatalog,
+  type Exercise,
   type ExerciseCatalogItem,
-  createCustomExerciseCatalogItem 
+  createCustomExerciseCatalogItem
 } from '@/constants/exercises';
 import type { SetLog, Workout, WorkoutExercise } from '@/types/workout';
 import { usePlansStore } from '@/store/plansStore';
@@ -37,6 +37,8 @@ interface WorkoutEditorHook {
   setSearchTerm: (value: string) => void;
   exerciseCount: number;
   saveWorkout: () => Promise<boolean>;
+  isLoading: boolean;
+  setIsLoading: (loading: boolean) => void;
 }
 
 const DEFAULT_SET_COUNT = 3;
@@ -77,6 +79,7 @@ export const useWorkoutEditor = (workoutId?: string): WorkoutEditorHook => {
   const [expandedExercise, setExpandedExercise] = useState<string | null>(null);
   const [isPickerVisible, setPickerVisible] = useState<boolean>(false);
   const [searchTerm, setSearchTerm] = useState<string>('');
+  const [isLoading, setIsLoading] = useState<boolean>(!!workoutId);
 
   useEffect(() => {
     void hydrateWorkouts();
@@ -114,6 +117,7 @@ export const useWorkoutEditor = (workoutId?: string): WorkoutEditorHook => {
     if (!exerciseDrafts.length) {
       setExpandedExercise(nextDrafts[0]?.name ?? null);
     }
+    setIsLoading(false);
   }, [workout, weightUnit]);
 
   useEffect(() => {
@@ -291,5 +295,7 @@ export const useWorkoutEditor = (workoutId?: string): WorkoutEditorHook => {
     setSearchTerm,
     exerciseCount,
     saveWorkout,
+    isLoading,
+    setIsLoading,
   };
 };

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import * as Haptics from 'expo-haptics';
 
 import {
@@ -35,6 +35,7 @@ interface PlanBuilderState {
   selectedExercises: Exercise[];
   isEditing: boolean;
   isEditingPlanMissing: boolean;
+  isLoading: boolean;
   suggestions: Exercise[];
   availableExercises: Exercise[];
   filteredAvailableExercises: Exercise[];
@@ -57,6 +58,7 @@ interface PlanBuilderState {
   resetFilters: () => void;
   updateFilters: (newFilters: ExerciseFilters) => void;
   filterOptions: typeof exerciseFilterOptions;
+  setIsLoading: (loading: boolean) => void;
 }
 
 export const usePlanBuilderState = (editingPlanId: string | null): PlanBuilderState => {
@@ -64,14 +66,23 @@ export const usePlanBuilderState = (editingPlanId: string | null): PlanBuilderSt
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [selectedExercises, setSelectedExercises] = useState<Exercise[]>([]);
   const [filters, setFilters] = useState<ExerciseFilters>(() => createDefaultExerciseFilters());
+  const [isLoading, setIsLoading] = useState<boolean>(true); // Start with loading true to prevent flash, will be corrected immediately if not editing
   const hasInitializedFromPlan = useRef<boolean>(false);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     hasInitializedFromPlan.current = false;
+    // Always start with loading true when editingPlanId changes
+    // This ensures loading state is active immediately when entering review mode
+    if (editingPlanId) {
+      setIsLoading(true);
+    } else {
+      setIsLoading(false);
+    }
   }, [editingPlanId]);
 
   const plans = usePlansStore((state) => state.plans);
-  const { userPrograms, premadeWorkouts } = useProgramsStore();
+  const arePlansLoading = usePlansStore((state) => state.isLoading);
+  const { userPrograms, premadeWorkouts, isLoading: areProgramsLoading } = useProgramsStore();
   const customExercises = useCustomExerciseStore((state) => state.customExercises);
 
   // Merge base catalog with custom exercises
@@ -160,20 +171,44 @@ export const usePlanBuilderState = (editingPlanId: string | null): PlanBuilderSt
 
   const hasActiveFilters = useMemo<boolean>(() => countActiveFilters(filters) > 0, [filters]);
 
+  // Handle the actual data loading and completion
   useEffect(() => {
-    if (!isEditing) {
-      hasInitializedFromPlan.current = false;
+    if (!editingPlanId) {
+      // Not editing, ensure loading is false
+      setIsLoading(false);
       return;
     }
 
     if (editingPlan && !hasInitializedFromPlan.current) {
-      setPlanName(editingPlan.name);
-      setSelectedExercises(editingPlan.exercises);
-      setSearchTerm('');
-      setFilters(createDefaultExerciseFilters());
-      hasInitializedFromPlan.current = true;
+      // We have the plan data and haven't initialized yet
+      // Small delay to ensure smooth loading experience
+      const delay = editingPlanId.startsWith('premade:') ? 150 : 100;
+
+      setTimeout(() => {
+        setPlanName(editingPlan.name);
+        setSelectedExercises(editingPlan.exercises);
+        setSearchTerm('');
+        setFilters(createDefaultExerciseFilters());
+        hasInitializedFromPlan.current = true;
+        setIsLoading(false);
+      }, delay);
+    } else if (!arePlansLoading && !areProgramsLoading && !editingPlan && !hasInitializedFromPlan.current) {
+      // Stores are loaded but plan is missing, show error state
+      setIsLoading(false);
     }
-  }, [editingPlan, isEditing]);
+  }, [editingPlan, editingPlanId, arePlansLoading, areProgramsLoading]);
+
+  // Safety timeout: If loading takes too long (e.g. race condition or stuck state), force exit
+  useEffect(() => {
+    if (isLoading) {
+      const timeoutId = setTimeout(() => {
+        console.warn('[usePlanBuilderState] Loading timeout reached, forcing completion');
+        setIsLoading(false);
+      }, 5000);
+
+      return () => clearTimeout(timeoutId);
+    }
+  }, [isLoading]);
 
   const resetBuilder = useCallback(() => {
     if (isEditing) {
@@ -184,6 +219,7 @@ export const usePlanBuilderState = (editingPlanId: string | null): PlanBuilderSt
     setSelectedExercises([]);
     setSearchTerm('');
     setFilters(createDefaultExerciseFilters());
+    setIsLoading(false);
   }, [isEditing]);
 
   const updateFilters = useCallback((newFilters: ExerciseFilters) => {
@@ -414,6 +450,7 @@ export const usePlanBuilderState = (editingPlanId: string | null): PlanBuilderSt
     selectedExercises,
     isEditing,
     isEditingPlanMissing,
+    isLoading,
     suggestions,
     availableExercises: availableCatalogExercises,
     filteredAvailableExercises,
@@ -436,5 +473,6 @@ export const usePlanBuilderState = (editingPlanId: string | null): PlanBuilderSt
     resetFilters,
     updateFilters,
     filterOptions: exerciseFilterOptions,
+    setIsLoading,
   };
 };

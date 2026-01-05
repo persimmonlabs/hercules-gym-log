@@ -201,13 +201,6 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({ visible,
                     </View>
                   )}
                 </ScrollView>
-
-                <Button
-                  label="Add Reminder"
-                  variant="primary"
-                  onPress={handleAddConfig}
-                  style={styles.addButton}
-                />
               </>
             )}
 
@@ -217,6 +210,16 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({ visible,
                   Enable reminders to set workout notification times
                 </Text>
               </View>
+            )}
+
+            {/* Add Reminder Button - Always at Bottom */}
+            {notificationsEnabled && (
+              <Button
+                label="Add Reminder"
+                variant="primary"
+                onPress={handleAddConfig}
+                style={[styles.addButton, styles.button]}
+              />
             )}
           </Pressable>
         )}
@@ -253,9 +256,8 @@ const styles = StyleSheet.create({
   modalContent: {
     borderRadius: radius.xl,
     padding: spacing.xl,
-    width: '100%',
-    maxWidth: 400,
-    maxHeight: '80%',
+    width: 350,
+    height: 450,
     ...shadows.lg,
   },
   header: {
@@ -324,5 +326,10 @@ const styles = StyleSheet.create({
   },
   disabledText: {
     textAlign: 'center',
+  },
+  button: {
+    flex: 1,
+    minWidth: 120,
+    minHeight: 44,
   },
 });

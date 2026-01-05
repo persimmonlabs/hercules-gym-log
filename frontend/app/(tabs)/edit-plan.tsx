@@ -14,6 +14,7 @@ import { PlanEmptyStateCard } from '@/components/molecules/PlanEmptyStateCard';
 import { colors, radius, spacing, sizing } from '@/constants/theme';
 import { useProgramsStore } from '@/store/programsStore';
 import type { ProgramWorkout, UserProgram } from '@/types/premadePlan';
+import { usePlanBuilderContext } from '@/providers/PlanBuilderProvider';
 
 const styles = StyleSheet.create({
   container: {
@@ -97,6 +98,7 @@ export default function EditPlanScreen() {
     updateUserProgram,
     deleteWorkoutFromProgram,
   } = useProgramsStore();
+  const { setEditingPlanId } = usePlanBuilderContext();
 
   // Find the program
   const program = useMemo(() =>
@@ -152,11 +154,17 @@ export default function EditPlanScreen() {
 
   const handleWorkoutPress = useCallback((workout: ProgramWorkout) => {
     void Haptics.selectionAsync();
-    // Navigate to edit workout screen
-    const compositeId = encodeURIComponent(`program:${planId}:${workout.id}`);
+
+    const rawCompositeId = `program:${planId}:${workout.id}`;
+    const encodedCompositeId = encodeURIComponent(rawCompositeId);
     const returnTo = encodeURIComponent(`/(tabs)/edit-plan?planId=${planId}`);
-    router.push(`/(tabs)/create-workout?planId=${compositeId}&premadeWorkoutId=&returnTo=${returnTo}`);
-  }, [router, planId]);
+
+    // Trigger immediate loading for the destination screen with RAW ID
+    setEditingPlanId(rawCompositeId);
+
+    // Navigate to edit workout screen
+    router.push(`/(tabs)/create-workout?planId=${encodedCompositeId}&premadeWorkoutId=&returnTo=${returnTo}`);
+  }, [router, planId, setEditingPlanId]);
 
   const handleRemoveWorkout = useCallback((workout: ProgramWorkout) => {
     void Haptics.selectionAsync();

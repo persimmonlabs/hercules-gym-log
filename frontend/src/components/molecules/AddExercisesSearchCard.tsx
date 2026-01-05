@@ -30,7 +30,7 @@ export const AddExercisesSearchCard: React.FC<AddExercisesSearchCardProps> = ({
     <SurfaceCard tone="card" padding="xl" showAccentStripe>
       <View style={styles.content}>
         <InputField
-          label="Search exercises"
+          label="Search Exercises"
           value={searchTerm}
           onChangeText={onSearchChange}
           placeholder="Search by movement or muscle"

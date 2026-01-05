@@ -150,6 +150,17 @@ const CreatePlanScreen: React.FC = () => {
     if (!targetPremadeWorkoutId) return null;
     return premadeWorkouts.find(w => w.id === targetPremadeWorkoutId) ?? null;
   }, [premadeWorkouts, targetPremadeWorkoutId]);
+  
+  // Check if this premade workout has already been added to My Workouts
+  const isAlreadyAdded = useMemo(() => {
+    if (!premadeWorkout) return false;
+    const addedWorkoutNames = new Set(
+      plans
+        .filter(plan => plan.source === 'premade' || plan.source === 'library' || plan.source === 'recommended')
+        .map(plan => plan.name.trim().toLowerCase())
+    );
+    return addedWorkoutNames.has(premadeWorkout.name.trim().toLowerCase());
+  }, [premadeWorkout, plans]);
   const selectedIds = selectedExercises.map((exercise) => exercise.id);
   const suggestedExercises = useSemanticExerciseSearch(searchTerm, exercises, {
     excludeIds: selectedIds,
@@ -197,6 +208,12 @@ const CreatePlanScreen: React.FC = () => {
       setSearchTerm('');
       hasInitializedFromPlan.current = true;
     } else if (premadeWorkout) {
+      // If this premade workout has already been added, redirect back
+      if (isAlreadyAdded) {
+        router.back();
+        return;
+      }
+      
       setPlanName(premadeWorkout.name);
 
       // Map premade exercises (which might just have IDs) to full Exercise objects
@@ -209,7 +226,7 @@ const CreatePlanScreen: React.FC = () => {
       setSearchTerm('');
       hasInitializedFromPlan.current = true;
     }
-  }, [editingPlan, isEditing, premadeWorkout]);
+  }, [editingPlan, isEditing, premadeWorkout, isAlreadyAdded, router]);
 
   useEffect(() => {
     const trimmedName = planName.trim();
@@ -414,8 +431,19 @@ const CreatePlanScreen: React.FC = () => {
               </Text>
               <Button label="Go Back" variant="secondary" onPress={router.back} />
             </SurfaceCard>
+          ) : isPremadeReview && isAlreadyAdded ? (
+            <SurfaceCard tone="neutral" padding="xl" showAccentStripe={false} style={styles.missingPlanCard}>
+              <Text variant="bodySemibold" color="primary">
+                Workout Already Added
+              </Text>
+              <Text variant="body" color="secondary">
+                This workout has already been added to your My Workouts. You can find it in the Plans tab.
+              </Text>
+              <Button label="Go Back" variant="secondary" onPress={router.back} />
+            </SurfaceCard>
           ) : null}
 
+          {!(isPremadeReview && isAlreadyAdded) && (
           <View style={styles.builderContainer}>
             <PlanQuickBuilderCard
               planName={planName}
@@ -435,7 +463,9 @@ const CreatePlanScreen: React.FC = () => {
               isNameDuplicate={isNameDuplicate}
             />
           </View>
+        )}
 
+          {!(isPremadeReview && isAlreadyAdded) && (
           <PlanSelectedExerciseList
             exercises={selectedExercises}
             onRemoveExercise={handleRemoveExercise}
@@ -454,6 +484,7 @@ const CreatePlanScreen: React.FC = () => {
             subtitle={selectedListSubtitle}
             saveLabel={saveCtaLabel}
           />
+        )}
         </ScrollView>
       </KeyboardAvoidingView>
     </Animated.View>

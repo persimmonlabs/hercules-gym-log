@@ -4,18 +4,13 @@
  */
 
 import React, { useState, useCallback, useEffect } from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, View, Platform, PanResponder } from 'react-native';
+import { Modal, Pressable, ScrollView, StyleSheet, View, Platform } from 'react-native';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import * as Haptics from 'expo-haptics';
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withSpring,
-  runOnJS,
-} from 'react-native-reanimated';
 
 import { Text } from '@/components/atoms/Text';
 import { Button } from '@/components/atoms/Button';
+import { InputField } from '@/components/atoms/InputField';
 import { colors, radius, shadows, spacing } from '@/constants/theme';
 import { NotificationConfig, DayOfWeek } from '@/store/notificationStore';
 
@@ -48,12 +43,11 @@ export const NotificationEditModal: React.FC<NotificationEditModalProps> = ({
   const [selectedDays, setSelectedDays] = useState<DayOfWeek[]>([]);
   const [showTimePicker, setShowTimePicker] = useState(Platform.OS === 'ios');
   const [showTimePickerModal, setShowTimePickerModal] = useState(false);
-  const [clockMode, setClockMode] = useState<'hour' | 'minute'>('hour');
-  const [tempTime, setTempTime] = useState(new Date());
   
-  // Animated values for smooth clock hand rotation
-  const hourRotation = useSharedValue(0);
-  const minuteRotation = useSharedValue(0);
+  // Simple time input state
+  const [hourInput, setHourInput] = useState('');
+  const [minuteInput, setMinuteInput] = useState('');
+  const [ampm, setAmPm] = useState<'AM' | 'PM'>('AM');
 
   // Reset state when modal opens
   useEffect(() => {
@@ -63,11 +57,22 @@ export const NotificationEditModal: React.FC<NotificationEditModalProps> = ({
         date.setHours(config.hour, config.minute, 0, 0);
         setSelectedTime(date);
         setSelectedDays([...config.days]);
+        
+        // Set simple input values
+        const hour = config.hour % 12 || 12;
+        setHourInput(hour.toString());
+        setMinuteInput(config.minute.toString().padStart(2, '0'));
+        setAmPm(config.hour >= 12 ? 'PM' : 'AM');
       } else {
         const date = new Date();
         date.setHours(9, 0, 0, 0);
         setSelectedTime(date);
         setSelectedDays([]);
+        
+        // Set default input values
+        setHourInput('9');
+        setMinuteInput('00');
+        setAmPm('AM');
       }
       if (Platform.OS === 'android') {
         setShowTimePicker(false);
@@ -75,17 +80,8 @@ export const NotificationEditModal: React.FC<NotificationEditModalProps> = ({
     }
   }, [visible, config]);
 
-  // Update animated rotations when time changes
-  useEffect(() => {
-    const hourAngle = ((selectedTime.getHours() % 12) * 30 + selectedTime.getMinutes() * 0.5 - 90);
-    const minuteAngle = (selectedTime.getMinutes() * 6 - 90);
-    hourRotation.value = hourAngle;
-    minuteRotation.value = minuteAngle;
-  }, [selectedTime, hourRotation, minuteRotation]);
 
   const handleOpenTimePicker = () => {
-    setTempTime(new Date(selectedTime));
-    setClockMode('hour');
     setShowTimePickerModal(true);
     void Haptics.selectionAsync();
   };
@@ -96,48 +92,30 @@ export const NotificationEditModal: React.FC<NotificationEditModalProps> = ({
   };
 
   const handleSaveTimePicker = () => {
-    setSelectedTime(new Date(tempTime));
+    // Validate and update time from inputs
+    const hour = parseInt(hourInput);
+    const minute = parseInt(minuteInput);
+    
+    if (isNaN(hour) || hour < 1 || hour > 12) {
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      return;
+    }
+    
+    if (isNaN(minute) || minute < 0 || minute > 59) {
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      return;
+    }
+    
+    // Convert to 24-hour format
+    const hour24 = hour === 12 ? (ampm === 'AM' ? 0 : 12) : (ampm === 'PM' ? hour + 12 : hour);
+    
+    const newDate = new Date(selectedTime);
+    newDate.setHours(hour24, minute, 0, 0);
+    setSelectedTime(newDate);
     setShowTimePickerModal(false);
     void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
   };
 
-  const handleClockModeToggle = () => {
-    setClockMode(prev => prev === 'hour' ? 'minute' : 'hour');
-    void Haptics.selectionAsync();
-  };
-
-  const updateHourFromAngleWorklet = (angle: number) => {
-    'worklet';
-    const normalizedAngle = (angle + 360) % 360;
-    const hour = Math.round(normalizedAngle / 30) % 12;
-    const finalHour = hour === 0 ? 12 : hour;
-    return { normalizedAngle, finalHour };
-  };
-
-  const updateMinuteFromAngleWorklet = (angle: number) => {
-    'worklet';
-    const normalizedAngle = (angle + 360) % 360;
-    const minute = Math.round(normalizedAngle / 6) % 60;
-    return { normalizedAngle, minute };
-  };
-
-  const updateHourFromAngle = (angle: number) => {
-    const { normalizedAngle, finalHour } = updateHourFromAngleWorklet(angle);
-    const newDate = new Date(tempTime);
-    const currentHour = tempTime.getHours();
-    const newHour = currentHour >= 12 ? finalHour + 12 : finalHour;
-    newDate.setHours(newHour);
-    setTempTime(newDate);
-    hourRotation.value = withSpring(normalizedAngle - 90);
-  };
-
-  const updateMinuteFromAngle = (angle: number) => {
-    const { normalizedAngle, minute } = updateMinuteFromAngleWorklet(angle);
-    const newDate = new Date(tempTime);
-    newDate.setMinutes(minute);
-    setTempTime(newDate);
-    minuteRotation.value = withSpring(normalizedAngle - 90);
-  };
 
   const handleClose = useCallback(() => {
     void Haptics.selectionAsync();
@@ -277,7 +255,7 @@ export const NotificationEditModal: React.FC<NotificationEditModalProps> = ({
             <View style={styles.buttonRow}>
               <Button
                 label="Cancel"
-                variant="secondary"
+                variant="ghost"
                 onPress={handleClose}
                 style={styles.button}
               />
@@ -378,7 +356,7 @@ export const NotificationEditModal: React.FC<NotificationEditModalProps> = ({
             <View style={styles.buttonRow}>
               <Button
                 label="Cancel"
-                variant="secondary"
+                variant="ghost"
                 onPress={handleClose}
                 style={styles.button}
               />
@@ -395,192 +373,126 @@ export const NotificationEditModal: React.FC<NotificationEditModalProps> = ({
       )}
     </Modal>
     
-    {/* Beautiful Time Picker Modal */}
-    <Modal visible={showTimePickerModal} animationType="slide" transparent onRequestClose={handleCloseTimePicker}>
-      <View style={styles.timePickerModalOverlay}>
+    {/* Simple Time Picker Modal */}
+    <Modal visible={showTimePickerModal} animationType="fade" transparent onRequestClose={handleCloseTimePicker}>
+      <View style={styles.timePickerModalContainer}>
         <View style={styles.timePickerModalContent}>
-          {/* Time Display */}
-          <View style={styles.timeDisplayContainer}>
-            <Pressable onPress={handleClockModeToggle}>
-              <Text variant="heading1" color={clockMode === 'hour' ? 'primary' : 'secondary'}>
-                {tempTime.getHours() % 12 || 12}
-              </Text>
-            </Pressable>
-            <Text variant="heading1" color="primary">:</Text>
-            <Pressable onPress={handleClockModeToggle}>
-              <Text variant="heading1" color={clockMode === 'minute' ? 'primary' : 'secondary'}>
-                {tempTime.getMinutes().toString().padStart(2, '0')}
-              </Text>
-            </Pressable>
-          </View>
+          <Text variant="heading2" color="primary" style={styles.timePickerTitle}>
+            Set Time
+          </Text>
           
-          {/* AM/PM Selector */}
-          <View style={styles.timePickerAmpm}>
-            <Pressable
-              style={[
-                styles.timePickerAmpmButton,
-                tempTime.getHours() < 12 && styles.timePickerAmpmButtonSelected
-              ]}
-              onPress={() => {
-                const newDate = new Date(tempTime);
-                newDate.setHours(tempTime.getHours() - 12);
-                setTempTime(newDate);
-              }}
-            >
-              <Text
-                variant="bodySemibold"
-                color={tempTime.getHours() < 12 ? 'onAccent' : 'primary'}
-              >
-                AM
+          {/* Time Input Fields */}
+          <View style={styles.timeInputContainer}>
+            <View style={styles.timeInputRow}>
+              {/* Hour Input */}
+              <View style={styles.timeInputWrapper}>
+                <InputField
+                  label="Hour"
+                  value={hourInput}
+                  onChangeText={(text) => {
+                    // Only allow numbers 1-12
+                    const num = parseInt(text);
+                    if (text === '' || (!isNaN(num) && num >= 1 && num <= 12)) {
+                      setHourInput(text);
+                    }
+                  }}
+                  placeholder="1-12"
+                  keyboardType="numeric"
+                  autoFocus={true}
+                  onFocus={() => {
+                    if (hourInput === '9') {
+                      setHourInput('');
+                    }
+                  }}
+                />
+              </View>
+              
+              {/* Separator */}
+              <Text variant="heading2" color="primary" style={styles.timeSeparator}>
+                :
               </Text>
-            </Pressable>
-            <Pressable
-              style={[
-                styles.timePickerAmpmButton,
-                tempTime.getHours() >= 12 && styles.timePickerAmpmButtonSelected
-              ]}
-              onPress={() => {
-                const newDate = new Date(tempTime);
-                newDate.setHours(tempTime.getHours() + 12);
-                setTempTime(newDate);
-              }}
-            >
-              <Text
-                variant="bodySemibold"
-                color={tempTime.getHours() >= 12 ? 'onAccent' : 'primary'}
-              >
-                PM
-              </Text>
-            </Pressable>
-          </View>
-          
-          {/* Clock Face */}
-          <View style={styles.timePickerClock}>
-            <View style={styles.timePickerClockFace}>
-              <View style={styles.timePickerClockCenter} />
               
-              {/* Hour Numbers */}
-              {clockMode === 'hour' && Array.from({ length: 12 }, (_, i) => {
-                const hour = i === 0 ? 12 : i;
-                const angle = (i * 30 - 90) * (Math.PI / 180);
-                const radius = 80;
-                const x = Math.cos(angle) * radius + 100;
-                const y = Math.sin(angle) * radius + 100;
-                const isSelected = (tempTime.getHours() % 12 || 12) === hour;
-                
-                return (
-                  <Pressable
-                    key={hour}
-                    style={[
-                      styles.timePickerClockNumber,
-                      { left: x - 20, top: y - 20 },
-                      isSelected && styles.timePickerClockNumberSelected
-                    ]}
-                    onPress={() => {
-                      const currentHour = tempTime.getHours();
-                      const newHour = currentHour >= 12 ? hour + 12 : hour;
-                      const newDate = new Date(tempTime);
-                      newDate.setHours(newHour);
-                      setTempTime(newDate);
-                      // Auto switch to minute mode after selecting hour
-                      setClockMode('minute');
-                    }}
-                  >
-                    <Text
-                      variant="bodySemibold"
-                      color={isSelected ? 'onAccent' : 'primary'}
-                      style={styles.timePickerClockNumberText}
-                    >
-                      {hour}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-              
-              {/* Minute Numbers */}
-              {clockMode === 'minute' && Array.from({ length: 12 }, (_, i) => {
-                const minute = i * 5;
-                const angle = (i * 30 - 90) * (Math.PI / 180);
-                const radius = 80;
-                const x = Math.cos(angle) * radius + 100;
-                const y = Math.sin(angle) * radius + 100;
-                const isSelected = tempTime.getMinutes() === minute;
-                
-                return (
-                  <Pressable
-                    key={minute}
-                    style={[
-                      styles.timePickerClockNumber,
-                      { left: x - 20, top: y - 20 },
-                      isSelected && styles.timePickerClockNumberSelected
-                    ]}
-                    onPress={() => {
-                      const newDate = new Date(tempTime);
-                      newDate.setMinutes(minute);
-                      setTempTime(newDate);
-                    }}
-                  >
-                    <Text
-                      variant="bodySemibold"
-                      color={isSelected ? 'onAccent' : 'primary'}
-                      style={styles.timePickerClockNumberText}
-                    >
-                      {minute === 0 ? '00' : minute.toString()}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-              
-              {/* Draggable Clock Hand */}
-              <Animated.View
-                style={[
-                  clockMode === 'hour' ? styles.timePickerHourHand : styles.timePickerMinuteHand,
-                  clockMode === 'hour' 
-                    ? useAnimatedStyle(() => ({
-                        transform: [{ rotate: `${hourRotation.value}deg` }]
-                      }))
-                    : useAnimatedStyle(() => ({
-                        transform: [{ rotate: `${minuteRotation.value}deg` }]
-                      }))
-                ]}
-                {...(Platform.OS === 'ios' ? {} : PanResponder.create({
-                  onPanResponderMove: (_evt, gestureState) => {
-                    const { dx, dy } = gestureState;
-                    const centerX = 100;
-                    const centerY = 100;
-                    const angle = Math.atan2(dy, dx) * (180 / Math.PI) + 90;
-                    const normalizedAngle = (angle + 360) % 360;
+              {/* Minute Input */}
+              <View style={styles.timeInputWrapper}>
+                <InputField
+                  label="Minute"
+                  value={minuteInput}
+                  onChangeText={(text) => {
+                    // Only allow numbers 00-59
+                    if (text === '') {
+                      setMinuteInput('');
+                      return;
+                    }
                     
-                    if (clockMode === 'hour') {
-                      updateHourFromAngle(normalizedAngle);
-                    } else {
-                      updateMinuteFromAngle(normalizedAngle);
+                    const num = parseInt(text);
+                    if (!isNaN(num) && num >= 0 && num <= 59) {
+                      // Just use the input as-is, no automatic leading zero
+                      setMinuteInput(text);
                     }
-                  },
-                  onPanResponderRelease: () => {
-                    // Auto switch to minute mode after dragging hour hand
-                    if (clockMode === 'hour') {
-                      setClockMode('minute');
+                  }}
+                  placeholder="00-59"
+                  keyboardType="numeric"
+                  onFocus={() => {
+                    if (minuteInput === '00') {
+                      setMinuteInput('');
                     }
-                  },
-                }).panHandlers)}
-              />
+                  }}
+                />
+              </View>
+            </View>
+            
+            {/* AM/PM Selector */}
+            <View style={styles.ampmSelector}>
+              <Pressable
+                style={[
+                  styles.ampmOption,
+                  ampm === 'AM' && styles.ampmOptionSelected
+                ]}
+                onPress={() => {
+                  setAmPm('AM');
+                  void Haptics.selectionAsync();
+                }}
+              >
+                <Text
+                  variant="bodySemibold"
+                  color={ampm === 'AM' ? 'onAccent' : 'primary'}
+                >
+                  AM
+                </Text>
+              </Pressable>
+              <Pressable
+                style={[
+                  styles.ampmOption,
+                  ampm === 'PM' && styles.ampmOptionSelected
+                ]}
+                onPress={() => {
+                  setAmPm('PM');
+                  void Haptics.selectionAsync();
+                }}
+              >
+                <Text
+                  variant="bodySemibold"
+                  color={ampm === 'PM' ? 'onAccent' : 'primary'}
+                >
+                  PM
+                </Text>
+              </Pressable>
             </View>
           </View>
           
           {/* Action Buttons */}
-          <View style={styles.timePickerButtons}>
+          <View style={styles.buttonRow}>
             <Button
               label="Cancel"
-              variant="secondary"
+              variant="ghost"
               onPress={handleCloseTimePicker}
-              style={styles.timePickerButton}
+              style={styles.button}
             />
             <Button
               label="OK"
               variant="primary"
               onPress={handleSaveTimePicker}
-              style={styles.timePickerButton}
+              style={styles.button}
             />
           </View>
         </View>
@@ -608,18 +520,16 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface.card,
     borderRadius: radius.xl,
     padding: spacing.xl,
-    width: '100%',
-    maxWidth: 400,
-    maxHeight: '85%',
+    width: 350,
+    height: 450,
     ...shadows.lg,
   },
   modalContentNoOverlay: {
     backgroundColor: colors.surface.card,
     borderRadius: radius.xl,
     padding: spacing.xl,
-    width: '100%',
-    maxWidth: 400,
-    maxHeight: '85%',
+    width: 350,
+    height: 450,
     ...shadows.lg,
   },
   title: {
@@ -722,15 +632,16 @@ const styles = StyleSheet.create({
   ampmSelector: {
     flexDirection: 'row',
     gap: spacing.sm,
+    marginTop: spacing.md,
   },
   ampmOption: {
-    backgroundColor: colors.surface.card,
-    borderRadius: radius.sm,
-    paddingVertical: spacing.xs,
-    paddingHorizontal: spacing.md,
+    backgroundColor: colors.surface.elevated,
+    borderRadius: radius.md,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.lg,
     borderWidth: 1,
     borderColor: colors.border.light,
-    minWidth: 40,
+    minWidth: 60,
     alignItems: 'center',
   },
   ampmOptionSelected: {
@@ -786,9 +697,9 @@ const styles = StyleSheet.create({
     minHeight: 25,
   },
   timeSeparator: {
-    paddingHorizontal: spacing.xs,
     fontSize: 24,
     fontWeight: '600',
+    marginBottom: spacing.xs,
   },
   timePicker: {
     height: 150,
@@ -836,105 +747,43 @@ const styles = StyleSheet.create({
   },
   button: {
     flex: 1,
+    minWidth: 120,
+    minHeight: 44,
   },
   // Time Picker Modal Styles
-  timePickerModalOverlay: {
+  timePickerModalContainer: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: spacing.lg,
   },
   timePickerModalContent: {
     backgroundColor: colors.surface.card,
     borderRadius: radius.xl,
-    padding: spacing.xl,
-    width: '100%',
-    maxWidth: 320,
+    paddingTop: spacing['2xl'],
+    paddingHorizontal: spacing.xl,
+    paddingBottom: spacing['2xl'],
+    width: 350,
+    height: 450,
     alignItems: 'center',
     ...shadows.lg,
   },
-  timeDisplayContainer: {
-    flexDirection: 'row',
+  timePickerTitle: {
+    marginBottom: spacing.lg,
+    textAlign: 'center',
+  },
+  timeInputContainer: {
+    width: '100%',
     alignItems: 'center',
-    gap: spacing.xs,
     marginBottom: spacing.lg,
   },
-  timePickerAmpm: {
+  timeInputRow: {
     flexDirection: 'row',
+    alignItems: 'flex-end',
     gap: spacing.sm,
-    marginBottom: spacing.xl,
+    marginBottom: spacing.lg,
   },
-  timePickerAmpmButton: {
-    backgroundColor: colors.surface.elevated,
-    borderRadius: radius.md,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.lg,
-    borderWidth: 1,
-    borderColor: colors.border.light,
-    minWidth: 60,
-    alignItems: 'center',
-  },
-  timePickerAmpmButtonSelected: {
-    backgroundColor: colors.accent.orange,
-    borderColor: colors.accent.orange,
-  },
-  timePickerClock: {
-    marginVertical: spacing.xl,
-  },
-  timePickerClockFace: {
-    width: 200,
-    height: 200,
-    backgroundColor: colors.surface.card,
-    borderRadius: radius.full,
-    borderWidth: 2,
-    borderColor: colors.border.light,
-    position: 'relative',
-  },
-  timePickerClockCenter: {
-    position: 'absolute',
-    width: 12,
-    height: 12,
-    backgroundColor: colors.accent.orange,
-    borderRadius: radius.full,
-    left: 94,
-    top: 94,
-  },
-  timePickerClockNumber: {
-    position: 'absolute',
-    width: 40,
-    height: 40,
-    borderRadius: radius.full,
-    backgroundColor: 'transparent',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  timePickerClockNumberSelected: {
-    backgroundColor: colors.accent.orange,
-  },
-  timePickerClockNumberText: {
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  timePickerHourHand: {
-    position: 'absolute',
-    width: 6,
-    height: 60,
-    backgroundColor: colors.text.primary,
-    borderRadius: 3,
-    left: 97,
-    top: 40,
-    transformOrigin: 'center bottom',
-  },
-  timePickerMinuteHand: {
-    position: 'absolute',
-    width: 4,
-    height: 80,
-    backgroundColor: colors.text.secondary,
-    borderRadius: 2,
-    left: 98,
-    top: 20,
-    transformOrigin: 'center bottom',
+  timeInputWrapper: {
+    flex: 1,
   },
   timePickerButtons: {
     flexDirection: 'row',
@@ -944,5 +793,6 @@ const styles = StyleSheet.create({
   },
   timePickerButton: {
     flex: 1,
+    minWidth: 80,
   },
 });

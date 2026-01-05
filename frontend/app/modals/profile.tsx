@@ -17,6 +17,8 @@ import { NameEditModal } from '@/components/molecules/NameEditModal';
 import { BodyMetricsModal } from '@/components/molecules/BodyMetricsModal';
 import { UnitsModal } from '@/components/molecules/UnitsModal';
 import { NotificationsModal } from '@/components/molecules/NotificationsModal';
+import { SignOutConfirmationModal } from '@/components/molecules/SignOutConfirmationModal';
+import { FeedbackModal } from '@/components/molecules/FeedbackModal';
 import { colors, spacing, radius, shadows, sizing } from '@/constants/theme';
 import { useTheme } from '@/hooks/useTheme';
 import { useAuth } from '@/providers/AuthProvider';
@@ -36,6 +38,8 @@ const ProfileModal: React.FC = () => {
   const [isBodyMetricsModalVisible, setIsBodyMetricsModalVisible] = useState(false);
   const [isUnitsModalVisible, setIsUnitsModalVisible] = useState(false);
   const [isNotificationsModalVisible, setIsNotificationsModalVisible] = useState(false);
+  const [isSignOutModalVisible, setIsSignOutModalVisible] = useState(false);
+  const [isFeedbackModalVisible, setIsFeedbackModalVisible] = useState(false);
   const { weightUnit, distanceUnit, sizeUnit, formatWeight } = useSettingsStore();
   const { notificationsEnabled, configs } = useNotificationStore();
   const { premiumOverride, setPremiumOverride } = useDevToolsStore();
@@ -50,39 +54,37 @@ const ProfileModal: React.FC = () => {
     }, 100);
   };
 
-  const handlePreferencePress = () => {
+  const handlePreferencePress = (title: string) => {
     void Haptics.selectionAsync();
-    // TODO: Navigate to preference screens when implemented
+    
+    if (title === 'Send Feedback') {
+      setIsFeedbackModalVisible(true);
+    } else {
+      // TODO: Handle other preference items when implemented
+    }
   };
 
-  const handleSignOut = async () => {
+  const handleSignOut = () => {
     void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+    setIsSignOutModalVisible(true);
+  };
 
-    Alert.alert(
-      'Sign Out',
-      'Are you sure you want to sign out?',
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-        {
-          text: 'Sign Out',
-          style: 'destructive',
-          onPress: async () => {
-            setIsSigningOut(true);
-            try {
-              await signOut();
-              // Navigation will be handled automatically by the auth state change
-            } catch (error) {
-              console.error('Sign out error:', error);
-              Alert.alert('Error', 'Failed to sign out. Please try again.');
-              setIsSigningOut(false);
-            }
-          },
-        },
-      ]
-    );
+  const handleSignOutConfirm = async () => {
+    setIsSigningOut(true);
+    try {
+      await signOut();
+      // Navigation will be handled automatically by the auth state change
+    } catch (error) {
+      console.error('Sign out error:', error);
+      Alert.alert('Error', 'Failed to sign out. Please try again.');
+      setIsSigningOut(false);
+    }
+  };
+
+  const handleCloseSignOutModal = () => {
+    if (!isSigningOut) {
+      setIsSignOutModalVisible(false);
+    }
   };
 
   // Fetch user profile data from store (which syncs with profiles table)
@@ -227,7 +229,7 @@ const ProfileModal: React.FC = () => {
           <View style={styles.profileHeader}>
             <View style={[
               profile?.firstName ? styles.avatarWithInitial : styles.avatar,
-              { backgroundColor: theme.surface.card, borderColor: theme.accent.orange }
+              { backgroundColor: theme.accent.orange, borderColor: theme.accent.orange }
             ]}>
               {profile?.firstName ? (
                 <Text variant="heading1" style={styles.avatarInitialText}>
@@ -236,7 +238,7 @@ const ProfileModal: React.FC = () => {
               ) : (
                 <IconSymbol
                   name="person"
-                  color={theme.text.primary}
+                  color="#FFFFFF"
                   size={48}
                 />
               )}
@@ -301,22 +303,16 @@ const ProfileModal: React.FC = () => {
 
             <View style={styles.preferencesList}>
               <PreferenceItem
-                icon="help"
-                title="Help Center"
-                subtitle="Get help and frequently asked questions"
-                onPress={handlePreferencePress}
-              />
-              <PreferenceItem
                 icon="feedback"
                 title="Send Feedback"
                 subtitle="Help us improve the app"
-                onPress={handlePreferencePress}
+                onPress={() => handlePreferencePress('Send Feedback')}
               />
               <PreferenceItem
                 icon="info"
                 title="About"
                 subtitle="App version and legal information"
-                onPress={handlePreferencePress}
+                onPress={() => handlePreferencePress('About')}
               />
             </View>
           </View>
@@ -364,7 +360,7 @@ const ProfileModal: React.FC = () => {
 
         {/* Sign Out Button */}
         <View style={styles.signOutSection}>
-          <SurfaceCard tone="neutral" padding="lg" style={styles.signOutCard}>
+          <SurfaceCard tone="neutral" padding="lg" showAccentStripe={false} style={styles.signOutCard}>
             <Pressable
               style={styles.signOutButton}
               onPress={handleSignOut}
@@ -373,15 +369,15 @@ const ProfileModal: React.FC = () => {
               accessibilityLabel="Sign Out"
             >
               {isSigningOut ? (
-                <ActivityIndicator color={theme.accent.red} />
+                <ActivityIndicator color="#FF0000" />
               ) : (
                 <>
                   <IconSymbol
                     name="logout"
-                    color={theme.accent.red}
+                    color="#FF0000"
                     size={24}
                   />
-                  <Text variant="bodySemibold" color="red">
+                  <Text variant="bodySemibold" style={{ color: '#FF0000' }}>
                     Sign Out
                   </Text>
                 </>
@@ -416,6 +412,18 @@ const ProfileModal: React.FC = () => {
       <NotificationsModal
         visible={isNotificationsModalVisible}
         onClose={() => setIsNotificationsModalVisible(false)}
+      />
+
+      <SignOutConfirmationModal
+        visible={isSignOutModalVisible}
+        onClose={handleCloseSignOutModal}
+        onConfirm={handleSignOutConfirm}
+        isLoading={isSigningOut}
+      />
+
+      <FeedbackModal
+        visible={isFeedbackModalVisible}
+        onClose={() => setIsFeedbackModalVisible(false)}
       />
     </SafeAreaView>
   );
@@ -540,7 +548,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   avatarInitialText: {
-    color: colors.text.primary,
+    color: '#FFFFFF',
     fontSize: 40,
     fontWeight: '600',
   },
@@ -580,7 +588,8 @@ const styles = StyleSheet.create({
   },
   signOutCard: {
     borderWidth: 1,
-    borderColor: colors.accent.red + '30',
+    borderColor: '#FF0000',
+    backgroundColor: '#FFFFFF',
   },
   signOutButton: {
     flexDirection: 'row',

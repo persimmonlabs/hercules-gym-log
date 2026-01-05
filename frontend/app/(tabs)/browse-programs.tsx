@@ -1,11 +1,10 @@
-import React, { useEffect, useMemo, useState, useCallback } from 'react';
+import React, { useMemo, useState, useCallback } from 'react';
 import { StyleSheet, FlatList, Pressable, View } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 
 import { Text } from '@/components/atoms/Text';
-import { TabSwipeContainer } from '@/components/templates/TabSwipeContainer';
 import { ProgramCard } from '@/components/molecules/ProgramCard';
 import { QuickFilterChip } from '@/components/atoms/QuickFilterChip';
 import { IconSymbol } from '@/components/ui/icon-symbol';
@@ -90,7 +89,7 @@ export default function BrowseProgramsScreen() {
       // Compare by name (case-insensitive) since premade workouts get new IDs when added
       const addedWorkoutNames = new Set(
         plans
-          .filter(plan => plan.source === 'premade')
+          .filter(plan => plan.source === 'premade' || plan.source === 'library' || plan.source === 'recommended')
           .map(plan => plan.name.trim().toLowerCase())
       );
       filtered = filtered.filter(w => !addedWorkoutNames.has(w.name.trim().toLowerCase()));
@@ -126,7 +125,7 @@ export default function BrowseProgramsScreen() {
       const workout = item as PremadeWorkout;
       router.push({
         pathname: '/(tabs)/create-workout',
-        params: { premadeWorkoutId: workout.id }
+        params: { premadeWorkoutId: workout.id, source: 'library', from: 'browse' }
       });
     } else {
       router.push({
@@ -184,7 +183,10 @@ export default function BrowseProgramsScreen() {
         }
         renderItem={({ item }) => (
           <View style={{ paddingHorizontal: spacing.md }}>
-            <ProgramCard program={item} onPress={handleProgramPress} />
+            <ProgramCard 
+              program={item} 
+              onPress={handleProgramPress}
+            />
           </View>
         )}
         ListEmptyComponent={

@@ -10,6 +10,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 import { Text } from '@/components/atoms/Text';
 import { HoldRepeatIconButton } from '@/components/atoms/HoldRepeatIconButton';
+import { HyperResponsiveButton } from '@/components/atoms/HyperResponsiveButton';
 import { springGentle } from '@/constants/animations';
 import { colors, radius, shadows, sizing, spacing, zIndex } from '@/constants/theme';
 import type { SetLog } from '@/types/workout';
@@ -158,7 +159,7 @@ const sanitizeRepsInput = (value: string): string => {
   return digitsOnly.replace(/^0+(?=\d)/, '');
 };
 
-const AUTO_SAVE_DEBOUNCE_MS = 600;
+const AUTO_SAVE_DEBOUNCE_MS = 100;
 
 const mapDraftsToSetLogs = (drafts: SetDraft[]): SetLog[] =>
   drafts.map((draft) => ({
@@ -234,7 +235,20 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
       return;
     }
 
-    if (wasExpanded) {
+    // Update sets when exercise is first expanded OR when initialSets change
+    const shouldUpdateSets = !wasExpanded || lastSyncedSignatureRef.current !== initialSignature;
+    
+    if (!shouldUpdateSets) {
+      return;
+    }
+
+    // Check if we need to sync completion state
+    const currentCompletedSets = setsRef.current.filter((set) => set.completed).length;
+    const initialCompletedSets = initialSets.filter((set) => set.completed).length;
+    
+    // Only update if the completion state differs, to avoid interrupting user editing
+    if (wasExpanded && currentCompletedSets === initialCompletedSets) {
+      lastSyncedSignatureRef.current = initialSignature;
       return;
     }
 
@@ -340,7 +354,6 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
       return;
     }
 
-    const weightInputRef = weightInputRefs.current[index];
     const repsInputRef = repsInputRefs.current[index];
 
     const currentValue = (current[field] ?? 0) as number;
@@ -348,12 +361,31 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
     if (field === 'reps') {
       const nextValue = Math.max(0, Math.round(currentValue + delta));
       const nextText = String(nextValue);
+      
+      // Update input field FIRST for instant visual feedback
       if (repsInputRef) {
-        repsInputRef.setNativeProps({ text: nextText });
+        // Use setNativeProps for instant update without React re-render
+        repsInputRef.setNativeProps({ 
+          text: nextText,
+          // Prevent cursor movement/selection issues
+          selection: { start: nextText.length, end: nextText.length }
+        });
       }
-      updateSet(index, { reps: nextValue, repsInput: nextText });
+      
+      // Update refs immediately without triggering React re-render
+      const next = [...setsRef.current];
+      next[index] = { ...current, reps: nextValue, repsInput: nextText };
+      setsRef.current = next;
+      
+      // Defer React state update to avoid blocking the UI
+      setTimeout(() => {
+        setSets(next);
+      }, 0);
       return;
     }
+
+    // For weight/assistanceWeight, use the existing logic
+    const weightInputRef = weightInputRefs.current[index];
 
     const isMultipleOf2_5 = currentValue % 2.5 === 0;
     let nextValue: number;
@@ -376,7 +408,7 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
     }
 
     updateSet(index, { weight: nextValue, weightInput: nextText });
-  }, [updateSet]);
+  }, []);
 
   const addSet = useCallback(() => {
     void Haptics.selectionAsync();
@@ -1007,18 +1039,17 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
                           Reps
                         </Text>
                         <View style={styles.metricControls}>
-                          <HoldRepeatIconButton
+                          <HyperResponsiveButton
                             iconName="minus"
                             style={styles.adjustButton}
                             accessibilityLabel={`Decrease reps for set ${index + 1}`}
-                            onStep={() => adjustSetValue(index, 'reps', -1)}
-                            triggerOnRelease
+                            onPress={() => adjustSetValue(index, 'reps', -1)}
                           />
                           <TextInput
                             ref={(ref) => {
                               repsInputRefs.current[index] = ref;
                             }}
-                            defaultValue={set.repsInput}
+                            value={set.repsInput}
                             onChangeText={(value) => handleRepsInput(index, value)}
                             keyboardType="numeric"
                             style={styles.metricValue}
@@ -1027,20 +1058,21 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
                             placeholderTextColor={colors.text.tertiary}
                             cursorColor={colors.accent.primary}
                             selectionColor={colors.accent.orangeLight}
-                            selection={
-                              activeSelection?.type === 'reps' && activeSelection.index === index
-                                ? { start: 0, end: set.repsInput.length }
-                                : undefined
-                            }
+                            // Remove selection prop to eliminate recalculation lag
                             onFocus={() => handleRepsFocus(index)}
                             onBlur={() => handleRepsBlur(index)}
+                            // Optimize for performance
+                            selectTextOnFocus={false}
+                            clearTextOnFocus={false}
+                            spellCheck={false}
+                            autoCorrect={false}
+                            autoCapitalize="none"
                           />
-                          <HoldRepeatIconButton
+                          <HyperResponsiveButton
                             iconName="plus"
                             style={styles.adjustButton}
                             accessibilityLabel={`Increase reps for set ${index + 1}`}
-                            onStep={() => adjustSetValue(index, 'reps', 1)}
-                            triggerOnRelease
+                            onPress={() => adjustSetValue(index, 'reps', 1)}
                           />
                         </View>
                       </View>
@@ -1145,9 +1177,13 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     backgroundColor: colors.surface.card,
     borderWidth: 1,
-    borderColor: colors.border.light,
+    borderColor: colors.accent.orange,
     paddingVertical: spacing.xs,
-    zIndex: zIndex.dropdown,
+    paddingHorizontal: spacing.sm,
+    gap: spacing.xs,
+    zIndex: zIndex.modal,
+    elevation: 10,
+    minWidth: 150,
   },
   menuItem: {
     paddingVertical: spacing.sm,

@@ -28,10 +28,10 @@ export const AddExercisesHeader: React.FC<AddExercisesHeaderProps> = ({
 
       <View style={styles.textGroup}>
         <Text variant="heading2" color="primary" style={styles.title}>
-          {title ?? 'Add exercises'}
+          {title ?? 'Add Exercises'}
         </Text>
         <Text variant="body" color="secondary" style={styles.subtitle}>
-          {subtitle ?? 'Choose movements to include in your plan.'}
+          {subtitle ?? 'Choose from our library of exercises to include in your workout.'}
         </Text>
       </View>
     </View>

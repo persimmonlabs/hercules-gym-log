@@ -213,11 +213,17 @@ const RootLayoutNav = ({
             }}
           />
           <Stack.Screen
+            name="program-view"
+            options={{
+              animation: 'none',
+              headerShown: false,
+            }}
+          />
+          <Stack.Screen
             name="quiz"
             options={{
               headerShown: false,
-              presentation: 'transparentModal',
-              animation: 'none',
+              animation: 'slide_from_bottom',
             }}
           />
           <Stack.Screen

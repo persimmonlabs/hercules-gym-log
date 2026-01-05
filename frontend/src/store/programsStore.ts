@@ -33,7 +33,7 @@ import {
   type RotationStateDB,
 } from '@/lib/supabaseQueries';
 import { usePlansStore } from '@/store/plansStore';
-import { canAddPlan, canAddWorkout, getProgramLimitType, FREE_LIMITS } from '@/utils/premiumLimits';
+import { canAddPlan, canAddWorkout, getProgramLimitType, FREE_LIMITS, getTotalUniqueWorkoutCount } from '@/utils/premiumLimits';
 
 interface ProgramsState {
   premadePrograms: PremadeProgram[];
@@ -261,8 +261,16 @@ export const useProgramsStore = create<ProgramsState>((set, get) => ({
 
     // Check free user limits
     const currentPlanCount = get().userPrograms.length;
-    const currentWorkoutCount = usePlansStore.getState().plans.length;
+    const currentWorkoutCount = getTotalUniqueWorkoutCount();
     const programWorkoutCount = premade.workouts.filter(w => w.exercises.length > 0).length;
+    
+    console.log('[programsStore] Program limit check:', { 
+      currentPlanCount, 
+      currentWorkoutCount, 
+      programWorkoutCount,
+      totalAfterAdding: currentWorkoutCount + programWorkoutCount,
+      limit: 7 
+    });
     
     // Determine which limit would be exceeded
     const limitType = getProgramLimitType(currentPlanCount, currentWorkoutCount, programWorkoutCount);

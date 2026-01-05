@@ -28,6 +28,7 @@ import { StatusBar } from 'expo-status-bar';
 import * as NavigationBar from 'expo-navigation-bar';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 
+import { SheetModal } from '@/components/molecules/SheetModal';
 import { Button } from '@/components/atoms/Button';
 import { Text } from '@/components/atoms/Text';
 import { ExerciseSetEditor } from '@/components/molecules/ExerciseSetEditor';
@@ -132,7 +133,6 @@ const WorkoutSessionScreen: React.FC = () => {
   }, []);
   const [exerciseProgress, setExerciseProgress] = useState<Record<string, ExerciseProgressSnapshot>>({});
   const insets = useSafeAreaInsets();
-  const sheetTranslateY = useSharedValue(SCREEN_HEIGHT);
   const setCompletionOverlayVisible = useSessionStore((state) => state.setCompletionOverlayVisible);
   const exerciseNamesSignatureRef = useRef<string>('');
   const hasInitializedExpansionsRef = useRef<boolean>(sessionExercises.length > 0);
@@ -173,13 +173,7 @@ const WorkoutSessionScreen: React.FC = () => {
     }
   }, [theme.primary.bg]);
 
-  const sheetAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: sheetTranslateY.value }],
-  }));
 
-  const modalCardInsets = useMemo(() => ({
-    paddingBottom: spacing.lg + insets.bottom,
-  }), [insets.bottom]);
 
   // Merge custom exercises with base catalog
   const exerciseCatalog = useMemo<ExerciseCatalogItem[]>(() => {
@@ -360,16 +354,8 @@ const WorkoutSessionScreen: React.FC = () => {
 
       return next;
     });
-    setExerciseProgress((current) => {
-      const snapshot = current[exerciseName];
-      if (!snapshot) {
-        return current;
-      }
-
-      const next = { ...current };
-      delete next[exerciseName];
-      return next;
-    });
+    // Note: We no longer delete the exercise progress snapshot when collapsing
+    // This preserves the completion state even when the card is collapsed
   }, []);
 
   const handleExerciseProgressChange = useCallback((exerciseName: string, progress: ExerciseProgressSnapshot) => {
@@ -485,6 +471,11 @@ const WorkoutSessionScreen: React.FC = () => {
     }
 
     removeExercise(menuExerciseName);
+    // Clean up exercise progress for the deleted exercise
+    setExerciseProgress((prev) => {
+      const { [menuExerciseName]: _omitted, ...rest } = prev;
+      return rest;
+    });
     closeExerciseMenu();
   }, [menuExerciseName, removeExercise, closeExerciseMenu]);
 
@@ -532,6 +523,8 @@ const WorkoutSessionScreen: React.FC = () => {
 
         return new Set();
       });
+      // Clear exercise progress when all exercises are removed
+      setExerciseProgress({});
       return;
     }
 
@@ -587,43 +580,7 @@ const WorkoutSessionScreen: React.FC = () => {
     }
   }, [currentSession, isSessionActive, router, isFinishingWorkout]);
 
-  useEffect(() => {
-    if (pickerVisible) {
-      sheetTranslateY.value = SCREEN_HEIGHT;
-      sheetTranslateY.value = withSpring(0, springGentle);
-      // Scroll to top when opening
-      pickerListRef.current?.scrollToOffset({ offset: 0, animated: false });
-    } else {
-      sheetTranslateY.value = SCREEN_HEIGHT;
-    }
-  }, [pickerVisible, sheetTranslateY]);
-
-  const sheetGesture = useMemo(() => {
-    return Gesture.Pan()
-      .onUpdate((event) => {
-        if (event.translationY < 0) {
-          sheetTranslateY.value = 0;
-          return;
-        }
-
-        sheetTranslateY.value = event.translationY;
-      })
-      .onEnd((event) => {
-        if (sheetTranslateY.value > SHEET_DISMISS_THRESHOLD) {
-          // Animate the card sliding down smoothly to dismiss
-          const remainingDistance = 1000 - sheetTranslateY.value;
-          const velocity = event.velocityY || 0;
-          const estimatedDuration = Math.max(300, Math.min(600, remainingDistance / Math.max(velocity, 1)));
-
-          sheetTranslateY.value = withTiming(1000, { duration: estimatedDuration }, () => {
-            runOnJS(dismissPicker)();
-          });
-          return;
-        }
-
-        sheetTranslateY.value = withSpring(0, springGentle);
-      });
-  }, [dismissPicker, sheetTranslateY]);
+  /* Manual sheet logic removed for SheetModal */
 
   const listHeaderComponent = useMemo(() => (
     <View style={styles.listHeader}>
@@ -861,91 +818,80 @@ const WorkoutSessionScreen: React.FC = () => {
         />
       </View>
 
-      <Pressable
-        style={[styles.modalOverlay, !pickerVisible && styles.hiddenOverlay]}
-        onPress={dismissPicker}
-        pointerEvents={pickerVisible ? 'auto' : 'none'}
+      <SheetModal
+        visible={pickerVisible}
+        onClose={dismissPicker}
+        title={replaceTargetName ? 'Replace Exercise' : 'Add Exercise'}
+        headerContent={
+          <TextInput
+            value={searchTerm}
+            onChangeText={setSearchTerm}
+            placeholder="Search by name or category"
+            placeholderTextColor={colors.text.tertiary}
+            style={styles.searchInput}
+          />
+        }
       >
-        <AnimatedPressable
-          style={[styles.modalCard, modalCardInsets, sheetAnimatedStyle, !pickerVisible && styles.hiddenModal]}
-          onPress={() => undefined}
-        >
-          <GestureDetector gesture={sheetGesture}>
-            <View>
-              <View style={styles.modalTopIndicator} />
-              <View style={styles.modalHeader}>
-                <Text variant="heading3">{replaceTargetName ? 'Replace Exercise' : 'Add Exercise'}</Text>
-                <TextInput
-                  value={searchTerm}
-                  onChangeText={setSearchTerm}
-                  placeholder="Search by name or category"
-                  placeholderTextColor={colors.text.tertiary}
-                  style={styles.searchInput}
-                />
-              </View>
+        <FlatList
+          ref={pickerListRef}
+          data={filteredExercises}
+          keyExtractor={(item) => item.id}
+          style={styles.modalList}
+          contentContainerStyle={styles.modalListContent}
+          showsVerticalScrollIndicator
+          keyboardShouldPersistTaps="handled"
+          ListEmptyComponent={(
+            <View style={styles.modalEmptyState}>
+              <Text variant="body" color="secondary">
+                No exercises match that search yet.
+              </Text>
             </View>
-          </GestureDetector>
-          <FlatList
-            ref={pickerListRef}
-            data={filteredExercises}
-            keyExtractor={(item) => item.id}
-            style={styles.modalList}
-            contentContainerStyle={styles.modalListContent}
-            showsVerticalScrollIndicator
-            keyboardShouldPersistTaps="handled"
-            ListEmptyComponent={(
-              <View style={styles.modalEmptyState}>
-                <Text variant="body" color="secondary">
-                  No exercises match that search yet.
-                </Text>
-              </View>
-            )}
-            renderItem={({ item }) => {
-              const musclesLabel = getExerciseDisplayTagText({
-                muscles: item.muscles,
-                exerciseType: item.exerciseType,
-              });
+          )}
+          renderItem={({ item }) => {
+            const musclesLabel = getExerciseDisplayTagText({
+              muscles: item.muscles,
+              exerciseType: item.exerciseType,
+            });
 
-              return (
-                <Pressable
-                  style={styles.modalItem}
-                  onPress={() => handleSelectExercise(item)}
-                  accessibilityRole="button"
-                  accessibilityLabel={replaceTargetName ? `Replace with ${item.name}` : `Add ${item.name}`}
-                >
-                  <Text variant="bodySemibold" color="primary">
-                    {item.name}
-                  </Text>
-                  <Text variant="caption" color="secondary">
-                    {musclesLabel || 'General'}
-                  </Text>
-                </Pressable>
-              );
-            }}
-            ListFooterComponent={(
+            return (
               <Pressable
-                style={styles.createExerciseButton}
-                onPress={() => {
-                  void Haptics.selectionAsync();
-                  dismissPicker();
-                  setCreateExerciseModalVisible(true);
-                }}
+                style={styles.modalItem}
+                onPress={() => handleSelectExercise(item)}
                 accessibilityRole="button"
-                accessibilityLabel="Create a new custom exercise"
+                accessibilityLabel={replaceTargetName ? `Replace with ${item.name}` : `Add ${item.name}`}
               >
-                <MaterialCommunityIcons
-                  name="plus-circle-outline"
-                  size={sizing.iconMD}
-                  color={colors.accent.primary}
-                />
-                <Text variant="bodySemibold" style={{ color: colors.accent.primary }}>
-                  Create Exercise
+                <Text variant="bodySemibold" color="primary">
+                  {item.name}
+                </Text>
+                <Text variant="caption" color="secondary">
+                  {musclesLabel || 'General'}
                 </Text>
               </Pressable>
-            )}
-          />
-        </AnimatedPressable>
-      </Pressable>
+            );
+          }}
+          ListFooterComponent={(
+            <Pressable
+              style={styles.createExerciseButton}
+              onPress={() => {
+                void Haptics.selectionAsync();
+                dismissPicker();
+                setCreateExerciseModalVisible(true);
+              }}
+              accessibilityRole="button"
+              accessibilityLabel="Create a new custom exercise"
+            >
+              <MaterialCommunityIcons
+                name="plus-circle-outline"
+                size={sizing.iconMD}
+                color={colors.accent.primary}
+              />
+              <Text variant="bodySemibold" style={{ color: colors.accent.primary }}>
+                Create Exercise
+              </Text>
+            </Pressable>
+          )}
+        />
+      </SheetModal>
       {/* Render menu at root level for reliable touch handling */}
       {menuExerciseName && (
         <View style={[styles.menuPopover, { top: menuPosition.top, right: menuPosition.right }]} pointerEvents="auto">
@@ -1025,7 +971,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.mdCompact,
     gap: spacing.sm,
     borderRadius: radius.lg,
-    borderWidth: 1,
+    borderWidth: 2,
     borderColor: colors.accent.orange,
     backgroundColor: colors.surface.card,
     paddingHorizontal: spacing.lg,
@@ -1061,7 +1007,7 @@ const styles = StyleSheet.create({
     paddingLeft: spacing.md,
     paddingRight: spacing.md,
     paddingVertical: spacing.sm,
-    borderWidth: 1,
+    borderWidth: 2,
     borderColor: colors.accent.orange,
     overflow: 'visible',
     position: 'relative',
@@ -1138,7 +1084,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.sm,
     gap: spacing.xs,
     zIndex: zIndex.modal,
-    elevation: 100, // Force on top of everything
+    elevation: 10,
     minWidth: 150,
   },
   menuPopoverItem: {
@@ -1190,54 +1136,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface.card,
     padding: spacing.lg,
   },
-  modalOverlay: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    top: 0,
-    bottom: 0,
-    backgroundColor: 'transparent',
-    justifyContent: 'flex-end',
-    zIndex: zIndex.modal,
-    elevation: 100, // Force on top of everything
-  },
-  modalCard: {
-    backgroundColor: colors.surface.card,
-    borderTopLeftRadius: radius.lg,
-    borderTopRightRadius: radius.lg,
-    height: '80%',
-    overflow: 'hidden',
-    flexDirection: 'column',
-    borderTopWidth: 1,
-    borderTopColor: colors.accent.orange,
-    borderLeftWidth: 1,
-    borderLeftColor: colors.accent.orange,
-    borderRightWidth: 1,
-    borderRightColor: colors.accent.orange,
-  },
-  modalTopIndicator: {
-    height: 4,
-    width: 40,
-    backgroundColor: colors.accent.orange,
-    borderRadius: radius.full,
-    alignSelf: 'center',
-    marginTop: spacing.sm,
-    marginBottom: spacing.sm,
-  },
-  modalHeader: {
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.lg,
-    paddingBottom: spacing.md,
-    gap: spacing.md,
-  },
-  hiddenOverlay: {
-    opacity: 0,
-    zIndex: -1,
-  },
-  hiddenModal: {
-    opacity: 0,
-    zIndex: -1,
-  },
+  /* styles removed */
   searchInput: {
     borderWidth: 1,
     borderColor: colors.accent.orange,
@@ -1255,7 +1154,7 @@ const styles = StyleSheet.create({
   },
   modalListContent: {
     paddingHorizontal: spacing.lg,
-    paddingBottom: spacing['2xl'] * 2,
+    paddingBottom: spacing.lg,
     paddingTop: spacing.xs,
     gap: spacing.xs,
     flexGrow: 1,

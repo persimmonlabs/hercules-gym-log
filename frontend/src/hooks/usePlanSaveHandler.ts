@@ -4,6 +4,7 @@
  */
 import { useCallback, useMemo, useState } from 'react';
 import * as Haptics from 'expo-haptics';
+import { useGlobalSearchParams } from 'expo-router';
 
 import type { Exercise } from '@/constants/exercises';
 import { usePlansStore } from '@/store/plansStore';
@@ -47,6 +48,7 @@ export const usePlanSaveHandler = ({
   const updatePlan = usePlansStore((state) => state.updatePlan);
   const plans = usePlansStore((state) => state.plans);
   const { updateWorkoutInProgram, userPrograms } = useProgramsStore();
+  const globalSearchParams = useGlobalSearchParams<{ source?: 'library' | 'recommended' }>();
 
   const isEditing = Boolean(editingPlanId);
   const isPremadeReview = useMemo(() => {
@@ -176,10 +178,21 @@ export const usePlanSaveHandler = ({
         });
       } else {
         // Creating a new standalone template
+        // Determine source from URL parameters
+        let workoutSource: 'premade' | 'custom' | 'library' | 'recommended' = 'custom';
+        
+        const sourceParam = globalSearchParams.source;
+        if (sourceParam === 'library' || sourceParam === 'recommended') {
+          workoutSource = sourceParam;
+        } else if (isPremadeReview) {
+          workoutSource = 'premade';
+        }
+        
         await persistPlan({
           name: finalName,
           exercises: selectedExercises,
           createdAt: createdAtTimestamp,
+          source: workoutSource,
         });
 
         // Even for new ones, check if they should sync to existing plans with same name

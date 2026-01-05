@@ -47,11 +47,11 @@ export const PlanSelectedExerciseList: React.FC<PlanSelectedExerciseListProps> =
 }) => {
   const handleMove = (index: number, direction: 'up' | 'down') => {
     const newIndex = direction === 'up' ? index - 1 : index + 1;
-    
+
     if (newIndex < 0 || newIndex >= exercises.length) return;
 
     Haptics.selectionAsync();
-    
+
     // Call index-based callback
     onReorderExercises(index, newIndex);
 
@@ -90,8 +90,8 @@ export const PlanSelectedExerciseList: React.FC<PlanSelectedExerciseListProps> =
           });
 
           return (
-            <Animated.View 
-              key={exercise.id} 
+            <Animated.View
+              key={exercise.id}
               layout={Layout.springify().damping(35).stiffness(300).mass(0.8)}
               entering={FadeIn}
               style={styles.row}
@@ -120,13 +120,13 @@ export const PlanSelectedExerciseList: React.FC<PlanSelectedExerciseListProps> =
                       ]}
                       hitSlop={8}
                     >
-                      <IconSymbol 
-                        name="keyboard-arrow-up" 
-                        size={20} 
-                        color={isFirst ? colors.text.tertiary : colors.text.primary} 
+                      <IconSymbol
+                        name="keyboard-arrow-up"
+                        size={20}
+                        color={isFirst ? colors.text.tertiary : colors.text.primary}
                       />
                     </Pressable>
-                    
+
                     <Pressable
                       onPress={() => handleMove(index, 'down')}
                       disabled={isLast}
@@ -137,10 +137,10 @@ export const PlanSelectedExerciseList: React.FC<PlanSelectedExerciseListProps> =
                       ]}
                       hitSlop={8}
                     >
-                      <IconSymbol 
-                        name="keyboard-arrow-down" 
-                        size={20} 
-                        color={isLast ? colors.text.tertiary : colors.text.primary} 
+                      <IconSymbol
+                        name="keyboard-arrow-down"
+                        size={20}
+                        color={isLast ? colors.text.tertiary : colors.text.primary}
                       />
                     </Pressable>
                   </View>
@@ -158,10 +158,10 @@ export const PlanSelectedExerciseList: React.FC<PlanSelectedExerciseListProps> =
                     ]}
                     hitSlop={8}
                   >
-                    <IconSymbol 
-                      name="delete-outline" 
-                      size={sizing.iconSM} 
-                      color={colors.accent.orange} 
+                    <IconSymbol
+                      name="delete-outline"
+                      size={sizing.iconSM}
+                      color={colors.accent.orange}
                     />
                   </Pressable>
                 </View>
@@ -173,7 +173,7 @@ export const PlanSelectedExerciseList: React.FC<PlanSelectedExerciseListProps> =
 
       <View style={styles.footer}>
         <Button
-          label={addLabel ?? 'Add exercises'}
+          label={addLabel ?? 'Add Exercises'}
           variant="primary"
           onPress={onAddExercises}
         />

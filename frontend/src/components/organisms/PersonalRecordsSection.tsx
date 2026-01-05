@@ -1,17 +1,18 @@
-import React, { useState, useMemo, useRef } from 'react';
-import { StyleSheet, View, TouchableOpacity, Modal, FlatList, TextInput, PanResponder, Animated, Dimensions } from 'react-native';
+import React, { useState, useMemo } from 'react';
+import { StyleSheet, View, TouchableOpacity, FlatList, TextInput } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import { SurfaceCard } from '@/components/atoms/SurfaceCard';
 import { Text } from '@/components/atoms/Text';
 import { PRCard } from '@/components/molecules/PRCard';
-import { colors, spacing, radius, shadows } from '@/constants/theme';
+import { colors, spacing, radius } from '@/constants/theme';
 import { useTheme } from '@/hooks/useTheme';
 import { useWorkoutSessionsStore } from '@/store/workoutSessionsStore';
 import { usePersonalRecordsStore } from '@/store/personalRecordsStore';
 import { useSettingsStore } from '@/store/settingsStore';
 import type { Workout } from '@/types/workout';
 import exercisesData from '@/data/exercises.json';
+import { SheetModal } from '@/components/molecules/SheetModal';
 
 export const PersonalRecordsSection: React.FC = () => {
   const { theme } = useTheme();
@@ -23,58 +24,14 @@ export const PersonalRecordsSection: React.FC = () => {
   const [selectedExerciseIndex, setSelectedExerciseIndex] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
 
-  const screenHeight = Dimensions.get('window').height;
-  const slideAnim = useRef(new Animated.Value(screenHeight)).current;
-
   const closeModal = () => {
-    Animated.timing(slideAnim, {
-      toValue: screenHeight,
-      duration: 600, // Slower duration
-      useNativeDriver: true,
-    }).start(() => {
-      setIsModalVisible(false);
-      setSelectedExerciseIndex(null);
-    });
+    setIsModalVisible(false);
+    setSelectedExerciseIndex(null);
   };
 
   const openModal = () => {
     setIsModalVisible(true);
-    // Reset position before animating in
-    slideAnim.setValue(screenHeight);
-    Animated.spring(slideAnim, {
-      toValue: 0,
-      damping: 20,
-      stiffness: 90,
-      mass: 1,
-      useNativeDriver: true,
-    }).start();
   };
-
-  const panResponder = useRef(
-    PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
-      onMoveShouldSetPanResponder: (_, gestureState) => {
-        return gestureState.dy > 5;
-      },
-      onPanResponderRelease: (_, gestureState) => {
-        if (gestureState.dy > 50) {
-          closeModal();
-        } else {
-          // Snap back if not dragged enough
-          Animated.spring(slideAnim, {
-            toValue: 0,
-            useNativeDriver: true,
-          }).start();
-        }
-      },
-      onPanResponderMove: (_, gestureState) => {
-        // Allow dragging down visual feedback
-        if (gestureState.dy > 0) {
-          slideAnim.setValue(gestureState.dy);
-        }
-      }
-    })
-  ).current;
 
   const records = useMemo(() => {
     return trackedExercises.map((exerciseName) => {
@@ -157,54 +114,36 @@ export const PersonalRecordsSection: React.FC = () => {
           ))}
         </View>
 
-        <Modal
+        <SheetModal
           visible={isModalVisible}
-          animationType="none"
-          transparent={true}
-          onRequestClose={closeModal}
+          onClose={closeModal}
+          title="Replace Exercise"
         >
-          <View style={styles.modalOverlay}>
-            <Animated.View
-              style={[
-                styles.modalContent,
-                { transform: [{ translateY: slideAnim }] }
-              ]}
-            >
-              <View style={styles.dragHandleArea} {...panResponder.panHandlers}>
-                <View style={styles.dragHandle} />
-              </View>
-              <View style={styles.modalHeader}>
-                <Text variant="heading3">Replace Exercise</Text>
-                <TouchableOpacity onPress={closeModal}>
-                  <Ionicons name="close" size={24} color={colors.text.primary} />
+          <View style={styles.modalContent}>
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Search exercises..."
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              placeholderTextColor={colors.text.tertiary}
+            />
+
+            <FlatList
+              data={filteredExercises}
+              keyExtractor={(item) => item.id}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={styles.exerciseItem}
+                  onPress={() => handleSelectNewExercise(item.name)}
+                >
+                  <Text variant="body">{item.name}</Text>
+                  <Ionicons name="chevron-forward" size={20} color={theme.text.tertiary} />
                 </TouchableOpacity>
-              </View>
-
-              <TextInput
-                style={styles.searchInput}
-                placeholder="Search exercises..."
-                value={searchQuery}
-                onChangeText={setSearchQuery}
-                placeholderTextColor={colors.text.tertiary}
-              />
-
-              <FlatList
-                data={filteredExercises}
-                keyExtractor={(item) => item.id}
-                renderItem={({ item }) => (
-                  <TouchableOpacity
-                    style={styles.exerciseItem}
-                    onPress={() => handleSelectNewExercise(item.name)}
-                  >
-                    <Text variant="body">{item.name}</Text>
-                    <Ionicons name="chevron-forward" size={20} color={theme.text.tertiary} />
-                  </TouchableOpacity>
-                )}
-                style={styles.exerciseList}
-              />
-            </Animated.View>
+              )}
+              style={styles.exerciseList}
+            />
           </View>
-        </Modal>
+        </SheetModal>
       </View >
     </SurfaceCard >
   );
@@ -224,38 +163,11 @@ const styles = StyleSheet.create({
   list: {
     gap: spacing.lg,
   },
-  modalOverlay: {
-    flex: 1,
-    justifyContent: 'flex-end',
-  },
   modalContent: {
-    backgroundColor: colors.surface.card,
-    borderTopLeftRadius: radius.xl,
-    borderTopRightRadius: radius.xl,
-    borderWidth: 1,
-    borderColor: colors.neutral.gray200,
-    ...shadows.lg,
     padding: spacing.lg,
-    paddingTop: spacing.sm,
-    height: '80%',
-    gap: spacing.md,
-  },
-  dragHandleArea: {
-    width: '100%',
-    height: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  dragHandle: {
-    width: 48,
-    height: 4,
-    backgroundColor: colors.neutral.gray200,
-    borderRadius: 2,
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    paddingTop: spacing.md,
+    paddingBottom: spacing.md,
+    flex: 1,
   },
   searchInput: {
     backgroundColor: colors.primary.bg,
@@ -265,6 +177,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     fontSize: 16,
     color: colors.text.primary,
+    marginBottom: spacing.md,
   },
   exerciseList: {
     flex: 1,

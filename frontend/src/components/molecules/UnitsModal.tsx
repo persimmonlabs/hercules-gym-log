@@ -16,7 +16,6 @@ import {
   useSettingsStore,
   WeightUnit,
   DistanceUnit,
-  SizeUnit,
 } from '@/store/settingsStore';
 
 interface UnitsModalProps {
@@ -89,10 +88,8 @@ export const UnitsModal: React.FC<UnitsModalProps> = ({ visible, onClose }) => {
   const {
     weightUnit,
     distanceUnit,
-    sizeUnit,
     setWeightUnit,
     setDistanceUnit,
-    setSizeUnit,
   } = useSettingsStore();
 
   const handleClose = useCallback(() => {
@@ -139,16 +136,6 @@ export const UnitsModal: React.FC<UnitsModalProps> = ({ visible, onClose }) => {
                 selectedValue={distanceUnit}
                 onSelect={(value) => setDistanceUnit(value as DistanceUnit)}
               />
-
-              <UnitRow
-                label="Size (Height)"
-                options={[
-                  { value: 'in', label: 'Inches (in)' },
-                  { value: 'cm', label: 'Centimeters (cm)' },
-                ]}
-                selectedValue={sizeUnit}
-                onSelect={(value) => setSizeUnit(value as SizeUnit)}
-              />
             </View>
           </ScrollView>
 
@@ -169,7 +156,7 @@ export const UnitsModal: React.FC<UnitsModalProps> = ({ visible, onClose }) => {
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'center',
     alignItems: 'center',
     padding: spacing.lg,
