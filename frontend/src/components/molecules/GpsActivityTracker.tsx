@@ -151,7 +151,7 @@ export const GpsActivityTracker: React.FC<GpsActivityTrackerProps> = ({
   distanceUnit = 'miles',
 }) => {
   const { theme } = useTheme();
-  const { convertDistance, getDistanceUnitShort } = useSettingsStore();
+  const { convertDistanceForExercise, getDistanceUnitForExercise } = useSettingsStore();
   const {
     state,
     elapsedSeconds,
@@ -168,8 +168,8 @@ export const GpsActivityTracker: React.FC<GpsActivityTrackerProps> = ({
     onComplete(elapsedSeconds, distanceMiles);
   }, [stop, onComplete, elapsedSeconds, distanceMiles]);
 
-  const displayDistance = convertDistance(distanceMiles);
-  const unitLabel = getDistanceUnitShort();
+  const displayDistance = convertDistanceForExercise(distanceMiles, distanceUnit);
+  const unitLabel = getDistanceUnitForExercise(distanceUnit);
 
   if (permissionDenied) {
     return (
@@ -299,7 +299,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-around',
     alignItems: 'center',
-    marginBottom: spacing.lg,
+    marginBottom: spacing.md,
     width: '100%',
     paddingHorizontal: spacing.md,
   },

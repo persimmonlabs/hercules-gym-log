@@ -1,4 +1,4 @@
-import React, { useCallback, useState, useRef } from 'react';
+import React, { useCallback, useState, useRef, useMemo } from 'react';
 import { Pressable, StyleSheet, View, ScrollView } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { useFocusEffect, useScrollToTop } from '@react-navigation/native';
@@ -11,6 +11,7 @@ import { WorkoutInProgressModal } from '@/components/molecules/WorkoutInProgress
 import { radius, sizing, spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/useTheme';
 import { usePlansStore, type Plan, type PlansState } from '@/store/plansStore';
+import { useProgramsStore } from '@/store/programsStore';
 import { useSessionStore } from '@/store/sessionStore';
 import type { WorkoutExercise } from '@/types/workout';
 import { createSetsWithHistory } from '@/utils/workout';
@@ -33,6 +34,8 @@ const styles = StyleSheet.create({
     width: '100%',
     alignItems: 'center',
     gap: spacing.lg,
+    paddingTop: 64,
+    position: 'relative',
   },
   heroTitle: {
     textAlign: 'center',
@@ -47,7 +50,7 @@ const styles = StyleSheet.create({
   },
   topBar: {
     position: 'absolute',
-    top: spacing['2xl'],
+    top: spacing.md,
     left: spacing.sm,
   },
   backIconButton: {
@@ -80,6 +83,7 @@ const WorkoutScreen: React.FC = () => {
   const [workoutInProgressVisible, setWorkoutInProgressVisible] = useState<boolean>(false);
   const [showPlansList, setShowPlansList] = useState<boolean>(false);
   const plans = usePlansStore((state: PlansState) => state.plans);
+  const { userPrograms } = useProgramsStore();
   const startSession = useSessionStore((state) => state.startSession);
   const isSessionActive = useSessionStore((state) => state.isSessionActive);
   const currentSession = useSessionStore((state) => state.currentSession);
@@ -97,15 +101,71 @@ const WorkoutScreen: React.FC = () => {
 
   const allWorkouts = useWorkoutSessionsStore((state) => state.workouts);
 
+  // Combine workouts from both plans and programs
+  const allAvailableWorkouts = useMemo(() => {
+    interface WorkoutItem {
+      id: string;
+      name: string;
+      exercises: any[];
+      type: 'custom' | 'program';
+      programId?: string;
+      programName?: string;
+      subtitle: string;
+    }
+
+    const workoutsList: WorkoutItem[] = [];
+
+    // Add custom workouts from plansStore
+    plans.forEach(plan => {
+      workoutsList.push({
+        id: plan.id,
+        name: plan.name,
+        exercises: plan.exercises,
+        type: 'custom',
+        subtitle: `${plan.exercises.length} ${plan.exercises.length === 1 ? 'exercise' : 'exercises'}`
+      });
+    });
+
+    // Add workouts from programs
+    userPrograms.forEach(prog => {
+      prog.workouts.forEach(w => {
+        if (w.exercises.length > 0) {
+          workoutsList.push({
+            id: w.id,
+            name: w.name,
+            exercises: w.exercises,
+            type: 'program',
+            programId: prog.id,
+            programName: prog.name,
+            subtitle: `${prog.name} • ${w.exercises.length} ${w.exercises.length === 1 ? 'exercise' : 'exercises'}`
+          });
+        }
+      });
+    });
+
+    // Sort using same logic as My Workouts in plans.tsx
+    return workoutsList.sort((a, b) => {
+      // Priority 1: Group by Plan (Custom considered as a plan group)
+      const aPlanGroup = a.type === 'custom' ? 'Custom' : a.programName || '';
+      const bPlanGroup = b.type === 'custom' ? 'Custom' : b.programName || '';
+
+      const planComparison = aPlanGroup.localeCompare(bPlanGroup);
+      if (planComparison !== 0) return planComparison;
+
+      // Priority 2: Alphabetical within plan group
+      return a.name.localeCompare(b.name);
+    });
+  }, [plans, userPrograms]);
+
   const handlePlanSelect = useCallback(
-    (plan: Plan) => {
+    (workout: any) => {
       void Haptics.selectionAsync();
 
       const doStartSession = () => {
         setCompletionOverlayVisible(false);
 
         const historySetCounts: Record<string, number> = {};
-        const mappedExercises: WorkoutExercise[] = plan.exercises.map((exercise) => {
+        const mappedExercises: WorkoutExercise[] = workout.exercises.map((exercise: any) => {
           const { sets, historySetCount } = createSetsWithHistory(exercise.name, allWorkouts);
           historySetCounts[exercise.name] = historySetCount;
           return {
@@ -114,7 +174,8 @@ const WorkoutScreen: React.FC = () => {
           };
         });
 
-        startSession(plan.id, mappedExercises, plan.name, historySetCounts);
+        const planId = workout.type === 'program' ? workout.programId : workout.id;
+        startSession(planId, mappedExercises, workout.name, historySetCounts);
         setShowPlansList(false);
       };
 
@@ -193,23 +254,21 @@ const WorkoutScreen: React.FC = () => {
               Select a Workout
             </Text>
             <View style={styles.planList}>
-              {plans.length > 0 ? (
-                plans.map((plan: Plan) => (
+              {allAvailableWorkouts.length > 0 ? (
+                allAvailableWorkouts.map((workout) => (
                   <Pressable
-                    key={plan.id}
-                    onPress={() => handlePlanSelect(plan)}
+                    key={`${workout.type}-${workout.id}`}
+                    onPress={() => handlePlanSelect(workout)}
                     accessibilityRole="button"
-                    accessibilityLabel={`Start ${plan.name}`}
+                    accessibilityLabel={`Start ${workout.name}`}
                   >
                     <SurfaceCard tone="neutral" padding="md" showAccentStripe={false} style={styles.planCard}>
                       <View style={styles.planCardContent}>
                         <Text variant="bodySemibold" color="primary">
-                          {plan.name}
+                          {workout.name}
                         </Text>
                         <Text variant="body" color="secondary">
-                          {plan.exercises.length === 1
-                            ? '1 exercise included'
-                            : `${plan.exercises.length} exercises included`}
+                          {workout.subtitle}
                         </Text>
                       </View>
                     </SurfaceCard>
@@ -232,11 +291,11 @@ const WorkoutScreen: React.FC = () => {
         ) : (
           <>
             <Text variant="display1" color="primary" style={styles.heroTitle} fadeIn>
-              Start your next session
+              Start Your Next Session
             </Text>
             <View style={styles.optionsContainer}>
               <View style={styles.buttonWrapper}>
-                <Button label="Start from saved workout" size="lg" onPress={handleStartFromPlan} />
+                <Button label="Start from Saved Workout" size="lg" onPress={handleStartFromPlan} />
               </View>
               <View style={styles.buttonWrapper}>
                 <Button label="Start from Scratch" size="lg" variant="light" onPress={handleStartFromScratch} />

@@ -107,6 +107,22 @@ export const createSetsWithHistory = (
         };
     }
 
+    // Timed exercises (cardio and duration) should always start at 00:00:00
+    // They are not pre-populated with history to make them easier to use
+    if (exerciseType === 'cardio') {
+        return {
+            sets: [{ duration: 0, distance: 0, completed: false }],
+            historySetCount: 0
+        };
+    }
+
+    if (exerciseType === 'duration') {
+        return {
+            sets: [{ duration: 0, completed: false }],
+            historySetCount: 0
+        };
+    }
+
     // Filter out current workout to avoid using incomplete data
     const historicalWorkouts = currentWorkoutId
         ? workouts.filter((w) => w.id !== currentWorkoutId)

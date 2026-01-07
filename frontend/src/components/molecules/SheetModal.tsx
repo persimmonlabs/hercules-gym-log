@@ -62,22 +62,21 @@ export const SheetModal: React.FC<SheetModalProps> = ({
     }));
 
     const sheetGesture = Gesture.Pan()
+        .activeOffsetY(10)
+        .failOffsetY(-10)
+        .shouldCancelWhenOutside(false)
         .onUpdate((event) => {
             if (event.translationY < 0) {
-                // Resistance when dragging up
-                sheetTranslateY.value = event.translationY * 0.1;
                 return;
             }
             sheetTranslateY.value = event.translationY;
         })
         .onEnd((event) => {
             if (sheetTranslateY.value > SHEET_DISMISS_THRESHOLD) {
-                // Animate out then close
                 sheetTranslateY.value = withTiming(SCREEN_HEIGHT, { duration: 300 }, () => {
                     runOnJS(onClose)();
                 });
             } else {
-                // Snap back
                 sheetTranslateY.value = withSpring(0, springGentle);
             }
         });
@@ -115,16 +114,15 @@ export const SheetModal: React.FC<SheetModalProps> = ({
                         onPress={handleBackdropPress}
                     />
 
-                    <AnimatedPressable
+                    <Animated.View
                         style={[
                             styles.sheet,
-                            { height, paddingBottom: insets.bottom },
+                            { height: height as any, paddingBottom: insets.bottom },
                             sheetAnimatedStyle,
                         ]}
-                        onPress={() => { }} // Consume press
                     >
                         <GestureDetector gesture={sheetGesture}>
-                            <View style={{ backgroundColor: 'transparent' }}>
+                            <View>
                                 <View style={styles.handleContainer}>
                                     <View style={styles.handle} />
                                 </View>
@@ -133,15 +131,15 @@ export const SheetModal: React.FC<SheetModalProps> = ({
                                     <View style={styles.header}>
                                         {title && <Text variant="heading2">{title}</Text>}
                                         {headerContent}
-                                    </View >
+                                    </View>
                                 )}
-                            </View >
-                        </GestureDetector >
+                            </View>
+                        </GestureDetector>
 
                         <View style={styles.content}>
                             {children}
                         </View>
-                    </AnimatedPressable >
+                    </Animated.View>
                 </View >
             </GestureHandlerRootView >
         </Modal >
@@ -187,5 +185,6 @@ const styles = StyleSheet.create({
     },
     content: {
         flex: 1,
+        overflow: 'visible',
     },
 });

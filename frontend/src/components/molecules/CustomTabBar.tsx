@@ -23,6 +23,7 @@ import { useTheme } from '@/hooks/useTheme';
 import { springBouncy } from '@/constants/animations';
 import { TAB_META } from '@/constants/navigation';
 import { useSessionStore } from '@/store/sessionStore';
+import { useNavigationStore } from '@/store/navigationStore';
 import { triggerHaptic } from '@/utils/haptics';
 
 const ICON_SIZE = sizing.iconLG;
@@ -43,6 +44,7 @@ export const CustomTabBar: React.FC<BottomTabBarProps> = ({ state, navigation })
   const insets = useSafeAreaInsets();
   const { theme, isDarkMode } = useTheme();
   const isSessionActive = useSessionStore((store) => store.isSessionActive);
+  const workoutDetailSource = useNavigationStore((store) => store.workoutDetailSource);
   const scalesRef = useRef<SharedValue<number>[]>(state.routes.map(() => useSharedValue(1)));
 
   const TAB_SURFACE_COLOR = theme.surface.card;
@@ -164,6 +166,7 @@ export const CustomTabBar: React.FC<BottomTabBarProps> = ({ state, navigation })
                   const isEditScheduleScreen = currentRouteName === 'schedule-editor' || currentRouteName === 'schedule-setup';
                   const isPlansTab = route.name === 'plans';
                   const isProfileTab = route.name === 'profile';
+                  const isWorkoutDetailScreen = currentRouteName === 'workout-detail';
                   const isFocused =
                     state.index === index
                     || (isCreateWorkoutScreen && isPlansTab)
@@ -173,7 +176,9 @@ export const CustomTabBar: React.FC<BottomTabBarProps> = ({ state, navigation })
                     || (isProgramDetailsScreen && isPlansTab)
                     || (isEditPlanScreen && isPlansTab)
                     || (isEditScheduleScreen && isPlansTab)
-                    || (isProfileChildScreen && isProfileTab);
+                    || (isProfileChildScreen && isProfileTab)
+                    || (isWorkoutDetailScreen && workoutDetailSource === 'dashboard' && route.name === 'index')
+                    || (isWorkoutDetailScreen && workoutDetailSource === 'calendar' && route.name === 'calendar');
                   const isWorkoutRoute = route.name === 'workout';
                   const showActiveSessionGlow = isWorkoutRoute && isSessionActive;
                   const animatedStyle = useAnimatedStyle(() => ({

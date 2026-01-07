@@ -1,24 +1,45 @@
 import React, { useMemo } from 'react';
-import { View, StyleSheet, FlatList } from 'react-native';
+import { View, StyleSheet, ScrollView } from 'react-native';
 
 import { Text } from '@/components/atoms/Text';
 import { colors, radius, spacing } from '@/constants/theme';
 import { useWorkoutSessionsStore } from '@/store/workoutSessionsStore';
 import { useSettingsStore } from '@/store/settingsStore';
 import { SheetModal } from './SheetModal';
+import type { ExerciseType } from '@/constants/exercises';
+import { exercises as exerciseCatalog } from '@/constants/exercises';
 
 interface ExerciseHistoryModalProps {
   visible: boolean;
   onClose: () => void;
   exerciseName: string | null;
+  exerciseType?: ExerciseType;
+  distanceUnit?: 'miles' | 'meters' | 'floors';
 }
+
+// Format duration for display (e.g., "5:30" or "1:05:30")
+const formatDurationDisplay = (totalSeconds: number): string => {
+  if (!totalSeconds || totalSeconds === 0) return '0:00';
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  if (hours > 0) {
+    return `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+  }
+  return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+};
 
 export const ExerciseHistoryModal: React.FC<ExerciseHistoryModalProps> = ({
   visible,
   onClose,
   exerciseName,
+  exerciseType = 'weight',
+  distanceUnit,
 }) => {
-  const { formatWeight } = useSettingsStore();
+  const { formatWeight, formatDistanceForExercise } = useSettingsStore();
+  
+  // Look up distanceUnit from catalog if not provided
+  const effectiveDistanceUnit = distanceUnit ?? exerciseCatalog.find(e => e.name === exerciseName)?.distanceUnit;
   const workouts = useWorkoutSessionsStore((state) => state.workouts);
 
   const historyData = useMemo(() => {
@@ -62,41 +83,74 @@ export const ExerciseHistoryModal: React.FC<ExerciseHistoryModalProps> = ({
       onClose={onClose}
       title={exerciseName || 'History'}
     >
-      <FlatList
-        data={historyData}
-        keyExtractor={(item, index) => `${item.date}-${index}`}
+      <ScrollView
+        style={styles.list}
         contentContainerStyle={styles.listContent}
-        renderItem={({ item }) => (
-          <View style={styles.historyItem}>
-            <Text variant="bodySemibold" style={styles.dateText}>
-              {formatDate(item.date)}
-            </Text>
-            <View style={styles.setsContainer}>
-              {item.sets.map((set, i) => (
-                <View key={i} style={styles.setRow}>
-                  <Text variant="body" color="secondary">Set {i + 1}</Text>
-                  <Text variant="bodySemibold">
-                    {formatWeight(set.weight ?? 0)} × {set.reps} reps
-                  </Text>
-                </View>
-              ))}
-            </View>
-          </View>
-        )}
-        ListEmptyComponent={
+        nestedScrollEnabled={true}
+        scrollEnabled={true}
+        bounces={true}
+        alwaysBounceVertical={true}
+        showsVerticalScrollIndicator={true}
+        keyboardShouldPersistTaps="handled"
+        scrollEventThrottle={16}
+        contentInsetAdjustmentBehavior="automatic"
+      >
+        {historyData.length === 0 ? (
           <View style={styles.emptyState}>
             <Text color="secondary">No history found for this exercise.</Text>
           </View>
-        }
-      />
+        ) : (
+          <View style={styles.contentWrapper}>
+            {historyData.map((item, index) => (
+              <View key={`${item.date}-${index}`} style={styles.historyItem}>
+                <Text variant="bodySemibold" style={styles.dateText}>
+                  {formatDate(item.date)}
+                </Text>
+                <View style={styles.setsContainer}>
+                  {item.sets.map((set, i) => (
+                    <View key={i} style={styles.setRow}>
+                      <Text variant="body" color="secondary">Set {i + 1}</Text>
+                      <Text variant="bodySemibold">
+                        {exerciseType === 'duration' && (
+                          formatDurationDisplay(set.duration ?? 0)
+                        )}
+                        {exerciseType === 'cardio' && (
+                          `${formatDistanceForExercise(set.distance ?? 0, effectiveDistanceUnit)} • ${formatDurationDisplay(set.duration ?? 0)}`
+                        )}
+                        {(exerciseType === 'bodyweight' || exerciseType === 'reps_only') && (
+                          `${set.reps ?? 0} reps`
+                        )}
+                        {exerciseType === 'assisted' && (
+                          `${formatWeight(set.assistanceWeight ?? 0)} assist × ${set.reps ?? 0} reps`
+                        )}
+                        {exerciseType === 'weight' && (
+                          `${formatWeight(set.weight ?? 0)} × ${set.reps ?? 0} reps`
+                        )}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            ))}
+          </View>
+        )}
+      </ScrollView>
     </SheetModal>
   );
 };
 
 const styles = StyleSheet.create({
+  list: {
+    flex: 1,
+    width: '100%',
+  },
   listContent: {
     padding: spacing.lg,
-    paddingBottom: spacing.md,
+    paddingBottom: spacing.xl,
+    gap: spacing.md,
+    flexGrow: 1,
+  },
+  contentWrapper: {
     gap: spacing.md,
   },
   historyItem: {

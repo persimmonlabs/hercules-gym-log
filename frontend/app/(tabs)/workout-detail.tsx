@@ -22,6 +22,7 @@ import { useWorkoutSessionsStore, type WorkoutSessionsState } from '@/store/work
 import { formatSessionDateTime, formatWorkoutTitle } from '@/utils/workout';
 import { useWorkoutDetailAnimation } from '@/hooks/useWorkoutDetailAnimation';
 import type { Workout } from '@/types/workout';
+import { useNavigationStore } from '@/store/navigationStore';
 
 const WorkoutDetailScreen: React.FC = () => {
   const router = useRouter();
@@ -31,6 +32,8 @@ const WorkoutDetailScreen: React.FC = () => {
   const deleteWorkout = useWorkoutSessionsStore((state: WorkoutSessionsState) => state.deleteWorkout);
   const plans = usePlansStore((state: PlansState) => state.plans);
   const hydratePlans = usePlansStore((state: PlansState) => state.hydratePlans);
+  const setWorkoutDetailSource = useNavigationStore((state) => state.setWorkoutDetailSource);
+  const clearWorkoutDetailSource = useNavigationStore((state) => state.clearWorkoutDetailSource);
   const [isDeleteDialogVisible, setIsDeleteDialogVisible] = useState<boolean>(false);
   const [lastKnownWorkout, setLastKnownWorkout] = useState<Workout | null>(null);
 
@@ -38,6 +41,18 @@ const WorkoutDetailScreen: React.FC = () => {
     void hydrateWorkouts();
     void hydratePlans();
   }, [hydratePlans, hydrateWorkouts]);
+
+  // Set navigation source when component mounts
+  useEffect(() => {
+    if (from === 'dashboard' || from === 'calendar') {
+      setWorkoutDetailSource(from);
+    }
+    
+    // Clear source when component unmounts
+    return () => {
+      clearWorkoutDetailSource();
+    };
+  }, [from, setWorkoutDetailSource, clearWorkoutDetailSource]);
 
   const workoutFromStore = useMemo(() => workouts.find((item) => item.id === workoutId) ?? null, [workouts, workoutId]);
 

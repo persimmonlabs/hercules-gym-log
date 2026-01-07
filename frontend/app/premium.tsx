@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   ScrollView,
@@ -15,7 +15,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Text } from '@/components/atoms/Text';
 import { Button } from '@/components/atoms/Button';
 import { SurfaceCard } from '@/components/atoms/SurfaceCard';
+import { InputField } from '@/components/atoms/InputField';
 import { useTheme } from '@/hooks/useTheme';
+import { useSettingsStore } from '@/store/settingsStore';
 import { colors, spacing, radius, typography, shadows, sizing } from '@/constants/theme';
 
 interface FeatureItemProps {
@@ -50,6 +52,10 @@ const FeatureItem: React.FC<FeatureItemProps> = ({ icon, title, description, ind
 export default function PremiumScreen() {
   const { theme, isDarkMode } = useTheme();
   const insets = useSafeAreaInsets();
+  const { isPro, setPro } = useSettingsStore();
+  const [promoCode, setPromoCode] = useState('');
+  const [isSubmittingPromo, setIsSubmittingPromo] = useState(false);
+  const [promoError, setPromoError] = useState('');
 
   const handlePurchase = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -61,6 +67,30 @@ export default function PremiumScreen() {
     router.back();
   };
 
+  const handlePromoCodeSubmit = async () => {
+    if (!promoCode.trim()) {
+      setPromoError('Please enter a promo code');
+      return;
+    }
+
+    setIsSubmittingPromo(true);
+    setPromoError('');
+
+    // Simulate API call delay
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    if (promoCode.toUpperCase() === 'OWEN2026') {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      await setPro(true);
+      router.back();
+    } else {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      setPromoError('Invalid promo code');
+    }
+
+    setIsSubmittingPromo(false);
+  };
+
   const features = [
     {
       icon: 'analytics' as const,
@@ -68,19 +98,19 @@ export default function PremiumScreen() {
       description: 'Deep insights with detailed charts and progress tracking',
     },
     {
-      icon: 'calendar' as const,
-      title: 'Unlimited Programs',
-      description: 'Create and manage unlimited workout programs',
+      icon: 'create' as const,
+      title: 'Create Unlimited Workouts and Plans',
+      description: 'Build and save as many workouts and plans as you want',
     },
     {
-      icon: 'trophy' as const,
-      title: 'Personal Records',
-      description: 'Track unlimited PRs across all exercises',
+      icon: 'lock-open' as const,
+      title: 'Unlock all Premium Workouts and Plans',
+      description: 'Get full access to the entire premium library',
     },
     {
-      icon: 'notifications' as const,
-      title: 'Smart Reminders',
-      description: 'Intelligent reminders based on your schedule',
+      icon: 'sparkles' as const,
+      title: 'Access to all future premium updates',
+      description: 'All new premium features and content included',
     },
   ];
 
@@ -103,7 +133,11 @@ export default function PremiumScreen() {
         </TouchableOpacity>
       </View>
 
-      <View style={styles.container}>
+      <ScrollView 
+        style={styles.container}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
         <Animated.View entering={FadeInUp.springify()} style={styles.heroSection}>
           <Ionicons name="diamond" size={80} color={colors.text.primary} />
           <Text variant="display1" style={[styles.heroTitle, { color: theme.text.primary }]}>
@@ -126,6 +160,31 @@ export default function PremiumScreen() {
           ))}
         </View>
 
+        <Animated.View entering={FadeInDown.delay(500).springify()} style={styles.promoSection}>
+          <SurfaceCard tone="elevated" style={styles.promoCard}>
+            <Text variant="heading4" style={styles.promoTitle}>
+              Have a promo code?
+            </Text>
+            <InputField
+              label="Promo Code"
+              value={promoCode}
+              onChangeText={setPromoCode}
+              placeholder="Enter promo code"
+              autoCapitalize="characters"
+              editable={!isSubmittingPromo}
+              helperText={promoError}
+            />
+            <Button
+              label={isSubmittingPromo ? "Applying..." : "Apply Promo Code"}
+              onPress={handlePromoCodeSubmit}
+              variant="secondary"
+              size="md"
+              disabled={isSubmittingPromo}
+              style={styles.promoButton}
+            />
+          </SurfaceCard>
+        </Animated.View>
+
         <Animated.View entering={FadeInDown.delay(600).springify()} style={styles.footer}>
           <Button
             label="Unlock Hercules Pro"
@@ -135,7 +194,7 @@ export default function PremiumScreen() {
             style={styles.purchaseButton}
           />
         </Animated.View>
-      </View>
+      </ScrollView>
     </View>
   );
 }
@@ -155,8 +214,12 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     paddingHorizontal: spacing.xl,
-    justifyContent: 'space-between',
+  },
+  scrollContent: {
+    paddingTop: spacing.lg,
     paddingBottom: spacing.xl,
+    justifyContent: 'space-between',
+    minHeight: '100%',
   },
   heroSection: {
     alignItems: 'center',
@@ -194,6 +257,21 @@ const styles = StyleSheet.create({
   footer: {
     width: '100%',
     paddingTop: spacing.md,
+  },
+  promoSection: {
+    width: '100%',
+    marginBottom: spacing.lg,
+  },
+  promoCard: {
+    padding: spacing.lg,
+    gap: spacing.md,
+  },
+  promoTitle: {
+    textAlign: 'center',
+    marginBottom: spacing.xs,
+  },
+  promoButton: {
+    width: '100%',
   },
   purchaseButton: {
     width: '100%',

@@ -49,11 +49,12 @@ const getSetEffortLabel = (
   set: SetLog,
   exerciseType: ExerciseType,
   formatWeight: (lbs: number) => string,
-  formatDistance: (miles: number) => string
+  formatDistanceForExercise: (miles: number, distanceUnit?: 'miles' | 'meters' | 'floors') => string,
+  distanceUnit?: 'miles' | 'meters' | 'floors'
 ): string => {
   switch (exerciseType) {
     case 'cardio':
-      const distance = formatDistance(set.distance ?? 0);
+      const distance = formatDistanceForExercise(set.distance ?? 0, distanceUnit);
       const duration = set.duration ? formatDuration(set.duration) : '0min';
       return `${distance} • ${duration}`;
     
@@ -84,10 +85,11 @@ export const WorkoutExerciseSummaryCard: React.FC<WorkoutExerciseSummaryCardProp
   exercise,
   index,
 }) => {
-  const { formatWeight, formatDistance } = useSettingsStore();
+  const { formatWeight, formatDistanceForExercise } = useSettingsStore();
   // Look up exercise type from catalog
   const catalogEntry = exerciseCatalog.find(e => e.name === exercise.name);
   const exerciseType: ExerciseType = catalogEntry?.exerciseType || 'weight';
+  const distanceUnit = catalogEntry?.distanceUnit;
 
   // Only show completed sets in the summary
   const completedSets = exercise.sets
@@ -112,7 +114,7 @@ export const WorkoutExerciseSummaryCard: React.FC<WorkoutExerciseSummaryCardProp
 
         <View style={styles.setList}>
           {completedSets.map(({ set, originalIndex }, displayIndex) => {
-            const effortLabel = getSetEffortLabel(set, exerciseType, formatWeight, formatDistance);
+            const effortLabel = getSetEffortLabel(set, exerciseType, formatWeight, formatDistanceForExercise, distanceUnit);
 
             return (
               <View key={`${exercise.name}-${originalIndex}`} style={styles.setRow}>
@@ -156,13 +158,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'flex-start',
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.lg,
-    borderRadius: radius.mdCompact,
-    backgroundColor: colors.surface.card,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.accent.orangeLight,
-    gap: spacing.sm,
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.sm,
+    gap: spacing.md,
   },
   setCircle: {
     width: sizing.iconLG,

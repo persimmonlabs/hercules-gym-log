@@ -11,13 +11,14 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Text } from '@/components/atoms/Text';
 import { Button } from '@/components/atoms/Button';
 import { HoldRepeatIconButton } from '@/components/atoms/HoldRepeatIconButton';
-import { HyperResponsiveButton } from '@/components/atoms/HyperResponsiveButton';
 import { GpsActivityTracker } from '@/components/molecules/GpsActivityTracker';
+import { TimePickerModal } from '@/components/molecules/TimePickerModal';
 import { springGentle } from '@/constants/animations';
 import { colors, radius, shadows, sizing, spacing, zIndex } from '@/constants/theme';
 import type { SetLog } from '@/types/workout';
 import type { ExerciseType } from '@/types/exercise';
 import { useSettingsStore } from '@/store/settingsStore';
+import { useTimer } from '@/hooks/useTimer';
 
 interface ExerciseSetEditorProps {
   isExpanded: boolean;
@@ -41,7 +42,8 @@ const DEFAULT_NEW_SET: SetLog = {
 interface SetDraft extends SetLog {
   weightInput: string;
   repsInput: string;
-  durationInput: string;      // For cardio (minutes) and duration (seconds) - format MM:SS
+  durationInput: string;      // For cardio (minutes) and duration (seconds) - format HH:MM:SS
+  hoursInput: string;         // Hours portion (2 digits max)
   minutesInput: string;       // Minutes portion (2 digits max)
   secondsInput: string;       // Seconds portion (2 digits max, 0-59)
   distanceInput: string;      // For cardio
@@ -49,39 +51,69 @@ interface SetDraft extends SetLog {
 }
 
 type ActiveSelectionTarget = {
-  type: 'weight' | 'reps';
+  type: 'weight' | 'reps' | 'hours' | 'minutes' | 'seconds' | 'distance' | 'duration' | 'assistanceWeight';
   index: number;
+};
+
+type TimeInputState = {
+  index: number;
+  field: 'hours' | 'minutes' | 'seconds';
+  digitsEntered: number; // 0, 1, or 2
 };
 
 const formatWeightInputValue = (value: number): string => {
   return value.toFixed(1);
 };
 
-// Format duration for session input (always MM:SS with 2 digits each)
+// Format duration for session input (always HH:MM:SS with 2 digits each)
 const formatDuration = (seconds: number): string => {
-  const mins = Math.floor(seconds / 60);
+  const hours = Math.floor(seconds / 3600);
+  const mins = Math.floor((seconds % 3600) / 60);
   const secs = seconds % 60;
-  return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
 };
 
-// Format duration for summary display (drop leading zero on minutes)
+// Format duration for summary display (drop leading zero on hours/minutes)
 const formatDurationForSummary = (seconds: number): string => {
-  const mins = Math.floor(seconds / 60);
+  const hours = Math.floor(seconds / 3600);
+  const mins = Math.floor((seconds % 3600) / 60);
   const secs = seconds % 60;
+  
+  if (hours > 0) {
+    return `${hours}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  }
   return `${mins}:${secs.toString().padStart(2, '0')}`;
 };
 
 const parseDuration = (input: string): number => {
-  // Handle mm:ss format or just seconds
+  // Handle hh:mm:ss, mm:ss format or just seconds
   if (input.includes(':')) {
-    const [mins, secs] = input.split(':').map(Number);
-    return (mins || 0) * 60 + (secs || 0);
+    const parts = input.split(':').map(Number);
+    if (parts.length === 3) {
+      // hh:mm:ss format
+      const [hours, mins, secs] = parts;
+      return (hours || 0) * 3600 + (mins || 0) * 60 + (secs || 0);
+    } else if (parts.length === 2) {
+      // mm:ss format
+      const [mins, secs] = parts;
+      return (mins || 0) * 60 + (secs || 0);
+    }
   }
   return parseInt(input, 10) || 0;
 };
 
-// Parse minutes and seconds into total seconds
-const parseDurationFromParts = (minutes: string, seconds: string): number => {
+// Parse hours, minutes and seconds into total seconds
+const parseDurationFromParts = (hours: string, minutes: string, seconds: string): number => {
+  const hrs = parseInt(hours, 10) || 0;
+  const mins = parseInt(minutes, 10) || 0;
+  let secs = parseInt(seconds, 10) || 0;
+  // Clamp seconds to 0-59
+  if (secs > 59) secs = 59;
+  return hrs * 3600 + mins * 60 + secs;
+};
+
+// Parse minutes and seconds into total seconds (for duration exercises)
+const parseDurationFromPartsMMSS = (minutes: string, seconds: string): number => {
   const mins = parseInt(minutes, 10) || 0;
   let secs = parseInt(seconds, 10) || 0;
   // Clamp seconds to 0-59
@@ -89,20 +121,84 @@ const parseDurationFromParts = (minutes: string, seconds: string): number => {
   return mins * 60 + secs;
 };
 
-// Sanitize time input (digits only, max 2 characters)
-const sanitizeTimeInput = (value: string, maxVal?: number): string => {
+// Smart time input handler for focused typing with digit tracking
+const sanitizeTimeInputWithState = (
+  value: string,
+  currentState: TimeInputState | null,
+  index: number,
+  field: 'hours' | 'minutes' | 'seconds',
+  maxVal?: number
+): { sanitized: string; newState: TimeInputState } => {
   // Keep only digits
   const digits = value.replace(/[^0-9]/g, '');
-  // Limit to 2 digits
-  let result = digits.slice(0, 2);
-  // If maxVal provided, clamp the value
-  if (maxVal !== undefined && result.length > 0) {
+  
+  // If no state or different field/index, this is a fresh start
+  const isFreshStart = !currentState || currentState.index !== index || currentState.field !== field;
+  
+  if (digits.length === 0) {
+    return {
+      sanitized: '00',
+      newState: { index, field, digitsEntered: 0 }
+    };
+  }
+  
+  // Check if we're continuing to type in the same field
+  const isTypingInSameField = currentState && currentState.index === index && currentState.field === field;
+  
+  if (digits.length === 1) {
+    // If we already entered 1 digit and now have 1 digit, user typed second digit
+    // (selection replaced both, but we track state)
+    if (isTypingInSameField && currentState.digitsEntered === 1) {
+      // This is the second digit - combine with previous
+      // We need to extract the second digit from the new input
+      let result = digits;
+      
+      // Clamp if needed
+      if (maxVal !== undefined) {
+        const num = parseInt(result, 10);
+        if (num > maxVal) {
+          result = maxVal.toString();
+        }
+      }
+      
+      return {
+        sanitized: result.padStart(2, '0'),
+        newState: { index, field, digitsEntered: 2 }
+      };
+    }
+    
+    // First digit: show "0X"
+    let result = '0' + digits;
+    
+    // Clamp if needed
+    if (maxVal !== undefined) {
+      const num = parseInt(result, 10);
+      if (num > maxVal) {
+        result = '0' + maxVal.toString().charAt(1);
+      }
+    }
+    
+    return {
+      sanitized: result,
+      newState: { index, field, digitsEntered: 1 }
+    };
+  }
+  
+  // Two or more digits: show "XY" (last 2 digits)
+  let result = digits.slice(-2);
+  
+  // Clamp if needed
+  if (maxVal !== undefined) {
     const num = parseInt(result, 10);
     if (num > maxVal) {
       result = maxVal.toString().padStart(2, '0');
     }
   }
-  return result;
+  
+  return {
+    sanitized: result,
+    newState: { index, field, digitsEntered: 2 }
+  };
 };
 
 // Format distance with 2 decimal places (hundredths)
@@ -112,7 +208,8 @@ const formatDistanceValue = (value: number): string => {
 
 const createDraftFromSet = (set: SetLog): SetDraft => {
   const duration = set.duration ?? 0;
-  const mins = Math.floor(duration / 60);
+  const hours = Math.floor(duration / 3600);
+  const mins = Math.floor((duration % 3600) / 60);
   const secs = duration % 60;
 
   return {
@@ -120,6 +217,7 @@ const createDraftFromSet = (set: SetLog): SetDraft => {
     weightInput: formatWeightInputValue(set.weight ?? 0),
     repsInput: String(set.reps ?? 0),
     durationInput: formatDuration(duration),
+    hoursInput: hours.toString().padStart(2, '0'),
     minutesInput: mins.toString().padStart(2, '0'),
     secondsInput: secs.toString().padStart(2, '0'),
     distanceInput: formatDistanceValue(set.distance ?? 0),
@@ -189,12 +287,20 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
   historySetCount = 0,
   supportsGpsTracking = false,
 }) => {
-  const { getWeightUnit, formatWeight, getDistanceUnitShort, formatDistance, convertDistance, convertDistanceToMiles } = useSettingsStore();
+  const { getWeightUnit, formatWeight, getDistanceUnitForExercise, formatDistanceForExercise, convertDistanceForExercise, convertDistanceToMilesForExercise } = useSettingsStore();
   const weightUnit = getWeightUnit();
-  const distanceUnitLabel = getDistanceUnitShort();
+  const distanceUnitLabel = getDistanceUnitForExercise(distanceUnit);
   const [sets, setSets] = useState<SetDraft[]>(() => initialSets.map((set) => createDraftFromSet(set)));
   const [openMenuIndex, setOpenMenuIndex] = useState<number | null>(null);
   const [activeSelection, setActiveSelection] = useState<ActiveSelectionTarget | null>(null);
+  const [timeInputState, setTimeInputState] = useState<TimeInputState | null>(null);
+  const [timePickerVisible, setTimePickerVisible] = useState<boolean>(false);
+  const [timePickerIndex, setTimePickerIndex] = useState<number>(0);
+  const [runningTimers, setRunningTimers] = useState<Set<number>>(new Set());
+  const [pausedTimers, setPausedTimers] = useState<Set<number>>(new Set());
+  const timerIntervalsRef = useRef<Map<number, NodeJS.Timeout>>(new Map());
+  const timerStartTimesRef = useRef<Map<number, number>>(new Map());
+  const timerPausedSecondsRef = useRef<Map<number, number>>(new Map());
 
   const containerStyle = embedded ? [styles.container, styles.containerEmbedded] : styles.container;
   const contentStyle = embedded ? [styles.contentEmbedded] : styles.content;
@@ -210,6 +316,7 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
   const repsInputRefs = useRef<Record<number, TextInput | null>>({});
   const distanceInputRefs = useRef<Record<number, TextInput | null>>({});
   const durationInputRefs = useRef<Record<number, TextInput | null>>({});
+  const hoursInputRefs = useRef<Record<number, TextInput | null>>({});
   const minutesInputRefs = useRef<Record<number, TextInput | null>>({});
   const secondsInputRefs = useRef<Record<number, TextInput | null>>({});
   const setsRef = useRef<SetDraft[]>([]);
@@ -264,6 +371,14 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
     setSets(nextDrafts);
     setOpenMenuIndex(null);
     lastSyncedSignatureRef.current = initialSignature;
+    
+    // Clear timer states when sets are refreshed (e.g., after completing and reopening a set)
+    setRunningTimers(new Set());
+    setPausedTimers(new Set());
+    timerIntervalsRef.current.forEach(interval => clearInterval(interval));
+    timerIntervalsRef.current.clear();
+    timerStartTimesRef.current.clear();
+    timerPausedSecondsRef.current.clear();
 
     emitProgress();
 
@@ -440,7 +555,8 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
         newSetLog = {
           weight: sourceSet.weight ?? 0,
           reps: sourceSet.reps ?? 8,
-          duration: sourceSet.duration ?? 0,
+          // Timed exercises (cardio and duration) should always start at 0
+          duration: (exerciseType === 'cardio' || exerciseType === 'duration') ? 0 : (sourceSet.duration ?? 0),
           distance: sourceSet.distance ?? 0,
           assistanceWeight: sourceSet.assistanceWeight ?? 0,
           completed: false,
@@ -458,7 +574,7 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
       setTimeout(emitProgress, 0);
       return next;
     });
-  }, [emitProgress, historySetCount]);
+  }, [emitProgress, historySetCount, exerciseType]);
 
   const removeSet = useCallback((index: number) => {
     void Haptics.selectionAsync();
@@ -537,6 +653,55 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
     );
   }, [exerciseType]);
 
+  const handleDistanceInput = useCallback((index: number, value: string) => {
+    const sanitized = sanitizeWeightInput(value);
+    const parsed = sanitized.length > 0 ? Number.parseFloat(sanitized) : null;
+    setActiveSelection(null);
+
+    const distanceInputRef = distanceInputRefs.current[index];
+    if (distanceInputRef && sanitized !== value) {
+      distanceInputRef.setNativeProps({ text: sanitized });
+    }
+
+    // Convert from display unit to miles for storage
+    const displayValue = parsed === null || Number.isNaN(parsed) ? 0 : parsed;
+    const distanceInMiles = convertDistanceToMilesForExercise(displayValue, distanceUnit);
+
+    updateSet(index, {
+      distanceInput: sanitized,
+      distance: Math.round(distanceInMiles * 100) / 100,
+    });
+  }, [updateSet, convertDistanceToMilesForExercise, distanceUnit]);
+
+  const handleDistanceFocus = useCallback((index: number) => {
+    setActiveSelection({ type: 'distance', index });
+  }, []);
+
+  const handleDistanceBlur = useCallback((index: number) => {
+    setActiveSelection(null);
+
+    const distanceInputRef = distanceInputRefs.current[index];
+
+    setSets((prev) =>
+      prev.map((set, idx) => {
+        const shouldDefaultToZero = set.distanceInput.length === 0;
+        if (idx !== index || !shouldDefaultToZero) {
+          return set;
+        }
+
+        if (distanceInputRef) {
+          distanceInputRef.setNativeProps({ text: '0.00' });
+        }
+
+        return {
+          ...set,
+          distance: 0,
+          distanceInput: '0.00',
+        };
+      }),
+    );
+  }, []);
+
   const handleRepsBlur = useCallback((index: number) => {
     setActiveSelection(null);
 
@@ -563,6 +728,50 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
 
   const toggleSetCompletion = useCallback((index: number) => {
     void Haptics.selectionAsync();
+    
+    // Blur any currently focused input and clear selection state immediately
+    setActiveSelection((current) => {
+      if (current) {
+        const currentWeightRef = weightInputRefs.current[current.index];
+        const currentRepsRef = repsInputRefs.current[current.index];
+        const currentDistanceRef = distanceInputRefs.current[current.index];
+        const currentDurationRef = durationInputRefs.current[current.index];
+
+        if (current.type === 'weight') {
+          currentWeightRef?.blur?.();
+        }
+
+        if (current.type === 'reps') {
+          currentRepsRef?.blur?.();
+        }
+
+        if (current.type === 'distance') {
+          currentDistanceRef?.blur?.();
+        }
+
+        if (current.type === 'duration') {
+          currentDurationRef?.blur?.();
+        }
+
+        if (current.type === 'hours') {
+          hoursInputRefs.current[current.index]?.blur?.();
+        }
+
+        if (current.type === 'minutes') {
+          minutesInputRefs.current[current.index]?.blur?.();
+        }
+
+        if (current.type === 'seconds') {
+          secondsInputRefs.current[current.index]?.blur?.();
+        }
+
+        if (current.type === 'assistanceWeight') {
+          currentWeightRef?.blur?.();
+        }
+      }
+      return null;
+    });
+    setTimeInputState(null);
     const prev = setsRef.current;
     if (!prev[index]) {
       return;
@@ -579,6 +788,27 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
     let propagatedIndex: number | null = null;
 
     if (justCompleted) {
+      // Stop timer if this is a timed exercise and timer is running
+      if (exerciseType === 'duration' && (runningTimers.has(index) || pausedTimers.has(index))) {
+        const interval = timerIntervalsRef.current.get(index);
+        if (interval) {
+          clearInterval(interval);
+          timerIntervalsRef.current.delete(index);
+        }
+        timerStartTimesRef.current.delete(index);
+        timerPausedSecondsRef.current.delete(index);
+        setRunningTimers(prev => {
+          const next = new Set(prev);
+          next.delete(index);
+          return next;
+        });
+        setPausedTimers(prev => {
+          const next = new Set(prev);
+          next.delete(index);
+          return next;
+        });
+      }
+
       const completedSet = updatedSets[index];
       const nextUncompletedIndex = updatedSets.findIndex((set, idx) => idx > index && !set.completed);
       if (nextUncompletedIndex !== -1 && nextUncompletedIndex >= historySetCount) {
@@ -605,34 +835,7 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
     completedSetsRef.current = updatedSets.filter((set) => set.completed).length;
     setSets(updatedSets);
     emitProgress();
-
-    if (propagatedIndex !== null) {
-      const propagatedSet = updatedSets[propagatedIndex];
-      setTimeout(() => {
-        const weightRef = weightInputRefs.current[propagatedIndex];
-        const repsRef = repsInputRefs.current[propagatedIndex];
-        const distanceRef = distanceInputRefs.current[propagatedIndex];
-        const durationRef = durationInputRefs.current[propagatedIndex];
-
-        if (weightRef) {
-          const text = exerciseType === 'assisted' ? propagatedSet.assistanceWeightInput : propagatedSet.weightInput;
-          weightRef.setNativeProps({ text });
-        }
-
-        if (repsRef) {
-          repsRef.setNativeProps({ text: propagatedSet.repsInput });
-        }
-
-        if (distanceRef) {
-          distanceRef.setNativeProps({ text: propagatedSet.distanceInput });
-        }
-
-        if (durationRef) {
-          durationRef.setNativeProps({ text: propagatedSet.durationInput });
-        }
-      }, 0);
-    }
-  }, [emitProgress, exerciseType, historySetCount]);
+  }, [emitProgress, exerciseType, historySetCount, runningTimers, pausedTimers]);
 
   const handleCompleteSetPress = useCallback((index: number) => {
     toggleSetCompletion(index);
@@ -654,7 +857,8 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
       weightInput: '0',
       repsInput: '0',
       durationInput: formatDuration(durationSeconds),
-      minutesInput: Math.floor(durationSeconds / 60).toString().padStart(2, '0'),
+      hoursInput: Math.floor(durationSeconds / 3600).toString().padStart(2, '0'),
+      minutesInput: Math.floor((durationSeconds % 3600) / 60).toString().padStart(2, '0'),
       secondsInput: (durationSeconds % 60).toString().padStart(2, '0'),
       distanceInput: distanceMiles.toFixed(2),
       assistanceWeightInput: '0',
@@ -667,6 +871,168 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
     setSets(updatedSets);
     emitProgress();
   }, [emitProgress]);
+
+  const openTimePicker = useCallback((index: number) => {
+    void Haptics.selectionAsync();
+    setTimePickerIndex(index);
+    setTimePickerVisible(true);
+  }, []);
+
+  const handleTimePickerConfirm = useCallback((totalSeconds: number) => {
+    const hours = Math.floor(totalSeconds / 3600);
+    const mins = Math.floor((totalSeconds % 3600) / 60);
+    const secs = totalSeconds % 60;
+
+    const next = [...setsRef.current];
+    next[timePickerIndex] = {
+      ...next[timePickerIndex],
+      duration: totalSeconds,
+      durationInput: formatDuration(totalSeconds),
+      hoursInput: hours.toString().padStart(2, '0'),
+      minutesInput: mins.toString().padStart(2, '0'),
+      secondsInput: secs.toString().padStart(2, '0'),
+    };
+    setsRef.current = next;
+    setSets(next);
+    setTimePickerVisible(false);
+  }, [timePickerIndex]);
+
+  const startTimer = useCallback((index: number) => {
+    void Haptics.selectionAsync();
+    
+    // Clear any existing interval for this index
+    const existingInterval = timerIntervalsRef.current.get(index);
+    if (existingInterval) {
+      clearInterval(existingInterval);
+    }
+
+    // Store start time and initial paused seconds
+    const currentSet = setsRef.current[index];
+    const initialSeconds = currentSet?.duration ?? 0;
+    timerStartTimesRef.current.set(index, Date.now());
+    timerPausedSecondsRef.current.set(index, initialSeconds);
+
+    // Start interval
+    const interval = setInterval(() => {
+      const startTime = timerStartTimesRef.current.get(index) ?? Date.now();
+      const pausedSeconds = timerPausedSecondsRef.current.get(index) ?? 0;
+      const elapsed = Math.floor((Date.now() - startTime) / 1000);
+      const totalSeconds = pausedSeconds + elapsed;
+
+      const hours = Math.floor(totalSeconds / 3600);
+      const mins = Math.floor((totalSeconds % 3600) / 60);
+      const secs = totalSeconds % 60;
+
+      const next = [...setsRef.current];
+      next[index] = {
+        ...next[index],
+        duration: totalSeconds,
+        durationInput: formatDuration(totalSeconds),
+        hoursInput: hours.toString().padStart(2, '0'),
+        minutesInput: mins.toString().padStart(2, '0'),
+        secondsInput: secs.toString().padStart(2, '0'),
+      };
+      setsRef.current = next;
+      setSets(next);
+    }, 1000);
+
+    timerIntervalsRef.current.set(index, interval);
+    setRunningTimers(prev => new Set(prev).add(index));
+    setPausedTimers(prev => {
+      const next = new Set(prev);
+      next.delete(index);
+      return next;
+    });
+  }, []);
+
+  const pauseTimer = useCallback((index: number) => {
+    void Haptics.selectionAsync();
+    
+    const interval = timerIntervalsRef.current.get(index);
+    if (interval) {
+      clearInterval(interval);
+      timerIntervalsRef.current.delete(index);
+    }
+
+    // Store current duration as paused seconds
+    const currentSet = setsRef.current[index];
+    timerPausedSecondsRef.current.set(index, currentSet?.duration ?? 0);
+
+    setRunningTimers(prev => {
+      const next = new Set(prev);
+      next.delete(index);
+      return next;
+    });
+    setPausedTimers(prev => new Set(prev).add(index));
+  }, []);
+
+  const stopTimer = useCallback((index: number) => {
+    void Haptics.selectionAsync();
+    
+    const interval = timerIntervalsRef.current.get(index);
+    if (interval) {
+      clearInterval(interval);
+      timerIntervalsRef.current.delete(index);
+    }
+
+    // Keep the elapsed time but transition to paused state
+    const currentSet = setsRef.current[index];
+    timerPausedSecondsRef.current.set(index, currentSet?.duration ?? 0);
+    timerStartTimesRef.current.delete(index);
+    
+    setRunningTimers(prev => {
+      const next = new Set(prev);
+      next.delete(index);
+      return next;
+    });
+    setPausedTimers(prev => new Set(prev).add(index));
+  }, []);
+
+  const resetTimer = useCallback((index: number) => {
+    void Haptics.selectionAsync();
+    
+    // Clear all timer state
+    const interval = timerIntervalsRef.current.get(index);
+    if (interval) {
+      clearInterval(interval);
+      timerIntervalsRef.current.delete(index);
+    }
+
+    timerStartTimesRef.current.delete(index);
+    timerPausedSecondsRef.current.delete(index);
+    
+    // Reset to zero
+    const next = [...setsRef.current];
+    next[index] = {
+      ...next[index],
+      duration: 0,
+      durationInput: '00:00',
+      hoursInput: '00',
+      minutesInput: '00',
+      secondsInput: '00',
+    };
+    setsRef.current = next;
+    setSets(next);
+    
+    setRunningTimers(prev => {
+      const next = new Set(prev);
+      next.delete(index);
+      return next;
+    });
+    setPausedTimers(prev => {
+      const next = new Set(prev);
+      next.delete(index);
+      return next;
+    });
+  }, []);
+
+  // Cleanup timers on unmount
+  useEffect(() => {
+    return () => {
+      timerIntervalsRef.current.forEach(interval => clearInterval(interval));
+      timerIntervalsRef.current.clear();
+    };
+  }, []);
 
   if (!isExpanded) {
     return null;
@@ -688,7 +1054,7 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
             </View>
           )}
           {isCompleted ? (
-            <View style={[styles.setCard, isCompleted ? styles.setCardCompleted : null]}>
+            <View style={[styles.setCard, styles.setCardCompleted, { marginBottom: spacing.lg }]}>
               <Pressable
                 style={styles.completedRow}
                 onPress={() => toggleSetCompletion(0)}
@@ -696,12 +1062,12 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
                 accessibilityLabel="Edit activity"
               >
                 <Text variant="bodySemibold" color="onAccent">
-                  {formatDistance(existingSet.distance ?? 0)} • {formatDurationForSummary(existingSet.duration ?? 0)}
+                  {formatDistanceForExercise(existingSet.distance ?? 0, distanceUnit)} • {formatDurationForSummary(existingSet.duration ?? 0)}
                 </Text>
               </Pressable>
             </View>
           ) : hasData && existingSet ? (
-            <View style={styles.setCard}>
+            <View style={[styles.setCard, { marginBottom: spacing.lg }]}>
               <View style={styles.setHeader} pointerEvents="box-none">
                 <Text variant="bodySemibold" color="primary">
                   Activity
@@ -721,9 +1087,10 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
                       const current = setsRef.current[0];
                       if (!current) return;
 
-                      const currentDisplayValue = convertDistance(current.distance ?? 0);
-                      const newDisplayValue = Math.max(0, currentDisplayValue - 0.25);
-                      const newMiles = convertDistanceToMiles(newDisplayValue);
+                      const currentDisplayValue = convertDistanceForExercise(current.distance ?? 0, distanceUnit);
+                      const increment = distanceUnit === 'meters' ? 50 : 0.25;
+                      const newDisplayValue = Math.max(0, currentDisplayValue - increment);
+                      const newMiles = convertDistanceToMilesForExercise(newDisplayValue, distanceUnit);
                       const nextDistance = Math.round(newMiles * 100) / 100;
                       const nextText = formatDistanceValue(newDisplayValue);
 
@@ -742,28 +1109,8 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
                     ref={(ref) => {
                       distanceInputRefs.current[0] = ref;
                     }}
-                    defaultValue={existingSet.distanceInput}
-                    onChangeText={(value) => {
-                      const sanitized = sanitizeWeightInput(value);
-                      const displayValue = parseFloat(sanitized) || 0;
-                      const distanceInMiles = convertDistanceToMiles(displayValue);
-                      updateSet(0, {
-                        distanceInput: sanitized,
-                        distance: Math.round(distanceInMiles * 100) / 100
-                      });
-                    }}
-                    onBlur={() => {
-                      const current = setsRef.current[0];
-                      if (current) {
-                        const displayValue = convertDistance(current.distance ?? 0);
-                        const nextText = formatDistanceValue(displayValue);
-                        const distanceRef = distanceInputRefs.current[0];
-                        if (distanceRef) {
-                          distanceRef.setNativeProps({ text: nextText });
-                        }
-                        updateSet(0, { distanceInput: nextText });
-                      }
-                    }}
+                    value={existingSet.distanceInput}
+                    onChangeText={(value) => handleDistanceInput(0, value)}
                     keyboardType="decimal-pad"
                     style={styles.metricValue}
                     textAlign="center"
@@ -771,6 +1118,13 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
                     placeholderTextColor={colors.text.tertiary}
                     cursorColor={colors.accent.primary}
                     selectionColor={colors.accent.orangeLight}
+                    selection={
+                      activeSelection?.type === 'distance' && activeSelection.index === 0
+                        ? { start: 0, end: existingSet.distanceInput.length }
+                        : undefined
+                    }
+                    onFocus={() => handleDistanceFocus(0)}
+                    onBlur={() => handleDistanceBlur(0)}
                   />
                   <HoldRepeatIconButton
                     iconName="plus"
@@ -780,9 +1134,10 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
                       const current = setsRef.current[0];
                       if (!current) return;
 
-                      const currentDisplayValue = convertDistance(current.distance ?? 0);
-                      const newDisplayValue = Math.round((currentDisplayValue + 0.25) * 100) / 100;
-                      const newMiles = convertDistanceToMiles(newDisplayValue);
+                      const currentDisplayValue = convertDistanceForExercise(current.distance ?? 0, distanceUnit);
+                      const increment = distanceUnit === 'meters' ? 50 : 0.25;
+                      const newDisplayValue = distanceUnit === 'meters' ? currentDisplayValue + increment : Math.round((currentDisplayValue + increment) * 100) / 100;
+                      const newMiles = convertDistanceToMilesForExercise(newDisplayValue, distanceUnit);
                       const nextDistance = Math.round(newMiles * 100) / 100;
                       const nextText = formatDistanceValue(newDisplayValue);
 
@@ -802,132 +1157,18 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
 
               <View style={styles.metricSection} pointerEvents="box-none">
                 <Text variant="label" color="neutral" style={styles.metricLabel}>
-                  Time (min:sec)
+                  Time {(existingSet.hoursInput !== '00' ? '(hr:min:sec)' : '(min:sec)')}
                 </Text>
                 <View style={styles.metricControls}>
-                  <HoldRepeatIconButton
-                    iconName="minus"
-                    style={styles.adjustButton}
-                    accessibilityLabel="Decrease duration"
-                    onStep={() => {
-                      const current = setsRef.current[0];
-                      if (!current) return;
-
-                      const decrement = 15;
-                      const newDuration = Math.max(0, (current.duration ?? 0) - decrement);
-                      const nextText = formatDuration(newDuration);
-                      const mins = Math.floor(newDuration / 60);
-                      const secs = newDuration % 60;
-
-                      const minutesRef = minutesInputRefs.current[0];
-                      const secondsRef = secondsInputRefs.current[0];
-
-                      if (minutesRef) minutesRef.setNativeProps({ text: mins.toString().padStart(2, '0') });
-                      if (secondsRef) secondsRef.setNativeProps({ text: secs.toString().padStart(2, '0') });
-
-                      updateSet(0, {
-                        duration: newDuration,
-                        durationInput: nextText,
-                        minutesInput: mins.toString().padStart(2, '0'),
-                        secondsInput: secs.toString().padStart(2, '0'),
-                      });
-                    }}
-                  />
-
-                  <View style={styles.timeInputContainer}>
-                    <TextInput
-                      ref={(ref) => {
-                        minutesInputRefs.current[0] = ref;
-                      }}
-                      defaultValue={existingSet.minutesInput}
-                      onChangeText={(value) => {
-                        const sanitized = sanitizeTimeInput(value);
-                        if (value !== sanitized) {
-                          minutesInputRefs.current[0]?.setNativeProps({ text: sanitized });
-                        }
-
-                        const current = setsRef.current[0];
-                        const currentSecs = current?.secondsInput || '00';
-
-                        const totalSeconds = parseDurationFromParts(sanitized, currentSecs);
-
-                        updateSet(0, {
-                          minutesInput: sanitized,
-                          durationInput: formatDuration(totalSeconds),
-                          duration: totalSeconds
-                        });
-                      }}
-                      keyboardType="numeric"
-                      style={styles.timeInput}
-                      textAlign="center"
-                      placeholder="00"
-                      placeholderTextColor={colors.text.tertiary}
-                      cursorColor={colors.accent.primary}
-                      selectionColor={colors.accent.orangeLight}
-                      maxLength={2}
-                    />
-                    <Text style={styles.timeSeparator}>:</Text>
-                    <TextInput
-                      ref={(ref) => {
-                        secondsInputRefs.current[0] = ref;
-                      }}
-                      defaultValue={existingSet.secondsInput}
-                      onChangeText={(value) => {
-                        const sanitized = sanitizeTimeInput(value, 59);
-                        if (value !== sanitized) {
-                          secondsInputRefs.current[0]?.setNativeProps({ text: sanitized });
-                        }
-
-                        const current = setsRef.current[0];
-                        const currentMins = current?.minutesInput || '00';
-
-                        const totalSeconds = parseDurationFromParts(currentMins, sanitized);
-
-                        updateSet(0, {
-                          secondsInput: sanitized,
-                          durationInput: formatDuration(totalSeconds),
-                          duration: totalSeconds
-                        });
-                      }}
-                      keyboardType="numeric"
-                      style={styles.timeInput}
-                      textAlign="center"
-                      placeholder="00"
-                      placeholderTextColor={colors.text.tertiary}
-                      cursorColor={colors.accent.primary}
-                      selectionColor={colors.accent.orangeLight}
-                      maxLength={2}
-                    />
-                  </View>
-
-                  <HoldRepeatIconButton
-                    iconName="plus"
-                    style={styles.adjustButton}
-                    accessibilityLabel="Increase duration"
-                    onStep={() => {
-                      const current = setsRef.current[0];
-                      if (!current) return;
-
-                      const increment = 15;
-                      const newDuration = (current.duration ?? 0) + increment;
-                      const nextText = formatDuration(newDuration);
-                      const mins = Math.floor(newDuration / 60);
-                      const secs = newDuration % 60;
-
-                      const minutesRef = minutesInputRefs.current[0];
-                      const secondsRef = secondsInputRefs.current[0];
-
-                      if (minutesRef) minutesRef.setNativeProps({ text: mins.toString().padStart(2, '0') });
-                      if (secondsRef) secondsRef.setNativeProps({ text: secs.toString().padStart(2, '0') });
-
-                      updateSet(0, {
-                        duration: newDuration,
-                        durationInput: nextText,
-                        minutesInput: mins.toString().padStart(2, '0'),
-                        secondsInput: secs.toString().padStart(2, '0'),
-                      });
-                    }}
-                  />
+                  <Pressable
+                    style={styles.timeDisplayButton}
+                    onPress={() => openTimePicker(0)}
+                    accessibilityLabel="Edit time"
+                  >
+                    <Text style={styles.timeDisplayText}>
+                      {(existingSet.hoursInput !== '00' ? `${existingSet.hoursInput}:` : '')}{existingSet.minutesInput || '00'}:{existingSet.secondsInput || '00'}
+                    </Text>
+                  </Pressable>
                 </View>
               </View>
 
@@ -945,6 +1186,12 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
             />
           )}
         </View>
+        <TimePickerModal
+          visible={timePickerVisible}
+          onClose={() => setTimePickerVisible(false)}
+          onConfirm={handleTimePickerConfirm}
+          initialSeconds={sets[timePickerIndex]?.duration ?? 0}
+        />
       </Animated.View>
     );
   }
@@ -973,9 +1220,7 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
             let summaryText = '';
             switch (exerciseType) {
               case 'cardio':
-                const mins = Math.floor((set.duration ?? 0) / 60);
-                const secs = (set.duration ?? 0) % 60;
-                summaryText = `${mins}:${secs.toString().padStart(2, '0')} • ${formatDistance(set.distance ?? 0)}`;
+                summaryText = `${formatDistanceForExercise(set.distance ?? 0, distanceUnit)} • ${formatDurationForSummary(set.duration ?? 0)}`;
                 break;
               case 'bodyweight':
               case 'reps_only':
@@ -985,9 +1230,7 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
                 summaryText = `${set.assistanceWeight ?? 0} ${weightUnit} assist × ${set.reps ?? 0} reps`;
                 break;
               case 'duration':
-                const dMins = Math.floor((set.duration ?? 0) / 60);
-                const dSecs = (set.duration ?? 0) % 60;
-                summaryText = dMins > 0 ? `${dMins}:${dSecs.toString().padStart(2, '0')}` : `${dSecs}s`;
+                summaryText = formatDurationForSummary(set.duration ?? 0);
                 break;
               case 'weight':
               default:
@@ -1068,7 +1311,7 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
                             ref={(ref) => {
                               weightInputRefs.current[index] = ref;
                             }}
-                            defaultValue={exerciseType === 'assisted' ? set.assistanceWeightInput : set.weightInput}
+                            value={exerciseType === 'assisted' ? set.assistanceWeightInput : set.weightInput}
                             onChangeText={(value) => handleWeightInput(index, value)}
                             keyboardType="decimal-pad"
                             style={styles.metricValue}
@@ -1111,9 +1354,10 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
                                 return;
                               }
 
-                              const currentDisplayValue = convertDistance(current.distance ?? 0);
-                              const newDisplayValue = Math.max(0, currentDisplayValue - 0.25);
-                              const newMiles = convertDistanceToMiles(newDisplayValue);
+                              const currentDisplayValue = convertDistanceForExercise(current.distance ?? 0, distanceUnit);
+                              const increment = distanceUnit === 'meters' ? 50 : 0.25;
+                              const newDisplayValue = Math.max(0, currentDisplayValue - increment);
+                              const newMiles = convertDistanceToMilesForExercise(newDisplayValue, distanceUnit);
                               const nextDistance = Math.round(newMiles * 100) / 100;
                               const nextText = formatDistanceValue(newDisplayValue);
 
@@ -1132,30 +1376,8 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
                             ref={(ref) => {
                               distanceInputRefs.current[index] = ref;
                             }}
-                            defaultValue={set.distanceInput}
-                            onChangeText={(value) => {
-                              const sanitized = sanitizeWeightInput(value);
-                              const displayValue = parseFloat(sanitized) || 0;
-                              // Convert from display unit to miles for storage
-                              const distanceInMiles = convertDistanceToMiles(displayValue);
-                              updateSet(index, {
-                                distanceInput: sanitized,
-                                distance: Math.round(distanceInMiles * 100) / 100
-                              });
-                            }}
-                            onBlur={() => {
-                              // Format to 2 decimal places on blur
-                              const current = setsRef.current[index];
-                              if (current) {
-                                const displayValue = convertDistance(current.distance ?? 0);
-                                const nextText = formatDistanceValue(displayValue);
-                                const distanceRef = distanceInputRefs.current[index];
-                                if (distanceRef) {
-                                  distanceRef.setNativeProps({ text: nextText });
-                                }
-                                updateSet(index, { distanceInput: nextText });
-                              }
-                            }}
+                            value={set.distanceInput}
+                            onChangeText={(value) => handleDistanceInput(index, value)}
                             keyboardType="decimal-pad"
                             style={styles.metricValue}
                             textAlign="center"
@@ -1163,6 +1385,13 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
                             placeholderTextColor={colors.text.tertiary}
                             cursorColor={colors.accent.primary}
                             selectionColor={colors.accent.orangeLight}
+                            selection={
+                              activeSelection?.type === 'distance' && activeSelection.index === index
+                                ? { start: 0, end: set.distanceInput.length }
+                                : undefined
+                            }
+                            onFocus={() => handleDistanceFocus(index)}
+                            onBlur={() => handleDistanceBlur(index)}
                           />
                           <HoldRepeatIconButton
                             iconName="plus"
@@ -1174,9 +1403,10 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
                                 return;
                               }
 
-                              const currentDisplayValue = convertDistance(current.distance ?? 0);
-                              const newDisplayValue = Math.round((currentDisplayValue + 0.25) * 100) / 100;
-                              const newMiles = convertDistanceToMiles(newDisplayValue);
+                              const currentDisplayValue = convertDistanceForExercise(current.distance ?? 0, distanceUnit);
+                              const increment = distanceUnit === 'meters' ? 50 : 0.25;
+                              const newDisplayValue = distanceUnit === 'meters' ? currentDisplayValue + increment : Math.round((currentDisplayValue + increment) * 100) / 100;
+                              const newMiles = convertDistanceToMilesForExercise(newDisplayValue, distanceUnit);
                               const nextDistance = Math.round(newMiles * 100) / 100;
                               const nextText = formatDistanceValue(newDisplayValue);
 
@@ -1198,140 +1428,72 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
                     {(exerciseType === 'cardio' || exerciseType === 'duration') && (
                       <View style={styles.metricSection} pointerEvents="box-none">
                         <Text variant="label" color="neutral" style={styles.metricLabel}>
-                          {exerciseType === 'cardio' ? 'Time (min:sec)' : 'Time (sec)'}
+                          Time {(set.hoursInput !== '00' ? '(hr:min:sec)' : '(min:sec)')}
                         </Text>
-                        <View style={styles.metricControls}>
-                          <HoldRepeatIconButton
-                            iconName="minus"
-                            style={styles.adjustButton}
-                            accessibilityLabel={`Decrease duration for set ${index + 1}`}
-                            onStep={() => {
-                              const current = setsRef.current[index];
-                              if (!current) {
-                                return;
-                              }
-
-                              const decrement = 15; // 15 seconds
-                              const newDuration = Math.max(0, (current.duration ?? 0) - decrement);
-                              const nextText = formatDuration(newDuration);
-                              const mins = Math.floor(newDuration / 60);
-                              const secs = newDuration % 60;
-
-                              const durationRef = durationInputRefs.current[index];
-                              const minutesRef = minutesInputRefs.current[index];
-                              const secondsRef = secondsInputRefs.current[index];
-
-                              if (durationRef) durationRef.setNativeProps({ text: nextText });
-                              if (minutesRef) minutesRef.setNativeProps({ text: mins.toString().padStart(2, '0') });
-                              if (secondsRef) secondsRef.setNativeProps({ text: secs.toString().padStart(2, '0') });
-
-                              updateSet(index, {
-                                duration: newDuration,
-                                durationInput: nextText,
-                                minutesInput: mins.toString().padStart(2, '0'),
-                                secondsInput: secs.toString().padStart(2, '0'),
-                              });
-                            }}
-                          />
-
-                          <View style={styles.timeInputContainer}>
-                            <TextInput
-                              ref={(ref) => {
-                                minutesInputRefs.current[index] = ref;
-                              }}
-                              defaultValue={set.minutesInput}
-                              onChangeText={(value) => {
-                                const sanitized = sanitizeTimeInput(value);
-                                if (value !== sanitized) {
-                                  minutesInputRefs.current[index]?.setNativeProps({ text: sanitized });
-                                }
-
-                                const current = setsRef.current[index];
-                                const currentSecs = current?.secondsInput || '00';
-
-                                const totalSeconds = parseDurationFromParts(sanitized, currentSecs);
-
-                                updateSet(index, {
-                                  minutesInput: sanitized,
-                                  durationInput: formatDuration(totalSeconds),
-                                  duration: totalSeconds
-                                });
-                              }}
-                              keyboardType="numeric"
-                              style={styles.timeInput}
-                              textAlign="center"
-                              placeholder="00"
-                              placeholderTextColor={colors.text.tertiary}
-                              cursorColor={colors.accent.primary}
-                              selectionColor={colors.accent.orangeLight}
-                              maxLength={2}
+                        <Pressable
+                          style={styles.timeDisplayButton}
+                          onPress={() => {
+                            const isRunning = runningTimers.has(index);
+                            if (!isRunning) {
+                              openTimePicker(index);
+                            }
+                          }}
+                          disabled={runningTimers.has(index)}
+                          accessibilityLabel={`Edit time for set ${index + 1}`}
+                        >
+                          <Text style={styles.timeDisplayText}>
+                            {(set.hoursInput !== '00' ? `${set.hoursInput}:` : '')}{set.minutesInput || '00'}:{set.secondsInput || '00'}
+                          </Text>
+                        </Pressable>
+                        <View style={styles.timerRow}>
+                          <Pressable
+                            style={[
+                              styles.timerButtonCircle,
+                              (!pausedTimers.has(index) || (set.duration ?? 0) === 0) && styles.timerButtonDisabled
+                            ]}
+                            onPress={() => resetTimer(index)}
+                            disabled={!pausedTimers.has(index) || (set.duration ?? 0) === 0}
+                            accessibilityLabel="Reset timer"
+                          >
+                            <MaterialCommunityIcons
+                              name="restart"
+                              size={sizing.iconSM}
+                              color={(!pausedTimers.has(index) || (set.duration ?? 0) === 0) ? colors.accent.orangeLight : colors.accent.orange}
                             />
-                            <Text style={styles.timeSeparator}>:</Text>
-                            <TextInput
-                              ref={(ref) => {
-                                secondsInputRefs.current[index] = ref;
-                              }}
-                              defaultValue={set.secondsInput}
-                              onChangeText={(value) => {
-                                const sanitized = sanitizeTimeInput(value, 59);
-                                if (value !== sanitized) {
-                                  secondsInputRefs.current[index]?.setNativeProps({ text: sanitized });
-                                }
-
-                                const current = setsRef.current[index];
-                                const currentMins = current?.minutesInput || '00';
-
-                                const totalSeconds = parseDurationFromParts(currentMins, sanitized);
-
-                                updateSet(index, {
-                                  secondsInput: sanitized,
-                                  durationInput: formatDuration(totalSeconds),
-                                  duration: totalSeconds
-                                });
-                              }}
-                              keyboardType="numeric"
-                              style={styles.timeInput}
-                              textAlign="center"
-                              placeholder="00"
-                              placeholderTextColor={colors.text.tertiary}
-                              cursorColor={colors.accent.primary}
-                              selectionColor={colors.accent.orangeLight}
-                              maxLength={2} // Limit to 2 chars, value clamping handled in logic
-                            />
-                          </View>
-
-                          <HoldRepeatIconButton
-                            iconName="plus"
-                            style={styles.adjustButton}
-                            accessibilityLabel={`Increase duration for set ${index + 1}`}
-                            onStep={() => {
-                              const current = setsRef.current[index];
-                              if (!current) {
-                                return;
+                          </Pressable>
+                          <Pressable
+                            style={styles.timerButtonCircle}
+                            onPress={() => {
+                              const isRunning = runningTimers.has(index);
+                              if (isRunning) {
+                                pauseTimer(index);
+                              } else {
+                                startTimer(index);
                               }
-
-                              const increment = 15; // 15 seconds
-                              const newDuration = (current.duration ?? 0) + increment;
-                              const nextText = formatDuration(newDuration);
-                              const mins = Math.floor(newDuration / 60);
-                              const secs = newDuration % 60;
-
-                              const durationRef = durationInputRefs.current[index];
-                              const minutesRef = minutesInputRefs.current[index];
-                              const secondsRef = secondsInputRefs.current[index];
-
-                              if (durationRef) durationRef.setNativeProps({ text: nextText });
-                              if (minutesRef) minutesRef.setNativeProps({ text: mins.toString().padStart(2, '0') });
-                              if (secondsRef) secondsRef.setNativeProps({ text: secs.toString().padStart(2, '0') });
-
-                              updateSet(index, {
-                                duration: newDuration,
-                                durationInput: nextText,
-                                minutesInput: mins.toString().padStart(2, '0'),
-                                secondsInput: secs.toString().padStart(2, '0'),
-                              });
                             }}
-                          />
+                            accessibilityLabel={runningTimers.has(index) ? "Pause timer" : "Start timer"}
+                          >
+                            <MaterialCommunityIcons
+                              name={runningTimers.has(index) ? "pause" : "play"}
+                              size={sizing.iconSM}
+                              color={colors.accent.orange}
+                            />
+                          </Pressable>
+                          <Pressable
+                            style={[
+                              styles.timerButtonCircle,
+                              (!runningTimers.has(index) && !pausedTimers.has(index)) && styles.timerButtonDisabled
+                            ]}
+                            onPress={() => stopTimer(index)}
+                            disabled={!runningTimers.has(index) && !pausedTimers.has(index)}
+                            accessibilityLabel="Stop timer"
+                          >
+                            <MaterialCommunityIcons
+                              name="stop"
+                              size={sizing.iconSM}
+                              color={(!runningTimers.has(index) && !pausedTimers.has(index)) ? colors.accent.orangeLight : colors.accent.orange}
+                            />
+                          </Pressable>
                         </View>
                       </View>
                     )}
@@ -1342,11 +1504,11 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
                           Reps
                         </Text>
                         <View style={styles.metricControls}>
-                          <HyperResponsiveButton
+                          <HoldRepeatIconButton
                             iconName="minus"
                             style={styles.adjustButton}
                             accessibilityLabel={`Decrease reps for set ${index + 1}`}
-                            onPress={() => adjustSetValue(index, 'reps', -1)}
+                            onStep={() => adjustSetValue(index, 'reps', -1)}
                           />
                           <TextInput
                             ref={(ref) => {
@@ -1361,21 +1523,22 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
                             placeholderTextColor={colors.text.tertiary}
                             cursorColor={colors.accent.primary}
                             selectionColor={colors.accent.orangeLight}
-                            // Remove selection prop to eliminate recalculation lag
+                            selection={
+                              activeSelection?.type === 'reps' && activeSelection.index === index
+                                ? { start: 0, end: set.repsInput.length }
+                                : undefined
+                            }
                             onFocus={() => handleRepsFocus(index)}
                             onBlur={() => handleRepsBlur(index)}
-                            // Optimize for performance
-                            selectTextOnFocus={false}
-                            clearTextOnFocus={false}
                             spellCheck={false}
                             autoCorrect={false}
                             autoCapitalize="none"
                           />
-                          <HyperResponsiveButton
+                          <HoldRepeatIconButton
                             iconName="plus"
                             style={styles.adjustButton}
                             accessibilityLabel={`Increase reps for set ${index + 1}`}
-                            onPress={() => adjustSetValue(index, 'reps', 1)}
+                            onStep={() => adjustSetValue(index, 'reps', 1)}
                           />
                         </View>
                       </View>
@@ -1398,7 +1561,9 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
             );
           })
         ) : (
-          <Text color="secondary">No sets yet. Add one to get started.</Text>
+          <View style={styles.emptyStateContainer}>
+            <Text color="secondary">No sets yet.</Text>
+          </View>
         )}
         <Pressable
           style={styles.addSetButton}
@@ -1411,6 +1576,12 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
           </Text>
         </Pressable>
       </ScrollView>
+      <TimePickerModal
+        visible={timePickerVisible}
+        onClose={() => setTimePickerVisible(false)}
+        onConfirm={handleTimePickerConfirm}
+        initialSeconds={sets[timePickerIndex]?.duration ?? 0}
+      />
     </Animated.View>
   );
 };
@@ -1450,14 +1621,14 @@ const styles = StyleSheet.create({
     backgroundColor: colors.accent.orange,
     borderColor: colors.accent.orange,
     paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
+    paddingVertical: spacing.sm,
   },
   completedRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingVertical: spacing.xs,
-    paddingHorizontal: spacing.xs,
+    paddingHorizontal: 0,
     borderRadius: radius.md,
     backgroundColor: 'transparent',
   },
@@ -1601,5 +1772,52 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginHorizontal: 1,
     textAlignVertical: 'center',
+  },
+  timeDisplayButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.surface.card,
+    borderRadius: radius.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
+    minWidth: 120,
+  },
+  timeDisplayText: {
+    fontSize: sizing.iconLG,
+    color: colors.text.primary,
+    fontWeight: '600',
+  },
+  timerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    width: '100%',
+    paddingHorizontal: spacing.md,
+  },
+  timerButtonCircle: {
+    width: sizing.iconLG,
+    height: sizing.iconLG,
+    borderRadius: radius.full,
+    backgroundColor: colors.surface.card,
+    borderWidth: 1,
+    borderColor: colors.accent.orange,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flex: 1,
+    maxWidth: 60,
+  },
+  timerButtonDisabled: {
+    borderColor: colors.accent.orangeLight,
+    opacity: 0.6,
+  },
+  timerButtonSpacer: {
+    width: sizing.iconLG,
+    height: sizing.iconLG,
+  },
+  emptyStateContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: spacing.xl,
   },
 });

@@ -1,5 +1,10 @@
 {
   "android": {
     "package": "com.ocreynolds.hercules"
+  },
+  "extra": {
+    "eas": {
+      "projectId": "10150adc-aaba-4613-a541-ee8e56a25a5f"
+    }
   }
 }

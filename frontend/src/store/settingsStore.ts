@@ -26,6 +26,8 @@ interface SettingsState {
   sizeUnit: SizeUnit;
   /** Theme preference: 'light', 'dark', or 'system' */
   themePreference: ThemePreference;
+  /** Whether user has Hercules Pro access */
+  isPro: boolean;
   /** Set the legacy unit system preference (updates all granular units) */
   setUnitSystem: (system: UnitSystem) => void;
   /** Set theme preference */
@@ -36,6 +38,8 @@ interface SettingsState {
   setDistanceUnit: (unit: DistanceUnit) => void;
   /** Set individual size unit preference */
   setSizeUnit: (unit: SizeUnit) => void;
+  /** Set Pro status */
+  setPro: (isPro: boolean) => void;
   /** Get weight unit label */
   getWeightUnit: () => string;
   /** Get height unit label */
@@ -62,6 +66,16 @@ interface SettingsState {
   formatDistanceValue: (miles: number, decimals?: number) => string;
   /** Format number with commas for better readability */
   formatNumberWithCommas: (num: number) => string;
+  /** Get distance unit for a specific exercise (handles meter override for Rowing Machine) */
+  getDistanceUnitForExercise: (distanceUnit?: 'miles' | 'meters' | 'floors') => string;
+  /** Convert distance for display (handles meter override for Rowing Machine) */
+  convertDistanceForExercise: (miles: number, distanceUnit?: 'miles' | 'meters' | 'floors') => number;
+  /** Convert distance from display to storage (handles meter override for Rowing Machine) */
+  convertDistanceToMilesForExercise: (value: number, distanceUnit?: 'miles' | 'meters' | 'floors') => number;
+  /** Format distance with unit for a specific exercise (handles meter override) */
+  formatDistanceForExercise: (miles: number, distanceUnit?: 'miles' | 'meters' | 'floors', decimals?: number) => string;
+  /** Format distance value for a specific exercise (handles meter override) */
+  formatDistanceValueForExercise: (miles: number, distanceUnit?: 'miles' | 'meters' | 'floors', decimals?: number) => string;
   /** Sync settings from Supabase */
   syncFromSupabase: () => Promise<void>;
 }
@@ -71,6 +85,8 @@ const LBS_TO_KG = 0.453592;
 const KG_TO_LBS = 2.20462;
 const MILES_TO_KM = 1.60934;
 const KM_TO_MILES = 0.621371;
+const MILES_TO_METERS = 1609.34;
+const METERS_TO_MILES = 0.000621371;
 
 export const useSettingsStore = create<SettingsState>()(
   persist(
@@ -80,6 +96,7 @@ export const useSettingsStore = create<SettingsState>()(
       distanceUnit: 'mi',
       sizeUnit: 'in',
       themePreference: 'light',
+      isPro: false,
 
       setUnitSystem: (system: UnitSystem) => {
         // Update all granular units when legacy system is changed
@@ -139,13 +156,25 @@ export const useSettingsStore = create<SettingsState>()(
         }
       },
 
+      setPro: async (isPro: boolean) => {
+        set({ isPro });
+        try {
+          const { data: { user } } = await supabaseClient.auth.getUser();
+          if (user) {
+            await supabaseClient.from('profiles').update({ is_pro: isPro }).eq('id', user.id);
+          }
+        } catch (error) {
+          console.warn('Failed to sync Pro status to Supabase', error);
+        }
+      },
+
       syncFromSupabase: async () => {
         try {
           const { data: { user } } = await supabaseClient.auth.getUser();
           if (user) {
             const { data, error } = await supabaseClient
               .from('profiles')
-              .select('unit_system, weight_unit, distance_unit, size_unit, theme_preference')
+              .select('unit_system, weight_unit, distance_unit, size_unit, theme_preference, is_pro')
               .eq('id', user.id)
               .single();
 
@@ -157,6 +186,7 @@ export const useSettingsStore = create<SettingsState>()(
                 distanceUnit: (data.distance_unit as DistanceUnit) || get().distanceUnit,
                 sizeUnit: (data.size_unit as SizeUnit) || get().sizeUnit,
                 themePreference: (data.theme_preference as ThemePreference) || get().themePreference,
+                isPro: (data.is_pro as boolean) ?? get().isPro,
               });
             }
           }
@@ -254,6 +284,67 @@ export const useSettingsStore = create<SettingsState>()(
         const formatted = value.toFixed(decimals);
         return get().formatNumberWithCommas(parseFloat(formatted));
       },
+
+      getDistanceUnitForExercise: (distanceUnit?: 'miles' | 'meters' | 'floors') => {
+        if (distanceUnit === 'meters') {
+          return 'm';
+        }
+        if (distanceUnit === 'floors') {
+          return 'floors';
+        }
+        return get().getDistanceUnitShort();
+      },
+
+      convertDistanceForExercise: (miles: number, distanceUnit?: 'miles' | 'meters' | 'floors') => {
+        if (distanceUnit === 'meters') {
+          return Math.round(miles * MILES_TO_METERS);
+        }
+        if (distanceUnit === 'floors') {
+          return miles;
+        }
+        return get().convertDistance(miles);
+      },
+
+      convertDistanceToMilesForExercise: (value: number, distanceUnit?: 'miles' | 'meters' | 'floors') => {
+        if (distanceUnit === 'meters') {
+          return Math.round(value * METERS_TO_MILES * 100) / 100;
+        }
+        if (distanceUnit === 'floors') {
+          return value;
+        }
+        return get().convertDistanceToMiles(value);
+      },
+
+      formatDistanceForExercise: (miles: number, distanceUnit?: 'miles' | 'meters' | 'floors', decimals?: number) => {
+        const unit = get().getDistanceUnitForExercise(distanceUnit);
+        const value = get().convertDistanceForExercise(miles, distanceUnit);
+        let formatted: string;
+        
+        if (distanceUnit === 'meters') {
+          formatted = Math.round(value).toString();
+        } else if (decimals !== undefined) {
+          formatted = value.toFixed(decimals);
+        } else {
+          formatted = value.toFixed(1);
+        }
+        
+        return `${get().formatNumberWithCommas(parseFloat(formatted))} ${unit}`;
+      },
+
+      formatDistanceValueForExercise: (miles: number, distanceUnit?: 'miles' | 'meters' | 'floors', decimals?: number) => {
+        const value = get().convertDistanceForExercise(miles, distanceUnit);
+        let formatted: string;
+        
+        if (distanceUnit === 'meters') {
+          formatted = Math.round(value).toString();
+        } else if (decimals !== undefined) {
+          formatted = value.toFixed(decimals);
+        } else {
+          formatted = value.toFixed(1);
+        }
+        
+        return get().formatNumberWithCommas(parseFloat(formatted));
+      },
     }),
     {
       name: 'hercules-settings',
@@ -264,6 +355,7 @@ export const useSettingsStore = create<SettingsState>()(
         distanceUnit: state.distanceUnit,
         sizeUnit: state.sizeUnit,
         themePreference: state.themePreference,
+        isPro: state.isPro,
       }),
     }
   )

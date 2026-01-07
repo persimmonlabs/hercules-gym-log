@@ -1,7 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useState, useRef } from 'react';
-import { Alert, Modal, Pressable, StyleSheet, View, ScrollView, type ViewStyle } from 'react-native';
+import { Alert, Modal, Pressable, StyleSheet, View, ScrollView, Platform, type ViewStyle } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useScrollToTop, useFocusEffect } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import Animated, { Easing, useAnimatedStyle, useSharedValue, withSpring, withTiming, type AnimatedStyle } from 'react-native-reanimated';
 
@@ -317,6 +318,7 @@ const PlansScreen: React.FC = () => {
   const { theme } = useTheme();
   const router = useRouter();
   const scrollRef = useRef<ScrollView>(null);
+  const insets = useSafeAreaInsets();
   useScrollToTop(scrollRef);
 
   useFocusEffect(
@@ -594,7 +596,7 @@ const PlansScreen: React.FC = () => {
 
 
   return (
-    <TabSwipeContainer ref={scrollRef} contentContainerStyle={[styles.contentContainer, { backgroundColor: theme.primary.bg }]}>
+    <TabSwipeContainer ref={scrollRef} contentContainerStyle={styles.contentContainer}>
       <WorkoutInProgressModal
         visible={workoutInProgressVisible}
         sessionName={currentSession?.name ?? 'Current Workout'}
@@ -608,269 +610,272 @@ const PlansScreen: React.FC = () => {
           setWorkoutInProgressVisible(false);
         }}
       />
+      
       <ScreenHeader
         title="Programs"
-        subtitle="Manage your personalized training library"
+        subtitle="Manage your workouts and training plans"
       />
 
-      <SurfaceCard padding="xl" tone="neutral" showAccentStripe={true} style={{ borderWidth: 0, marginTop: -spacing.md }}>
-        <View style={styles.outerCardContent}>
-          <View style={styles.sectionHeader}>
-            <Text variant="heading3" color="primary">
-              My Workouts
-            </Text>
-          </View>
+      <View style={{ marginTop: -spacing.lg }}>
+        <SurfaceCard padding="xl" tone="neutral" showAccentStripe={true} style={{ borderWidth: 0 }}>
+          <View style={styles.outerCardContent}>
+            <View style={styles.sectionHeader}>
+              <Text variant="heading3" color="primary">
+                My Workouts
+              </Text>
+            </View>
 
-          <View style={styles.planCards}>
-            {myWorkouts.length > 0 ? (
-              myWorkouts.map((item) => (
-                <Pressable
-                  key={item.uniqueId}
-                  style={styles.planCardShell}
-                  onPress={() => handlePlanPress(item.uniqueId)}
-                  accessibilityRole="button"
-                  accessibilityLabel={`View ${item.name}`}
-                >
-                  {expandedPlanId === item.uniqueId ? (
-                    <View style={styles.planExpandedContent}>
-                      <View style={styles.planCardHeader}>
-                        <Text variant="bodySemibold" color="primary" style={styles.planCardHeaderText}>
-                          {item.name}
+            <View style={styles.planCards}>
+              {myWorkouts.length > 0 ? (
+                myWorkouts.map((item) => (
+                  <Pressable
+                    key={item.uniqueId}
+                    style={styles.planCardShell}
+                    onPress={() => handlePlanPress(item.uniqueId)}
+                    accessibilityRole="button"
+                    accessibilityLabel={`View ${item.name}`}
+                  >
+                    {expandedPlanId === item.uniqueId ? (
+                      <View style={styles.planExpandedContent}>
+                        <View style={styles.planCardHeader}>
+                          <Text variant="bodySemibold" color="primary" style={styles.planCardHeaderText}>
+                            {item.name}
+                          </Text>
+                        </View>
+                        <View style={[styles.planActionGrid, { marginTop: spacing.lg }]}>
+                          <Pressable
+                            style={styles.planActionButton}
+                            onPress={(event) => {
+                              event.stopPropagation();
+                              handleStartWorkoutItem(item);
+                            }}
+                          >
+                            <View style={styles.planActionIconWrapper}>
+                              <IconSymbol name="play-arrow" color={colors.accent.primary} size={sizing.iconMD} />
+                            </View>
+                            <Text variant="caption" color="primary" style={styles.planActionLabel}>Start</Text>
+                          </Pressable>
+                          <Pressable
+                            style={styles.planActionButton}
+                            onPress={(event) => {
+                              event.stopPropagation();
+                              handleEditWorkoutItem(item);
+                            }}
+                          >
+                            <View style={styles.planActionIconWrapper}>
+                              <IconSymbol name="edit" color={colors.accent.primary} size={sizing.iconMD} />
+                            </View>
+                            <Text variant="caption" color="primary" style={styles.planActionLabel}>Edit</Text>
+                          </Pressable>
+                          <Pressable
+                            style={styles.planActionButton}
+                            onPress={(event) => {
+                              event.stopPropagation();
+                              handleDeleteWorkoutItem(item);
+                            }}
+                          >
+                            <View style={[styles.planActionIconWrapper, { borderColor: colors.accent.orange }]}>
+                              <IconSymbol name="delete" color={colors.accent.orange} size={sizing.iconMD} />
+                            </View>
+                            <Text variant="caption" color="primary" style={styles.planActionLabel}>Delete</Text>
+                          </Pressable>
+                          <Pressable
+                            style={styles.planActionButton}
+                            onPress={(event) => {
+                              event.stopPropagation();
+                              setExpandedPlanId(null);
+                            }}
+                          >
+                            <View style={[styles.planActionIconWrapper, { borderColor: colors.accent.orange }]}>
+                              <IconSymbol name="arrow-back" color={colors.accent.orange} size={sizing.iconMD} />
+                            </View>
+                            <Text variant="caption" color="primary" style={styles.planActionLabel}>Back</Text>
+                          </Pressable>
+                        </View>
+                      </View>
+                    ) : (
+                      <View style={styles.planCardContent}>
+                        <View style={styles.planCardHeader}>
+                          <Text variant="bodySemibold" color="primary" style={styles.planCardHeaderText}>
+                            {item.name}
+                          </Text>
+                        </View>
+                        <Text variant="labelMedium" color="secondary">
+                          {item.subtitle}
                         </Text>
                       </View>
-                      <View style={styles.planActionGrid}>
-                        <Pressable
-                          style={styles.planActionButton}
-                          onPress={(event) => {
-                            event.stopPropagation();
-                            handleStartWorkoutItem(item);
-                          }}
-                        >
-                          <View style={styles.planActionIconWrapper}>
-                            <IconSymbol name="play-arrow" color={colors.accent.primary} size={sizing.iconMD} />
-                          </View>
-                          <Text variant="caption" color="primary" style={styles.planActionLabel}>Start</Text>
-                        </Pressable>
-                        <Pressable
-                          style={styles.planActionButton}
-                          onPress={(event) => {
-                            event.stopPropagation();
-                            handleEditWorkoutItem(item);
-                          }}
-                        >
-                          <View style={styles.planActionIconWrapper}>
-                            <IconSymbol name="edit" color={colors.accent.primary} size={sizing.iconMD} />
-                          </View>
-                          <Text variant="caption" color="primary" style={styles.planActionLabel}>Edit</Text>
-                        </Pressable>
-                        <Pressable
-                          style={styles.planActionButton}
-                          onPress={(event) => {
-                            event.stopPropagation();
-                            handleDeleteWorkoutItem(item);
-                          }}
-                        >
-                          <View style={[styles.planActionIconWrapper, { borderColor: colors.accent.orange }]}>
-                            <IconSymbol name="delete" color={colors.accent.orange} size={sizing.iconMD} />
-                          </View>
-                          <Text variant="caption" color="primary" style={styles.planActionLabel}>Delete</Text>
-                        </Pressable>
-                        <Pressable
-                          style={styles.planActionButton}
-                          onPress={(event) => {
-                            event.stopPropagation();
-                            setExpandedPlanId(null);
-                          }}
-                        >
-                          <View style={[styles.planActionIconWrapper, { borderColor: colors.accent.orange }]}>
-                            <IconSymbol name="arrow-back" color={colors.accent.orange} size={sizing.iconMD} />
-                          </View>
-                          <Text variant="caption" color="primary" style={styles.planActionLabel}>Back</Text>
-                        </Pressable>
+                    )}
+                  </Pressable>
+                ))
+              ) : (
+                <View style={[styles.planCardShell, styles.planCardContent]}>
+                  <Text variant="bodySemibold" color="primary">
+                    No workouts yet
+                  </Text>
+                  <Text variant="body" color="secondary">
+                    Create a custom plan or add a program to see workouts here.
+                  </Text>
+                </View>
+              )}
+            </View>
+
+            <View style={styles.planCreateButtonWrapper}>
+              <Button label="Add Workout" onPress={handleAddWorkoutPress} size="md" />
+            </View>
+          </View>
+        </SurfaceCard>
+      </View>
+
+        <SurfaceCard padding="xl" tone="neutral" showAccentStripe={true} style={{ borderWidth: 0 }}>
+          <View style={styles.outerCardContent}>
+            <View style={styles.sectionHeader}>
+              <Text variant="heading3" color="primary">
+                My Plans
+              </Text>
+            </View>
+
+            <View style={styles.planCards}>
+              {myPlans.length > 0 ? (
+                myPlans.map((program) => (
+                  <Pressable
+                    key={program.id}
+                    style={styles.planCardShell}
+                    onPress={() => handleProgramPress(program)}
+                    accessibilityRole="button"
+                    accessibilityLabel={`View ${program.name}`}
+                  >
+                    {expandedPlanId === program.id ? (
+                      <View style={styles.planExpandedContent}>
+                        <View style={styles.planCardHeader}>
+                          <Text variant="bodySemibold" color="primary">
+                            {program.name}
+                          </Text>
+                        </View>
+                        <View style={[styles.planActionGrid, { marginTop: spacing.lg }]}>
+                          <Pressable
+                            style={styles.planActionButton}
+                            onPress={(event) => {
+                              event.stopPropagation();
+                              handleEditProgram(program);
+                            }}
+                          >
+                            <View style={styles.planActionIconWrapper}>
+                              <IconSymbol name="edit" color={colors.accent.primary} size={sizing.iconMD} />
+                            </View>
+                            <Text variant="caption" color="primary" style={styles.planActionLabel}>Edit</Text>
+                          </Pressable>
+                          <Pressable
+                            style={styles.planActionButton}
+                            onPress={(event) => {
+                              event.stopPropagation();
+                              handleDeleteProgram(program);
+                            }}
+                          >
+                            <View style={[styles.planActionIconWrapper, { borderColor: colors.accent.orange }]}>
+                              <IconSymbol name="delete" color={colors.accent.orange} size={sizing.iconMD} />
+                            </View>
+                            <Text variant="caption" color="primary" style={styles.planActionLabel}>Delete</Text>
+                          </Pressable>
+                          <Pressable
+                            style={styles.planActionButton}
+                            onPress={(event) => {
+                              event.stopPropagation();
+                              setExpandedPlanId(null);
+                            }}
+                          >
+                            <View style={[styles.planActionIconWrapper, { borderColor: colors.accent.orange }]}>
+                              <IconSymbol name="arrow-back" color={colors.accent.orange} size={sizing.iconMD} />
+                            </View>
+                            <Text variant="caption" color="primary" style={styles.planActionLabel}>Back</Text>
+                          </Pressable>
+                        </View>
                       </View>
-                    </View>
-                  ) : (
-                    <View style={styles.planCardContent}>
-                      <View style={styles.planCardHeader}>
-                        <Text variant="bodySemibold" color="primary" style={styles.planCardHeaderText}>
-                          {item.name}
+                    ) : (
+                      <View style={styles.planCardContent}>
+                        <View style={styles.planCardHeader}>
+                          <Text variant="bodySemibold" color="primary">
+                            {program.name}
+                          </Text>
+                        </View>
+                        <Text variant="labelMedium" color="secondary">
+                          {getPlanSummary(program)}
                         </Text>
                       </View>
-                      <Text variant="labelMedium" color="secondary">
-                        {item.subtitle}
-                      </Text>
-                    </View>
-                  )}
-                </Pressable>
-              ))
-            ) : (
-              <View style={[styles.planCardShell, styles.planCardContent]}>
-                <Text variant="bodySemibold" color="primary">
-                  No workouts yet
-                </Text>
-                <Text variant="body" color="secondary">
-                  Create a custom plan or add a program to see workouts here.
-                </Text>
-              </View>
-            )}
+                    )}
+                  </Pressable>
+                ))
+              ) : (
+                <View style={[styles.planCardShell, styles.planCardContent]}>
+                  <Text variant="bodySemibold" color="primary">
+                    No plans yet
+                  </Text>
+                  <Text variant="body" color="secondary">
+                    Add a plan from the library to see it here.
+                  </Text>
+                </View>
+              )}
+            </View>
+
+            <View style={styles.planCreateButtonWrapper}>
+              <Button label="Add Plan" onPress={handleAddPlanPress} size="md" />
+            </View>
           </View>
+        </SurfaceCard>
 
-          <View style={styles.planCreateButtonWrapper}>
-            <Button label="Add Workout" onPress={handleAddWorkoutPress} size="md" />
-          </View>
-        </View>
-      </SurfaceCard>
+        <MyScheduleCard
+          onEditPress={() => {
+            void Haptics.selectionAsync();
+            router.push('/(tabs)/schedule-setup');
+          }}
+          onAddOverridePress={() => setIsOverrideModalVisible(true)}
+          onDeletePress={handleDeleteSchedule}
+        />
 
-      <SurfaceCard padding="xl" tone="neutral" showAccentStripe={true} style={{ borderWidth: 0 }}>
-        <View style={styles.outerCardContent}>
-          <View style={styles.sectionHeader}>
-            <Text variant="heading3" color="primary">
-              My Plans
-            </Text>
-          </View>
+        <AddOverrideModal
+          visible={isOverrideModalVisible}
+          onClose={() => setIsOverrideModalVisible(false)}
+        />
 
-          <View style={styles.planCards}>
-            {myPlans.length > 0 ? (
-              myPlans.map((program) => (
-                <Pressable
-                  key={program.id}
-                  style={styles.planCardShell}
-                  onPress={() => handleProgramPress(program)}
-                  accessibilityRole="button"
-                  accessibilityLabel={`View ${program.name}`}
-                >
-                  {expandedPlanId === program.id ? (
-                    <View style={styles.planExpandedContent}>
-                      <View style={styles.planCardHeader}>
-                        <Text variant="bodySemibold" color="primary">
-                          {program.name}
-                        </Text>
-                      </View>
-                      <View style={styles.planActionGrid}>
-                        <Pressable
-                          style={styles.planActionButton}
-                          onPress={(event) => {
-                            event.stopPropagation();
-                            handleEditProgram(program);
-                          }}
-                        >
-                          <View style={styles.planActionIconWrapper}>
-                            <IconSymbol name="edit" color={colors.accent.primary} size={sizing.iconMD} />
-                          </View>
-                          <Text variant="caption" color="primary" style={styles.planActionLabel}>Edit</Text>
-                        </Pressable>
-                        <Pressable
-                          style={styles.planActionButton}
-                          onPress={(event) => {
-                            event.stopPropagation();
-                            handleDeleteProgram(program);
-                          }}
-                        >
-                          <View style={[styles.planActionIconWrapper, { borderColor: colors.accent.orange }]}>
-                            <IconSymbol name="delete" color={colors.accent.orange} size={sizing.iconMD} />
-                          </View>
-                          <Text variant="caption" color="primary" style={styles.planActionLabel}>Delete</Text>
-                        </Pressable>
-                        <Pressable
-                          style={styles.planActionButton}
-                          onPress={(event) => {
-                            event.stopPropagation();
-                            setExpandedPlanId(null);
-                          }}
-                        >
-                          <View style={[styles.planActionIconWrapper, { borderColor: colors.accent.orange }]}>
-                            <IconSymbol name="arrow-back" color={colors.accent.orange} size={sizing.iconMD} />
-                          </View>
-                          <Text variant="caption" color="primary" style={styles.planActionLabel}>Back</Text>
-                        </Pressable>
-                      </View>
-                    </View>
-                  ) : (
-                    <View style={styles.planCardContent}>
-                      <View style={styles.planCardHeader}>
-                        <Text variant="bodySemibold" color="primary">
-                          {program.name}
-                        </Text>
-                      </View>
-                      <Text variant="labelMedium" color="secondary">
-                        {getPlanSummary(program)}
-                      </Text>
-                    </View>
-                  )}
-                </Pressable>
-              ))
-            ) : (
-              <View style={[styles.planCardShell, styles.planCardContent]}>
-                <Text variant="bodySemibold" color="primary">
-                  No plans yet
-                </Text>
-                <Text variant="body" color="secondary">
-                  Add a plan from the library to see it here.
-                </Text>
-              </View>
-            )}
-          </View>
-
-          <View style={styles.planCreateButtonWrapper}>
-            <Button label="Add Plan" onPress={handleAddPlanPress} size="md" />
-          </View>
-        </View>
-      </SurfaceCard>
-
-      <MyScheduleCard
-        onEditPress={() => {
-          void Haptics.selectionAsync();
-          router.push('/(tabs)/schedule-setup');
-        }}
-        onAddOverridePress={() => setIsOverrideModalVisible(true)}
-        onDeletePress={handleDeleteSchedule}
-      />
-
-      <AddOverrideModal
-        visible={isOverrideModalVisible}
-        onClose={() => setIsOverrideModalVisible(false)}
-      />
-
-      <Modal
-        transparent
-        visible={isDeleteDialogVisible}
-        onRequestClose={handleDismissDeleteDialog}
-      >
-        <Pressable style={styles.dialogOverlay} onPress={handleDismissDeleteDialog}>
-          <Pressable
-            style={styles.dialogCardPressable}
-            onPress={(event) => event.stopPropagation()}
-          >
-            <SurfaceCard tone="neutral" padding="lg" showAccentStripe={false} style={styles.dialogCard}>
-              <View style={styles.dialogContent}>
-                <Text variant="heading3" color="primary">
-                  {itemToDelete?.type === 'program_deletion' ? 'Delete Plan' : 'Remove Workout'}
-                </Text>
-                <Text variant="body" color="secondary">
-                  Are you sure you want to {itemToDelete?.type === 'program_deletion' ? 'delete' : 'remove'} "{itemToDelete?.name}"?
-                </Text>
-              </View>
-              <View style={styles.dialogActions}>
-                <Button
-                  label="Cancel"
-                  variant="ghost"
-                  onPress={handleDismissDeleteDialog}
-                  size="md"
-                  textColor={colors.accent.orange}
-                  style={[styles.dialogActionButton, styles.dialogCancelButton]}
-                />
-                <Button
-                  label={itemToDelete?.type === 'program_deletion' ? 'Delete' : 'Remove'}
-                  variant="primary"
-                  onPress={handleConfirmDelete}
-                  size="md"
-                  style={styles.dialogActionButton}
-                />
-              </View>
-            </SurfaceCard>
+        <Modal
+          transparent
+          visible={isDeleteDialogVisible}
+          onRequestClose={handleDismissDeleteDialog}
+        >
+          <Pressable style={styles.dialogOverlay} onPress={handleDismissDeleteDialog}>
+            <Pressable
+              style={styles.dialogCardPressable}
+              onPress={(event) => event.stopPropagation()}
+            >
+              <SurfaceCard tone="neutral" padding="lg" showAccentStripe={false} style={styles.dialogCard}>
+                <View style={styles.dialogContent}>
+                  <Text variant="heading3" color="primary">
+                    {itemToDelete?.type === 'program_deletion' ? 'Delete Plan' : 'Remove Workout'}
+                  </Text>
+                  <Text variant="body" color="secondary">
+                    Are you sure you want to {itemToDelete?.type === 'program_deletion' ? 'delete' : 'remove'} "{itemToDelete?.name}"?
+                  </Text>
+                </View>
+                <View style={styles.dialogActions}>
+                  <Button
+                    label="Cancel"
+                    variant="ghost"
+                    onPress={handleDismissDeleteDialog}
+                    size="md"
+                    textColor={colors.accent.orange}
+                    style={[styles.dialogActionButton, styles.dialogCancelButton]}
+                  />
+                  <Button
+                    label={itemToDelete?.type === 'program_deletion' ? 'Delete' : 'Remove'}
+                    variant="primary"
+                    onPress={handleConfirmDelete}
+                    size="md"
+                    style={styles.dialogActionButton}
+                  />
+                </View>
+              </SurfaceCard>
+            </Pressable>
           </Pressable>
-        </Pressable>
-      </Modal>
+        </Modal>
     </TabSwipeContainer>
   );
 };

@@ -18,6 +18,7 @@ import { useTheme } from '@/hooks/useTheme';
 import { TIME_RANGE_SUBTITLES, TimeRange } from '@/types/analytics';
 import type { CardioStats } from '@/types/analytics';
 import { useSettingsStore } from '@/store/settingsStore';
+import { exercises as exerciseCatalog } from '@/constants/exercises';
 
 // Simple cardio stats content component
 const EMPTY_CARD_MIN_HEIGHT = 240;
@@ -28,7 +29,7 @@ interface CardioStatsContentProps {
 }
 
 const CardioStatsContent: React.FC<CardioStatsContentProps> = ({ stats, timeRange }) => {
-  const { formatDistance } = useSettingsStore();
+  const { formatDistanceForExercise } = useSettingsStore();
   const { totalDuration, totalDistanceByType } = stats;
 
   // Check if there's any cardio data
@@ -72,21 +73,25 @@ const CardioStatsContent: React.FC<CardioStatsContentProps> = ({ stats, timeRang
           <Text variant="bodySemibold" color="secondary">
             Distance by Activity
           </Text>
-          {distanceEntries.map(([exerciseName, distance]) => (
-            <View key={exerciseName} style={{
-              flexDirection: 'row',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              paddingVertical: spacing.xs
-            }}>
-              <Text variant="body" color="primary" style={{ flex: 1 }}>
-                {exerciseName}
-              </Text>
-              <Text variant="bodySemibold" color="primary">
-                {formatDistance(distance)}
-              </Text>
-            </View>
-          ))}
+          {distanceEntries.map(([exerciseName, distance]) => {
+            const exerciseEntry = exerciseCatalog.find(e => e.name === exerciseName);
+            const distanceUnit = exerciseEntry?.distanceUnit;
+            return (
+              <View key={exerciseName} style={{
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                paddingVertical: spacing.xs
+              }}>
+                <Text variant="body" color="primary" style={{ flex: 1 }}>
+                  {exerciseName}
+                </Text>
+                <Text variant="bodySemibold" color="primary">
+                  {formatDistanceForExercise(distance, distanceUnit)}
+                </Text>
+              </View>
+            );
+          })}
         </View>
       )}
     </View>

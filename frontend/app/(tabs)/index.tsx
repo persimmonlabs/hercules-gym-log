@@ -360,6 +360,15 @@ const styles = StyleSheet.create({
   },
 });
 
+const formatElapsedForSubcard = (minutes: number): string => {
+  if (minutes >= 60) {
+    const hours = Math.floor(minutes / 60);
+    const remainingMinutes = minutes % 60;
+    return remainingMinutes > 0 ? `${hours}h ${remainingMinutes}m` : `${hours}h`;
+  }
+  return `${minutes}m`;
+};
+
 const DashboardScreen: React.FC = () => {
   const { theme } = useTheme();
   const { user } = useAuth();
@@ -946,24 +955,14 @@ const DashboardScreen: React.FC = () => {
             </Animated.View>
 
             <Animated.View style={todaysPlanAnimatedStyle}>
-              <Pressable
-                style={styles.pressableStretch}
-                onPress={() => {
-                  if (todaysPlan) {
-                    return;
-                  }
-
-                  handleTodaysCardPress();
-                }}
-              >
-                <SurfaceCard tone="card" padding="xl" showAccentStripe={true} style={{ borderWidth: 0, marginTop: -spacing.md }}>
-                  <View style={styles.todaysPlanContainer}>
-                    <View style={styles.dashboardCardHeader}>
-                      <Text variant="heading3" color="primary">
-                        Today's Workout
-                      </Text>
-                    </View>
-                    <View style={styles.todaysPlanBody}>
+              <SurfaceCard tone="card" padding="xl" showAccentStripe={true} style={{ borderWidth: 0, marginTop: -spacing.md }}>
+                <View style={styles.todaysPlanContainer}>
+                  <View style={styles.dashboardCardHeader}>
+                    <Text variant="heading3" color="primary">
+                      Today's Workout
+                    </Text>
+                  </View>
+                  <View style={styles.todaysPlanBody}>
                       {todaysCardState.variant === 'ongoing' ? (
                         <SurfaceCard
                           tone="neutral"
@@ -977,7 +976,7 @@ const DashboardScreen: React.FC = () => {
                                 {todaysCardState.sessionName ?? 'Workout in Progress'}
                               </Text>
                               <Text variant="body" color="secondary">
-                                {todaysCardState.exerciseCount} {todaysCardState.exerciseCount === 1 ? 'exercise' : 'exercises'} · {todaysCardState.elapsedMinutes} min elapsed
+                                {todaysCardState.exerciseCount} {todaysCardState.exerciseCount === 1 ? 'exercise' : 'exercises'} · {formatElapsedForSubcard(todaysCardState.elapsedMinutes)} elapsed
                               </Text>
                             </View>
                             <Pressable
@@ -1123,28 +1122,36 @@ const DashboardScreen: React.FC = () => {
                           </View>
                         </SurfaceCard>
                       ) : todaysCardState.variant === 'completed' ? (
-                        <SurfaceCard
-                          tone="neutral"
-                          padding="lg"
-                          showAccentStripe={false}
-                          style={styles.inlineCard}
+                        <Pressable
+                          style={styles.pressableStretch}
+                          onPress={() => {
+                            void Haptics.selectionAsync();
+                            router.push({ pathname: '/(tabs)/workout-detail', params: { workoutId: todaysCardState.workout.id, from: 'dashboard' } });
+                          }}
                         >
-                          <View style={styles.recentCardHeader}>
-                            <Text variant="bodySemibold" color="primary">
-                              {todaysCardState.workout.name
-                                ? todaysCardState.workout.name
-                                : todaysCardState.workout.planId
-                                  ? planNameLookup[todaysCardState.workout.planId]?.name ?? `${formatWorkoutDateLabel(todaysCardState.workout)} Session`
-                                  : `${formatWorkoutDateLabel(todaysCardState.workout)} Session`}
-                            </Text>
+                          <SurfaceCard
+                            tone="neutral"
+                            padding="lg"
+                            showAccentStripe={false}
+                            style={styles.inlineCard}
+                          >
+                            <View style={styles.recentCardHeader}>
+                              <Text variant="bodySemibold" color="primary">
+                                {todaysCardState.workout.name
+                                  ? todaysCardState.workout.name
+                                  : todaysCardState.workout.planId
+                                    ? planNameLookup[todaysCardState.workout.planId]?.name ?? `${formatWorkoutDateLabel(todaysCardState.workout)} Session`
+                                    : `${formatWorkoutDateLabel(todaysCardState.workout)} Session`}
+                              </Text>
+                              <Text variant="body" color="secondary">
+                                {formatWorkoutDateLabel(todaysCardState.workout)}
+                              </Text>
+                            </View>
                             <Text variant="body" color="secondary">
-                              {formatWorkoutDateLabel(todaysCardState.workout)}
+                              {formatWorkoutSubtitle(todaysCardState.workout)}
                             </Text>
-                          </View>
-                          <Text variant="body" color="secondary">
-                            {formatWorkoutSubtitle(todaysCardState.workout)}
-                          </Text>
-                        </SurfaceCard>
+                          </SurfaceCard>
+                        </Pressable>
                       ) : todaysCardState.variant === 'noPlans' ? (
                         <SurfaceCard
                           tone="neutral"
@@ -1174,7 +1181,6 @@ const DashboardScreen: React.FC = () => {
                     </View>
                   </View>
                 </SurfaceCard>
-              </Pressable>
             </Animated.View>
 
 

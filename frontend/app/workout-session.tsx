@@ -63,11 +63,15 @@ interface ExerciseProgressSnapshot {
 }
 
 const formatElapsed = (seconds: number): string => {
-  const minutes = Math.floor(seconds / 60)
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60)
     .toString()
     .padStart(2, '0');
   const remaining = (seconds % 60).toString().padStart(2, '0');
 
+  if (hours > 0) {
+    return `${hours}:${minutes}:${remaining}`;
+  }
   return `${minutes}:${remaining}`;
 };
 
@@ -929,6 +933,7 @@ const WorkoutSessionScreen: React.FC = () => {
         visible={historyModalVisible}
         onClose={closeHistoryModal}
         exerciseName={historyTargetName}
+        exerciseType={exerciseCatalog.find(e => e.name === historyTargetName)?.exerciseType}
       />
       <FinishConfirmationModal
         visible={finishModalVisible}

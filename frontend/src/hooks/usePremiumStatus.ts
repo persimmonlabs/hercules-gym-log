@@ -2,14 +2,14 @@
  * usePremiumStatus Hook
  * Manages premium subscription status for gating analytics features
  * 
- * STUB: Currently returns free tier for all users.
- * TODO: Connect to Supabase user profile or payment system.
+ * Now connected to settingsStore for real Pro status management
  */
 
 import { useState, useEffect } from 'react';
 
 import type { PremiumStatus } from '@/types/analytics';
 import { useDevToolsStore } from '@/store/devToolsStore';
+import { useSettingsStore } from '@/store/settingsStore';
 
 // Default free tier status
 const FREE_STATUS: PremiumStatus = {
@@ -37,6 +37,7 @@ interface UsePremiumStatusOptions {
 export const usePremiumStatus = (options: UsePremiumStatusOptions = {}) => {
   const { mockPremium = false } = options;
   const premiumOverride = useDevToolsStore((state) => state.premiumOverride);
+  const isPro = useSettingsStore((state) => state.isPro);
   const [status, setStatus] = useState<PremiumStatus>(FREE_STATUS);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -45,32 +46,36 @@ export const usePremiumStatus = (options: UsePremiumStatusOptions = {}) => {
     const loadStatus = async () => {
       setIsLoading(true);
       
-      // TODO: Replace with actual Supabase query
-      // const { data } = await supabaseClient
-      //   .from('profiles')
-      //   .select('premium_tier, premium_expires_at')
-      //   .single();
-      
       // Simulate network delay
       await new Promise((resolve) => setTimeout(resolve, 100));
 
-      // Check dev tools override first
+      let finalStatus: PremiumStatus;
+
+      // Check dev tools override first (highest priority)
       if (premiumOverride === 'premium') {
-        setStatus(MOCK_PREMIUM_STATUS);
+        finalStatus = MOCK_PREMIUM_STATUS;
       } else if (premiumOverride === 'free') {
-        setStatus(FREE_STATUS);
+        finalStatus = FREE_STATUS;
+      } else if (isPro) {
+        // User has Pro status from promo code or purchase
+        finalStatus = {
+          isPremium: true,
+          expiresAt: null,
+          tier: 'lifetime',
+        };
       } else if (mockPremium || DEV_PREMIUM_ENABLED) {
         // Default behavior when no override is set
-        setStatus(MOCK_PREMIUM_STATUS);
+        finalStatus = MOCK_PREMIUM_STATUS;
       } else {
-        setStatus(FREE_STATUS);
+        finalStatus = FREE_STATUS;
       }
       
+      setStatus(finalStatus);
       setIsLoading(false);
     };
 
     loadStatus();
-  }, [mockPremium, premiumOverride]);
+  }, [mockPremium, premiumOverride, isPro]);
 
   // Helper functions for feature gating
   const canAccessMidTier = status.isPremium || status.tier === 'pro' || status.tier === 'lifetime';
