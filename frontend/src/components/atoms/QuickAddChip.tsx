@@ -5,7 +5,7 @@
 import React, { useCallback } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
-import * as Haptics from 'expo-haptics';
+import { triggerHaptic } from '@/utils/haptics';
 
 import { Text } from '@/components/atoms/Text';
 import { colors, radius, spacing } from '@/constants/theme';
@@ -26,7 +26,7 @@ export const QuickAddChip: React.FC<QuickAddChipProps> = ({ label, onPress, test
 
   const handlePress = useCallback(() => {
     scale.value = withSpring(0.94, springBouncy);
-    Haptics.selectionAsync().catch(() => undefined);
+    triggerHaptic('selection');
 
     setTimeout(() => {
       scale.value = withSpring(1, springBouncy);

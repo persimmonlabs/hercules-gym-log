@@ -1,8 +1,8 @@
-import React, { useCallback, useMemo, useState, useRef } from 'react';
-import { View, StyleSheet, Pressable, ScrollView } from 'react-native';
+import React, { useCallback, useMemo, useState, useRef, useEffect } from 'react';
+import { View, StyleSheet, Pressable, ScrollView, BackHandler } from 'react-native';
 import { useFocusEffect, useScrollToTop } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
-import * as Haptics from 'expo-haptics';
+import { triggerHaptic } from '@/utils/haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 
 import { SurfaceCard } from '@/components/atoms/SurfaceCard';
@@ -40,6 +40,17 @@ const CalendarScreen: React.FC = () => {
       scrollRef.current?.scrollTo({ y: 0, animated: false });
     }, [])
   );
+
+  // Handle Android hardware back button - navigate to Dashboard
+  useEffect(() => {
+    const backAction = () => {
+      router.replace('/(tabs)');
+      return true;
+    };
+
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
+    return () => backHandler.remove();
+  }, [router]);
 
   const [selectedDate, setSelectedDate] = useState<string>(() => formatDateToLocalISO(getDeviceCurrentDate()));
   const [currentMonth, setCurrentMonth] = useState<string>(() => formatDateToLocalISO(getDeviceCurrentDate()));
@@ -134,7 +145,7 @@ const CalendarScreen: React.FC = () => {
 
   const handleViewWorkout = useCallback(
     (workoutId: string) => {
-      void Haptics.selectionAsync();
+      triggerHaptic('selection');
       router.push({ pathname: '/(tabs)/workout-detail', params: { workoutId, from: 'calendar' } });
     },
     [router],

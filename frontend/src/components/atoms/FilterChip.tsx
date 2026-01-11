@@ -5,7 +5,7 @@
 import React, { useCallback } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
-import * as Haptics from 'expo-haptics';
+import { triggerHaptic } from '@/utils/haptics';
 
 import { Text } from '@/components/atoms/Text';
 import { IconSymbol } from '@/components/ui/icon-symbol';
@@ -26,7 +26,7 @@ export const FilterChip: React.FC<FilterChipProps> = ({ label, onRemove, testID 
   }));
 
   const handlePress = useCallback(() => {
-    Haptics.selectionAsync().catch(() => undefined);
+    triggerHaptic('selection');
     scale.value = withSpring(0.95, springBouncy);
 
     setTimeout(() => {

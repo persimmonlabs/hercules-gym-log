@@ -5,7 +5,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import Animated, { Layout } from 'react-native-reanimated';
-import * as Haptics from 'expo-haptics';
+import { triggerHaptic } from '@/utils/haptics';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 import { Text } from '@/components/atoms/Text';
@@ -31,6 +31,11 @@ interface ExerciseSetEditorProps {
   distanceUnit?: 'miles' | 'meters' | 'floors';
   historySetCount?: number;
   supportsGpsTracking?: boolean;
+  // Controlled menu state props (optional)
+  activeSetMenuIndex?: number | null;
+  onOpenSetMenu?: (index: number) => void;
+  onCloseSetMenu?: () => void;
+  onShowHistory?: () => void;
 }
 
 const DEFAULT_NEW_SET: SetLog = {
@@ -78,7 +83,7 @@ const formatDurationForSummary = (seconds: number): string => {
   const hours = Math.floor(seconds / 3600);
   const mins = Math.floor((seconds % 3600) / 60);
   const secs = seconds % 60;
-  
+
   if (hours > 0) {
     return `${hours}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   }
@@ -131,20 +136,20 @@ const sanitizeTimeInputWithState = (
 ): { sanitized: string; newState: TimeInputState } => {
   // Keep only digits
   const digits = value.replace(/[^0-9]/g, '');
-  
+
   // If no state or different field/index, this is a fresh start
   const isFreshStart = !currentState || currentState.index !== index || currentState.field !== field;
-  
+
   if (digits.length === 0) {
     return {
       sanitized: '00',
       newState: { index, field, digitsEntered: 0 }
     };
   }
-  
+
   // Check if we're continuing to type in the same field
   const isTypingInSameField = currentState && currentState.index === index && currentState.field === field;
-  
+
   if (digits.length === 1) {
     // If we already entered 1 digit and now have 1 digit, user typed second digit
     // (selection replaced both, but we track state)
@@ -152,7 +157,7 @@ const sanitizeTimeInputWithState = (
       // This is the second digit - combine with previous
       // We need to extract the second digit from the new input
       let result = digits;
-      
+
       // Clamp if needed
       if (maxVal !== undefined) {
         const num = parseInt(result, 10);
@@ -160,16 +165,16 @@ const sanitizeTimeInputWithState = (
           result = maxVal.toString();
         }
       }
-      
+
       return {
         sanitized: result.padStart(2, '0'),
         newState: { index, field, digitsEntered: 2 }
       };
     }
-    
+
     // First digit: show "0X"
     let result = '0' + digits;
-    
+
     // Clamp if needed
     if (maxVal !== undefined) {
       const num = parseInt(result, 10);
@@ -177,16 +182,16 @@ const sanitizeTimeInputWithState = (
         result = '0' + maxVal.toString().charAt(1);
       }
     }
-    
+
     return {
       sanitized: result,
       newState: { index, field, digitsEntered: 1 }
     };
   }
-  
+
   // Two or more digits: show "XY" (last 2 digits)
   let result = digits.slice(-2);
-  
+
   // Clamp if needed
   if (maxVal !== undefined) {
     const num = parseInt(result, 10);
@@ -194,7 +199,7 @@ const sanitizeTimeInputWithState = (
       result = maxVal.toString().padStart(2, '0');
     }
   }
-  
+
   return {
     sanitized: result,
     newState: { index, field, digitsEntered: 2 }
@@ -286,6 +291,10 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
   distanceUnit = 'miles',
   historySetCount = 0,
   supportsGpsTracking = false,
+  activeSetMenuIndex,
+  onOpenSetMenu,
+  onCloseSetMenu,
+  onShowHistory,
 }) => {
   const { getWeightUnit, formatWeight, getDistanceUnitForExercise, formatDistanceForExercise, convertDistanceForExercise, convertDistanceToMilesForExercise } = useSettingsStore();
   const weightUnit = getWeightUnit();
@@ -323,6 +332,37 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
   const completedSetsRef = useRef(0);
   const totalSetsRef = useRef(0);
 
+  // Helper for controlled vs uncontrolled menu state
+  const isMenuControlled = activeSetMenuIndex !== undefined && onOpenSetMenu && onCloseSetMenu;
+
+  const closeMenu = useCallback(() => {
+    if (isMenuControlled) {
+      onCloseSetMenu?.();
+    } else {
+      setOpenMenuIndex(null);
+    }
+  }, [isMenuControlled, onCloseSetMenu]);
+
+  const toggleMenu = useCallback((index: number) => {
+    if (isMenuControlled) {
+      if (activeSetMenuIndex === index) {
+        onCloseSetMenu?.();
+      } else {
+        onOpenSetMenu?.(index);
+      }
+    } else {
+      setOpenMenuIndex((prev) => (prev === index ? null : index));
+    }
+  }, [isMenuControlled, activeSetMenuIndex, onCloseSetMenu, onOpenSetMenu]);
+
+  // Determine effective menu state
+  const isMenuOpenAtIndex = useCallback((index: number) => {
+    if (isMenuControlled) {
+      return activeSetMenuIndex === index;
+    }
+    return openMenuIndex === index;
+  }, [isMenuControlled, activeSetMenuIndex, openMenuIndex]);
+
   const initialSignature = useMemo(() => JSON.stringify(initialSets), [initialSets]);
 
   useEffect(() => {
@@ -348,7 +388,7 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
 
     // Update sets when exercise is first expanded OR when initialSets change
     const shouldUpdateSets = !wasExpanded || lastSyncedSignatureRef.current !== initialSignature;
-    
+
     if (!shouldUpdateSets) {
       return;
     }
@@ -356,7 +396,7 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
     // Check if we need to sync completion state
     const currentCompletedSets = setsRef.current.filter((set) => set.completed).length;
     const initialCompletedSets = initialSets.filter((set) => set.completed).length;
-    
+
     // Only update if the completion state differs, to avoid interrupting user editing
     if (wasExpanded && currentCompletedSets === initialCompletedSets) {
       lastSyncedSignatureRef.current = initialSignature;
@@ -369,9 +409,9 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
     totalSetsRef.current = nextDrafts.length;
     completedSetsRef.current = nextDrafts.filter((set) => set.completed).length;
     setSets(nextDrafts);
-    setOpenMenuIndex(null);
+    closeMenu();
     lastSyncedSignatureRef.current = initialSignature;
-    
+
     // Clear timer states when sets are refreshed (e.g., after completing and reopening a set)
     setRunningTimers(new Set());
     setPausedTimers(new Set());
@@ -480,22 +520,22 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
     if (field === 'reps') {
       const nextValue = Math.max(0, Math.round(currentValue + delta));
       const nextText = String(nextValue);
-      
+
       // Update input field FIRST for instant visual feedback
       if (repsInputRef) {
         // Use setNativeProps for instant update without React re-render
-        repsInputRef.setNativeProps({ 
+        repsInputRef.setNativeProps({
           text: nextText,
           // Prevent cursor movement/selection issues
           selection: { start: nextText.length, end: nextText.length }
         });
       }
-      
+
       // Update refs immediately without triggering React re-render
       const next = [...setsRef.current];
       next[index] = { ...current, reps: nextValue, repsInput: nextText };
       setsRef.current = next;
-      
+
       // Defer React state update to avoid blocking the UI
       setTimeout(() => {
         setSets(next);
@@ -530,7 +570,7 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
   }, []);
 
   const addSet = useCallback(() => {
-    void Haptics.selectionAsync();
+    triggerHaptic('selection');
     setSets((prev) => {
       // Find the last completed set to use its values
       const lastCompletedSet = [...prev].reverse().find((set) => set.completed);
@@ -577,14 +617,15 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
   }, [emitProgress, historySetCount, exerciseType]);
 
   const removeSet = useCallback((index: number) => {
-    void Haptics.selectionAsync();
+    triggerHaptic('selection');
     setSets((prev) => prev.filter((_, idx) => idx !== index));
     const next = setsRef.current.filter((_, idx) => idx !== index);
     setsRef.current = next;
     totalSetsRef.current = next.length;
     completedSetsRef.current = next.filter((set) => set.completed).length;
+    closeMenu();
     setTimeout(emitProgress, 0);
-  }, [emitProgress]);
+  }, [emitProgress, closeMenu]);
 
   const handleWeightInput = useCallback((index: number, value: string) => {
     const sanitized = sanitizeWeightInput(value);
@@ -727,8 +768,8 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
   }, []);
 
   const toggleSetCompletion = useCallback((index: number) => {
-    void Haptics.selectionAsync();
-    
+    triggerHaptic('selection');
+
     // Blur any currently focused input and clear selection state immediately
     setActiveSelection((current) => {
       if (current) {
@@ -873,7 +914,7 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
   }, [emitProgress]);
 
   const openTimePicker = useCallback((index: number) => {
-    void Haptics.selectionAsync();
+    triggerHaptic('selection');
     setTimePickerIndex(index);
     setTimePickerVisible(true);
   }, []);
@@ -898,8 +939,8 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
   }, [timePickerIndex]);
 
   const startTimer = useCallback((index: number) => {
-    void Haptics.selectionAsync();
-    
+    triggerHaptic('selection');
+
     // Clear any existing interval for this index
     const existingInterval = timerIntervalsRef.current.get(index);
     if (existingInterval) {
@@ -946,8 +987,8 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
   }, []);
 
   const pauseTimer = useCallback((index: number) => {
-    void Haptics.selectionAsync();
-    
+    triggerHaptic('selection');
+
     const interval = timerIntervalsRef.current.get(index);
     if (interval) {
       clearInterval(interval);
@@ -967,8 +1008,8 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
   }, []);
 
   const stopTimer = useCallback((index: number) => {
-    void Haptics.selectionAsync();
-    
+    triggerHaptic('selection');
+
     const interval = timerIntervalsRef.current.get(index);
     if (interval) {
       clearInterval(interval);
@@ -979,7 +1020,7 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
     const currentSet = setsRef.current[index];
     timerPausedSecondsRef.current.set(index, currentSet?.duration ?? 0);
     timerStartTimesRef.current.delete(index);
-    
+
     setRunningTimers(prev => {
       const next = new Set(prev);
       next.delete(index);
@@ -989,8 +1030,8 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
   }, []);
 
   const resetTimer = useCallback((index: number) => {
-    void Haptics.selectionAsync();
-    
+    triggerHaptic('selection');
+
     // Clear all timer state
     const interval = timerIntervalsRef.current.get(index);
     if (interval) {
@@ -1000,7 +1041,7 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
 
     timerStartTimesRef.current.delete(index);
     timerPausedSecondsRef.current.delete(index);
-    
+
     // Reset to zero
     const next = [...setsRef.current];
     next[index] = {
@@ -1013,7 +1054,7 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
     };
     setsRef.current = next;
     setSets(next);
-    
+
     setRunningTimers(prev => {
       const next = new Set(prev);
       next.delete(index);
@@ -1266,7 +1307,7 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
                       <Pressable
                         onPress={(event) => {
                           event.stopPropagation();
-                          setOpenMenuIndex((prev) => (prev === index ? null : index));
+                          toggleMenu(index);
                         }}
                         hitSlop={spacing.xs}
                         style={styles.menuButton}
@@ -1275,17 +1316,27 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
                       >
                         <MaterialCommunityIcons
                           name="dots-vertical"
-                          size={sizing.iconMD}
-                          color={colors.text.secondary}
+                          size={sizing.iconSM}
+                          color={colors.overlay.navigation}
                         />
                       </Pressable>
-                      {openMenuIndex === index ? (
+                      {isMenuOpenAtIndex(index) ? (
                         <View style={styles.menuPopover} pointerEvents="box-none">
+                          {onShowHistory && (
+                            <Pressable
+                              style={styles.menuItem}
+                              onPress={() => {
+                                closeMenu();
+                                onShowHistory();
+                              }}
+                            >
+                              <Text variant="body">History</Text>
+                            </Pressable>
+                          )}
                           <Pressable
                             style={styles.menuItem}
                             onPress={() => {
-                              removeSet(index);
-                              setOpenMenuIndex(null);
+                              removeSet(index); // removeSet now calls closeMenu
                             }}
                           >
                             <Text variant="body">Remove set</Text>
@@ -1638,15 +1689,11 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   menuButton: {
-    width: spacing.xl,
-    height: spacing.xl,
-    borderRadius: radius.full,
-    alignItems: 'center',
-    justifyContent: 'center',
+    padding: spacing.sm,
   },
   menuPopover: {
     position: 'absolute',
-    top: spacing.xl + spacing.xs,
+    top: sizing.iconSM + spacing.md + spacing.xs,
     right: spacing.sm,
     borderRadius: radius.md,
     backgroundColor: colors.surface.card,
@@ -1660,8 +1707,8 @@ const styles = StyleSheet.create({
     minWidth: 150,
   },
   menuItem: {
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.sm,
   },
   metricSection: {
     gap: spacing.xs,

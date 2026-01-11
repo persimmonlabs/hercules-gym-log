@@ -1,8 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Alert, Pressable, StyleSheet, View } from 'react-native';
+import { Alert, Pressable, StyleSheet, View, BackHandler } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import * as Haptics from 'expo-haptics';
+import { triggerHaptic } from '@/utils/haptics';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 
 import { Text } from '@/components/atoms/Text';
@@ -116,15 +116,26 @@ export default function EditPlanScreen() {
   }, [program]);
 
   const handleBackPress = useCallback(() => {
-    void Haptics.selectionAsync();
+    triggerHaptic('selection');
     router.push('/(tabs)/plans');
   }, [router]);
+
+  // Handle Android hardware back button
+  useEffect(() => {
+    const backAction = () => {
+      handleBackPress();
+      return true;
+    };
+
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
+    return () => backHandler.remove();
+  }, [handleBackPress]);
 
   const handleSave = useCallback(async () => {
     if (!program || !planName.trim()) return;
 
     setIsSaving(true);
-    void Haptics.selectionAsync();
+    triggerHaptic('selection');
 
     try {
       const updatedProgram: UserProgram = {
@@ -134,7 +145,7 @@ export default function EditPlanScreen() {
       };
 
       await updateUserProgram(updatedProgram);
-      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      triggerHaptic('success');
       router.push('/(tabs)/plans');
     } catch (error) {
       console.error('[EditPlanScreen] Failed to save:', error);
@@ -145,7 +156,7 @@ export default function EditPlanScreen() {
   }, [program, planName, updateUserProgram, router]);
 
   const handleAddWorkouts = useCallback(() => {
-    void Haptics.selectionAsync();
+    triggerHaptic('selection');
     router.push({
       pathname: '/add-workouts-to-program',
       params: { editPlanId: planId }
@@ -153,7 +164,7 @@ export default function EditPlanScreen() {
   }, [router, planId]);
 
   const handleWorkoutPress = useCallback((workout: ProgramWorkout) => {
-    void Haptics.selectionAsync();
+    triggerHaptic('selection');
 
     const rawCompositeId = `program:${planId}:${workout.id}`;
     const encodedCompositeId = encodeURIComponent(rawCompositeId);
@@ -167,7 +178,7 @@ export default function EditPlanScreen() {
   }, [router, planId, setEditingPlanId]);
 
   const handleRemoveWorkout = useCallback((workout: ProgramWorkout) => {
-    void Haptics.selectionAsync();
+    triggerHaptic('selection');
     Alert.alert(
       'Remove Workout',
       `Are you sure you want to remove "${workout.name}" from this plan?`,

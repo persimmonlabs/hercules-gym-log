@@ -7,7 +7,7 @@ import {
   type TextInput,
 } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
-import * as Haptics from 'expo-haptics';
+import { triggerHaptic } from '@/utils/haptics';
 import { InputField } from '@/components/atoms/InputField';
 import { SurfaceCard } from '@/components/atoms/SurfaceCard';
 import { Text } from '@/components/atoms/Text';
@@ -74,7 +74,7 @@ export const PlanQuickBuilderCard: React.FC<PlanQuickBuilderCardProps> = ({
   }));
 
   const handleEmptyStatePress = useCallback(() => {
-    Haptics.selectionAsync().catch(() => undefined);
+    triggerHaptic('selection');
     onFocusSearch?.();
   }, [onFocusSearch]);
 

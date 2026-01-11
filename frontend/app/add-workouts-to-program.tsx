@@ -10,11 +10,11 @@
  * - Create mode: No editPlanId param, uses ProgramBuilderContext
  * - Edit mode: Has editPlanId param, adds workouts directly to existing plan
  */
-import React, { useCallback, useState, useMemo } from 'react';
-import { FlatList, Pressable, StyleSheet, View } from 'react-native';
+import React, { useCallback, useState, useMemo, useEffect } from 'react';
+import { FlatList, Pressable, StyleSheet, View, BackHandler } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import * as Haptics from 'expo-haptics';
+import { triggerHaptic } from '@/utils/haptics';
 
 import { Text } from '@/components/atoms/Text';
 import { SurfaceCard } from '@/components/atoms/SurfaceCard';
@@ -91,11 +91,11 @@ export default function AddWorkoutsToProgramScreen() {
 
   // Check if we're in edit mode (editing existing plan)
   const isEditMode = Boolean(editPlanId);
-  const existingProgram = useMemo(() => 
+  const existingProgram = useMemo(() =>
     isEditMode ? userPrograms.find(p => p.id === editPlanId) : null,
     [isEditMode, editPlanId, userPrograms]
   );
-  
+
   // Get IDs of workouts already in the plan (to exclude from selection)
   const existingWorkoutIds = useMemo(() => {
     if (isEditMode && existingProgram) {
@@ -111,19 +111,30 @@ export default function AddWorkoutsToProgramScreen() {
     }
     return plans;
   }, [plans, isEditMode, existingWorkoutIds]);
-  
+
   // Initialize selected IDs (empty in edit mode, from context in create mode)
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(() => 
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(() =>
     isEditMode ? new Set() : new Set(selectedWorkouts.map(w => w.id))
   );
 
   const handleBack = useCallback(() => {
-    Haptics.selectionAsync().catch(() => {});
+    triggerHaptic('selection');
     router.back();
   }, [router]);
 
+  // Handle Android hardware back button
+  useEffect(() => {
+    const backAction = () => {
+      handleBack();
+      return true;
+    };
+
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
+    return () => backHandler.remove();
+  }, [handleBack]);
+
   const handleToggleWorkout = useCallback((workoutId: string) => {
-    Haptics.selectionAsync().catch(() => {});
+    triggerHaptic('selection');
     setSelectedIds(prev => {
       const next = new Set(prev);
       if (next.has(workoutId)) {
@@ -136,12 +147,12 @@ export default function AddWorkoutsToProgramScreen() {
   }, []);
 
   const handleAddSelected = useCallback(async () => {
-    Haptics.selectionAsync().catch(() => {});
-    
+    triggerHaptic('selection');
+
     if (isEditMode && editPlanId) {
       // Edit mode: Add workouts directly to the existing plan
       const workoutsToAdd = plans.filter(p => selectedIds.has(p.id));
-      
+
       for (const workout of workoutsToAdd) {
         const programWorkout: ProgramWorkout = {
           id: `workout-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
@@ -154,14 +165,14 @@ export default function AddWorkoutsToProgramScreen() {
         };
         await addWorkoutToProgram(editPlanId, programWorkout);
       }
-      
-      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+
+      triggerHaptic('success');
     } else {
       // Create mode: Add to context
       const workoutsToAdd = plans.filter(p => selectedIds.has(p.id));
       addWorkouts(workoutsToAdd);
     }
-    
+
     router.back();
   }, [router, selectedIds, plans, isEditMode, editPlanId, addWorkouts, addWorkoutToProgram]);
 
@@ -169,12 +180,12 @@ export default function AddWorkoutsToProgramScreen() {
 
   const renderWorkoutItem = useCallback(({ item }: { item: Plan }) => {
     const isSelected = selectedIds.has(item.id);
-    
+
     return (
       <Pressable onPress={() => handleToggleWorkout(item.id)}>
-        <SurfaceCard 
-          tone="neutral" 
-          padding="md" 
+        <SurfaceCard
+          tone="neutral"
+          padding="md"
           showAccentStripe={false}
           style={isSelected ? { borderColor: colors.accent.primary, borderWidth: 2 } : undefined}
         >
@@ -186,10 +197,10 @@ export default function AddWorkoutsToProgramScreen() {
               </Text>
             </View>
             <View style={styles.checkIcon}>
-              <IconSymbol 
-                name={isSelected ? "check-circle" : "radio-button-unchecked"} 
-                size={24} 
-                color={isSelected ? colors.accent.primary : colors.text.tertiary} 
+              <IconSymbol
+                name={isSelected ? "check-circle" : "radio-button-unchecked"}
+                size={24}
+                color={isSelected ? colors.accent.primary : colors.text.tertiary}
               />
             </View>
           </View>

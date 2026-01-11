@@ -8,7 +8,7 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import { View, StyleSheet, TouchableOpacity } from 'react-native';
 import { VictoryPie } from 'victory-native';
-import * as Haptics from 'expo-haptics';
+import { triggerHaptic } from '@/utils/haptics';
 
 import { Text } from '@/components/atoms/Text';
 import { ChartWrapper } from '@/components/atoms/ChartWrapper';
@@ -66,7 +66,7 @@ export const TieredPieChart: React.FC<TieredPieChartProps> = ({
   }, [data, showOtherGroup]);
 
   const handleSelectSlice = useCallback((name: string) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    triggerHaptic('light');
     setSelectedSlice((prev) => (prev === name ? null : name));
     if (onSlicePress && name !== 'Other') {
       onSlicePress(name);

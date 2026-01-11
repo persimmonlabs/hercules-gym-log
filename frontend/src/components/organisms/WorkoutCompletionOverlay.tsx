@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import * as Haptics from 'expo-haptics';
+import { triggerHaptic } from '@/utils/haptics';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring, withTiming } from 'react-native-reanimated';
 
 import { Text } from '@/components/atoms/Text';
@@ -27,7 +27,7 @@ export const WorkoutCompletionOverlay: React.FC<WorkoutCompletionOverlayProps> =
     overlayOpacity.value = withTiming(1, timingMedium);
     cardOpacity.value = withTiming(1, timingMedium);
     scale.value = withSpring(1, springBouncy);
-    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    triggerHaptic('success');
 
     let timeoutId: NodeJS.Timeout | null = null;
 

@@ -3,7 +3,7 @@
  * Handles persistence logic for Create Plan screen.
  */
 import { useCallback, useMemo, useState } from 'react';
-import * as Haptics from 'expo-haptics';
+import { triggerHaptic } from '@/utils/haptics';
 import { useGlobalSearchParams } from 'expo-router';
 
 import type { Exercise } from '@/constants/exercises';
@@ -147,7 +147,18 @@ export const usePlanSaveHandler = ({
           exercises: normalizedExercises,
         });
 
-        await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        // Also sync to standalone template if it exists with same name
+        const standaloneMatch = plans.find(p => p.name.trim().toLowerCase() === originalName.trim().toLowerCase());
+        if (standaloneMatch) {
+          await updatePlan({
+            id: standaloneMatch.id,
+            name: finalName,
+            exercises: selectedExercises,
+            createdAt: standaloneMatch.createdAt,
+          });
+        }
+
+        await triggerHaptic('success');
         onSuccess?.();
         return 'success';
       }
@@ -173,12 +184,12 @@ export const usePlanSaveHandler = ({
         // Creating a new standalone template
         // Determine source from URL parameters
         let workoutSource: 'premade' | 'custom' | 'library' | 'recommended' = 'custom';
-        
+
         const sourceParam = globalSearchParams.source;
         if (sourceParam === 'library' || sourceParam === 'recommended') {
           workoutSource = sourceParam;
         }
-        
+
         await persistPlan({
           name: finalName,
           exercises: selectedExercises,
@@ -194,7 +205,7 @@ export const usePlanSaveHandler = ({
         });
       }
 
-      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      await triggerHaptic('success');
 
       if (!isEditing) {
         resetBuilder();

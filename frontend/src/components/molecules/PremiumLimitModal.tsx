@@ -2,7 +2,7 @@ import React from 'react';
 import { Modal, StyleSheet, View, Pressable } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { useRouter } from 'expo-router';
-import * as Haptics from 'expo-haptics';
+import { triggerHaptic } from '@/utils/haptics';
 
 import { Text } from '@/components/atoms/Text';
 import { Button } from '@/components/atoms/Button';
@@ -34,14 +34,14 @@ export const PremiumLimitModal: React.FC<PremiumLimitModalProps> = ({
   const message = `Free users can create up to ${limit}. Upgrade to Hercules Pro for unlimited ${limitType}s and more premium features.`;
 
   const handleUnlockPress = () => {
-    void Haptics.selectionAsync();
+    triggerHaptic('selection');
     onClose();
     // Navigate to existing Premium page
     router.push('/premium' as any);
   };
 
   const handleClose = () => {
-    void Haptics.selectionAsync();
+    triggerHaptic('selection');
     onClose();
   };
 

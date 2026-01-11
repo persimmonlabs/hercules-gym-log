@@ -1,8 +1,8 @@
-import React, { useMemo, useState, useCallback } from 'react';
-import { StyleSheet, FlatList, Pressable, View } from 'react-native';
+import React, { useMemo, useState, useCallback, useEffect } from 'react';
+import { StyleSheet, FlatList, Pressable, View, BackHandler } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import * as Haptics from 'expo-haptics';
+import { triggerHaptic } from '@/utils/haptics';
 
 import { Text } from '@/components/atoms/Text';
 import { ProgramCard } from '@/components/molecules/ProgramCard';
@@ -112,14 +112,23 @@ export default function BrowseProgramsScreen() {
   }, [premadePrograms, premadeWorkouts, selectedFilter, isWorkoutMode, userPrograms, plans]);
 
   const handleBack = useCallback(() => {
-    Haptics.selectionAsync().catch(() => { });
-    router.push({
-      pathname: '/(tabs)/add-workout',
-      params: { mode: isWorkoutMode ? 'workout' : 'program' }
-    });
-  }, [router, isWorkoutMode]);
+    triggerHaptic('selection');
+    router.replace('/(tabs)/plans');
+  }, [router]);
+
+  // Handle Android hardware back button
+  useEffect(() => {
+    const backAction = () => {
+      handleBack();
+      return true;
+    };
+
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
+    return () => backHandler.remove();
+  }, [handleBack]);
+
   const handleProgramPress = useCallback((item: PremadeProgram | UserProgram | PremadeWorkout) => {
-    Haptics.selectionAsync().catch(() => { });
+    triggerHaptic('selection');
 
     if (isWorkoutMode) {
       // Navigate to workout preview (take-it-or-leave-it style, like program-details)
@@ -152,7 +161,7 @@ export default function BrowseProgramsScreen() {
             <View style={styles.header}>
               <View style={styles.titleContainer}>
                 <Text variant="heading2" color="primary">
-                  {isWorkoutMode ? 'Browse Workouts' : 'Browse Programs'}
+                  {isWorkoutMode ? 'Browse Workouts' : 'Browse Plans'}
                 </Text>
                 <Text variant="body" color="secondary">
                   {isWorkoutMode ? 'Find a session that fits your goals' : 'Find a plan that fits your goals'}
@@ -184,8 +193,8 @@ export default function BrowseProgramsScreen() {
         }
         renderItem={({ item }) => (
           <View style={{ paddingHorizontal: spacing.md }}>
-            <ProgramCard 
-              program={item} 
+            <ProgramCard
+              program={item}
               onPress={handleProgramPress}
             />
           </View>

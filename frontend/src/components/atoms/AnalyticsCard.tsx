@@ -14,7 +14,7 @@ import React from 'react';
 import { View, StyleSheet, TouchableOpacity, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
-import * as Haptics from 'expo-haptics';
+import { triggerHaptic } from '@/utils/haptics';
 
 import { Text } from '@/components/atoms/Text';
 import { SurfaceCard } from '@/components/atoms/SurfaceCard';
@@ -70,7 +70,7 @@ export const AnalyticsCard: React.FC<AnalyticsCardProps> = ({
 
   const handlePress = () => {
     if (!disabled && onPress) {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      triggerHaptic('light');
       onPress();
     }
   };

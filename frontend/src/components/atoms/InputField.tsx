@@ -123,7 +123,7 @@ interface Styles {
 const styles = StyleSheet.create<Styles>({
   container: {
     width: '100%',
-    gap: spacing.xs,
+    gap: spacing.formField,
   },
   labelRow: {
     flexDirection: 'row',

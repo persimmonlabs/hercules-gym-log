@@ -5,7 +5,7 @@
 
 import React, { useCallback } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
-import * as Haptics from 'expo-haptics';
+import { triggerHaptic } from '@/utils/haptics';
 
 import { Text } from '@/components/atoms/Text';
 import { Button } from '@/components/atoms/Button';
@@ -55,7 +55,7 @@ const UnitRow: React.FC<UnitRowProps> = ({
                 isSelected && { backgroundColor: theme.accent.orange, borderColor: theme.accent.orange },
               ]}
               onPress={() => {
-                void Haptics.selectionAsync();
+                triggerHaptic('selection');
                 onSelect(option.value);
               }}
             >
@@ -93,12 +93,12 @@ export const UnitsModal: React.FC<UnitsModalProps> = ({ visible, onClose }) => {
   } = useSettingsStore();
 
   const handleClose = useCallback(() => {
-    void Haptics.selectionAsync();
+    triggerHaptic('selection');
     onClose();
   }, [onClose]);
 
   const handleSave = useCallback(() => {
-    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    triggerHaptic('success');
     onClose();
   }, [onClose]);
 

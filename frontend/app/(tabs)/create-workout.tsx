@@ -1,8 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useState, useRef, useLayoutEffect } from 'react';
-import { Pressable, StyleSheet, View, InteractionManager } from 'react-native';
+import { Pressable, StyleSheet, View, InteractionManager, BackHandler } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
-import * as Haptics from 'expo-haptics';
+import { triggerHaptic } from '@/utils/haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { ActivityIndicator } from 'react-native';
@@ -198,7 +198,7 @@ const CreateWorkoutScreen: React.FC = () => {
   }, [returnTo]);
 
   const handleBackPress = useCallback(() => {
-    void Haptics.selectionAsync();
+    triggerHaptic('selection');
 
     // If returnTo is specified, use it for navigation
     if (decodedReturnTo) {
@@ -225,6 +225,17 @@ const CreateWorkoutScreen: React.FC = () => {
     }
   }, [router, planId, decodedReturnTo]);
 
+  // Handle Android hardware back button
+  useEffect(() => {
+    const backAction = () => {
+      handleBackPress();
+      return true;
+    };
+
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
+    return () => backHandler.remove();
+  }, [handleBackPress]);
+
   const handleSavePlanPress = useCallback(() => {
     void (async () => {
       try {
@@ -250,7 +261,7 @@ const CreateWorkoutScreen: React.FC = () => {
   }, [handleSavePlan, router, planId, decodedReturnTo]);
 
   const handleAddExercisesPress = useCallback(() => {
-    void Haptics.selectionAsync();
+    triggerHaptic('selection');
     setEditingPlanId(editingPlanId); // Ensure context is synced
     setCustomLoadingText('Loading exercises...');
     setIsLoading(true); // Trigger immediate loading feedback

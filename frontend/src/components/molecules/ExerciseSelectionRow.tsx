@@ -4,7 +4,7 @@
  */
 import React, { useCallback, useMemo } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
-import * as Haptics from 'expo-haptics';
+import { triggerHaptic } from '@/utils/haptics';
 
 import { Text } from '@/components/atoms/Text';
 import type { Exercise } from '@/constants/exercises';
@@ -20,7 +20,7 @@ interface ExerciseSelectionRowProps {
 
 export const ExerciseSelectionRow: React.FC<ExerciseSelectionRowProps> = ({ exercise, selected, onToggle }) => {
   const handlePress = useCallback(() => {
-    Haptics.selectionAsync().catch(() => undefined);
+    triggerHaptic('selection');
     onToggle(exercise);
   }, [exercise, onToggle]);
 

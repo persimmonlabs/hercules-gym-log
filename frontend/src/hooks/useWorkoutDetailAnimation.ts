@@ -5,7 +5,7 @@
 
 import { useCallback } from 'react';
 import type { ViewStyle } from 'react-native';
-import * as Haptics from 'expo-haptics';
+import { triggerHaptic } from '@/utils/haptics';
 import {
   useAnimatedStyle,
   useSharedValue,
@@ -46,7 +46,7 @@ export const useWorkoutDetailAnimation = ({ onDismiss }: UseWorkoutDetailAnimati
   }, [onDismiss]);
 
   const handleBackPress = useCallback(() => {
-    void Haptics.selectionAsync();
+    triggerHaptic('selection');
     backScale.value = withSpring(0.92, springTight);
 
     setTimeout(() => {

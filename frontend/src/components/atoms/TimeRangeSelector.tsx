@@ -7,7 +7,7 @@
 import React, { useCallback } from 'react';
 import { View, Pressable, StyleSheet } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
-import * as Haptics from 'expo-haptics';
+import { triggerHaptic } from '@/utils/haptics';
 
 import { Text } from '@/components/atoms/Text';
 import { colors, spacing, radius } from '@/constants/theme';
@@ -35,7 +35,7 @@ const TimeRangeChip: React.FC<TimeRangeChipProps> = ({ label, active, onPress })
   }));
 
   const handlePress = useCallback(() => {
-    Haptics.selectionAsync().catch(() => undefined);
+    triggerHaptic('selection');
     scale.value = withSpring(0.95, springBouncy);
 
     setTimeout(() => {

@@ -1,6 +1,6 @@
-import React, { useCallback, useState, useRef, useMemo } from 'react';
-import { Pressable, StyleSheet, View, ScrollView } from 'react-native';
-import * as Haptics from 'expo-haptics';
+import React, { useCallback, useState, useRef, useMemo, useEffect } from 'react';
+import { Pressable, StyleSheet, View, ScrollView, BackHandler } from 'react-native';
+import { triggerHaptic } from '@/utils/haptics';
 import { useFocusEffect, useScrollToTop } from '@react-navigation/native';
 import { Button } from '@/components/atoms/Button';
 import { Text } from '@/components/atoms/Text';
@@ -82,6 +82,21 @@ const WorkoutScreen: React.FC = () => {
 
   const [workoutInProgressVisible, setWorkoutInProgressVisible] = useState<boolean>(false);
   const [showPlansList, setShowPlansList] = useState<boolean>(false);
+
+  // Handle Android hardware back button - navigate to Dashboard
+  useEffect(() => {
+    const backAction = () => {
+      if (showPlansList) {
+        setShowPlansList(false);
+        return true;
+      }
+      // If not showing plans list, go to Dashboard
+      return false; // Let default behavior handle it (will go to Dashboard via tab navigation)
+    };
+
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
+    return () => backHandler.remove();
+  }, [showPlansList]);
   const plans = usePlansStore((state: PlansState) => state.plans);
   const { userPrograms } = useProgramsStore();
   const startSession = useSessionStore((state) => state.startSession);
@@ -91,7 +106,7 @@ const WorkoutScreen: React.FC = () => {
   const setCompletionOverlayVisible = useSessionStore((state) => state.setCompletionOverlayVisible);
 
   const handleBack = () => {
-    Haptics.selectionAsync();
+    triggerHaptic('selection');
     setShowPlansList(false);
   };
 
@@ -101,7 +116,8 @@ const WorkoutScreen: React.FC = () => {
 
   const allWorkouts = useWorkoutSessionsStore((state) => state.workouts);
 
-  // Combine workouts from both plans and programs
+  // Combine workouts from both plans and programs with name-based deduplication
+  // This prevents duplicates when the same workout exists in both plansStore and programs
   const allAvailableWorkouts = useMemo(() => {
     interface WorkoutItem {
       id: string;
@@ -113,24 +129,33 @@ const WorkoutScreen: React.FC = () => {
       subtitle: string;
     }
 
-    const workoutsList: WorkoutItem[] = [];
+    // Use name-based grouping to prevent duplicates
+    const workoutsGroupedByName: Record<string, WorkoutItem> = {};
 
-    // Add custom workouts from plansStore
+    // Add custom workouts from plansStore first (these are the "source of truth")
     plans.forEach(plan => {
-      workoutsList.push({
-        id: plan.id,
-        name: plan.name,
-        exercises: plan.exercises,
-        type: 'custom',
-        subtitle: `${plan.exercises.length} ${plan.exercises.length === 1 ? 'exercise' : 'exercises'}`
-      });
+      const nameKey = plan.name.trim().toLowerCase();
+      if (!workoutsGroupedByName[nameKey]) {
+        workoutsGroupedByName[nameKey] = {
+          id: plan.id,
+          name: plan.name,
+          exercises: plan.exercises,
+          type: 'custom',
+          subtitle: `${plan.exercises.length} ${plan.exercises.length === 1 ? 'exercise' : 'exercises'}`
+        };
+      }
     });
 
-    // Add workouts from programs
+    // Add workouts from programs - only if not already present by name
+    // If already present, update to show plan info (the workout is part of a plan)
     userPrograms.forEach(prog => {
       prog.workouts.forEach(w => {
-        if (w.exercises.length > 0) {
-          workoutsList.push({
+        if (w.exercises.length === 0) return;
+
+        const nameKey = w.name.trim().toLowerCase();
+        if (!workoutsGroupedByName[nameKey]) {
+          // New workout from program
+          workoutsGroupedByName[nameKey] = {
             id: w.id,
             name: w.name,
             exercises: w.exercises,
@@ -138,13 +163,21 @@ const WorkoutScreen: React.FC = () => {
             programId: prog.id,
             programName: prog.name,
             subtitle: `${prog.name} • ${w.exercises.length} ${w.exercises.length === 1 ? 'exercise' : 'exercises'}`
-          });
+          };
+        } else {
+          // Already exists - update to show it's part of a plan
+          // Use the program version's exercises (more up-to-date after edits)
+          workoutsGroupedByName[nameKey].exercises = w.exercises;
+          workoutsGroupedByName[nameKey].type = 'program';
+          workoutsGroupedByName[nameKey].programId = prog.id;
+          workoutsGroupedByName[nameKey].programName = prog.name;
+          workoutsGroupedByName[nameKey].subtitle = `${prog.name} • ${w.exercises.length} ${w.exercises.length === 1 ? 'exercise' : 'exercises'}`;
         }
       });
     });
 
-    // Sort using same logic as My Workouts in plans.tsx
-    return workoutsList.sort((a, b) => {
+    // Convert to array and sort
+    return Object.values(workoutsGroupedByName).sort((a, b) => {
       // Priority 1: Group by Plan (Custom considered as a plan group)
       const aPlanGroup = a.type === 'custom' ? 'Custom' : a.programName || '';
       const bPlanGroup = b.type === 'custom' ? 'Custom' : b.programName || '';
@@ -159,7 +192,7 @@ const WorkoutScreen: React.FC = () => {
 
   const handlePlanSelect = useCallback(
     (workout: any) => {
-      void Haptics.selectionAsync();
+      triggerHaptic('selection');
 
       const doStartSession = () => {
         setCompletionOverlayVisible(false);
@@ -190,7 +223,7 @@ const WorkoutScreen: React.FC = () => {
   );
 
   const handleStartFromScratch = useCallback(() => {
-    void Haptics.selectionAsync();
+    triggerHaptic('selection');
 
     const doStartSession = () => {
       setCompletionOverlayVisible(false);
@@ -262,7 +295,7 @@ const WorkoutScreen: React.FC = () => {
                     accessibilityRole="button"
                     accessibilityLabel={`Start ${workout.name}`}
                   >
-                    <SurfaceCard tone="neutral" padding="md" showAccentStripe={false} style={styles.planCard}>
+                    <SurfaceCard tone="neutral" padding="md" showAccentStripe={true} style={styles.planCard}>
                       <View style={styles.planCardContent}>
                         <Text variant="bodySemibold" color="primary">
                           {workout.name}
@@ -275,7 +308,7 @@ const WorkoutScreen: React.FC = () => {
                   </Pressable>
                 ))
               ) : (
-                <SurfaceCard tone="neutral" padding="md" showAccentStripe={false} style={styles.planCard}>
+                <SurfaceCard tone="neutral" padding="md" showAccentStripe={true} style={styles.planCard}>
                   <View style={styles.planCardContent}>
                     <Text variant="bodySemibold" color="primary">
                       No saved workouts yet

@@ -7,7 +7,7 @@
 import React, { useMemo } from 'react';
 import { StyleProp, StyleSheet, TouchableOpacity, View, ViewStyle } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
-import * as Haptics from 'expo-haptics';
+import { triggerHaptic } from '@/utils/haptics';
 
 import { Text } from '@/components/atoms/Text';
 import { buttonPressAnimation, springSmooth } from '@/constants/animations';
@@ -48,7 +48,7 @@ export const CalendarDayCell: React.FC<CalendarDayCellProps> = ({
 
   const handlePress = () => {
     scale.value = withSpring(0.94, springSmooth);
-    Haptics.selectionAsync();
+    triggerHaptic('selection');
 
     setTimeout(() => {
       scale.value = withSpring(1, springSmooth);
@@ -137,7 +137,7 @@ export const CalendarDayCell: React.FC<CalendarDayCellProps> = ({
         onLongPress={
           onLongPress
             ? () => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+              triggerHaptic('medium');
               onLongPress(isoDate);
             }
             : undefined

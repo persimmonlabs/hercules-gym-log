@@ -4,11 +4,11 @@
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { StyleSheet, View, Pressable, ScrollView, Alert, ActivityIndicator } from 'react-native';
+import { StyleSheet, View, Pressable, ScrollView, Alert, ActivityIndicator, Switch } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import Animated, { useSharedValue, withSpring } from 'react-native-reanimated';
-import * as Haptics from 'expo-haptics';
+import { triggerHaptic } from '@/utils/haptics';
 
 import { Text } from '@/components/atoms/Text';
 import { SurfaceCard } from '@/components/atoms/SurfaceCard';
@@ -40,14 +40,14 @@ const ProfileModal: React.FC = () => {
   const [isNotificationsModalVisible, setIsNotificationsModalVisible] = useState(false);
   const [isSignOutModalVisible, setIsSignOutModalVisible] = useState(false);
   const [isFeedbackModalVisible, setIsFeedbackModalVisible] = useState(false);
-  const { weightUnit, distanceUnit, sizeUnit, formatWeight } = useSettingsStore();
+  const { weightUnit, distanceUnit, sizeUnit, formatWeight, hapticsEnabled, setHapticsEnabled } = useSettingsStore();
   const { notificationsEnabled, configs } = useNotificationStore();
   const { premiumOverride, setPremiumOverride } = useDevToolsStore();
   const backScale = useSharedValue(1);
 
   const handleBackPress = () => {
     backScale.value = withSpring(0.9, { damping: 15, stiffness: 300 });
-    void Haptics.selectionAsync();
+    triggerHaptic('selection');
     setTimeout(() => {
       backScale.value = withSpring(1, { damping: 15, stiffness: 300 });
       router.back();
@@ -55,8 +55,8 @@ const ProfileModal: React.FC = () => {
   };
 
   const handlePreferencePress = (title: string) => {
-    void Haptics.selectionAsync();
-    
+    triggerHaptic('selection');
+
     if (title === 'Send Feedback') {
       setIsFeedbackModalVisible(true);
     } else {
@@ -65,7 +65,7 @@ const ProfileModal: React.FC = () => {
   };
 
   const handleSignOut = () => {
-    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+    triggerHaptic('warning');
     setIsSignOutModalVisible(true);
   };
 
@@ -128,7 +128,7 @@ const ProfileModal: React.FC = () => {
   };
 
   const handleNameEdit = () => {
-    void Haptics.selectionAsync();
+    triggerHaptic('selection');
     setIsNameModalVisible(true);
   };
 
@@ -276,7 +276,7 @@ const ProfileModal: React.FC = () => {
                 title="Notifications"
                 subtitle={notificationsEnabled ? `${configs.length} reminder${configs.length !== 1 ? 's' : ''} active` : 'Set workout reminders'}
                 onPress={() => {
-                  void Haptics.selectionAsync();
+                  triggerHaptic('selection');
                   setIsNotificationsModalVisible(true);
                 }}
               />
@@ -286,11 +286,21 @@ const ProfileModal: React.FC = () => {
                 title="Units of Measurement"
                 subtitle={`${weightUnit === 'kg' ? 'kg' : 'lbs'} • ${distanceUnit === 'km' ? 'km' : 'mi'} • ${sizeUnit === 'cm' ? 'cm' : 'in'}`}
                 onPress={() => {
-                  void Haptics.selectionAsync();
+                  triggerHaptic('selection');
                   setIsUnitsModalVisible(true);
                 }}
               />
-                          </View>
+              <TogglePreferenceItem
+                icon="vibration"
+                title="Haptic Feedback"
+                subtitle={hapticsEnabled ? "Haptics enabled" : "Haptics disabled"}
+                value={hapticsEnabled}
+                onValueChange={(val) => {
+                  setHapticsEnabled(val);
+                  if (val) triggerHaptic('selection');
+                }}
+              />
+            </View>
           </View>
         </SurfaceCard>
 
@@ -330,7 +340,7 @@ const ProfileModal: React.FC = () => {
                 <Pressable
                   style={styles.devToggleRow}
                   onPress={() => {
-                    void Haptics.selectionAsync();
+                    triggerHaptic('selection');
                     const newValue = premiumOverride === 'premium' ? 'free' : 'premium';
                     setPremiumOverride(newValue);
                   }}
@@ -444,7 +454,7 @@ const PreferenceItem: React.FC<PreferenceItemProps> = ({ icon, title, subtitle, 
     <Pressable
       onPress={() => {
         scale.value = withSpring(0.95, { damping: 15, stiffness: 300 });
-        void Haptics.selectionAsync();
+        triggerHaptic('selection');
         setTimeout(() => {
           scale.value = withSpring(1, { damping: 15, stiffness: 300 });
           onPress();
@@ -614,6 +624,65 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xs,
     borderRadius: radius.full,
   },
+  toggleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: spacing.sm,
+    flex: 1,
+  },
 });
+
+interface TogglePreferenceItemProps {
+  icon: string;
+  title: string;
+  subtitle: string;
+  value: boolean;
+  onValueChange: (value: boolean) => void;
+}
+
+const TogglePreferenceItem: React.FC<TogglePreferenceItemProps> = ({
+  icon,
+  title,
+  subtitle,
+  value,
+  onValueChange
+}) => {
+  const { theme } = useTheme();
+
+  return (
+    <SurfaceCard
+      tone="neutral"
+      padding="lg"
+      showAccentStripe={false}
+      style={{ borderWidth: 0, height: 88 }}
+    >
+      <View style={styles.preferenceItemContent}>
+        <View style={styles.preferenceIcon}>
+          <IconSymbol
+            name={icon}
+            color={theme.accent.orange}
+            size={24}
+          />
+        </View>
+        <View style={styles.preferenceContent}>
+          <Text variant="bodySemibold" color="primary">
+            {title}
+          </Text>
+          <Text variant="caption" color="secondary">
+            {subtitle}
+          </Text>
+        </View>
+        <Switch
+          value={value}
+          onValueChange={onValueChange}
+          trackColor={{ false: theme.surface.subtle, true: theme.accent.orange }}
+          thumbColor={'#FFFFFF'}
+          ios_backgroundColor={theme.surface.subtle}
+        />
+      </View>
+    </SurfaceCard>
+  );
+};
 
 export default ProfileModal;

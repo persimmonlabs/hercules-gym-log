@@ -7,9 +7,10 @@ import {
   ScrollView,
   StyleSheet,
   View,
+  BackHandler,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import * as Haptics from 'expo-haptics';
+import { triggerHaptic } from '@/utils/haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, {
   runOnJS,
@@ -27,6 +28,7 @@ import { PlanQuickBuilderCard } from '@/components/molecules/PlanQuickBuilderCar
 import type { PlanQuickBuilderField } from '@/types/planQuickBuilder';
 import { PlanSelectedExerciseList } from '@/components/molecules/PlanSelectedExerciseList';
 import { PremiumLimitModal } from '@/components/molecules/PremiumLimitModal';
+import { DeleteConfirmationModal } from '@/components/molecules/DeleteConfirmationModal';
 import { useSemanticExerciseSearch } from '@/hooks/useSemanticExerciseSearch';
 import { type Plan, type PlansState, usePlansStore } from '@/store/plansStore';
 import { useProgramsStore } from '@/store/programsStore';
@@ -150,7 +152,7 @@ const CreatePlanScreen: React.FC = () => {
     if (!targetPremadeWorkoutId) return null;
     return premadeWorkouts.find(w => w.id === targetPremadeWorkoutId) ?? null;
   }, [premadeWorkouts, targetPremadeWorkoutId]);
-  
+
   // Check if this premade workout has already been added to My Workouts
   const isAlreadyAdded = useMemo(() => {
     if (!premadeWorkout) return false;
@@ -213,7 +215,7 @@ const CreatePlanScreen: React.FC = () => {
         router.back();
         return;
       }
-      
+
       setPlanName(premadeWorkout.name);
 
       // Map premade exercises (which might just have IDs) to full Exercise objects
@@ -259,9 +261,26 @@ const CreatePlanScreen: React.FC = () => {
     });
   }, []);
 
-  const handleRemoveExercise = useCallback((exerciseId: string) => {
-    setSelectedExercises((prev) => prev.filter((exercise) => exercise.id !== exerciseId));
+  const [exerciseToDelete, setExerciseToDelete] = useState<string | null>(null);
+
+  const initiateRemoveExercise = useCallback((exerciseId: string) => {
+    console.log('[create-plan] initiateRemoveExercise called for:', exerciseId);
+    triggerHaptic('warning');
+    setExerciseToDelete(exerciseId);
   }, []);
+
+  const confirmRemoveExercise = useCallback(() => {
+    console.log('[create-plan] confirmRemoveExercise called. exerciseToDelete:', exerciseToDelete);
+    if (exerciseToDelete) {
+      console.log('[create-plan] Removing exercise with ID:', exerciseToDelete);
+      setSelectedExercises((prev) => {
+        const next = prev.filter((exercise) => exercise.id !== exerciseToDelete);
+        console.log('[create-plan] New exercises length:', next.length);
+        return next;
+      });
+      setExerciseToDelete(null);
+    }
+  }, [exerciseToDelete]);
 
   const handleReorderList = useCallback((newExercises: Exercise[]) => {
     setSelectedExercises(newExercises);
@@ -330,7 +349,7 @@ const CreatePlanScreen: React.FC = () => {
         });
       }
 
-      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      await triggerHaptic('success');
       return 'success';
     } catch (error: any) {
       if (error?.message === 'FREE_LIMIT_REACHED') {
@@ -368,7 +387,7 @@ const CreatePlanScreen: React.FC = () => {
   }, [isEditing, planName, router, selectedExercises, submitPlan]);
 
   const handleBackPress = useCallback(() => {
-    void Haptics.selectionAsync();
+    triggerHaptic('selection');
 
     containerTranslateY.value = withTiming(
       SCREEN_HEIGHT,
@@ -381,6 +400,17 @@ const CreatePlanScreen: React.FC = () => {
     );
   }, [containerTranslateY, router]);
 
+  // Handle Android hardware back button
+  useEffect(() => {
+    const backAction = () => {
+      handleBackPress();
+      return true;
+    };
+
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
+    return () => backHandler.remove();
+  }, [handleBackPress]);
+
   return (
     <>
       <PremiumLimitModal
@@ -389,105 +419,114 @@ const CreatePlanScreen: React.FC = () => {
         limitType="workout"
       />
       <Animated.View style={[styles.container, { paddingTop: spacing.lg + insets.top, paddingBottom: insets.bottom + sizing.tabBarHeight }, animatedContainerStyle]}>
-      <KeyboardAvoidingView
-        style={styles.keyboardAvoider}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={spacing['2xl']}
-      >
-        <ScrollView
-          ref={scrollRef}
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
-          keyboardDismissMode="on-drag"
+        <KeyboardAvoidingView
+          style={styles.keyboardAvoider}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          keyboardVerticalOffset={spacing['2xl']}
         >
-          <View style={styles.topSection}>
-            <View style={styles.headerContent}>
-              <Text variant="heading1" color="primary" style={styles.headerTitle} fadeIn>
-                {headerTitle}
-              </Text>
-              <Text variant="body" color="secondary" style={styles.headerSubtitle} fadeIn>
-                {headerSubtitle}
-              </Text>
+          <ScrollView
+            ref={scrollRef}
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="on-drag"
+          >
+            <View style={styles.topSection}>
+              <View style={styles.headerContent}>
+                <Text variant="heading1" color="primary" style={styles.headerTitle} fadeIn>
+                  {headerTitle}
+                </Text>
+                <Text variant="body" color="secondary" style={styles.headerSubtitle} fadeIn>
+                  {headerSubtitle}
+                </Text>
+              </View>
+
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Go Back"
+                style={styles.backButtonContainer}
+                onPress={handleBackPress}
+              >
+                <IconSymbol name="arrow-back" size={sizing.iconMD} color={colors.text.primary} />
+              </Pressable>
             </View>
 
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Go Back"
-              style={styles.backButtonContainer}
-              onPress={handleBackPress}
-            >
-              <IconSymbol name="arrow-back" size={sizing.iconMD} color={colors.text.primary} />
-            </Pressable>
-          </View>
+            {isEditing && !editingPlan ? (
+              <SurfaceCard tone="neutral" padding="xl" showAccentStripe={false} style={styles.missingPlanCard}>
+                <Text variant="bodySemibold" color="primary">
+                  Plan unavailable
+                </Text>
+                <Text variant="body" color="secondary">
+                  We couldn’t find the plan you’re trying to edit. Please go back and select another plan.
+                </Text>
+                <Button label="Go Back" variant="secondary" onPress={router.back} />
+              </SurfaceCard>
+            ) : isPremadeReview && isAlreadyAdded ? (
+              <SurfaceCard tone="neutral" padding="xl" showAccentStripe={false} style={styles.missingPlanCard}>
+                <Text variant="bodySemibold" color="primary">
+                  Workout Already Added
+                </Text>
+                <Text variant="body" color="secondary">
+                  This workout has already been added to your My Workouts. You can find it in the Plans tab.
+                </Text>
+                <Button label="Go Back" variant="secondary" onPress={router.back} />
+              </SurfaceCard>
+            ) : null}
 
-          {isEditing && !editingPlan ? (
-            <SurfaceCard tone="neutral" padding="xl" showAccentStripe={false} style={styles.missingPlanCard}>
-              <Text variant="bodySemibold" color="primary">
-                Plan unavailable
-              </Text>
-              <Text variant="body" color="secondary">
-                We couldn’t find the plan you’re trying to edit. Please go back and select another plan.
-              </Text>
-              <Button label="Go Back" variant="secondary" onPress={router.back} />
-            </SurfaceCard>
-          ) : isPremadeReview && isAlreadyAdded ? (
-            <SurfaceCard tone="neutral" padding="xl" showAccentStripe={false} style={styles.missingPlanCard}>
-              <Text variant="bodySemibold" color="primary">
-                Workout Already Added
-              </Text>
-              <Text variant="body" color="secondary">
-                This workout has already been added to your My Workouts. You can find it in the Plans tab.
-              </Text>
-              <Button label="Go Back" variant="secondary" onPress={router.back} />
-            </SurfaceCard>
-          ) : null}
+            {!(isPremadeReview && isAlreadyAdded) && (
+              <View style={styles.builderContainer}>
+                <PlanQuickBuilderCard
+                  planName={planName}
+                  onPlanNameChange={setPlanName}
+                  searchTerm={searchTerm}
+                  onSearchTermChange={setSearchTerm}
+                  suggestions={suggestedExercises}
+                  onAddExercise={handleAddExercise}
+                  onCardLayout={handleCardLayout}
+                  onFieldLayout={handleFieldLayout}
+                  onFieldFocus={handleFieldFocus}
+                  onFieldBlur={handleFieldBlur}
+                  onFocusSearch={() => handleFieldFocus('search')}
+                  isFieldFocused={focusedField !== null}
+                  planNameLabel={nameFieldLabel}
+                  planNamePlaceholder={namePlaceholder}
+                  isNameDuplicate={isNameDuplicate}
+                />
+              </View>
+            )}
 
-          {!(isPremadeReview && isAlreadyAdded) && (
-          <View style={styles.builderContainer}>
-            <PlanQuickBuilderCard
-              planName={planName}
-              onPlanNameChange={setPlanName}
-              searchTerm={searchTerm}
-              onSearchTermChange={setSearchTerm}
-              suggestions={suggestedExercises}
-              onAddExercise={handleAddExercise}
-              onCardLayout={handleCardLayout}
-              onFieldLayout={handleFieldLayout}
-              onFieldFocus={handleFieldFocus}
-              onFieldBlur={handleFieldBlur}
-              onFocusSearch={() => handleFieldFocus('search')}
-              isFieldFocused={focusedField !== null}
-              planNameLabel={nameFieldLabel}
-              planNamePlaceholder={namePlaceholder}
-              isNameDuplicate={isNameDuplicate}
-            />
-          </View>
-        )}
-
-          {!(isPremadeReview && isAlreadyAdded) && (
-          <PlanSelectedExerciseList
-            exercises={selectedExercises}
-            onRemoveExercise={handleRemoveExercise}
-            onAddExercises={() => handleFieldFocus('search')}
-            onReorder={handleReorderList}
-            onReorderExercises={(fromIndex, toIndex) => {
-              const newExercises = [...selectedExercises];
-              const [moved] = newExercises.splice(fromIndex, 1);
-              newExercises.splice(toIndex, 0, moved);
-              handleReorderList(newExercises);
-            }}
-            onSave={handleSavePlan}
-            isSaveDisabled={planName.trim().length === 0 || selectedExercises.length === 0 || isSaving || isNameDuplicate}
-            isSaving={isSaving}
-            title={selectedListTitle}
-            subtitle={selectedListSubtitle}
-            saveLabel={saveCtaLabel}
-          />
-        )}
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </Animated.View>
+            {!(isPremadeReview && isAlreadyAdded) && (
+              <PlanSelectedExerciseList
+                exercises={selectedExercises}
+                onRemoveExercise={initiateRemoveExercise}
+                onAddExercises={() => handleFieldFocus('search')}
+                onReorder={handleReorderList}
+                onReorderExercises={(fromIndex, toIndex) => {
+                  const newExercises = [...selectedExercises];
+                  const [moved] = newExercises.splice(fromIndex, 1);
+                  newExercises.splice(toIndex, 0, moved);
+                  handleReorderList(newExercises);
+                }}
+                onSave={handleSavePlan}
+                isSaveDisabled={planName.trim().length === 0 || selectedExercises.length === 0 || isSaving || isNameDuplicate}
+                isSaving={isSaving}
+                title={selectedListTitle}
+                subtitle={selectedListSubtitle}
+                saveLabel={saveCtaLabel}
+              />
+            )}
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </Animated.View>
+      <DeleteConfirmationModal
+        visible={!!exerciseToDelete}
+        onClose={() => setExerciseToDelete(null)}
+        onConfirm={confirmRemoveExercise}
+        title="Remove Exercise?"
+        message="Are you sure you want to remove this exercise from the workout?"
+        confirmLabel="Remove"
+        cancelLabel="Keep"
+      />
     </>
   );
 };

@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState, useRef } from 'react';
-import { Pressable, StyleSheet, View, InteractionManager } from 'react-native';
+import { Pressable, StyleSheet, View, InteractionManager, BackHandler } from 'react-native';
 import { useRouter } from 'expo-router';
-import * as Haptics from 'expo-haptics';
+import { triggerHaptic } from '@/utils/haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -265,12 +265,23 @@ const AddExercisesScreen: React.FC = () => {
   );
 
   const handleBackPress = useCallback(() => {
-    void Haptics.selectionAsync();
+    triggerHaptic('selection');
     resetFilters();
     setSearchTerm('');
     setIsLoading(true); // Show loading on create-workout while navigating back
     router.back();
   }, [resetFilters, router, setSearchTerm, setIsLoading]);
+
+  // Handle Android hardware back button
+  useEffect(() => {
+    const backAction = () => {
+      handleBackPress();
+      return true;
+    };
+
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
+    return () => backHandler.remove();
+  }, [handleBackPress]);
 
   const handleSavePress = useCallback(() => {
     if (selectedCount === 0) {
@@ -286,24 +297,24 @@ const AddExercisesScreen: React.FC = () => {
   }, [handleAddExercises, resetFilters, router, selectedCount, selectedExercises, setSearchTerm, setIsLoading]);
 
   const handleOpenFilters = useCallback(() => {
-    void Haptics.selectionAsync();
+    triggerHaptic('selection');
     setIsFilterSheetVisible(true);
   }, []);
 
   const handleCloseFilters = useCallback(() => {
-    void Haptics.selectionAsync();
+    triggerHaptic('selection');
     setIsFilterSheetVisible(false);
   }, []);
 
   const handleApplyFilters = useCallback((newFilters: ExerciseFilters) => {
-    void Haptics.selectionAsync();
+    triggerHaptic('selection');
     updateFilters(newFilters);
     setIsFilterSheetVisible(false);
   }, [updateFilters]);
 
   const handleRemoveFilter = useCallback(
     (label: string) => {
-      void Haptics.selectionAsync();
+      triggerHaptic('selection');
       if (label === 'Bodyweight') {
         toggleBodyweightOnly();
       } else if (label === 'Compound') {
@@ -358,7 +369,7 @@ const AddExercisesScreen: React.FC = () => {
       >
         <View style={styles.headerRow}>
           <View style={styles.titleGroup}>
-            <Text variant="heading1" color="primary" style={styles.headerTitle} fadeIn>
+            <Text variant="heading2" color="primary" style={styles.headerTitle} fadeIn>
               Add Exercises
             </Text>
             <Text variant="body" color="secondary" style={styles.headerSubtitle} fadeIn>
@@ -448,7 +459,7 @@ const AddExercisesScreen: React.FC = () => {
           <Pressable
             style={styles.createExerciseRow}
             onPress={() => {
-              void Haptics.selectionAsync();
+              triggerHaptic('selection');
               setIsCreateExerciseModalVisible(true);
             }}
             accessibilityRole="button"

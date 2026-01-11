@@ -40,6 +40,10 @@ interface SettingsState {
   setSizeUnit: (unit: SizeUnit) => void;
   /** Set Pro status */
   setPro: (isPro: boolean) => void;
+  /** Whether haptics are enabled globally */
+  hapticsEnabled: boolean;
+  /** Set haptics enabled status */
+  setHapticsEnabled: (enabled: boolean) => void;
   /** Get weight unit label */
   getWeightUnit: () => string;
   /** Get height unit label */
@@ -168,6 +172,23 @@ export const useSettingsStore = create<SettingsState>()(
         }
       },
 
+      hapticsEnabled: true,
+
+      setHapticsEnabled: async (enabled: boolean) => {
+        set({ hapticsEnabled: enabled });
+        try {
+          const { data: { user } } = await supabaseClient.auth.getUser();
+          if (user) {
+            // Check if column exists or handle error silently if it doesn't
+            // For now assuming we might not have a DB column yet, so just local persist is fine
+            // But if we want to sync, we can try:
+            await supabaseClient.from('profiles').update({ haptics_enabled: enabled }).eq('id', user.id);
+          }
+        } catch (error) {
+          // console.warn('Failed to sync haptics to Supabase', error);
+        }
+      },
+
       syncFromSupabase: async () => {
         try {
           const { data: { user } } = await supabaseClient.auth.getUser();
@@ -187,6 +208,7 @@ export const useSettingsStore = create<SettingsState>()(
                 sizeUnit: (data.size_unit as SizeUnit) || get().sizeUnit,
                 themePreference: (data.theme_preference as ThemePreference) || get().themePreference,
                 isPro: (data.is_pro as boolean) ?? get().isPro,
+                // hapticsEnabled: (data.haptics_enabled as boolean) ?? get().hapticsEnabled,
               });
             }
           }
@@ -319,7 +341,7 @@ export const useSettingsStore = create<SettingsState>()(
         const unit = get().getDistanceUnitForExercise(distanceUnit);
         const value = get().convertDistanceForExercise(miles, distanceUnit);
         let formatted: string;
-        
+
         if (distanceUnit === 'meters') {
           formatted = Math.round(value).toString();
         } else if (decimals !== undefined) {
@@ -327,14 +349,14 @@ export const useSettingsStore = create<SettingsState>()(
         } else {
           formatted = value.toFixed(1);
         }
-        
+
         return `${get().formatNumberWithCommas(parseFloat(formatted))} ${unit}`;
       },
 
       formatDistanceValueForExercise: (miles: number, distanceUnit?: 'miles' | 'meters' | 'floors', decimals?: number) => {
         const value = get().convertDistanceForExercise(miles, distanceUnit);
         let formatted: string;
-        
+
         if (distanceUnit === 'meters') {
           formatted = Math.round(value).toString();
         } else if (decimals !== undefined) {
@@ -342,7 +364,7 @@ export const useSettingsStore = create<SettingsState>()(
         } else {
           formatted = value.toFixed(1);
         }
-        
+
         return get().formatNumberWithCommas(parseFloat(formatted));
       },
     }),
@@ -356,6 +378,7 @@ export const useSettingsStore = create<SettingsState>()(
         sizeUnit: state.sizeUnit,
         themePreference: state.themePreference,
         isPro: state.isPro,
+        hapticsEnabled: state.hapticsEnabled,
       }),
     }
   )

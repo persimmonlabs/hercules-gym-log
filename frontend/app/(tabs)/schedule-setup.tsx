@@ -4,10 +4,10 @@
  * Supports Weekly, Rotating Cycle, and Plan-Driven schedule types.
  */
 import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
-import { View, StyleSheet, ScrollView, Pressable, Modal, FlatList } from 'react-native';
+import { View, StyleSheet, ScrollView, Pressable, Modal, FlatList, BackHandler } from 'react-native';
 import { PanGestureHandler, State } from 'react-native-gesture-handler';
 import { useRouter } from 'expo-router';
-import * as Haptics from 'expo-haptics';
+import { triggerHaptic } from '@/utils/haptics';
 
 import { Text } from '@/components/atoms/Text';
 import { Button } from '@/components/atoms/Button';
@@ -247,7 +247,7 @@ const ScheduleSetupScreen: React.FC = () => {
   }, [userPrograms]);
 
   const handleTypeSelect = useCallback((type: ScheduleRuleType) => {
-    void Haptics.selectionAsync();
+    triggerHaptic('selection');
     setSelectedType(type);
 
     switch (type) {
@@ -304,7 +304,7 @@ const ScheduleSetupScreen: React.FC = () => {
   }, [draftRule, newestPlan, selectedType]);
 
   const handleBack = useCallback(() => {
-    void Haptics.selectionAsync();
+    triggerHaptic('selection');
     if (step === 'configure') {
       // Always go to type-select from configure mode
       setStep('type-select');
@@ -313,8 +313,19 @@ const ScheduleSetupScreen: React.FC = () => {
     }
   }, [step, router]);
 
+  // Handle Android hardware back button
+  useEffect(() => {
+    const backAction = () => {
+      handleBack();
+      return true;
+    };
+
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
+    return () => backHandler.remove();
+  }, [handleBack]);
+
   const handleSave = useCallback(async () => {
-    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    triggerHaptic('success');
     
     // Update rotating/plan-driven rule with selected start date
     let finalRule = draftRule;
@@ -336,19 +347,19 @@ const ScheduleSetupScreen: React.FC = () => {
   }, [draftRule, startDate, setActiveRule, router]);
 
   const handleClearSchedule = useCallback(async () => {
-    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+    triggerHaptic('warning');
     await setActiveRule(null);
     router.push('/(tabs)/plans');
   }, [setActiveRule, router]);
 
   const openWorkoutPicker = useCallback((type: 'weekly' | 'rotating' | 'plan-driven', index: number | WeekdayKey) => {
-    void Haptics.selectionAsync();
+    triggerHaptic('selection');
     setPickerContext({ type, index });
     setPickerVisible(true);
   }, []);
 
   const handleWorkoutSelect = useCallback((workoutId: string | null) => {
-    void Haptics.selectionAsync();
+    triggerHaptic('selection');
     if (!pickerContext || !draftRule) return;
 
     if (pickerContext.type === 'weekly' && draftRule.type === 'weekly') {
@@ -409,7 +420,7 @@ const ScheduleSetupScreen: React.FC = () => {
 
   const addCycleDay = useCallback(() => {
     if (draftRule?.type !== 'rotating') return;
-    void Haptics.selectionAsync();
+    triggerHaptic('selection');
     const newIndex = normalizeCycleWorkouts(draftRule.cycleWorkouts).length;
     if (newIndex >= MAX_ROTATING_CYCLE_DAYS) return;
     // Don't add the day yet, just open the picker
@@ -421,7 +432,7 @@ const ScheduleSetupScreen: React.FC = () => {
   const removeCycleDay = useCallback((index: number) => {
     if (draftRule?.type !== 'rotating') return;
     if (draftRule.cycleWorkouts.length <= 1) return;
-    void Haptics.selectionAsync();
+    triggerHaptic('selection');
     const newCycle = [...normalizeCycleWorkouts(draftRule.cycleWorkouts)];
     newCycle.splice(index, 1);
     setDraftRule({ ...draftRule, cycleWorkouts: normalizeCycleWorkouts(newCycle) });
@@ -429,7 +440,7 @@ const ScheduleSetupScreen: React.FC = () => {
 
   const updatePlanDrivenPlan = useCallback((planId: string) => {
     if (draftRule?.type !== 'plan-driven') return;
-    void Haptics.selectionAsync();
+    triggerHaptic('selection');
     
     // Find the selected plan and update cycleWorkouts from its suggested schedule
     const selectedPlan = userPrograms.find(p => p.id === planId);
@@ -443,7 +454,7 @@ const ScheduleSetupScreen: React.FC = () => {
 
   const addPlanDrivenDay = useCallback(() => {
     if (draftRule?.type !== 'plan-driven') return;
-    void Haptics.selectionAsync();
+    triggerHaptic('selection');
     const cycleWorkouts = draftRule.cycleWorkouts || [];
     const newIndex = cycleWorkouts.length;
     if (newIndex >= MAX_ROTATING_CYCLE_DAYS) return;
@@ -456,7 +467,7 @@ const ScheduleSetupScreen: React.FC = () => {
     if (draftRule?.type !== 'plan-driven') return;
     const cycleWorkouts = draftRule.cycleWorkouts || [];
     if (cycleWorkouts.length <= 1) return;
-    void Haptics.selectionAsync();
+    triggerHaptic('selection');
     const newCycle = [...cycleWorkouts];
     newCycle.splice(index, 1);
     setDraftRule({ ...draftRule, cycleWorkouts: newCycle });
@@ -469,7 +480,7 @@ const ScheduleSetupScreen: React.FC = () => {
     if (fromIndex >= cycleWorkouts.length || toIndex >= cycleWorkouts.length) return;
     if (fromIndex === toIndex) return;
 
-    void Haptics.selectionAsync();
+    triggerHaptic('selection');
     const newCycle = [...cycleWorkouts];
     const temp = newCycle[fromIndex];
     newCycle[fromIndex] = newCycle[toIndex];
@@ -945,7 +956,7 @@ const ScheduleSetupScreen: React.FC = () => {
     };
 
     const handleSaveStartDate = () => {
-      void Haptics.selectionAsync();
+      triggerHaptic('selection');
       setStartDate(pendingStartDate);
       setDatePickerVisible(false);
     };

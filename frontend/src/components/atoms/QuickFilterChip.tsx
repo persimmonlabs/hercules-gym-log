@@ -5,7 +5,7 @@
 import React, { useCallback } from 'react';
 import { Pressable, StyleSheet } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
-import * as Haptics from 'expo-haptics';
+import { triggerHaptic } from '@/utils/haptics';
 
 import { Text } from '@/components/atoms/Text';
 import { colors, radius, spacing } from '@/constants/theme';
@@ -26,7 +26,7 @@ export const QuickFilterChip: React.FC<QuickFilterChipProps> = ({ label, active,
   }));
 
   const handlePress = useCallback(() => {
-    Haptics.selectionAsync().catch(() => undefined);
+    triggerHaptic('selection');
     scale.value = withSpring(0.95, springBouncy);
 
     setTimeout(() => {

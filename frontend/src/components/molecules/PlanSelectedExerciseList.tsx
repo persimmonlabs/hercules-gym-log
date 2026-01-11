@@ -6,7 +6,7 @@
 import React from 'react';
 import { StyleSheet, View, Pressable } from 'react-native';
 import Animated, { FadeIn, Layout } from 'react-native-reanimated';
-import * as Haptics from 'expo-haptics';
+import { triggerHaptic } from '@/utils/haptics';
 
 import { Text } from '@/components/atoms/Text';
 import { SurfaceCard } from '@/components/atoms/SurfaceCard';
@@ -50,7 +50,7 @@ export const PlanSelectedExerciseList: React.FC<PlanSelectedExerciseListProps> =
 
     if (newIndex < 0 || newIndex >= exercises.length) return;
 
-    Haptics.selectionAsync();
+    triggerHaptic('selection');
 
     // Call index-based callback
     onReorderExercises(index, newIndex);
@@ -68,107 +68,109 @@ export const PlanSelectedExerciseList: React.FC<PlanSelectedExerciseListProps> =
 
   return (
     <SurfaceCard padding="xl" tone="card" showAccentStripe style={styles.card}>
-      <View style={styles.header}>
-        <Text variant="bodySemibold" color="primary">
-          {title ?? 'Exercises'}
-        </Text>
-        {subtitle && (
-          <Text variant="caption" color="secondary">
-            {subtitle}
+      <View style={styles.mainContent}>
+        <View style={styles.header}>
+          <Text variant="bodySemibold" color="primary">
+            {title ?? 'Exercises'}
           </Text>
-        )}
-      </View>
+          {subtitle && (
+            <Text variant="caption" color="secondary">
+              {subtitle}
+            </Text>
+          )}
+        </View>
 
-      <View style={styles.list}>
-        {exercises.map((exercise, index) => {
-          const isFirst = index === 0;
-          const isLast = index === exercises.length - 1;
+        <View style={styles.list}>
+          {exercises.map((exercise, index) => {
+            const isFirst = index === 0;
+            const isLast = index === exercises.length - 1;
 
-          const tagText = getExerciseDisplayTagText({
-            muscles: exercise.muscles,
-            exerciseType: exercise.exerciseType,
-          });
+            const tagText = getExerciseDisplayTagText({
+              muscles: exercise.muscles,
+              exerciseType: exercise.exerciseType,
+            });
 
-          return (
-            <Animated.View
-              key={exercise.id}
-              layout={Layout.springify().damping(35).stiffness(300).mass(0.8)}
-              entering={FadeIn}
-              style={styles.row}
-            >
-              <View style={styles.rowContent}>
-                <View style={styles.textContainer}>
-                  <Text variant="bodySemibold" color="primary">
-                    {exercise.name}
-                  </Text>
-                  {tagText ? (
-                    <Text variant="caption" color="secondary">
-                      {tagText}
+            return (
+              <Animated.View
+                key={exercise.id}
+                layout={Layout.springify().damping(35).stiffness(300).mass(0.8)}
+                entering={FadeIn}
+                style={styles.row}
+              >
+                <View style={styles.rowContent}>
+                  <View style={styles.textContainer}>
+                    <Text variant="bodySemibold" color="primary">
+                      {exercise.name}
                     </Text>
-                  ) : null}
-                </View>
+                    {tagText ? (
+                      <Text variant="caption" color="secondary">
+                        {tagText}
+                      </Text>
+                    ) : null}
+                  </View>
 
-                <View style={styles.actions}>
-                  <View style={styles.reorderControls}>
+                  <View style={styles.actions}>
+                    <View style={styles.reorderControls}>
+                      <Pressable
+                        onPress={() => handleMove(index, 'up')}
+                        disabled={isFirst}
+                        style={({ pressed }) => [
+                          styles.iconButton,
+                          isFirst && styles.iconButtonDisabled,
+                          pressed && styles.iconButtonPressed
+                        ]}
+                        hitSlop={8}
+                      >
+                        <IconSymbol
+                          name="keyboard-arrow-up"
+                          size={20}
+                          color={isFirst ? colors.text.tertiary : colors.text.primary}
+                        />
+                      </Pressable>
+
+                      <Pressable
+                        onPress={() => handleMove(index, 'down')}
+                        disabled={isLast}
+                        style={({ pressed }) => [
+                          styles.iconButton,
+                          isLast && styles.iconButtonDisabled,
+                          pressed && styles.iconButtonPressed
+                        ]}
+                        hitSlop={8}
+                      >
+                        <IconSymbol
+                          name="keyboard-arrow-down"
+                          size={20}
+                          color={isLast ? colors.text.tertiary : colors.text.primary}
+                        />
+                      </Pressable>
+                    </View>
+
+                    <View style={styles.divider} />
+
                     <Pressable
-                      onPress={() => handleMove(index, 'up')}
-                      disabled={isFirst}
+                      onPress={() => {
+                        triggerHaptic('warning');
+                        onRemoveExercise(exercise.id);
+                      }}
                       style={({ pressed }) => [
-                        styles.iconButton,
-                        isFirst && styles.iconButtonDisabled,
-                        pressed && styles.iconButtonPressed
+                        styles.deleteButton,
+                        pressed && styles.deleteButtonPressed
                       ]}
                       hitSlop={8}
                     >
                       <IconSymbol
-                        name="keyboard-arrow-up"
-                        size={20}
-                        color={isFirst ? colors.text.tertiary : colors.text.primary}
-                      />
-                    </Pressable>
-
-                    <Pressable
-                      onPress={() => handleMove(index, 'down')}
-                      disabled={isLast}
-                      style={({ pressed }) => [
-                        styles.iconButton,
-                        isLast && styles.iconButtonDisabled,
-                        pressed && styles.iconButtonPressed
-                      ]}
-                      hitSlop={8}
-                    >
-                      <IconSymbol
-                        name="keyboard-arrow-down"
-                        size={20}
-                        color={isLast ? colors.text.tertiary : colors.text.primary}
+                        name="delete-outline"
+                        size={sizing.iconSM}
+                        color={colors.accent.orange}
                       />
                     </Pressable>
                   </View>
-
-                  <View style={styles.divider} />
-
-                  <Pressable
-                    onPress={() => {
-                      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-                      onRemoveExercise(exercise.id);
-                    }}
-                    style={({ pressed }) => [
-                      styles.deleteButton,
-                      pressed && styles.deleteButtonPressed
-                    ]}
-                    hitSlop={8}
-                  >
-                    <IconSymbol
-                      name="delete-outline"
-                      size={sizing.iconSM}
-                      color={colors.accent.orange}
-                    />
-                  </Pressable>
                 </View>
-              </View>
-            </Animated.View>
-          );
-        })}
+              </Animated.View>
+            );
+          })}
+        </View>
       </View>
 
       <View style={styles.footer}>
@@ -197,7 +199,9 @@ const styles = StyleSheet.create({
   },
   header: {
     gap: spacing.xs,
-    marginBottom: spacing.xs,
+  },
+  mainContent: {
+    gap: spacing.formField,
   },
   list: {
     gap: spacing.sm,
@@ -220,6 +224,7 @@ const styles = StyleSheet.create({
   textContainer: {
     flex: 1,
     gap: spacing.xs,
+    flexShrink: 1,
   },
   actions: {
     flexDirection: 'row',

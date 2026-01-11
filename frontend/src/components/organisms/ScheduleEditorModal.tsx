@@ -5,7 +5,7 @@
  */
 import React, { useState, useCallback, useMemo } from 'react';
 import { View, StyleSheet, Modal, Pressable, ScrollView } from 'react-native';
-import * as Haptics from 'expo-haptics';
+import { triggerHaptic } from '@/utils/haptics';
 
 import { Text } from '@/components/atoms/Text';
 import { Button } from '@/components/atoms/Button';
@@ -129,7 +129,7 @@ export const ScheduleEditorModal: React.FC<ScheduleEditorModalProps> = ({
   }, [userPrograms]);
 
   const handleTypeSelect = useCallback((type: ScheduleRuleType) => {
-    void Haptics.selectionAsync();
+    triggerHaptic('selection');
     setSelectedType(type);
 
     switch (type) {
@@ -156,24 +156,24 @@ export const ScheduleEditorModal: React.FC<ScheduleEditorModalProps> = ({
   }, [currentRule, allPlans]);
 
   const handleBack = useCallback(() => {
-    void Haptics.selectionAsync();
+    triggerHaptic('selection');
     setStep('type-select');
   }, []);
 
   const handleSave = useCallback(async () => {
-    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    triggerHaptic('success');
     await setActiveRule(draftRule);
     onClose();
   }, [draftRule, setActiveRule, onClose]);
 
   const handleClearSchedule = useCallback(async () => {
-    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+    triggerHaptic('warning');
     await setActiveRule(null);
     onClose();
   }, [setActiveRule, onClose]);
 
   const handleClose = useCallback(() => {
-    void Haptics.selectionAsync();
+    triggerHaptic('selection');
     setStep('type-select');
     setSelectedType(currentRule?.type || null);
     setDraftRule(currentRule);

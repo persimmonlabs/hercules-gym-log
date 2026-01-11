@@ -5,7 +5,7 @@
 
 import React, { useState, useCallback, useEffect } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, View, Alert } from 'react-native';
-import * as Haptics from 'expo-haptics';
+import { triggerHaptic } from '@/utils/haptics';
 
 import { Text } from '@/components/atoms/Text';
 import { Button } from '@/components/atoms/Button';
@@ -61,12 +61,12 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({ visible,
   }, [configs, notificationsEnabled, hasPermission]);
 
   const handleClose = useCallback(() => {
-    void Haptics.selectionAsync();
+    triggerHaptic('selection');
     onClose();
   }, [onClose]);
 
   const handleToggleNotifications = async () => {
-    void Haptics.selectionAsync();
+    triggerHaptic('selection');
 
     if (!notificationsEnabled) {
       // Turning on - request permission first
@@ -91,7 +91,7 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({ visible,
   };
 
   const handleAddConfig = () => {
-    void Haptics.selectionAsync();
+    triggerHaptic('selection');
     setEditingConfig(null);
     setEditModalVisible(true);
   };

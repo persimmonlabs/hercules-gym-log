@@ -4711,7 +4711,13 @@
     "name": "Mountain Climbers",
     "exercise_type": "bodyweight",
     "distance_unit": null,
-    "muscles": {},
+    "muscles": {
+      "Lower Abs": 0.4,
+      "Upper Abs": 0.2,
+      "Obliques": 0.2,
+      "Front Delts": 0.1,
+      "Quads": 0.1
+    },
     "equipment": [
       "Bodyweight"
     ],
@@ -4726,7 +4732,13 @@
     "name": "Burpees",
     "exercise_type": "bodyweight",
     "distance_unit": null,
-    "muscles": {},
+    "muscles": {
+      "Quads": 0.3,
+      "Glutes": 0.2,
+      "Mid Chest": 0.2,
+      "Front Delts": 0.2,
+      "Triceps - Long Head": 0.1
+    },
     "equipment": [
       "Bodyweight"
     ],
@@ -4860,7 +4872,10 @@
     "name": "Band Pull-aparts",
     "exercise_type": "reps_only",
     "distance_unit": null,
-    "muscles": {},
+    "muscles": {
+      "Rear Delts": 0.7,
+      "Upper Back": 0.3
+    },
     "equipment": [
       "Bands"
     ],
@@ -4875,7 +4890,11 @@
     "name": "Band Rows",
     "exercise_type": "reps_only",
     "distance_unit": null,
-    "muscles": {},
+    "muscles": {
+      "Lats": 0.5,
+      "Mid Back": 0.3,
+      "Rear Delts": 0.2
+    },
     "equipment": [
       "Bands"
     ],
@@ -4890,7 +4909,10 @@
     "name": "Band Bicep Curls",
     "exercise_type": "reps_only",
     "distance_unit": null,
-    "muscles": {},
+    "muscles": {
+      "Biceps - Long Head": 0.5,
+      "Biceps - Short Head": 0.5
+    },
     "equipment": [
       "Bands"
     ],
@@ -4905,7 +4927,11 @@
     "name": "Band Tricep Pushdowns",
     "exercise_type": "reps_only",
     "distance_unit": null,
-    "muscles": {},
+    "muscles": {
+      "Triceps - Long Head": 0.4,
+      "Triceps - Lateral Head": 0.3,
+      "Triceps - Medial Head": 0.3
+    },
     "equipment": [
       "Bands"
     ],
@@ -4920,7 +4946,11 @@
     "name": "Band Face Pulls",
     "exercise_type": "reps_only",
     "distance_unit": null,
-    "muscles": {},
+    "muscles": {
+      "Rear Delts": 0.6,
+      "Upper Back": 0.3,
+      "Lateral Delts": 0.1
+    },
     "equipment": [
       "Bands"
     ],
@@ -4935,7 +4965,10 @@
     "name": "Band Lateral Walks",
     "exercise_type": "reps_only",
     "distance_unit": null,
-    "muscles": {},
+    "muscles": {
+      "Abductors": 0.7,
+      "Glutes": 0.3
+    },
     "equipment": [
       "Bands"
     ],
@@ -4950,7 +4983,11 @@
     "name": "Plank",
     "exercise_type": "duration",
     "distance_unit": null,
-    "muscles": {},
+    "muscles": {
+      "Upper Abs": 0.4,
+      "Lower Abs": 0.4,
+      "Obliques": 0.2
+    },
     "equipment": [
       "Bodyweight"
     ],
@@ -4965,7 +5002,11 @@
     "name": "Side Plank",
     "exercise_type": "duration",
     "distance_unit": null,
-    "muscles": {},
+    "muscles": {
+      "Obliques": 0.8,
+      "Upper Abs": 0.1,
+      "Lower Abs": 0.1
+    },
     "equipment": [
       "Bodyweight"
     ],
@@ -4980,7 +5021,11 @@
     "name": "Wall Sit",
     "exercise_type": "duration",
     "distance_unit": null,
-    "muscles": {},
+    "muscles": {
+      "Quads": 0.6,
+      "Glutes": 0.3,
+      "Hamstrings": 0.1
+    },
     "equipment": [
       "Bodyweight"
     ],
@@ -4995,7 +5040,11 @@
     "name": "Dead Hang",
     "exercise_type": "duration",
     "distance_unit": null,
-    "muscles": {},
+    "muscles": {
+      "Flexors": 0.6,
+      "Lats": 0.3,
+      "Upper Back": 0.1
+    },
     "equipment": [
       "Bodyweight"
     ],
@@ -5010,7 +5059,11 @@
     "name": "Glute Bridge Hold",
     "exercise_type": "duration",
     "distance_unit": null,
-    "muscles": {},
+    "muscles": {
+      "Glutes": 0.7,
+      "Hamstrings": 0.2,
+      "Lower Back": 0.1
+    },
     "equipment": [
       "Bodyweight"
     ],
@@ -5025,7 +5078,11 @@
     "name": "Hollow Body Hold",
     "exercise_type": "duration",
     "distance_unit": null,
-    "muscles": {},
+    "muscles": {
+      "Upper Abs": 0.4,
+      "Lower Abs": 0.5,
+      "Obliques": 0.1
+    },
     "equipment": [
       "Bodyweight"
     ],

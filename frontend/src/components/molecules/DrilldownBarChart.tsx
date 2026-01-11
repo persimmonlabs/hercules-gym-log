@@ -9,7 +9,7 @@ import { View, StyleSheet, Dimensions, Pressable } from 'react-native';
 import { VictoryChart, VictoryBar, VictoryAxis, VictoryTheme } from 'victory-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
-import * as Haptics from 'expo-haptics';
+import { triggerHaptic } from '@/utils/haptics';
 
 import { Text } from '@/components/atoms/Text';
 import { ChartWrapper } from '@/components/atoms/ChartWrapper';
@@ -151,7 +151,7 @@ export const DrilldownBarChart: React.FC<DrilldownBarChartProps> = ({
   // Handle bar press - drill down if possible
   const handleBarPress = useCallback(
     (label: string, value: number) => {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      triggerHaptic('light');
 
       if (selectedBar?.label === label) {
         // Second tap - try to drill down
@@ -174,7 +174,7 @@ export const DrilldownBarChart: React.FC<DrilldownBarChartProps> = ({
 
   // Handle breadcrumb navigation
   const handleBreadcrumbPress = useCallback((index: number) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    triggerHaptic('light');
     setBreadcrumb((prev) => prev.slice(0, index + 1));
     setSelectedBar(null);
   }, []);

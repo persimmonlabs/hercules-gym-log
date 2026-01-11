@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import * as Haptics from 'expo-haptics';
+import { triggerHaptic } from '@/utils/haptics';
 
 import {
   exercises as baseExercises,
@@ -345,8 +345,12 @@ export const usePlanBuilderState = (editingPlanId: string | null): PlanBuilderSt
       }
     }
 
-    // Sort alphabetically A-Z by name
-    return result.sort((a, b) => a.name.localeCompare(b.name));
+    // Sort alphabetically A-Z by name only if not searching
+    if (searchTokens.length === 0) {
+      return result.sort((a, b) => a.name.localeCompare(b.name));
+    }
+
+    return result;
   }, [
     catalogFilteredByFilters,
     matchesSearchTokens,

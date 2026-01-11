@@ -14,6 +14,10 @@ interface DeleteConfirmationModalProps {
   visible: boolean;
   onClose: () => void;
   onConfirm: () => void;
+  title?: string;
+  message?: string;
+  confirmLabel?: string;
+  cancelLabel?: string;
   isLoading?: boolean;
 }
 
@@ -21,6 +25,10 @@ export const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = (
   visible,
   onClose,
   onConfirm,
+  title = 'Delete Reminder',
+  message = 'Are you sure you want to delete this reminder?',
+  confirmLabel = 'Delete',
+  cancelLabel = 'Cancel',
   isLoading = false,
 }) => {
   return (
@@ -30,30 +38,36 @@ export const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = (
       animationType="fade"
       onRequestClose={onClose}
     >
-      <View style={styles.container}>
-        <View style={styles.card}>
-          <Text variant="heading3" style={styles.title}>Delete Reminder</Text>
-          <Text variant="body" color="secondary" style={styles.message}>
-            Are you sure you want to delete this reminder?
-          </Text>
+      <View style={styles.overlay}>
+        <BlurView intensity={40} style={StyleSheet.absoluteFill} tint="dark" />
+        <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0, 0, 0, 0.5)' }]} />
+        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
 
-          <View style={styles.buttonStack}>
-            <Button
-              label="Cancel"
-              onPress={onClose}
-              variant="ghost"
-              contentStyle={styles.cancelButton}
-              textColor={colors.accent.orange}
-              disabled={isLoading}
-            />
-            <Button
-              label="Delete"
-              onPress={onConfirm}
-              loading={isLoading}
-              disabled={isLoading}
-              contentStyle={styles.deleteButton}
-              textColor={colors.text.onAccent}
-            />
+        <View style={styles.container}>
+          <View style={styles.card}>
+            <Text variant="heading3" style={styles.title}>{title}</Text>
+            <Text variant="body" color="secondary" style={styles.message}>
+              {message}
+            </Text>
+
+            <View style={styles.buttonStack}>
+              <Button
+                label={cancelLabel}
+                onPress={onClose}
+                variant="ghost"
+                contentStyle={styles.cancelButton}
+                textColor={colors.accent.orange}
+                disabled={isLoading}
+              />
+              <Button
+                label={confirmLabel}
+                onPress={onConfirm}
+                loading={isLoading}
+                disabled={isLoading}
+                contentStyle={styles.deleteButton}
+                textColor={colors.text.onAccent}
+              />
+            </View>
           </View>
         </View>
       </View>
@@ -62,11 +76,13 @@ export const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = (
 };
 
 const styles = StyleSheet.create({
-  container: {
+  overlay: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     padding: spacing.xl,
+  },
+  container: {
     width: '100%',
     maxWidth: 400,
   },

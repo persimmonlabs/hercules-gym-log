@@ -4,8 +4,8 @@
  * Tap muscle regions to see details and drill down
  */
 
-import React, { useCallback } from 'react';
-import { View, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
+import React, { useCallback, useEffect } from 'react';
+import { View, StyleSheet, TouchableOpacity, ActivityIndicator, BackHandler } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -38,6 +38,21 @@ const DistributionAnalyticsScreen: React.FC = () => {
     }, [])
   );
 
+  const handleBackPress = useCallback(() => {
+    router.replace('/(tabs)/profile');
+  }, [router]);
+
+  // Handle Android hardware back button
+  useEffect(() => {
+    const backAction = () => {
+      handleBackPress();
+      return true;
+    };
+
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
+    return () => backHandler.remove();
+  }, [handleBackPress]);
+
   // Show loading screen while checking premium status to avoid paywall flash
   if (isLoading) {
     return (
@@ -46,10 +61,6 @@ const DistributionAnalyticsScreen: React.FC = () => {
       </View>
     );
   }
-
-  const handleBackPress = () => {
-    router.replace('/(tabs)/profile');
-  };
 
   const handleUpgrade = () => {
     router.push('/premium');

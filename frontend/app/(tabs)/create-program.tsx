@@ -1,7 +1,7 @@
 import React, { useCallback, useState, useEffect } from 'react';
-import { Alert, Pressable, StyleSheet, View } from 'react-native';
+import { Alert, Pressable, StyleSheet, View, BackHandler } from 'react-native';
 import { useRouter } from 'expo-router';
-import * as Haptics from 'expo-haptics';
+import { triggerHaptic } from '@/utils/haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 
@@ -137,20 +137,31 @@ const CreatePlanScreen: React.FC = () => {
   const isSaveDisabled = !programName.trim() || selectedWorkouts.length === 0 || isDuplicateName;
 
   const handleBackPress = useCallback(() => {
-    void Haptics.selectionAsync();
+    triggerHaptic('selection');
     router.replace({
       pathname: '/(tabs)/add-workout',
       params: { mode: 'program' }
     });
   }, [router]);
 
+  // Handle Android hardware back button
+  useEffect(() => {
+    const backAction = () => {
+      handleBackPress();
+      return true;
+    };
+
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
+    return () => backHandler.remove();
+  }, [handleBackPress]);
+
   const handleAddWorkoutsPress = useCallback(() => {
-    void Haptics.selectionAsync();
+    triggerHaptic('selection');
     router.push('/add-workouts-to-program');
   }, [router]);
 
   const handleRemoveWorkout = useCallback((workoutId: string) => {
-    void Haptics.selectionAsync();
+    triggerHaptic('selection');
     removeWorkout(workoutId);
   }, [removeWorkout]);
 
@@ -158,12 +169,12 @@ const CreatePlanScreen: React.FC = () => {
     if (isSaveDisabled) return;
     
     setIsSaving(true);
-    void Haptics.selectionAsync();
+    triggerHaptic('selection');
 
     try {
       // Check for duplicate name
       if (isDuplicateName) {
-        void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+        triggerHaptic('error');
         Alert.alert(
           'Plan Name Taken',
           'A plan with this name already exists. Please choose a different name.',
@@ -203,7 +214,7 @@ const CreatePlanScreen: React.FC = () => {
 
       await addUserProgram(newProgram);
       
-      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      triggerHaptic('success');
       router.push('/(tabs)/plans');
     } catch (error: any) {
       if (error?.message === 'FREE_LIMIT_REACHED') {
@@ -218,7 +229,7 @@ const CreatePlanScreen: React.FC = () => {
   }, [programName, selectedWorkouts, isSaveDisabled, isDuplicateName, addUserProgram, router]);
 
   const handleGoToCreateWorkout = useCallback(() => {
-    void Haptics.selectionAsync();
+    triggerHaptic('selection');
     router.replace({
       pathname: '/(tabs)/add-workout',
       params: { mode: 'workout' }

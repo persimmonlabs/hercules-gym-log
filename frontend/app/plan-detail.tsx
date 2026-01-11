@@ -2,8 +2,9 @@
  * plan-detail
  * Modal-style screen that presents a saved workout plan with matching styling to the builder screens.
  */
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useRef, useCallback } from 'react';
 import {
+  BackHandler,
   Dimensions,
   KeyboardAvoidingView,
   Platform,
@@ -12,8 +13,9 @@ import {
   StyleSheet,
   View,
 } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import * as Haptics from 'expo-haptics';
+import { triggerHaptic } from '@/utils/haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, {
   runOnJS,
@@ -135,10 +137,33 @@ const PlanDetailScreen: React.FC = () => {
 
   const plan = useMemo(() => plans.find((item) => item.id === planId), [planId, plans]);
 
+  const scrollRef = useRef<ScrollView>(null);
+
   useEffect(() => {
     backTranslateY.value = withTiming(0, timingSlow);
     containerTranslateY.value = withTiming(0, timingSlow);
   }, [backTranslateY, containerTranslateY]);
+
+  // Reset scroll position when screen gains focus
+  useFocusEffect(
+    useCallback(() => {
+      const timeout = setTimeout(() => {
+        scrollRef.current?.scrollTo({ y: 0, animated: false });
+      }, 50);
+      return () => clearTimeout(timeout);
+    }, [])
+  );
+
+  // Handle Android hardware back button
+  useEffect(() => {
+    const backAction = () => {
+      handleBackPress();
+      return true;
+    };
+
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
+    return () => backHandler.remove();
+  }, []);
 
   const animatedBackStyle = useAnimatedStyle(() => ({
     transform: [
@@ -152,7 +177,7 @@ const PlanDetailScreen: React.FC = () => {
   }));
 
   const handleBackPress = () => {
-    void Haptics.selectionAsync();
+    triggerHaptic('selection');
     backScale.value = withSpring(0.92, springTight);
 
     setTimeout(() => {
@@ -178,6 +203,7 @@ const PlanDetailScreen: React.FC = () => {
         keyboardVerticalOffset={spacing['2xl']}
       >
         <ScrollView
+          ref={scrollRef}
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"

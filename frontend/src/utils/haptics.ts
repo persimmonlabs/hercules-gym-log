@@ -1,14 +1,21 @@
 import { Platform } from 'react-native';
 import * as Haptics from 'expo-haptics';
+import { useSettingsStore } from '@/store/settingsStore';
 
 const HAPTIC_THROTTLE_MS = 80;
 
-export type HapticPattern = 'selection' | 'light' | 'medium' | 'heavy';
+export type HapticPattern = 'selection' | 'light' | 'medium' | 'heavy' | 'success' | 'warning' | 'error';
 
-const impactMap: Record<Exclude<HapticPattern, 'selection'>, Haptics.ImpactFeedbackStyle> = {
+const impactMap: Record<Exclude<HapticPattern, 'selection' | 'success' | 'warning' | 'error'>, Haptics.ImpactFeedbackStyle> = {
   light: Haptics.ImpactFeedbackStyle.Light,
   medium: Haptics.ImpactFeedbackStyle.Medium,
   heavy: Haptics.ImpactFeedbackStyle.Heavy,
+};
+
+const notificationMap: Record<Extract<HapticPattern, 'success' | 'warning' | 'error'>, Haptics.NotificationFeedbackType> = {
+  success: Haptics.NotificationFeedbackType.Success,
+  warning: Haptics.NotificationFeedbackType.Warning,
+  error: Haptics.NotificationFeedbackType.Error,
 };
 
 let lastTriggerTimestamp = 0;
@@ -28,6 +35,12 @@ export const triggerHaptic = (pattern: HapticPattern = 'selection'): void => {
     return;
   }
 
+  // Check global setting
+  const hapticsEnabled = useSettingsStore.getState().hapticsEnabled;
+  if (!hapticsEnabled) {
+    return;
+  }
+
   const now = Date.now();
   if (now - lastTriggerTimestamp < HAPTIC_THROTTLE_MS) {
     return;
@@ -43,9 +56,20 @@ export const triggerHaptic = (pattern: HapticPattern = 'selection'): void => {
       return;
     }
 
-    const impactStyle = impactMap[resolvedPattern];
-    void Haptics.impactAsync(impactStyle);
-  } catch {
+    if (['success', 'warning', 'error'].includes(resolvedPattern)) {
+      const notificationType = notificationMap[resolvedPattern as keyof typeof notificationMap];
+      void Haptics.notificationAsync(notificationType);
+      return;
+    }
+
+    // Default to impact
+    const impactStyle = impactMap[resolvedPattern as keyof typeof impactMap];
+    if (impactStyle) {
+      void Haptics.impactAsync(impactStyle);
+    }
+  } catch (error) {
+    // If haptics fail, we don't want to crash the app, but we reset timestamp
+    // just in case it was a temporary glitch
     lastTriggerTimestamp = 0;
   }
 };

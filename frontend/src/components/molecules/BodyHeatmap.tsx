@@ -23,7 +23,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { Ionicons } from '@expo/vector-icons';
-import * as Haptics from 'expo-haptics';
+import { triggerHaptic } from '@/utils/haptics';
 
 import { Text } from '@/components/atoms/Text';
 import { colors, spacing, radius } from '@/constants/theme';
@@ -318,7 +318,7 @@ export const BodyHeatmap: React.FC<BodyHeatmapProps> = ({
   const switchView = useCallback((newView: ViewSide) => {
     if (newView === currentView) return;
     
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    triggerHaptic('light');
     setSelectedRegion(null);
     
     const direction = newView === 'back' ? -1 : 1;
@@ -366,7 +366,7 @@ export const BodyHeatmap: React.FC<BodyHeatmapProps> = ({
   }, [selectedRegion, currentRegions, regionPercentages]);
 
   const handleRegionPress = useCallback((region: MuscleRegion) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    triggerHaptic('light');
     
     if (selectedRegion === region.id) {
       setSelectedRegion(null);

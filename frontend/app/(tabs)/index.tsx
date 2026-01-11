@@ -30,7 +30,7 @@ import { usePlansStore, type Plan, type PlansState } from '@/store/plansStore';
 import { useProgramsStore } from '@/store/programsStore';
 import { WEEKDAY_LABELS } from '@/constants/schedule';
 import type { ScheduleDayKey } from '@/types/schedule';
-import * as Haptics from 'expo-haptics';
+import { triggerHaptic } from '@/utils/haptics';
 import { useWorkoutSessionsStore, type WorkoutSessionsState } from '@/store/workoutSessionsStore';
 import type { Workout, WorkoutExercise, SetLog } from '@/types/workout';
 import { IconSymbol } from '@/components/ui/icon-symbol';
@@ -736,7 +736,7 @@ const DashboardScreen: React.FC = () => {
       return;
     }
 
-    void Haptics.selectionAsync();
+    triggerHaptic('selection');
 
     if (todaysCardState.variant === 'ongoing') {
       router.push('/(tabs)/workout');
@@ -752,7 +752,7 @@ const DashboardScreen: React.FC = () => {
   }, [router, todaysCardState]);
 
   const handleCreatePlanPress = useCallback(() => {
-    void Haptics.selectionAsync();
+    triggerHaptic('selection');
     router.push('/(tabs)/plans');
   }, [router]);
 
@@ -761,7 +761,7 @@ const DashboardScreen: React.FC = () => {
       return;
     }
 
-    void Haptics.selectionAsync();
+    triggerHaptic('selection');
 
     const doStartSession = () => {
       setCompletionOverlayVisible(false);
@@ -920,7 +920,7 @@ const DashboardScreen: React.FC = () => {
                           });
 
                           if (workout) {
-                            void Haptics.selectionAsync();
+                            triggerHaptic('selection');
                             router.push({ pathname: '/(tabs)/workout-detail', params: { workoutId: workout.id, from: 'dashboard' } });
                           }
                         }
@@ -1019,7 +1019,7 @@ const DashboardScreen: React.FC = () => {
                               <Pressable
                                 style={styles.planStartButton}
                                 onPress={() => {
-                                  void Haptics.selectionAsync();
+                                  triggerHaptic('selection');
 
                                   // Find the workout from either plans or user programs
                                   let targetWorkout: Plan | ProgramWorkout | null = null;
@@ -1125,7 +1125,7 @@ const DashboardScreen: React.FC = () => {
                         <Pressable
                           style={styles.pressableStretch}
                           onPress={() => {
-                            void Haptics.selectionAsync();
+                            triggerHaptic('selection');
                             router.push({ pathname: '/(tabs)/workout-detail', params: { workoutId: todaysCardState.workout.id, from: 'dashboard' } });
                           }}
                         >
@@ -1207,7 +1207,7 @@ const DashboardScreen: React.FC = () => {
                           onPressOut={lift?.onPressOut}
                           onPress={() => {
                             lift?.onPressOut?.();
-                            void Haptics.selectionAsync();
+                            triggerHaptic('selection');
                             router.push({ pathname: '/(tabs)/workout-detail', params: { workoutId: workout.id, from: 'dashboard' } });
                           }}
                         >

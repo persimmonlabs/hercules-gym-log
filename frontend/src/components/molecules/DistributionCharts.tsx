@@ -7,7 +7,7 @@
 import React, { useState, useMemo } from 'react';
 import { View, StyleSheet, Pressable, ScrollView } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
-import * as Haptics from 'expo-haptics';
+import { triggerHaptic } from '@/utils/haptics';
 
 import { Text } from '@/components/atoms/Text';
 import { colors, spacing, radius } from '@/constants/theme';
@@ -61,7 +61,7 @@ const BarChart: React.FC<{ data: HierarchicalSetData; onPress?: (name: string) =
           key={item.name}
           style={barStyles.row}
           onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            triggerHaptic('light');
             onPress?.(item.name);
           }}
         >
@@ -131,7 +131,7 @@ const Treemap: React.FC<{ data: HierarchicalSetData; onPress?: (name: string) =>
               },
             ]}
             onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              triggerHaptic('light');
               onPress?.(item.name);
             }}
           >
@@ -225,7 +225,7 @@ const RadialChart: React.FC<{ data: HierarchicalSetData; onPress?: (name: string
               key={seg.name}
               style={radialStyles.legendItem}
               onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                triggerHaptic('light');
                 onPress?.(seg.name);
               }}
             >
@@ -289,7 +289,7 @@ const StackedChart: React.FC<{ data: HierarchicalSetData; onPress?: (name: strin
               },
             ]}
             onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              triggerHaptic('light');
               onPress?.(item.name);
             }}
           />
@@ -361,7 +361,7 @@ const BubbleChart: React.FC<{ data: HierarchicalSetData; onPress?: (name: string
                 },
               ]}
               onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                triggerHaptic('light');
                 onPress?.(item.name);
               }}
             >
@@ -410,7 +410,7 @@ export const DistributionCharts: React.FC<DistributionChartsProps> = ({
   const [selectedChart, setSelectedChart] = useState<ChartType>('bar');
 
   const handleChartChange = (type: ChartType) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    triggerHaptic('light');
     setSelectedChart(type);
   };
 

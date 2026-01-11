@@ -1,8 +1,9 @@
-import React, { useCallback, useState } from 'react';
-import { View, StyleSheet, ScrollView, Alert, Pressable } from 'react-native';
+import React, { useCallback, useState, useRef, useEffect } from 'react';
+import { View, StyleSheet, ScrollView, Alert, Pressable, BackHandler } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import * as Haptics from 'expo-haptics';
+import { useFocusEffect } from '@react-navigation/native';
+import { triggerHaptic } from '@/utils/haptics';
 
 import { Text } from '@/components/atoms/Text';
 import { Button } from '@/components/atoms/Button';
@@ -54,11 +55,49 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     gap: spacing.xs,
     marginTop: spacing.md,
+    overflow: 'hidden',
+  },
+  exercisesContainer: {
+    marginTop: spacing.xs,
   },
   workoutCardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    marginBottom: spacing.sm,
+  },
+  exerciseRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingVertical: spacing.sm,
+  },
+  exerciseNumber: {
+    width: sizing.iconLG,
+    height: sizing.iconLG,
+    borderRadius: radius.full,
+    backgroundColor: colors.surface.card,
+    borderWidth: 1,
+    borderColor: colors.accent.orange,
+    justifyContent: 'center',
+    alignItems: 'center',
+    flexShrink: 0,
+  },
+  exerciseNumberText: {
+    color: colors.text.primary,
+    fontSize: 16,
+    fontWeight: '600',
+    includeFontPadding: false,
+  },
+  exerciseNameContainer: {
+    flex: 1,
+    flexShrink: 1,
+    width: 0,
+  },
+  exerciseName: {
+    fontSize: 18,
+    fontWeight: '500',
+    color: colors.text.primary,
   },
   exerciseCount: {
     flexDirection: 'row',
@@ -84,7 +123,7 @@ export default function ProgramDetailsScreen() {
   const isUserProgram = program && !program.isPremade;
 
   const handleBack = useCallback(() => {
-    Haptics.selectionAsync().catch(() => { });
+    triggerHaptic('selection');
     if (from === 'quiz') {
       if (router.canGoBack()) {
         router.back();
@@ -96,6 +135,29 @@ export default function ProgramDetailsScreen() {
       router.navigate('/(tabs)/browse-programs');
     }
   }, [router, from]);
+
+  const scrollRef = useRef<ScrollView>(null);
+
+  useFocusEffect(
+    useCallback(() => {
+      // Small timeout to ensure layout is done and previous transition completed
+      const timeout = setTimeout(() => {
+        scrollRef.current?.scrollTo({ y: 0, animated: false });
+      }, 50);
+      return () => clearTimeout(timeout);
+    }, [])
+  );
+
+  // Handle Android hardware back button
+  useEffect(() => {
+    const backAction = () => {
+      handleBack();
+      return true;
+    };
+
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
+    return () => backHandler.remove();
+  }, [handleBack]);
 
   if (!program) {
     return (
@@ -119,11 +181,11 @@ export default function ProgramDetailsScreen() {
   const handleAddToPlans = useCallback(async () => {
     if (isAdding) return;
     setIsAdding(true);
-    Haptics.selectionAsync().catch(() => { });
+    triggerHaptic('selection');
 
     try {
       await clonePremadeProgram(program!.id);
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => { });
+      triggerHaptic('success');
 
       // Navigate back to Plans tab
       router.replace('/(tabs)/plans');
@@ -148,7 +210,7 @@ export default function ProgramDetailsScreen() {
   const handleSetRotation = useCallback(async () => {
     if (isAdding) return;
     setIsAdding(true);
-    Haptics.selectionAsync().catch(() => { });
+    triggerHaptic('selection');
 
     try {
       const rotation: RotationSchedule = {
@@ -160,7 +222,7 @@ export default function ProgramDetailsScreen() {
       };
 
       await setActiveRotation(rotation);
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => { });
+      triggerHaptic('success');
 
       Alert.alert(
         'Schedule Updated',
@@ -188,7 +250,7 @@ export default function ProgramDetailsScreen() {
       />
       <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom + sizing.tabBarHeight }]}>
         {/* Content */}
-        <ScrollView contentContainerStyle={styles.scrollContent}>
+        <ScrollView ref={scrollRef} contentContainerStyle={styles.scrollContent}>
           {/* Header */}
           <View style={styles.header}>
             <View style={styles.titleContainer}>
@@ -224,9 +286,20 @@ export default function ProgramDetailsScreen() {
                       </View>
 
                       {/* List all exercises */}
-                      <View style={{ marginTop: spacing.xs, paddingLeft: spacing.sm }}>
-                        {workout.exercises.map(ex => (
-                          <Text key={ex.id} variant="body" color="secondary">• {ex.name}</Text>
+                      <View style={styles.exercisesContainer}>
+                        {workout.exercises.map((ex, exIndex) => (
+                          <View key={ex.id} style={styles.exerciseRow}>
+                            <View style={styles.exerciseNumber}>
+                              <Text style={styles.exerciseNumberText}>
+                                {exIndex + 1}
+                              </Text>
+                            </View>
+                            <View style={styles.exerciseNameContainer}>
+                              <Text style={styles.exerciseName}>
+                                {ex.name}
+                              </Text>
+                            </View>
+                          </View>
                         ))}
                       </View>
                     </View>

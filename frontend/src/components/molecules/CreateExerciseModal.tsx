@@ -5,7 +5,7 @@
 
 import React, { useCallback, useState } from 'react';
 import { Modal, Pressable, StyleSheet, View, ScrollView } from 'react-native';
-import * as Haptics from 'expo-haptics';
+import { triggerHaptic } from '@/utils/haptics';
 
 import { Button } from '@/components/atoms/Button';
 import { InputField } from '@/components/atoms/InputField';
@@ -55,7 +55,7 @@ export const CreateExerciseModal: React.FC<CreateExerciseModalProps> = ({
   }, [onClose]);
 
   const handleSelectType = useCallback((type: ExerciseType) => {
-    void Haptics.selectionAsync();
+    triggerHaptic('selection');
     setSelectedType(type);
     setError(null);
   }, []);
@@ -95,7 +95,7 @@ export const CreateExerciseModal: React.FC<CreateExerciseModalProps> = ({
       });
 
       if (result) {
-        void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        triggerHaptic('success');
         onExerciseCreated?.(result.name, result.exerciseType);
         handleClose();
       } else {

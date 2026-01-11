@@ -19,9 +19,9 @@ import Animated, {
   useAnimatedStyle,
   withSpring,
 } from 'react-native-reanimated';
-import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 
+import { triggerHaptic } from '@/utils/haptics';
 import { colors, spacing, radius, typography, sizing, opacity, shadows } from '@/constants/theme';
 import { useTheme } from '@/hooks/useTheme';
 import { springBouncy, buttonPressAnimation } from '@/constants/animations';
@@ -122,7 +122,7 @@ export const Button: React.FC<ButtonProps> = ({
     if (disabled || loading) return;
 
     // Haptic feedback
-    Haptics.selectionAsync();
+    triggerHaptic('selection');
 
     // Reset scale after brief delay
     setTimeout(() => {
@@ -209,10 +209,10 @@ export const Button: React.FC<ButtonProps> = ({
       variant === 'danger'
         ? styles.dangerShadow
         : variant === 'secondary'
-        ? styles.secondaryShadow
-        : variant === 'light'
-        ? styles.lightShadow
-        : undefined;
+          ? styles.secondaryShadow
+          : variant === 'light'
+            ? styles.lightShadow
+            : undefined;
 
     const renderLabel = () => {
       if (variant === 'light') {

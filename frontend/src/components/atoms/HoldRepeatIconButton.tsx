@@ -1,6 +1,6 @@
 import React, { memo, useCallback, useRef } from 'react';
 import { Pressable, StyleProp, StyleSheet, ViewStyle } from 'react-native';
-import * as Haptics from 'expo-haptics';
+import { triggerHaptic } from '@/utils/haptics';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { colors, radius, sizing, spacing } from '@/constants/theme';
@@ -41,7 +41,7 @@ const HoldRepeatIconButtonInner: React.FC<HoldRepeatIconButtonProps> = ({
 
     if (!triggerOnRelease) {
       // Instant haptic feedback - fire synchronously
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      triggerHaptic('light');
       // Instant callback
       onStepRef.current();
     }
@@ -52,7 +52,7 @@ const HoldRepeatIconButtonInner: React.FC<HoldRepeatIconButtonProps> = ({
 
     if (triggerOnRelease && wasPressed.current && !disabled) {
       // Trigger on release for reps buttons to avoid accidental triggers during swipes
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      triggerHaptic('light');
       onStepRef.current();
     }
     wasPressed.current = false;

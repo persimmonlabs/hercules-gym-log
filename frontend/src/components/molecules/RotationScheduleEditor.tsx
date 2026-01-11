@@ -5,7 +5,7 @@
  */
 import React, { useCallback } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
-import * as Haptics from 'expo-haptics';
+import { triggerHaptic } from '@/utils/haptics';
 
 import { Text } from '@/components/atoms/Text';
 import { IconSymbol } from '@/components/ui/icon-symbol';
@@ -99,7 +99,7 @@ export const RotationScheduleEditor: React.FC<RotationScheduleEditorProps> = ({
 
   const handleMoveUp = useCallback((index: number) => {
     if (index === 0) return;
-    void Haptics.selectionAsync();
+    triggerHaptic('selection');
     
     const newOrder = [...schedule.workoutOrder];
     [newOrder[index - 1], newOrder[index]] = [newOrder[index], newOrder[index - 1]];
@@ -112,7 +112,7 @@ export const RotationScheduleEditor: React.FC<RotationScheduleEditorProps> = ({
 
   const handleMoveDown = useCallback((index: number) => {
     if (index >= schedule.workoutOrder.length - 1) return;
-    void Haptics.selectionAsync();
+    triggerHaptic('selection');
     
     const newOrder = [...schedule.workoutOrder];
     [newOrder[index], newOrder[index + 1]] = [newOrder[index + 1], newOrder[index]];
@@ -203,7 +203,7 @@ export const RotationScheduleEditor: React.FC<RotationScheduleEditorProps> = ({
               <Pressable
                 style={styles.actionButton}
                 onPress={() => {
-                  void Haptics.selectionAsync();
+                  triggerHaptic('selection');
                   onRemoveWorkout(item.id, index);
                 }}
                 hitSlop={8}

@@ -1,8 +1,8 @@
-import React, { useState, useMemo, useCallback, useRef } from 'react';
-import { View, StyleSheet, Pressable, ScrollView } from 'react-native';
+import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
+import { View, StyleSheet, Pressable, ScrollView, BackHandler } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import * as Haptics from 'expo-haptics';
+import { triggerHaptic } from '@/utils/haptics';
 import Animated, { FadeInRight, FadeOutLeft, useSharedValue, useDerivedValue, withSpring, useAnimatedProps } from 'react-native-reanimated';
 import Svg, { Circle } from 'react-native-svg';
 
@@ -132,8 +132,8 @@ const styles = StyleSheet.create({
 export default function QuizScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { mode, resume, goal, experience, equipment, days } = useLocalSearchParams<{ 
-    mode?: 'program' | 'workout'; 
+  const { mode, resume, goal, experience, equipment, days } = useLocalSearchParams<{
+    mode?: 'program' | 'workout';
     resume?: 'results';
     goal?: TrainingGoal;
     experience?: ExperienceLevel;
@@ -166,7 +166,7 @@ export default function QuizScreen() {
   React.useEffect(() => {
     if (resume === 'results' && !hasResumedRef.current) {
       hasResumedRef.current = true;
-      
+
       if (isWorkoutMode) {
         // Re-fetch workout recommendations using stored/passed preferences
         const prefs = { goal, experienceLevel: experience, equipment };
@@ -237,7 +237,7 @@ export default function QuizScreen() {
   });
 
   const handleNext = useCallback(() => {
-    Haptics.selectionAsync().catch(() => { });
+    triggerHaptic('selection');
 
     if (isLastQuestion) {
       if (isWorkoutMode) {
@@ -260,8 +260,8 @@ export default function QuizScreen() {
   }, [isLastQuestion, preferences, getRecommendations, getWorkoutRecommendations, isWorkoutMode, STEPS.length]);
 
   const handleBack = useCallback(() => {
-    Haptics.selectionAsync().catch(() => { });
-    
+    triggerHaptic('selection');
+
     // If we're on results (whether resumed or arrived naturally), go back to intro to retake quiz
     if (currentStep === 'results') {
       // Reset all preferences and go to intro step
@@ -277,13 +277,10 @@ export default function QuizScreen() {
       setCurrentStepIndex(0);
       return;
     }
-    
-    // If we're on the intro step, always navigate to Add Workout page to prevent loops
+
+    // If we're on the intro step, always navigate to Programs page to prevent loops
     if (currentStepIndex === 0) {
-      router.replace({
-        pathname: '/(tabs)/add-workout',
-        params: { mode: isWorkoutMode ? 'workout' : 'program' }
-      });
+      router.replace('/(tabs)/plans');
       return;
     }
 
@@ -309,6 +306,17 @@ export default function QuizScreen() {
     setCurrentStepIndex((prev) => Math.max(prev - 1, 0));
   }, [currentStepIndex, router, currentStep, isWorkoutMode]);
 
+  // Handle Android hardware back button
+  useEffect(() => {
+    const backAction = () => {
+      handleBack();
+      return true;
+    };
+
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
+    return () => backHandler.remove();
+  }, [handleBack]);
+
   const updatePreference = useCallback((key: keyof QuizPreferences, value: any) => {
     setPreferences((prev) => ({ ...prev, [key]: value }));
   }, []);
@@ -318,8 +326,8 @@ export default function QuizScreen() {
       // It's a PremadeProgram
       router.push({
         pathname: '/program-view',
-        params: { 
-          programId: program.id, 
+        params: {
+          programId: program.id,
           from: 'quiz',
           // Pass preferences for back navigation
           goal: preferences.goal || undefined,
@@ -332,8 +340,8 @@ export default function QuizScreen() {
       // It's a PremadeWorkout - navigate to preview (take-it-or-leave-it style)
       router.push({
         pathname: '/(tabs)/workout-preview',
-        params: { 
-          workoutId: program.id, 
+        params: {
+          workoutId: program.id,
           from: 'quiz',
           // Pass preferences for back navigation
           goal: preferences.goal || undefined,
@@ -345,7 +353,7 @@ export default function QuizScreen() {
   }, [router, preferences]);
 
   const renderOption = (label: string, description: string, isSelected: boolean, onPress: () => void) => (
-    <Pressable onPress={() => { Haptics.selectionAsync().catch(() => { }); onPress(); }}>
+    <Pressable onPress={() => { triggerHaptic('selection'); onPress(); }}>
       <SurfaceCard
         tone="neutral"
         padding="md"

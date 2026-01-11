@@ -13,34 +13,52 @@ interface UseSemanticExerciseSearchOptions {
 }
 
 const TOKEN_SYNONYMS: Record<string, string[]> = {
-  chest: ['pec', 'pectorals', 'push'],
+  chest: ['pec', 'pectorals', 'push', 'bench'],
   pec: ['chest'],
-  back: ['pull', 'lats', 'posterior'],
-  legs: ['lower', 'quads', 'glutes', 'squat'],
-  shoulders: ['delts', 'press'],
-  hamstrings: ['posterior', 'hinge'],
-  glutes: ['posterior', 'hips'],
+  back: ['pull', 'lats', 'posterior', 'lat'],
+  legs: ['lower', 'quads', 'glutes', 'squat', 'hamstrings', 'calves'],
+  shoulders: ['delts', 'press', 'overhead', 'military'],
+  hamstrings: ['posterior', 'hinge', 'legs'],
+  glutes: ['posterior', 'hips', 'butt', 'legs'],
   full: ['total', 'compound'],
-  press: ['push'],
-  row: ['pull'],
-  squat: ['legs', 'hinge'],
-  deadlift: ['hinge', 'posterior'],
+  press: ['push', 'bench', 'overhead'],
+  row: ['pull', 'cable', 'back'],
+  squat: ['legs', 'quads', 'lower'],
+  deadlift: ['hinge', 'posterior', 'dl', 'back'],
+  dl: ['deadlift'],
   hinge: ['posterior', 'deadlift'],
-  lunge: ['single', 'split'],
+  lunge: ['single', 'split', 'legs'],
   carry: ['farmer', 'loaded'],
-  rotation: ['anti-rotation', 'twist'],
-  olympic: ['power', 'explosive'],
-  arms: ['biceps', 'triceps'],
-  biceps: ['arms'],
-  triceps: ['arms'],
+  rotation: ['anti-rotation', 'twist', 'core'],
+  olympic: ['power', 'explosive', 'clean', 'snatch'],
+  arms: ['biceps', 'triceps', 'curls', 'extensions'],
+  biceps: ['arms', 'curl'],
+  triceps: ['arms', 'extension', 'pressdown'],
+  bike: ['cycling', 'stationary', 'bicycle', 'cardio'],
+  cycling: ['bike', 'cardio'],
+  run: ['running', 'jog', 'treadmill', 'cardio', 'sprint'],
+  walk: ['walking', 'cardio', 'treadmill'],
+  abs: ['core', 'abdominal', 'obliques', 'stomach'],
+  core: ['abs', 'abdominal', 'obliques', 'stomach', 'plank'],
+  pullup: ['chinup', 'back', 'lats', 'pull'],
+  chinup: ['pullup', 'back', 'lats', 'pull'],
+  bench: ['chest', 'press'],
+  fly: ['pec', 'chest'],
+  curl: ['bicep', 'arms'],
+  extension: ['tricep', 'leg', 'arms'],
+  cardio: ['run', 'walk', 'bike', 'cycling', 'elliptical', 'stair', 'rowing', 'hiit'],
+  weight: ['dumbbell', 'barbell', 'kettlebell', 'db', 'bb', 'kb'],
+  db: ['dumbbell', 'weight'],
+  bb: ['barbell', 'weight'],
+  kb: ['kettlebell', 'weight'],
+  cable: ['pulley', 'machine'],
+  machine: ['cable', 'lever', 'selectorized'],
+  trap: ['traps', 'shrug', 'neck', 'back'],
+  lat: ['back', 'pull', 'pullup', 'latissimus'],
+  calf: ['calves', 'legs', 'lower'],
+  hiit: ['cardio', 'intervals'],
+  plyo: ['plyometric', 'jump', 'explosive'],
 };
-
-const normalize = (value: string): string =>
-  value
-    .toLowerCase()
-    .replace(/[^a-z0-9\s]/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
 
 const expandTokens = (tokens: string[]): string[] => {
   const expanded = new Set(tokens);
@@ -56,7 +74,11 @@ const expandTokens = (tokens: string[]): string[] => {
   return Array.from(expanded);
 };
 
-const scoreExercise = (exercise: ExerciseCatalogItem, tokens: string[]): number => {
+const scoreExercise = (
+  exercise: ExerciseCatalogItem,
+  tokens: string[],
+  normalizedQuery: string,
+): number => {
   if (tokens.length === 0) {
     return 0;
   }
@@ -69,53 +91,64 @@ const scoreExercise = (exercise: ExerciseCatalogItem, tokens: string[]): number 
   const movementPattern = normalizeSearchText(exercise.movementPattern);
   const searchIndex = exercise.searchIndex;
 
-  return tokens.reduce((score, token) => {
+  let score = 0;
+
+  // Bonus for full phrase matching (prioritize "Chest Press" -> "Chest Press Machine")
+  if (normalizedName === normalizedQuery) {
+    score += 50; // Exact name match is king
+  } else if (normalizedName.startsWith(normalizedQuery)) {
+    score += 30; // Starts with query is very strong
+  } else if (normalizedName.includes(normalizedQuery)) {
+    score += 20; // Contains full query is strong
+  }
+
+  return tokens.reduce((acc, token) => {
     if (!token) {
-      return score;
+      return acc;
     }
 
     if (normalizedName === token) {
-      return score + 10;
+      return acc + 10;
     }
 
     if (normalizedName.startsWith(token)) {
-      return score + 7;
+      return acc + 7;
     }
 
     if (normalizedName.includes(token)) {
-      return score + 6;
+      return acc + 6;
     }
 
     if (muscleGroup.includes(token) || filterMuscleGroup.includes(token)) {
-      return score + 5;
+      return acc + 5;
     }
 
     if (secondaryMuscleGroups.some((target) => target.includes(token))) {
-      return score + 4;
+      return acc + 4;
     }
 
     if (equipment.some((item) => item.includes(token))) {
-      return score + 4;
+      return acc + 4;
     }
 
     if (movementPattern.includes(token)) {
-      return score + 3;
+      return acc + 3;
     }
 
     if (token === 'compound' && exercise.isCompound) {
-      return score + 5;
+      return acc + 5;
     }
 
     if (token === 'bodyweight' && exercise.isBodyweight) {
-      return score + 5;
+      return acc + 5;
     }
 
     if (searchIndex.includes(token)) {
-      return score + 2;
+      return acc + 2;
     }
 
-    return score;
-  }, 0);
+    return acc;
+  }, score);
 };
 
 export const useSemanticExerciseSearch = (
@@ -139,7 +172,7 @@ export const useSemanticExerciseSearch = (
 
     return exercises
       .filter((exercise) => !excluded.has(exercise.id))
-      .map((exercise) => ({ exercise, score: scoreExercise(exercise, tokens) }))
+      .map((exercise) => ({ exercise, score: scoreExercise(exercise, tokens, normalizedQuery) }))
       .filter((entry) => entry.score > 0)
       .sort((a, b) => b.score - a.score)
       .slice(0, limit)

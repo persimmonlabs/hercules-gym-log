@@ -12,7 +12,7 @@ import {
   View,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import * as Haptics from 'expo-haptics';
+import { triggerHaptic } from '@/utils/haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -46,6 +46,7 @@ import { useProgramsStore } from '@/store/programsStore';
 import { useCustomExerciseStore } from '@/store/customExerciseStore';
 import { CreateExerciseModal } from '@/components/molecules/CreateExerciseModal';
 import { FinishConfirmationModal } from '@/components/molecules/FinishConfirmationModal';
+import { DeleteConfirmationModal } from '@/components/molecules/DeleteConfirmationModal';
 import { normalizeSearchText } from '@/utils/strings';
 import { createSetsWithHistory } from '@/utils/exerciseHistory';
 import { getExerciseDisplayTagText } from '@/utils/exerciseDisplayTags';
@@ -61,6 +62,11 @@ interface ExerciseProgressSnapshot {
   completedSets: number;
   totalSets: number;
 }
+
+type ActiveMenu =
+  | { type: 'exercise'; exerciseName: string }
+  | { type: 'set'; exerciseName: string; setIndex: number }
+  | null;
 
 const formatElapsed = (seconds: number): string => {
   const hours = Math.floor(seconds / 3600);
@@ -115,7 +121,7 @@ const WorkoutSessionScreen: React.FC = () => {
   const [expandedExercises, setExpandedExercises] = useState<Set<string>>(
     () => new Set(sessionExercises.length > 0 ? [sessionExercises[0].name] : [])
   );
-  const [menuExerciseName, setMenuExerciseName] = useState<string | null>(null);
+  const [activeMenu, setActiveMenu] = useState<ActiveMenu>(null);
   const [replaceTargetName, setReplaceTargetName] = useState<string | null>(null);
   const [historyModalVisible, setHistoryModalVisible] = useState<boolean>(false);
   const [finishModalVisible, setFinishModalVisible] = useState<boolean>(false);
@@ -143,8 +149,8 @@ const WorkoutSessionScreen: React.FC = () => {
   const hasUserAddedExerciseRef = useRef<boolean>(false);
 
   const handleAddExercisePress = useCallback(() => {
-    void Haptics.selectionAsync();
-    setMenuExerciseName(null);
+    triggerHaptic('selection');
+    setActiveMenu(null);
     setReplaceTargetName(null);
     setPickerVisible(true);
     setSearchTerm('');
@@ -259,8 +265,8 @@ const WorkoutSessionScreen: React.FC = () => {
     (exerciseName: string) => {
       console.log('[WorkoutSession] Replace exercise pressed:', exerciseName);
       console.log('[WorkoutSession] Setting pickerVisible to true');
-      void Haptics.selectionAsync();
-      setMenuExerciseName(null);
+      triggerHaptic('selection');
+      setActiveMenu(null);
       setReplaceTargetName(exerciseName);
       setPickerVisible(true);
       setSearchTerm('');
@@ -340,13 +346,13 @@ const WorkoutSessionScreen: React.FC = () => {
       hasUserAddedExerciseRef.current = true;
     }
 
-    void Haptics.selectionAsync();
+    triggerHaptic('selection');
     dismissPicker();
   };
 
   const handleToggleExercise = useCallback((exerciseName: string) => {
-    void Haptics.selectionAsync();
-    setMenuExerciseName(null);
+    triggerHaptic('selection');
+    setActiveMenu(null);
     setExpandedExercises((prev) => {
       const next = new Set(prev);
 
@@ -451,8 +457,8 @@ const WorkoutSessionScreen: React.FC = () => {
 
   const openExerciseMenu = useCallback((exerciseName: string, pageX: number, pageY: number, width: number, height: number) => {
     console.log('[Menu] Opening at:', { pageX, pageY, width, height, insetsTop: insets.top });
-    void Haptics.selectionAsync();
-    setMenuExerciseName(exerciseName);
+    triggerHaptic('selection');
+    setActiveMenu({ type: 'exercise', exerciseName });
     // Position menu below the button
     // Removing insets.top subtraction to push the menu down further
     const top = pageY + height + spacing.xs;
@@ -465,29 +471,43 @@ const WorkoutSessionScreen: React.FC = () => {
     });
   }, [insets.top]);
 
-  const closeExerciseMenu = useCallback(() => {
-    setMenuExerciseName(null);
+  const closeAllMenus = useCallback(() => {
+    setActiveMenu(null);
   }, []);
 
+  const handleOpenSetMenu = useCallback((exerciseName: string, setIndex: number) => {
+    setActiveMenu({ type: 'set', exerciseName, setIndex });
+  }, []);
+
+  const [exerciseToDelete, setExerciseToDelete] = useState<string | null>(null);
+
   const handleDeleteExercise = useCallback(() => {
-    if (!menuExerciseName) {
+    if (activeMenu?.type !== 'exercise') {
       return;
     }
 
-    removeExercise(menuExerciseName);
+    const { exerciseName } = activeMenu;
+    setExerciseToDelete(exerciseName);
+    closeAllMenus();
+  }, [activeMenu, closeAllMenus]);
+
+  const confirmDeleteExercise = useCallback(() => {
+    if (!exerciseToDelete) return;
+
+    removeExercise(exerciseToDelete);
     // Clean up exercise progress for the deleted exercise
     setExerciseProgress((prev) => {
-      const { [menuExerciseName]: _omitted, ...rest } = prev;
+      const { [exerciseToDelete]: _omitted, ...rest } = prev;
       return rest;
     });
-    closeExerciseMenu();
-  }, [menuExerciseName, removeExercise, closeExerciseMenu]);
+    setExerciseToDelete(null);
+  }, [exerciseToDelete, removeExercise]);
 
   const handleHistoryPress = useCallback((exerciseName: string) => {
     console.log('[WorkoutSession] History pressed:', exerciseName);
     console.log('[WorkoutSession] Setting historyModalVisible to true');
-    void Haptics.selectionAsync();
-    setMenuExerciseName(null);
+    triggerHaptic('selection');
+    setActiveMenu(null);
     setHistoryTargetName(exerciseName);
     setHistoryModalVisible(true);
     console.log('[WorkoutSession] State updates dispatched');
@@ -636,7 +656,7 @@ const WorkoutSessionScreen: React.FC = () => {
   const listFooterComponent = useMemo(
     () => (
       <View
-        style={[styles.footerStack, { paddingBottom: spacing.xl }]}
+        style={[styles.footerStack, { paddingBottom: 320 }]}
       >
         <Button
           label="Add Exercise"
@@ -695,15 +715,15 @@ const WorkoutSessionScreen: React.FC = () => {
     <View style={[styles.safeAreaRoot, { paddingTop: insets.top, backgroundColor: theme.surface.tint }]}>
       <StatusBar style="dark" backgroundColor="transparent" translucent />
       <View style={styles.root}>
-        {menuExerciseName ? (
-          <Pressable style={styles.menuBackdrop} onPress={closeExerciseMenu} accessibilityLabel="Dismiss exercise menu" />
+        {activeMenu?.type === 'exercise' ? (
+          <Pressable style={styles.menuBackdrop} onPress={closeAllMenus} accessibilityLabel="Dismiss exercise menu" />
         ) : null}
         <FlatList
           data={sessionExercises}
           keyExtractor={(item) => item.name}
           style={[styles.list, { marginBottom: tabBarTopOffset }]}
           contentContainerStyle={listContentStyle}
-          extraData={{ expandedExercises: Array.from(expandedExercises), exerciseProgress, menuExerciseName }}
+          extraData={{ expandedExercises: Array.from(expandedExercises), exerciseProgress, activeMenu }}
           maintainVisibleContentPosition={{
             minIndexForVisible: 0,
             autoscrollToTopThreshold: 10,
@@ -723,7 +743,7 @@ const WorkoutSessionScreen: React.FC = () => {
               colors.accent.gradientEnd,
             ];
 
-            const isMenuOpen = menuExerciseName === item.name;
+            const isMenuOpen = activeMenu?.type === 'exercise' && activeMenu.exerciseName === item.name;
 
             return (
               <Animated.View
@@ -776,7 +796,7 @@ const WorkoutSessionScreen: React.FC = () => {
                               onPress={(event) => {
                                 event.stopPropagation();
                                 if (isMenuOpen) {
-                                  closeExerciseMenu();
+                                  closeAllMenus();
                                 } else {
                                   // Get button position and open menu
                                   const target = event.currentTarget as any;
@@ -810,9 +830,12 @@ const WorkoutSessionScreen: React.FC = () => {
                         onSetsChange={(updatedSets) => handleExerciseSetsChange(item.name, updatedSets)}
                         onProgressChange={(progress) => handleExerciseProgressChange(item.name, progress)}
                         exerciseType={exerciseCatalog.find(e => e.name === item.name)?.exerciseType || 'weight'}
-                        distanceUnit={exerciseCatalog.find(e => e.name === item.name)?.distanceUnit}
                         historySetCount={sessionToDisplay?.historySetCounts?.[item.name] ?? 0}
                         supportsGpsTracking={exerciseCatalog.find(e => e.name === item.name)?.supportsGpsTracking ?? false}
+                        activeSetMenuIndex={activeMenu?.type === 'set' && activeMenu.exerciseName === item.name ? activeMenu.setIndex : null}
+                        onOpenSetMenu={(index) => handleOpenSetMenu(item.name, index)}
+                        onCloseSetMenu={closeAllMenus}
+                        onShowHistory={() => handleHistoryPress(item.name)}
                       />
                     </View>
                   ) : null}
@@ -878,7 +901,7 @@ const WorkoutSessionScreen: React.FC = () => {
             <Pressable
               style={styles.createExerciseButton}
               onPress={() => {
-                void Haptics.selectionAsync();
+                triggerHaptic('selection');
                 dismissPicker();
                 setCreateExerciseModalVisible(true);
               }}
@@ -898,13 +921,13 @@ const WorkoutSessionScreen: React.FC = () => {
         />
       </SheetModal>
       {/* Render menu at root level for reliable touch handling */}
-      {menuExerciseName && (
+      {activeMenu?.type === 'exercise' && (
         <View style={[styles.menuPopover, { top: menuPosition.top, right: menuPosition.right }]} pointerEvents="auto">
           <Pressable
             style={styles.menuPopoverItem}
             onPress={() => {
               console.log('[Menu] History item pressed');
-              handleHistoryPress(menuExerciseName);
+              handleHistoryPress(activeMenu.exerciseName);
             }}
           >
             <Text variant="body">History</Text>
@@ -913,7 +936,7 @@ const WorkoutSessionScreen: React.FC = () => {
             style={styles.menuPopoverItem}
             onPress={() => {
               console.log('[Menu] Replace item pressed');
-              handleReplaceExercisePress(menuExerciseName);
+              handleReplaceExercisePress(activeMenu.exerciseName);
             }}
           >
             <Text variant="body">Replace Exercise</Text>
@@ -952,6 +975,15 @@ const WorkoutSessionScreen: React.FC = () => {
           }
           setCreateExerciseModalVisible(false);
         }}
+      />
+      <DeleteConfirmationModal
+        visible={!!exerciseToDelete}
+        onClose={() => setExerciseToDelete(null)}
+        onConfirm={confirmDeleteExercise}
+        title="Remove Exercise?"
+        message="Are you sure you want to remove this exercise from your session? All progress for this exercise will be lost."
+        confirmLabel="Remove"
+        cancelLabel="Keep"
       />
     </View>
   );

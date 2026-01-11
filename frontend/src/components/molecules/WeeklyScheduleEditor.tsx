@@ -4,7 +4,7 @@
  */
 import React, { useCallback, useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
-import * as Haptics from 'expo-haptics';
+import { triggerHaptic } from '@/utils/haptics';
 
 import { Text } from '@/components/atoms/Text';
 import { Button } from '@/components/atoms/Button';
@@ -109,14 +109,14 @@ export const WeeklyScheduleEditor: React.FC<WeeklyScheduleEditorProps> = ({
   const [selectedDay, setSelectedDay] = useState<Weekday | null>(null);
 
   const handleDayPress = useCallback((day: Weekday) => {
-    void Haptics.selectionAsync();
+    triggerHaptic('selection');
     setSelectedDay(day);
   }, []);
 
   const handleSelectWorkout = useCallback((workoutId: string | null) => {
     if (!selectedDay) return;
     
-    void Haptics.selectionAsync();
+    triggerHaptic('selection');
     onChange({
       ...schedule,
       [selectedDay]: workoutId,

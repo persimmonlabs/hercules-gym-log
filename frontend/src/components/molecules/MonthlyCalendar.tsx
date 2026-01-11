@@ -6,7 +6,7 @@
 import React, { useCallback, useMemo } from 'react';
 import { StyleSheet, TouchableOpacity, View } from 'react-native';
 import Animated, { SharedValue, useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
-import * as Haptics from 'expo-haptics';
+import { triggerHaptic } from '@/utils/haptics';
 import { Ionicons } from '@expo/vector-icons';
 
 import { CalendarDayCell } from '@/components/atoms/CalendarDayCell';
@@ -49,7 +49,7 @@ export const MonthlyCalendar: React.FC<MonthlyCalendarProps> = ({ onDayLongPress
     (scaleRef: SharedValue<number>, direction: 'prev' | 'next') => {
       scaleRef.value = withSpring(1, springSmooth);
       setTimeout(() => {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        triggerHaptic('light');
         if (direction === 'prev') {
           goToPreviousMonth();
         } else {

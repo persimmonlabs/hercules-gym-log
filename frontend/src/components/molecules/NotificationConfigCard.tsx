@@ -5,7 +5,7 @@
 
 import React from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
-import * as Haptics from 'expo-haptics';
+import { triggerHaptic } from '@/utils/haptics';
 
 import { Text } from '@/components/atoms/Text';
 import { IconSymbol } from '@/components/ui/icon-symbol';
@@ -59,17 +59,17 @@ export const NotificationConfigCard: React.FC<NotificationConfigCardProps> = ({
   onDelete,
 }) => {
   const handleToggle = () => {
-    void Haptics.selectionAsync();
+    triggerHaptic('selection');
     onToggle();
   };
 
   const handleEdit = () => {
-    void Haptics.selectionAsync();
+    triggerHaptic('selection');
     onEdit();
   };
 
   const handleDelete = () => {
-    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+    triggerHaptic('warning');
     onDelete();
   };
 

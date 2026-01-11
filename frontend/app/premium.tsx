@@ -1,15 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   ScrollView,
   StyleSheet,
   TouchableOpacity,
+  BackHandler,
 } from 'react-native';
 import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
-import * as Haptics from 'expo-haptics';
+import { triggerHaptic } from '@/utils/haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Text } from '@/components/atoms/Text';
@@ -58,14 +59,25 @@ export default function PremiumScreen() {
   const [promoError, setPromoError] = useState('');
 
   const handlePurchase = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    triggerHaptic('medium');
     console.log('Purchase premium');
   };
 
-  const handleBack = () => {
-    Haptics.selectionAsync();
+  const handleBack = useCallback(() => {
+    triggerHaptic('selection');
     router.back();
-  };
+  }, []);
+
+  // Handle Android hardware back button
+  useEffect(() => {
+    const backAction = () => {
+      handleBack();
+      return true;
+    };
+
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
+    return () => backHandler.remove();
+  }, [handleBack]);
 
   const handlePromoCodeSubmit = async () => {
     if (!promoCode.trim()) {
@@ -80,11 +92,11 @@ export default function PremiumScreen() {
     await new Promise(resolve => setTimeout(resolve, 1000));
 
     if (promoCode.toUpperCase() === 'OWEN2026') {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      triggerHaptic('success');
       await setPro(true);
       router.back();
     } else {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      triggerHaptic('error');
       setPromoError('Invalid promo code');
     }
 

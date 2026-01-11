@@ -617,19 +617,38 @@ export async function updateWorkoutTemplate(
     templateId: string,
     updates: { name?: string; exercises?: Array<{ id: string; name: string; sets?: number }> }
 ): Promise<void> {
+    console.log('[Supabase] updateWorkoutTemplate called with:', {
+        userId,
+        templateId,
+        updates: {
+            name: updates.name,
+            exerciseCount: updates.exercises?.length
+        }
+    });
+
     return withRetry(async () => {
-        const { error } = await supabaseClient
+        const { data, error } = await supabaseClient
             .from('workout_templates')
             .update({
                 ...updates,
                 updated_at: new Date().toISOString(),
             })
             .eq('id', templateId)
-            .eq('user_id', userId);
+            .eq('user_id', userId)
+            .select();
 
         if (error) {
             console.error('[Supabase] Error updating workout template:', error);
             throw error;
+        }
+
+        if (!data || data.length === 0) {
+            console.warn('[Supabase] updateWorkoutTemplate: No rows matched!', { templateId, userId });
+        } else {
+            console.log('[Supabase] updateWorkoutTemplate success:', {
+                rowsUpdated: data.length,
+                exercisesInDB: data[0]?.exercises?.length
+            });
         }
     });
 }
@@ -644,6 +663,72 @@ export async function deleteWorkoutTemplate(userId: string, templateId: string):
 
         if (error) {
             console.error('[Supabase] Error deleting workout template:', error);
+            throw error;
+        }
+    });
+}
+
+/**
+ * Update an individual workout within a plan (stored in plan_workouts table)
+ * This is the critical function for persisting workout edits within programs.
+ */
+export async function updatePlanWorkout(
+    userId: string,
+    workoutId: string,
+    updates: { name?: string; exercises?: Array<{ id: string; name: string; sets?: number }> }
+): Promise<void> {
+    console.log('[Supabase] updatePlanWorkout called with:', {
+        userId,
+        workoutId,
+        updates: {
+            name: updates.name,
+            exerciseCount: updates.exercises?.length
+        }
+    });
+
+    return withRetry(async () => {
+        const { data, error, count } = await supabaseClient
+            .from('plan_workouts')
+            .update({
+                ...updates,
+                updated_at: new Date().toISOString(),
+            })
+            .eq('id', workoutId)
+            .eq('user_id', userId)
+            .select();
+
+        if (error) {
+            console.error('[Supabase] Error updating plan workout:', error);
+            throw error;
+        }
+
+        if (!data || data.length === 0) {
+            console.warn('[Supabase] updatePlanWorkout: No rows matched!', { workoutId, userId });
+        } else {
+            console.log('[Supabase] updatePlanWorkout success:', {
+                rowsUpdated: data.length,
+                exercisesInDB: data[0]?.exercises?.length
+            });
+        }
+    });
+}
+
+/**
+ * Delete an individual workout from a plan (stored in plan_workouts table)
+ */
+export async function deletePlanWorkout(
+    userId: string,
+    workoutId: string
+): Promise<void> {
+    return withRetry(async () => {
+        const { error } = await supabaseClient
+            .from('plan_workouts')
+            .delete()
+            .eq('id', workoutId)
+            .eq('user_id', userId);
+
+        if (error) {
+            console.error('[Supabase] Error deleting plan workout:', error);
             throw error;
         }
     });

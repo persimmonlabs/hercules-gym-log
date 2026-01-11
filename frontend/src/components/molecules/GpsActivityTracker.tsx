@@ -12,7 +12,7 @@ import Animated, {
   FadeIn,
   FadeOut,
 } from 'react-native-reanimated';
-import * as Haptics from 'expo-haptics';
+import { triggerHaptic } from '@/utils/haptics';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 import { Text } from '@/components/atoms/Text';
@@ -62,7 +62,7 @@ const ActionButton: React.FC<ActionButtonProps> = ({ iconName, label, onPress, v
   }, [scale]);
 
   const handlePress = useCallback(() => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    triggerHaptic('medium');
     onPress();
   }, [onPress]);
 

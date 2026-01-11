@@ -10,7 +10,7 @@ import {
   TouchableWithoutFeedback,
   View,
 } from 'react-native';
-import * as Haptics from 'expo-haptics';
+import { triggerHaptic } from '@/utils/haptics';
 
 import { Text } from '@/components/atoms/Text';
 import { Button } from '@/components/atoms/Button';
@@ -26,7 +26,7 @@ export const FeedbackSuccessModal: React.FC<FeedbackSuccessModalProps> = ({ visi
   const { theme } = useTheme();
 
   const handleClose = () => {
-    void Haptics.selectionAsync();
+    triggerHaptic('selection');
     onClose();
   };
 

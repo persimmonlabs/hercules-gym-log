@@ -52,8 +52,8 @@ export const ProgramCard: React.FC<ProgramCardProps> = ({ program, onPress, styl
   const itemLabel = 'workouts' in program ? 'workouts' : 'exercises';
 
   return (
-    <SurfaceCard tone="neutral" padding="lg" style={[styles.container, style]} showAccentStripe={false}>
-      <Pressable 
+    <SurfaceCard tone="neutral" padding="lg" style={[styles.container, style]} showAccentStripe={true}>
+      <Pressable
         onPress={() => onPress(program)}
         style={({ pressed }) => [styles.pressable, { opacity: pressed ? 0.7 : 1 }]}
       >
@@ -63,29 +63,18 @@ export const ProgramCard: React.FC<ProgramCardProps> = ({ program, onPress, styl
         </View>
 
         <View style={styles.tags}>
-          <Badge label={metadata.goal.replace('-', ' ')} variant="accent" size="sm" />
-          <Badge label={metadata.experienceLevel} variant="neutral" size="sm" />
-          <Badge label={metadata.equipment.replace('-', ' ')} variant="outline" size="sm" />
+          <Badge label={metadata.goal.replace('-', ' ')} variant="workout" size="sm" />
+          <Badge label={metadata.experienceLevel} variant="workout" size="sm" />
+          <Badge label={metadata.equipment.replace('-', ' ')} variant="workout" size="sm" />
         </View>
 
         <View style={styles.footer}>
-          <View style={styles.stat}>
-            <IconSymbol 
-              name={isWorkout ? "timer" : "calendar-today"} 
-              size={14} 
-              color={colors.text.secondary} 
-            />
-            <Text variant="caption" color="secondary">
-              {isWorkout 
-                ? `${(metadata as any).durationMinutes} min` 
-                : `${(metadata as any).daysPerWeek} days/week`
-              }
-            </Text>
-          </View>
-          <View style={styles.stat}>
-            <IconSymbol name="fitness-center" size={14} color={colors.text.secondary} />
-            <Text variant="caption" color="secondary">{itemCount} {itemLabel}</Text>
-          </View>
+          <Text variant="caption" color="secondary">
+            {itemCount} {itemLabel} • {isWorkout
+              ? `${(metadata as any).durationMinutes} min`
+              : `${(metadata as any).daysPerWeek} days/week`
+            }
+          </Text>
         </View>
       </Pressable>
     </SurfaceCard>

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import * as Haptics from 'expo-haptics';
+import { triggerHaptic } from '@/utils/haptics';
 
 import { createEmptyWeekdayAssignment, createScheduleId, WEEKDAY_LABELS } from '@/constants/schedule';
 import type { Plan, PlansState } from '@/store/plansStore';
@@ -195,12 +195,12 @@ export const useScheduleEditor = (): UseScheduleEditorReturn => {
   }, [plans, userPrograms]);
 
   const selectDay = useCallback((day: ScheduleDayKey) => {
-    void Haptics.selectionAsync();
+    triggerHaptic('selection');
     setSelectedDay(day);
   }, []);
 
   const selectRotatingDay = useCallback((index: number) => {
-    void Haptics.selectionAsync();
+    triggerHaptic('selection');
     setSelectedRotatingDayIndex(index);
   }, []);
 
@@ -219,7 +219,7 @@ export const useScheduleEditor = (): UseScheduleEditorReturn => {
         ...prev,
         [selectedDay]: planId,
       }));
-      void Haptics.selectionAsync();
+      triggerHaptic('selection');
       setSelectedDay(null);
     },
     [selectedDay],
@@ -241,14 +241,14 @@ export const useScheduleEditor = (): UseScheduleEditorReturn => {
         }
         return { ...prev, days: newDays };
       });
-      void Haptics.selectionAsync();
+      triggerHaptic('selection');
       setSelectedRotatingDayIndex(null);
     },
     [selectedRotatingDayIndex],
   );
 
   const addRotatingDay = useCallback((isRest: boolean = false) => {
-    void Haptics.selectionAsync();
+    triggerHaptic('selection');
     setSelectedDay(null);
 
     if (draftRotating.days.length >= MAX_ROTATING_DAYS) {
@@ -271,7 +271,7 @@ export const useScheduleEditor = (): UseScheduleEditorReturn => {
   }, [draftRotating.days.length]);
 
   const removeRotatingDay = useCallback((index: number) => {
-    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+    triggerHaptic('warning');
     setDraftRotating((prev) => {
       const newDays = prev.days.filter((_, i) => i !== index);
       // Renumber the days
@@ -284,7 +284,7 @@ export const useScheduleEditor = (): UseScheduleEditorReturn => {
 
   const moveRotatingDayUp = useCallback((index: number) => {
     if (index === 0) return;
-    void Haptics.selectionAsync();
+    triggerHaptic('selection');
     setDraftRotating((prev) => {
       const newDays = [...prev.days];
       [newDays[index - 1], newDays[index]] = [newDays[index], newDays[index - 1]];
@@ -299,7 +299,7 @@ export const useScheduleEditor = (): UseScheduleEditorReturn => {
   const moveRotatingDayDown = useCallback((index: number) => {
     setDraftRotating((prev) => {
       if (index >= prev.days.length - 1) return prev;
-      void Haptics.selectionAsync();
+      triggerHaptic('selection');
       const newDays = [...prev.days];
       [newDays[index], newDays[index + 1]] = [newDays[index + 1], newDays[index]];
       // Renumber the days
@@ -311,7 +311,7 @@ export const useScheduleEditor = (): UseScheduleEditorReturn => {
   }, []);
 
   const setRotatingStartDate = useCallback((date: number | null) => {
-    void Haptics.selectionAsync();
+    triggerHaptic('selection');
     setDraftRotating((prev) => ({ ...prev, startDate: date }));
   }, []);
 
@@ -342,7 +342,7 @@ export const useScheduleEditor = (): UseScheduleEditorReturn => {
         await addSchedule(nextSchedule);
       }
 
-      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      await triggerHaptic('success');
       return true;
     } catch (error) {
       console.error('[useScheduleEditor] Failed to persist schedule', error);

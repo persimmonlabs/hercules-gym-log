@@ -9,7 +9,7 @@ import React, { useState, useCallback, useEffect } from 'react';
 import { View, StyleSheet, TouchableOpacity } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { VictoryPie } from 'victory-native';
-import * as Haptics from 'expo-haptics';
+import { triggerHaptic } from '@/utils/haptics';
 
 import { Text } from '@/components/atoms/Text';
 import { ChartWrapper } from '@/components/atoms/ChartWrapper';
@@ -21,6 +21,14 @@ import type { ChartSlice, TimeRange } from '@/types/analytics';
 
 const PIE_SIZE = 240;
 const EMPTY_MIN_HEIGHT = 240;
+
+// Orange with opacity based on index (sorted by value)
+const getOrangeShade = (index: number, total: number): string => {
+  if (total <= 1) return 'rgba(255, 107, 74, 1.0)';
+  const ratio = index / (total - 1);
+  const opacity = 1.0 - ratio * 0.7;
+  return `rgba(255, 107, 74, ${opacity})`;
+};
 
 interface LegendItemProps {
   item: ChartSlice;
@@ -56,15 +64,15 @@ export const SimpleDistributionChart: React.FC = () => {
   const data = tieredVolumeDistribution.high;
 
   const handleSelectSlice = useCallback((name: string) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    triggerHaptic('light');
     setSelectedSlice((prev) => (prev === name ? null : name));
   }, []);
 
-  // Prepare Victory data
-  const chartData = data.map((item) => ({
+  // Prepare Victory data with orange color scheme
+  const chartData = data.map((item, index) => ({
     x: item.name,
     y: item.percentage,
-    color: item.color,
+    color: getOrangeShade(index, data.length),
   }));
 
   const colorScale = chartData.map((d) => d.color);
@@ -88,7 +96,9 @@ export const SimpleDistributionChart: React.FC = () => {
             width={PIE_SIZE + 40}
             height={PIE_SIZE + 40}
             colorScale={colorScale}
-            innerRadius={40}
+            innerRadius={58}
+            startAngle={0}
+            endAngle={-360}
             radius={({ datum }) =>
               selectedSlice === datum.x ? PIE_SIZE / 2 + 8 : PIE_SIZE / 2
             }
@@ -119,6 +129,16 @@ export const SimpleDistributionChart: React.FC = () => {
               },
             ]}
           />
+
+          {/* Selected slice info in center */}
+          {selectedSlice && (
+            <View style={styles.selectedInfo}>
+              <Text variant="labelMedium" color="primary" numberOfLines={1}>{selectedSlice}</Text>
+              <Text variant="heading2" color="primary">
+                {Math.round(data.find(d => d.name === selectedSlice)?.percentage || 0)}%
+              </Text>
+            </View>
+          )}
         </View>
 
         <View style={styles.legend}>
@@ -148,6 +168,13 @@ const styles = StyleSheet.create({
   chartContainer: {
     alignItems: 'center',
     justifyContent: 'center',
+    position: 'relative',
+  },
+  selectedInfo: {
+    position: 'absolute',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 120,
   },
   legend: {
     flexDirection: 'row',

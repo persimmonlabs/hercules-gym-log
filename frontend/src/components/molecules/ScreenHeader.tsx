@@ -6,7 +6,7 @@
 import React from 'react';
 import { StyleSheet, View, Pressable } from 'react-native';
 import Animated, { useSharedValue, withSpring, useAnimatedStyle } from 'react-native-reanimated';
-import * as Haptics from 'expo-haptics';
+import { triggerHaptic } from '@/utils/haptics';
 
 import { Text } from '@/components/atoms/Text';
 import { IconSymbol } from '@/components/ui/icon-symbol';
@@ -34,7 +34,7 @@ export const ScreenHeader: React.FC<ScreenHeaderProps> = ({ title, subtitle, onP
 
   const handleProfilePress = () => {
     scale.value = withSpring(0.9, { damping: 15, stiffness: 300 });
-    void Haptics.selectionAsync();
+    triggerHaptic('selection');
     setTimeout(() => {
       scale.value = withSpring(1, { damping: 15, stiffness: 300 });
       onProfilePress?.();

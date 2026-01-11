@@ -5,7 +5,7 @@
 
 import React, { useCallback } from 'react';
 import { Modal, Pressable, StyleSheet, View } from 'react-native';
-import * as Haptics from 'expo-haptics';
+import { triggerHaptic } from '@/utils/haptics';
 
 import { Text } from '@/components/atoms/Text';
 import { Button } from '@/components/atoms/Button';
@@ -47,7 +47,7 @@ const ThemeOption: React.FC<ThemeOptionProps> = ({
         },
       ]}
       onPress={() => {
-        void Haptics.selectionAsync();
+        triggerHaptic('selection');
         onSelect();
       }}
     >
@@ -84,12 +84,12 @@ export const AppearanceModal: React.FC<AppearanceModalProps> = ({
   const { themePreference, setThemePreference } = useSettingsStore();
 
   const handleClose = useCallback(() => {
-    void Haptics.selectionAsync();
+    triggerHaptic('selection');
     onClose();
   }, [onClose]);
 
   const handleSave = useCallback(() => {
-    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    triggerHaptic('success');
     onClose();
   }, [onClose]);
 

@@ -11,7 +11,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { useRouter } from 'expo-router';
-import * as Haptics from 'expo-haptics';
+import { triggerHaptic } from '@/utils/haptics';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Svg, { Circle } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -49,7 +49,7 @@ const WorkoutSuccessScreen: React.FC = () => {
       scale.value = 0.92;
       ringProgress.value = 0;
 
-      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      triggerHaptic('success');
 
       opacity.value = withSpring(1, springGentle);
       scale.value = withSpring(1, springGentle);

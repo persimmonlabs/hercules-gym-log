@@ -56,5 +56,6 @@ const styles = StyleSheet.create({
   meta: {
     flex: 1,
     gap: spacing.xs,
+    flexShrink: 1,
   },
 });

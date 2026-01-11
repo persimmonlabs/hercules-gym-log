@@ -15,7 +15,7 @@ import {
   ScrollView,
   TextInput,
 } from 'react-native';
-import * as Haptics from 'expo-haptics';
+import { triggerHaptic } from '@/utils/haptics';
 
 import { Text } from '@/components/atoms/Text';
 import { Button } from '@/components/atoms/Button';
@@ -42,7 +42,7 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({ visible, onClose }
 
   const handleCancel = () => {
     if (isSubmitting) return;
-    void Haptics.selectionAsync();
+    triggerHaptic('selection');
     onClose();
   };
 
@@ -62,7 +62,7 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({ visible, onClose }
       return;
     }
 
-    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    triggerHaptic('success');
     setIsSubmitting(true);
 
     try {

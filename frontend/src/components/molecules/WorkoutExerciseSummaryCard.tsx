@@ -150,6 +150,7 @@ const styles = StyleSheet.create({
   titleGroup: {
     flex: 1,
     gap: spacing.xs,
+    flexShrink: 1,
   },
   setList: {
     gap: spacing.sm,

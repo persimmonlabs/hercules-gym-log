@@ -1,7 +1,7 @@
-import React, { useCallback } from 'react';
-import { View, StyleSheet, Pressable, type ViewStyle } from 'react-native';
+import React, { useCallback, useEffect } from 'react';
+import { View, StyleSheet, Pressable, type ViewStyle, BackHandler } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import * as Haptics from 'expo-haptics';
+import { triggerHaptic } from '@/utils/haptics';
 import Animated, { Easing, useAnimatedStyle, useSharedValue, withSpring, withTiming, type AnimatedStyle } from 'react-native-reanimated';
 
 import { Text } from '@/components/atoms/Text';
@@ -161,12 +161,23 @@ export default function AddWorkoutScreen() {
   const scratchLiftAnimation = useCardLiftAnimation(shadowConfigs.sm, shadowConfigs.md);
 
   const handleBack = useCallback(() => {
-    void Haptics.selectionAsync();
+    triggerHaptic('selection');
     router.push('/(tabs)/plans');
   }, [router]);
 
+  // Handle Android hardware back button
+  useEffect(() => {
+    const backAction = () => {
+      handleBack();
+      return true;
+    };
+
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
+    return () => backHandler.remove();
+  }, [handleBack]);
+
   const handleBrowseLibrary = useCallback(() => {
-    void Haptics.selectionAsync();
+    triggerHaptic('selection');
     router.push({
       pathname: '/(tabs)/browse-programs',
       params: { mode: isWorkoutMode ? 'workout' : 'program' }
@@ -174,7 +185,7 @@ export default function AddWorkoutScreen() {
   }, [router, isWorkoutMode]);
 
   const handleStartQuiz = useCallback(() => {
-    void Haptics.selectionAsync();
+    triggerHaptic('selection');
     router.push({
       pathname: '/quiz',
       params: { mode: isWorkoutMode ? 'workout' : 'program' }
@@ -182,7 +193,7 @@ export default function AddWorkoutScreen() {
   }, [router, isWorkoutMode]);
 
   const handleCreateCustomPlan = useCallback(() => {
-    void Haptics.selectionAsync();
+    triggerHaptic('selection');
     if (isWorkoutMode) {
       router.push('/(tabs)/create-workout');
     } else {

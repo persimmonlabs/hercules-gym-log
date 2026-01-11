@@ -13,7 +13,7 @@ import {
   Alert,
   ActivityIndicator,
 } from 'react-native';
-import * as Haptics from 'expo-haptics';
+import { triggerHaptic } from '@/utils/haptics';
 
 import { Text } from '@/components/atoms/Text';
 import { Button } from '@/components/atoms/Button';
@@ -53,14 +53,14 @@ export const NameEditModal: React.FC<NameEditModalProps> = ({
 
   const handleCancel = () => {
     if (isSaving) return; // Prevent closing while saving
-    void Haptics.selectionAsync();
+    triggerHaptic('selection');
     onClose();
   };
 
   const handleSave = async () => {
     if (isSaving) return; // Prevent multiple saves
 
-    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    triggerHaptic('success');
 
     const trimmedFirst = tempFirstName.trim();
     const trimmedLast = tempLastName.trim();

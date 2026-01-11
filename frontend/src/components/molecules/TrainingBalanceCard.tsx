@@ -6,7 +6,7 @@
 
 import React, { useMemo, useState, useRef, useCallback } from 'react';
 import { View, StyleSheet, ScrollView, Dimensions, NativeSyntheticEvent, NativeScrollEvent } from 'react-native';
-import * as Haptics from 'expo-haptics';
+import { triggerHaptic } from '@/utils/haptics';
 
 import { Text } from '@/components/atoms/Text';
 import { SurfaceCard } from '@/components/atoms/SurfaceCard';
@@ -279,7 +279,7 @@ export const TrainingBalanceCard: React.FC = () => {
     const newPage = Math.round(offsetX / CONTENT_WIDTH);
     if (newPage !== currentPage) {
       setCurrentPage(newPage);
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      triggerHaptic('light');
     }
   }, [currentPage]);
 

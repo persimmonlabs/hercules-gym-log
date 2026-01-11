@@ -1,9 +1,9 @@
 import React, { useCallback, useEffect, useMemo, useState, useRef } from 'react';
-import { Alert, Modal, Pressable, StyleSheet, View, ScrollView, Platform, type ViewStyle } from 'react-native';
+import { Alert, Modal, Pressable, StyleSheet, View, ScrollView, Platform, BackHandler, type ViewStyle } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useScrollToTop, useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import * as Haptics from 'expo-haptics';
+import { triggerHaptic } from '@/utils/haptics';
 import Animated, { Easing, useAnimatedStyle, useSharedValue, withSpring, withTiming, type AnimatedStyle } from 'react-native-reanimated';
 
 import { SurfaceCard } from '@/components/atoms/SurfaceCard';
@@ -327,6 +327,17 @@ const PlansScreen: React.FC = () => {
     }, [])
   );
 
+  // Handle Android hardware back button - navigate to Dashboard
+  useEffect(() => {
+    const backAction = () => {
+      router.replace('/(tabs)');
+      return true;
+    };
+
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
+    return () => backHandler.remove();
+  }, [router]);
+
   const [workoutInProgressVisible, setWorkoutInProgressVisible] = useState<boolean>(false);
   const plans = usePlansStore((state: PlansState) => state.plans);
   const removePlan = usePlansStore((state: PlansState) => state.removePlan);
@@ -342,76 +353,104 @@ const PlansScreen: React.FC = () => {
   const [itemToDelete, setItemToDelete] = useState<any>(null);
   const [isOverrideModalVisible, setIsOverrideModalVisible] = useState<boolean>(false);
   const setActiveRule = useActiveScheduleStore((state: any) => state.setActiveRule);
+  const activeScheduleRule = useActiveScheduleStore((state: any) => state.state.activeRule);
   const { setEditingPlanId } = usePlanBuilderContext();
 
   const handleDeleteSchedule = useCallback(async () => {
-    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+    triggerHaptic('warning');
     await setActiveRule(null);
   }, [setActiveRule]);
 
   const handleAddPlanPress = useCallback(() => {
-    void Haptics.selectionAsync();
+    triggerHaptic('selection');
     router.push('/(tabs)/add-workout?mode=plan');
   }, [router]);
 
   const handleAddWorkoutPress = useCallback(() => {
-    void Haptics.selectionAsync();
+    triggerHaptic('selection');
     router.push('/(tabs)/add-workout?mode=workout');
   }, [router]);
 
 
   const handleBrowseProgramsPress = useCallback(() => {
-    void Haptics.selectionAsync();
+    triggerHaptic('selection');
     router.push('/(tabs)/browse-programs');
   }, [router]);
 
   const handleProgramPress = useCallback((program: any) => {
-    void Haptics.selectionAsync();
+    triggerHaptic('selection');
     setExpandedPlanId((prev) => (prev === program.id ? null : program.id));
   }, []);
 
   const handleEditProgram = useCallback((program: any) => {
-    void Haptics.selectionAsync();
+    triggerHaptic('selection');
     setExpandedPlanId(null);
     router.push({ pathname: '/(tabs)/edit-plan', params: { planId: program.id } });
   }, [router]);
 
   const executeDelete = useCallback(async (item: any) => {
-    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+    triggerHaptic('warning');
 
     if (item.type === 'program') {
       // Check if it's a program deletion (from My Plans) or a workout deletion (from My Workouts)
       if (item.workouts) {
-        // It's a full program being deleted
+        // It's a full program being deleted from My Plans
+        // Just delete the program - workouts remain in My Workouts via plansStore
         await deleteUserProgram(item.id);
+
+        // Only clear schedule if it's plan-driven and references this specific plan
+        // Don't clear Weekly schedules just because a program is deleted
+        if (activeScheduleRule?.type === 'plan-driven' && activeScheduleRule?.planId === item.id) {
+          console.log('[plans] Clearing plan-driven schedule because associated plan was deleted');
+          await setActiveRule(null);
+        } else if (activePlanId === item.id) {
+          // Clear programsStore active plan reference, but NOT the activeScheduleStore schedule
+          console.log('[plans] Program was active plan, but not clearing schedule (type:', activeScheduleRule?.type || 'none', ')');
+        }
       } else {
-        // It's a workout being deleted from a program
+        // It's a workout being deleted from My Workouts
+        // Need to remove from the program AND remove the standalone template
         await deleteWorkoutFromProgram(item.programId, item.id);
 
-        // FIX: Also delete the custom workout if it exists with the same name.
-        // This prevents the "shadowing" issue where deleting a program workout
-        // reveals an older custom workout of the same name.
-        const customPlan = plans.find(p => p.name === item.name);
+        // Also delete the custom workout template if it exists with the same name
+        const customPlan = plans.find(p => p.name.trim().toLowerCase() === item.name.trim().toLowerCase());
         if (customPlan) {
-          removePlan(customPlan.id);
+          await removePlan(customPlan.id);
         }
 
-        // Check if the program is now empty and remove it if so
-        const updatedPrograms = useProgramsStore.getState().userPrograms;
-        const program = updatedPrograms.find(p => p.id === item.programId);
-        if (program && program.workouts.length === 0) {
-          await deleteUserProgram(item.programId);
+        // Also remove from ALL other programs that have this workout (by name)
+        const workoutName = item.name.trim().toLowerCase();
+        for (const prog of userPrograms) {
+          if (prog.id === item.programId) continue; // Already handled above
+          const matchingWorkout = prog.workouts.find(
+            w => w.name.trim().toLowerCase() === workoutName
+          );
+          if (matchingWorkout) {
+            await deleteWorkoutFromProgram(prog.id, matchingWorkout.id);
+          }
         }
       }
     } else {
-      void removePlan(item.id);
+      // Deleting a standalone custom workout from My Workouts
+      await removePlan(item.id);
+
+      // Also remove from ALL programs that have a workout with this name
+      const workoutName = item.name.trim().toLowerCase();
+      for (const prog of userPrograms) {
+        const matchingWorkout = prog.workouts.find(
+          w => w.name.trim().toLowerCase() === workoutName
+        );
+        if (matchingWorkout) {
+          await deleteWorkoutFromProgram(prog.id, matchingWorkout.id);
+        }
+      }
     }
 
     setExpandedPlanId((prev) => (prev === item.id ? null : prev));
-  }, [removePlan, deleteWorkoutFromProgram, deleteUserProgram, plans]);
+  }, [removePlan, deleteWorkoutFromProgram, deleteUserProgram, plans, userPrograms, activePlanId, setActiveRule, activeScheduleRule]);
 
   const handleDeleteProgram = useCallback((program: any) => {
-    void Haptics.selectionAsync();
+    triggerHaptic('selection');
     // Mark as program so we can distinguish in the modal
     setItemToDelete({ ...program, type: 'program_deletion' });
     setIsDeleteDialogVisible(true);
@@ -419,7 +458,7 @@ const PlansScreen: React.FC = () => {
 
   const handlePlanPress = useCallback(
     (planId: string) => {
-      void Haptics.selectionAsync();
+      triggerHaptic('selection');
       setExpandedPlanId((prev) => (prev === planId ? null : planId));
     },
     [],
@@ -427,7 +466,7 @@ const PlansScreen: React.FC = () => {
 
   const handleDeleteWorkoutItem = useCallback(
     (item: any) => {
-      void Haptics.selectionAsync();
+      triggerHaptic('selection');
       setItemToDelete(item);
       setIsDeleteDialogVisible(true);
     },
@@ -456,7 +495,7 @@ const PlansScreen: React.FC = () => {
 
   const handleEditWorkoutItem = useCallback(
     (item: any) => {
-      void Haptics.selectionAsync();
+      triggerHaptic('selection');
       setExpandedPlanId(null);
 
       const rawPlanId = item.type === 'program'
@@ -464,11 +503,12 @@ const PlansScreen: React.FC = () => {
         : item.id;
 
       const encodedPlanId = encodeURIComponent(rawPlanId);
+      const returnTo = encodeURIComponent('/(tabs)/plans');
 
       // Trigger immediate loading for the destination screen with the RAW ID
       setEditingPlanId(rawPlanId);
 
-      router.push(`/(tabs)/create-workout?planId=${encodedPlanId}`);
+      router.push(`/(tabs)/create-workout?planId=${encodedPlanId}&returnTo=${returnTo}`);
     },
     [router, setEditingPlanId],
   );
@@ -529,11 +569,13 @@ const PlansScreen: React.FC = () => {
             workoutsGroupedByName[nameKey].programNames.push(prog.name);
             workoutsGroupedByName[nameKey].programIds.push(prog.id);
           }
-          if (workoutsGroupedByName[nameKey].type === 'custom') {
-            workoutsGroupedByName[nameKey].type = 'program';
-            workoutsGroupedByName[nameKey].id = w.id;
-            workoutsGroupedByName[nameKey].programId = prog.id;
-          }
+
+          // Always use the exercises from the program workout as it's more likely to be the one edited
+          // also update type/id/programId to point to this program version
+          workoutsGroupedByName[nameKey].exercises = w.exercises;
+          workoutsGroupedByName[nameKey].type = 'program';
+          workoutsGroupedByName[nameKey].id = w.id;
+          workoutsGroupedByName[nameKey].programId = prog.id;
         }
       });
     });
@@ -541,9 +583,10 @@ const PlansScreen: React.FC = () => {
     return Object.values(workoutsGroupedByName)
       .map((w): GroupedWorkout => ({
         ...w,
-        subtitle: w.type === 'custom'
-          ? `${w.source === 'library' ? 'Library' : w.source === 'recommended' ? 'Recommended' : 'Custom'} • ${w.exercises.length} exercises`
-          : `${w.programNames.join(' • ')} • ${w.exercises.length} exercises`
+        // Simplified subtitles: just show exercise count, or plan name + exercise count
+        subtitle: w.programNames.length > 0
+          ? `${w.programNames[0]} • ${w.exercises.length} ${w.exercises.length === 1 ? 'exercise' : 'exercises'}`
+          : `${w.exercises.length} ${w.exercises.length === 1 ? 'exercise' : 'exercises'}`
       }))
       .sort((a, b) => {
         // Priority 1: Group by Plan (Custom considered as a plan group)
@@ -563,7 +606,7 @@ const PlansScreen: React.FC = () => {
   }, [userPrograms]);
 
   const handleStartWorkoutItem = useCallback((item: any) => {
-    void Haptics.selectionAsync();
+    triggerHaptic('selection');
 
     const doStartSession = () => {
       setCompletionOverlayVisible(false);
@@ -610,7 +653,7 @@ const PlansScreen: React.FC = () => {
           setWorkoutInProgressVisible(false);
         }}
       />
-      
+
       <ScreenHeader
         title="Programs"
         subtitle="Manage your workouts and training plans"
@@ -726,156 +769,159 @@ const PlansScreen: React.FC = () => {
         </SurfaceCard>
       </View>
 
-        <SurfaceCard padding="xl" tone="neutral" showAccentStripe={true} style={{ borderWidth: 0 }}>
-          <View style={styles.outerCardContent}>
-            <View style={styles.sectionHeader}>
-              <Text variant="heading3" color="primary">
-                My Plans
-              </Text>
-            </View>
+      <SurfaceCard padding="xl" tone="neutral" showAccentStripe={true} style={{ borderWidth: 0 }}>
+        <View style={styles.outerCardContent}>
+          <View style={styles.sectionHeader}>
+            <Text variant="heading3" color="primary">
+              My Plans
+            </Text>
+          </View>
 
-            <View style={styles.planCards}>
-              {myPlans.length > 0 ? (
-                myPlans.map((program) => (
-                  <Pressable
-                    key={program.id}
-                    style={styles.planCardShell}
-                    onPress={() => handleProgramPress(program)}
-                    accessibilityRole="button"
-                    accessibilityLabel={`View ${program.name}`}
-                  >
-                    {expandedPlanId === program.id ? (
-                      <View style={styles.planExpandedContent}>
-                        <View style={styles.planCardHeader}>
-                          <Text variant="bodySemibold" color="primary">
-                            {program.name}
-                          </Text>
-                        </View>
-                        <View style={[styles.planActionGrid, { marginTop: spacing.lg }]}>
-                          <Pressable
-                            style={styles.planActionButton}
-                            onPress={(event) => {
-                              event.stopPropagation();
-                              handleEditProgram(program);
-                            }}
-                          >
-                            <View style={styles.planActionIconWrapper}>
-                              <IconSymbol name="edit" color={colors.accent.primary} size={sizing.iconMD} />
-                            </View>
-                            <Text variant="caption" color="primary" style={styles.planActionLabel}>Edit</Text>
-                          </Pressable>
-                          <Pressable
-                            style={styles.planActionButton}
-                            onPress={(event) => {
-                              event.stopPropagation();
-                              handleDeleteProgram(program);
-                            }}
-                          >
-                            <View style={[styles.planActionIconWrapper, { borderColor: colors.accent.orange }]}>
-                              <IconSymbol name="delete" color={colors.accent.orange} size={sizing.iconMD} />
-                            </View>
-                            <Text variant="caption" color="primary" style={styles.planActionLabel}>Delete</Text>
-                          </Pressable>
-                          <Pressable
-                            style={styles.planActionButton}
-                            onPress={(event) => {
-                              event.stopPropagation();
-                              setExpandedPlanId(null);
-                            }}
-                          >
-                            <View style={[styles.planActionIconWrapper, { borderColor: colors.accent.orange }]}>
-                              <IconSymbol name="arrow-back" color={colors.accent.orange} size={sizing.iconMD} />
-                            </View>
-                            <Text variant="caption" color="primary" style={styles.planActionLabel}>Back</Text>
-                          </Pressable>
-                        </View>
-                      </View>
-                    ) : (
-                      <View style={styles.planCardContent}>
-                        <View style={styles.planCardHeader}>
-                          <Text variant="bodySemibold" color="primary">
-                            {program.name}
-                          </Text>
-                        </View>
-                        <Text variant="labelMedium" color="secondary">
-                          {getPlanSummary(program)}
+          <View style={styles.planCards}>
+            {myPlans.length > 0 ? (
+              myPlans.map((program) => (
+                <Pressable
+                  key={program.id}
+                  style={styles.planCardShell}
+                  onPress={() => handleProgramPress(program)}
+                  accessibilityRole="button"
+                  accessibilityLabel={`View ${program.name}`}
+                >
+                  {expandedPlanId === program.id ? (
+                    <View style={styles.planExpandedContent}>
+                      <View style={styles.planCardHeader}>
+                        <Text variant="bodySemibold" color="primary">
+                          {program.name}
                         </Text>
                       </View>
-                    )}
-                  </Pressable>
-                ))
-              ) : (
-                <View style={[styles.planCardShell, styles.planCardContent]}>
-                  <Text variant="bodySemibold" color="primary">
-                    No plans yet
-                  </Text>
-                  <Text variant="body" color="secondary">
-                    Add a plan from the library to see it here.
-                  </Text>
-                </View>
-              )}
-            </View>
-
-            <View style={styles.planCreateButtonWrapper}>
-              <Button label="Add Plan" onPress={handleAddPlanPress} size="md" />
-            </View>
+                      <View style={[styles.planActionGrid, { marginTop: spacing.lg }]}>
+                        <Pressable
+                          style={styles.planActionButton}
+                          onPress={(event) => {
+                            event.stopPropagation();
+                            handleEditProgram(program);
+                          }}
+                        >
+                          <View style={styles.planActionIconWrapper}>
+                            <IconSymbol name="edit" color={colors.accent.primary} size={sizing.iconMD} />
+                          </View>
+                          <Text variant="caption" color="primary" style={styles.planActionLabel}>Edit</Text>
+                        </Pressable>
+                        <Pressable
+                          style={styles.planActionButton}
+                          onPress={(event) => {
+                            event.stopPropagation();
+                            handleDeleteProgram(program);
+                          }}
+                        >
+                          <View style={[styles.planActionIconWrapper, { borderColor: colors.accent.orange }]}>
+                            <IconSymbol name="delete" color={colors.accent.orange} size={sizing.iconMD} />
+                          </View>
+                          <Text variant="caption" color="primary" style={styles.planActionLabel}>Delete</Text>
+                        </Pressable>
+                        <Pressable
+                          style={styles.planActionButton}
+                          onPress={(event) => {
+                            event.stopPropagation();
+                            setExpandedPlanId(null);
+                          }}
+                        >
+                          <View style={[styles.planActionIconWrapper, { borderColor: colors.accent.orange }]}>
+                            <IconSymbol name="arrow-back" color={colors.accent.orange} size={sizing.iconMD} />
+                          </View>
+                          <Text variant="caption" color="primary" style={styles.planActionLabel}>Back</Text>
+                        </Pressable>
+                      </View>
+                    </View>
+                  ) : (
+                    <View style={styles.planCardContent}>
+                      <View style={styles.planCardHeader}>
+                        <Text variant="bodySemibold" color="primary">
+                          {program.name}
+                        </Text>
+                      </View>
+                      <Text variant="labelMedium" color="secondary">
+                        {getPlanSummary(program)}
+                      </Text>
+                    </View>
+                  )}
+                </Pressable>
+              ))
+            ) : (
+              <View style={[styles.planCardShell, styles.planCardContent]}>
+                <Text variant="bodySemibold" color="primary">
+                  No plans yet
+                </Text>
+                <Text variant="body" color="secondary">
+                  Add a plan from the library to see it here.
+                </Text>
+              </View>
+            )}
           </View>
-        </SurfaceCard>
 
-        <MyScheduleCard
-          onEditPress={() => {
-            void Haptics.selectionAsync();
-            router.push('/(tabs)/schedule-setup');
-          }}
-          onAddOverridePress={() => setIsOverrideModalVisible(true)}
-          onDeletePress={handleDeleteSchedule}
-        />
+          <View style={styles.planCreateButtonWrapper}>
+            <Button label="Add Plan" onPress={handleAddPlanPress} size="md" />
+          </View>
+        </View>
+      </SurfaceCard>
 
-        <AddOverrideModal
-          visible={isOverrideModalVisible}
-          onClose={() => setIsOverrideModalVisible(false)}
-        />
+      <MyScheduleCard
+        onEditPress={() => {
+          triggerHaptic('selection');
+          router.push('/(tabs)/schedule-setup');
+        }}
+        onAddOverridePress={() => setIsOverrideModalVisible(true)}
+        onDeletePress={handleDeleteSchedule}
+      />
 
-        <Modal
-          transparent
-          visible={isDeleteDialogVisible}
-          onRequestClose={handleDismissDeleteDialog}
-        >
-          <Pressable style={styles.dialogOverlay} onPress={handleDismissDeleteDialog}>
-            <Pressable
-              style={styles.dialogCardPressable}
-              onPress={(event) => event.stopPropagation()}
-            >
-              <SurfaceCard tone="neutral" padding="lg" showAccentStripe={false} style={styles.dialogCard}>
-                <View style={styles.dialogContent}>
-                  <Text variant="heading3" color="primary">
-                    {itemToDelete?.type === 'program_deletion' ? 'Delete Plan' : 'Remove Workout'}
-                  </Text>
-                  <Text variant="body" color="secondary">
-                    Are you sure you want to {itemToDelete?.type === 'program_deletion' ? 'delete' : 'remove'} "{itemToDelete?.name}"?
-                  </Text>
-                </View>
-                <View style={styles.dialogActions}>
-                  <Button
-                    label="Cancel"
-                    variant="ghost"
-                    onPress={handleDismissDeleteDialog}
-                    size="md"
-                    textColor={colors.accent.orange}
-                    style={[styles.dialogActionButton, styles.dialogCancelButton]}
-                  />
-                  <Button
-                    label={itemToDelete?.type === 'program_deletion' ? 'Delete' : 'Remove'}
-                    variant="primary"
-                    onPress={handleConfirmDelete}
-                    size="md"
-                    style={styles.dialogActionButton}
-                  />
-                </View>
-              </SurfaceCard>
-            </Pressable>
+      <AddOverrideModal
+        visible={isOverrideModalVisible}
+        onClose={() => setIsOverrideModalVisible(false)}
+      />
+
+      <Modal
+        transparent
+        visible={isDeleteDialogVisible}
+        onRequestClose={handleDismissDeleteDialog}
+      >
+        <Pressable style={styles.dialogOverlay} onPress={handleDismissDeleteDialog}>
+          <Pressable
+            style={styles.dialogCardPressable}
+            onPress={(event) => event.stopPropagation()}
+          >
+            <SurfaceCard tone="neutral" padding="lg" showAccentStripe={false} style={styles.dialogCard}>
+              <View style={styles.dialogContent}>
+                <Text variant="heading3" color="primary">
+                  {itemToDelete?.type === 'program_deletion' ? 'Delete Plan' : 'Remove Workout'}
+                </Text>
+                <Text variant="body" color="secondary">
+                  Are you sure you want to {itemToDelete?.type === 'program_deletion' ? 'delete' : 'remove'} "{itemToDelete?.name}"?
+                  {(itemToDelete?.type === 'program_deletion' && itemToDelete?.id === activePlanId)
+                    ? ' This will also start a new week and clear your current schedule.'
+                    : ''}
+                </Text>
+              </View>
+              <View style={styles.dialogActions}>
+                <Button
+                  label="Cancel"
+                  variant="ghost"
+                  onPress={handleDismissDeleteDialog}
+                  size="md"
+                  textColor={colors.accent.orange}
+                  style={[styles.dialogActionButton, styles.dialogCancelButton]}
+                />
+                <Button
+                  label={itemToDelete?.type === 'program_deletion' ? 'Delete' : 'Remove'}
+                  variant="primary"
+                  onPress={handleConfirmDelete}
+                  size="md"
+                  style={styles.dialogActionButton}
+                />
+              </View>
+            </SurfaceCard>
           </Pressable>
-        </Modal>
+        </Pressable>
+      </Modal>
     </TabSwipeContainer>
   );
 };

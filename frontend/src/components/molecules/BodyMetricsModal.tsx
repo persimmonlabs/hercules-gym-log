@@ -12,7 +12,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import * as Haptics from 'expo-haptics';
+import { triggerHaptic } from '@/utils/haptics';
 
 import { Text } from '@/components/atoms/Text';
 import { Button } from '@/components/atoms/Button';
@@ -146,7 +146,7 @@ export const BodyMetricsModal: React.FC<BodyMetricsModalProps> = ({
   }, [isMetricWeight]);
 
   const handleSave = useCallback(() => {
-    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    triggerHaptic('success');
     
     // Convert height to feet/inches for storage
     let finalFeet: number;
@@ -175,7 +175,7 @@ export const BodyMetricsModal: React.FC<BodyMetricsModalProps> = ({
   }, [cmInput, feetInput, inchesInput, weightInput, isMetricHeight, isMetricWeight, onSave]);
 
   const handleClose = useCallback(() => {
-    void Haptics.selectionAsync();
+    triggerHaptic('selection');
     onClose();
   }, [onClose]);
 

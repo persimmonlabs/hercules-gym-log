@@ -1,5 +1,5 @@
-import React, { useState, useCallback, useRef } from 'react';
-import { StyleSheet, View, ScrollView } from 'react-native';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
+import { StyleSheet, View, ScrollView, BackHandler } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { useScrollToTop } from '@react-navigation/native';
 
@@ -122,6 +122,17 @@ const StatsScreen: React.FC = () => {
       scrollRef.current?.scrollTo({ y: 0, animated: false });
     }, [])
   );
+
+  // Handle Android hardware back button - navigate to Dashboard
+  useEffect(() => {
+    const backAction = () => {
+      router.replace('/(tabs)');
+      return true;
+    };
+
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
+    return () => backHandler.remove();
+  }, [router]);
 
   const styles = StyleSheet.create({
     contentContainer: {

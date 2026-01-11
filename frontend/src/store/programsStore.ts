@@ -30,6 +30,8 @@ import {
   deleteUserPlan,
   setActivePlan as setActivePlanInDB,
   updateRotationState,
+  updatePlanWorkout,
+  deletePlanWorkout,
   type RotationStateDB,
 } from '@/lib/supabaseQueries';
 import { usePlansStore } from '@/store/plansStore';
@@ -263,15 +265,15 @@ export const useProgramsStore = create<ProgramsState>((set, get) => ({
     const currentPlanCount = get().userPrograms.length;
     const currentWorkoutCount = getTotalUniqueWorkoutCount();
     const programWorkoutCount = premade.workouts.filter(w => w.exercises.length > 0).length;
-    
-    console.log('[programsStore] Program limit check:', { 
-      currentPlanCount, 
-      currentWorkoutCount, 
+
+    console.log('[programsStore] Program limit check:', {
+      currentPlanCount,
+      currentWorkoutCount,
       programWorkoutCount,
       totalAfterAdding: currentWorkoutCount + programWorkoutCount,
-      limit: 7 
+      limit: 7
     });
-    
+
     // Determine which limit would be exceeded
     const limitType = getProgramLimitType(currentPlanCount, currentWorkoutCount, programWorkoutCount);
     if (limitType === 'plan') {
@@ -297,10 +299,10 @@ export const useProgramsStore = create<ProgramsState>((set, get) => ({
     const workouts = premade.workouts.map(w => {
       const newId = `workout-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
       workoutIdMap.set(w.id, newId);
-      
+
       // Generate unique name for each individual workout
       const uniqueWorkoutName = get().generateUniqueWorkoutName(w.name);
-      
+
       return {
         ...w,
         id: newId,
@@ -362,25 +364,25 @@ export const useProgramsStore = create<ProgramsState>((set, get) => ({
     try {
       const realProgramId = await get().addUserProgram(userProgram);
 
-    // Set as active using the real ID from Supabase
-    if (realProgramId) {
-      await get().setActivePlan(realProgramId);
+      // Set as active using the real ID from Supabase
+      if (realProgramId) {
+        await get().setActivePlan(realProgramId);
 
-      // Set rotation with real ID if needed
-      if (premade.scheduleType === 'rotation' && premade.suggestedSchedule?.rotation && schedule) {
-        const rotationSchedule: RotationSchedule = {
-          id: `rot-${Date.now()}`,
-          name: newProgramName,
-          programId: realProgramId,
-          workoutSequence: schedule.rotation?.workoutOrder || [],
-          currentIndex: 0,
-          lastAdvancedAt: Date.now(),
-        };
-        await get().setActiveRotation(rotationSchedule);
+        // Set rotation with real ID if needed
+        if (premade.scheduleType === 'rotation' && premade.suggestedSchedule?.rotation && schedule) {
+          const rotationSchedule: RotationSchedule = {
+            id: `rot-${Date.now()}`,
+            name: newProgramName,
+            programId: realProgramId,
+            workoutSequence: schedule.rotation?.workoutOrder || [],
+            currentIndex: 0,
+            lastAdvancedAt: Date.now(),
+          };
+          await get().setActiveRotation(rotationSchedule);
+        }
+
+        return { ...userProgram, id: realProgramId };
       }
-
-      return { ...userProgram, id: realProgramId };
-    }
 
       return null;
     } catch (error: any) {
@@ -450,8 +452,34 @@ export const useProgramsStore = create<ProgramsState>((set, get) => ({
       w.id === workoutId ? { ...w, ...workoutUpdates } : w
     );
 
+    // Update local state immediately
     const updatedProgram = { ...program, workouts, modifiedAt: Date.now() };
-    await get().updateUserProgram(updatedProgram);
+    const nextPrograms = get().userPrograms.map(p =>
+      p.id === programId ? updatedProgram : p
+    );
+    set({ userPrograms: nextPrograms });
+
+    // Persist workout changes to DB
+    try {
+      const { data: { user } } = await supabaseClient.auth.getUser();
+      if (user) {
+        // Build the exercises array in the format expected by the DB
+        const exercisesToSave = workoutUpdates.exercises?.map(e => ({
+          id: e.id,
+          name: e.name,
+          sets: 3,
+        }));
+
+        await updatePlanWorkout(user.id, workoutId, {
+          name: workoutUpdates.name,
+          exercises: exercisesToSave,
+        });
+        console.log('[programsStore] Workout updated in plan_workouts table');
+      }
+    } catch (error) {
+      console.error('[programsStore] Failed to update workout in DB', error);
+      await get().hydratePrograms();
+    }
   },
 
   deleteWorkoutFromProgram: async (programId, workoutId) => {
@@ -484,7 +512,25 @@ export const useProgramsStore = create<ProgramsState>((set, get) => ({
       schedule: updatedSchedule,
       modifiedAt: Date.now()
     };
-    await get().updateUserProgram(updatedProgram);
+
+    // Update local state immediately
+    const nextPrograms = get().userPrograms.map(p =>
+      p.id === programId ? updatedProgram : p
+    );
+    set({ userPrograms: nextPrograms });
+
+    // Delete from DB and update program
+    try {
+      const { data: { user } } = await supabaseClient.auth.getUser();
+      if (user) {
+        await deletePlanWorkout(user.id, workoutId);
+        await updateUserPlan(user.id, updatedProgram);
+        console.log('[programsStore] Workout deleted from plan_workouts table');
+      }
+    } catch (error) {
+      console.error('[programsStore] Failed to delete workout from DB', error);
+      await get().hydratePrograms();
+    }
 
     // Also update rotation sequence if needed
     const rotation = get().activeRotation;
@@ -700,6 +746,7 @@ export const useProgramsStore = create<ProgramsState>((set, get) => ({
   updateWorkoutsByName: async (name, workoutUpdates) => {
     const nameKey = name.trim().toLowerCase();
     const programs = get().userPrograms;
+    const affectedWorkoutIds: string[] = [];
     const affectedPrograms: UserProgram[] = [];
 
     programs.forEach(prog => {
@@ -707,20 +754,50 @@ export const useProgramsStore = create<ProgramsState>((set, get) => ({
       const nextWorkouts = prog.workouts.map(w => {
         if (w.name.trim().toLowerCase() === nameKey) {
           hasChange = true;
+          affectedWorkoutIds.push(w.id);
           return { ...w, ...workoutUpdates };
         }
         return w;
       });
 
       if (hasChange) {
-        affectedPrograms.push({ ...prog, workouts: nextWorkouts });
+        affectedPrograms.push({ ...prog, workouts: nextWorkouts, modifiedAt: Date.now() });
       }
     });
 
+    // Update local state immediately
     if (affectedPrograms.length > 0) {
-      // Update all affected programs in parallel
-      await Promise.all(affectedPrograms.map(p => get().updateUserProgram(p)));
-      console.log(`[programsStore] Updated ${affectedPrograms.length} programs containing workout: ${name}`);
+      const nextPrograms = get().userPrograms.map(p => {
+        const updated = affectedPrograms.find(ap => ap.id === p.id);
+        return updated || p;
+      });
+      set({ userPrograms: nextPrograms });
+    }
+
+    // Persist each workout change to DB
+    if (affectedWorkoutIds.length > 0) {
+      try {
+        const { data: { user } } = await supabaseClient.auth.getUser();
+        if (user) {
+          // Build the exercises array in the format expected by the DB
+          const exercisesToSave = workoutUpdates.exercises?.map(e => ({
+            id: e.id,
+            name: e.name,
+            sets: 3,
+          }));
+
+          await Promise.all(affectedWorkoutIds.map(id =>
+            updatePlanWorkout(user.id, id, {
+              name: workoutUpdates.name,
+              exercises: exercisesToSave,
+            })
+          ));
+          console.log(`[programsStore] Updated ${affectedWorkoutIds.length} workouts in plan_workouts table for: ${name}`);
+        }
+      } catch (error) {
+        console.error('[programsStore] Failed to update workouts by name in DB', error);
+        await get().hydratePrograms();
+      }
     }
   }
 }));

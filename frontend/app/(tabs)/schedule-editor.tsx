@@ -1,7 +1,7 @@
-import React, { useCallback, useMemo, useState } from 'react';
-import { Modal, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import React, { useCallback, useMemo, useState, useEffect } from 'react';
+import { Modal, Platform, Pressable, ScrollView, StyleSheet, View, BackHandler } from 'react-native';
 import { useRouter } from 'expo-router';
-import * as Haptics from 'expo-haptics';
+import { triggerHaptic } from '@/utils/haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import DateTimePicker, { type DateTimePickerEvent } from '@react-native-community/datetimepicker';
 
@@ -239,9 +239,20 @@ const ScheduleEditorScreen: React.FC = () => {
   const [showDatePicker, setShowDatePicker] = useState(false);
 
   const handleBack = useCallback(() => {
-    void Haptics.selectionAsync();
+    triggerHaptic('selection');
     router.push('/(tabs)/plans');
   }, [router]);
+
+  // Handle Android hardware back button
+  useEffect(() => {
+    const backAction = () => {
+      handleBack();
+      return true;
+    };
+
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
+    return () => backHandler.remove();
+  }, [handleBack]);
 
   const handleSave = useCallback(async () => {
     const success = await saveSchedule();
@@ -253,7 +264,7 @@ const ScheduleEditorScreen: React.FC = () => {
 
   const handleScheduleTypeChange = useCallback((type: ScheduleType) => {
     if (type !== scheduleType) {
-      void Haptics.selectionAsync();
+      triggerHaptic('selection');
       setScheduleType(type);
     }
   }, [scheduleType, setScheduleType]);
@@ -275,7 +286,7 @@ const ScheduleEditorScreen: React.FC = () => {
   }, [setRotatingStartDate]);
 
   const handleOpenDatePicker = useCallback(() => {
-    void Haptics.selectionAsync();
+    triggerHaptic('selection');
     setShowDatePicker(true);
   }, []);
 

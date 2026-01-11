@@ -6,7 +6,7 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, View, Platform } from 'react-native';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
-import * as Haptics from 'expo-haptics';
+import { triggerHaptic } from '@/utils/haptics';
 
 import { Text } from '@/components/atoms/Text';
 import { Button } from '@/components/atoms/Button';
@@ -83,12 +83,12 @@ export const NotificationEditModal: React.FC<NotificationEditModalProps> = ({
 
   const handleOpenTimePicker = () => {
     setShowTimePickerModal(true);
-    void Haptics.selectionAsync();
+    triggerHaptic('selection');
   };
 
   const handleCloseTimePicker = () => {
     setShowTimePickerModal(false);
-    void Haptics.selectionAsync();
+    triggerHaptic('selection');
   };
 
   const handleSaveTimePicker = () => {
@@ -97,12 +97,12 @@ export const NotificationEditModal: React.FC<NotificationEditModalProps> = ({
     const minute = parseInt(minuteInput);
     
     if (isNaN(hour) || hour < 1 || hour > 12) {
-      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      triggerHaptic('error');
       return;
     }
     
     if (isNaN(minute) || minute < 0 || minute > 59) {
-      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      triggerHaptic('error');
       return;
     }
     
@@ -113,21 +113,21 @@ export const NotificationEditModal: React.FC<NotificationEditModalProps> = ({
     newDate.setHours(hour24, minute, 0, 0);
     setSelectedTime(newDate);
     setShowTimePickerModal(false);
-    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    triggerHaptic('success');
   };
 
 
   const handleClose = useCallback(() => {
-    void Haptics.selectionAsync();
+    triggerHaptic('selection');
     onClose();
   }, [onClose]);
 
   const handleSave = useCallback(() => {
     if (selectedDays.length === 0) {
-      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      triggerHaptic('error');
       return;
     }
-    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    triggerHaptic('success');
     onSave(selectedTime.getHours(), selectedTime.getMinutes(), selectedDays);
   }, [selectedTime, selectedDays, onSave]);
 
@@ -141,19 +141,19 @@ export const NotificationEditModal: React.FC<NotificationEditModalProps> = ({
   };
 
   const toggleDay = (day: DayOfWeek) => {
-    void Haptics.selectionAsync();
+    triggerHaptic('selection');
     setSelectedDays((prev) =>
       prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]
     );
   };
 
   const selectAllDays = () => {
-    void Haptics.selectionAsync();
+    triggerHaptic('selection');
     setSelectedDays(DAYS_OF_WEEK.map((d) => d.key));
   };
 
   const selectWeekdays = () => {
-    void Haptics.selectionAsync();
+    triggerHaptic('selection');
     setSelectedDays(['monday', 'tuesday', 'wednesday', 'thursday', 'friday']);
   };
 
@@ -450,7 +450,7 @@ export const NotificationEditModal: React.FC<NotificationEditModalProps> = ({
                 ]}
                 onPress={() => {
                   setAmPm('AM');
-                  void Haptics.selectionAsync();
+                  triggerHaptic('selection');
                 }}
               >
                 <Text
@@ -467,7 +467,7 @@ export const NotificationEditModal: React.FC<NotificationEditModalProps> = ({
                 ]}
                 onPress={() => {
                   setAmPm('PM');
-                  void Haptics.selectionAsync();
+                  triggerHaptic('selection');
                 }}
               >
                 <Text

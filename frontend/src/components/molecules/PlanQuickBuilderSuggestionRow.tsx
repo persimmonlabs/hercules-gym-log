@@ -6,7 +6,7 @@ import React, { useCallback, useMemo } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
-import * as Haptics from 'expo-haptics';
+import { triggerHaptic } from '@/utils/haptics';
 
 import { Text } from '@/components/atoms/Text';
 import { colors, radius, spacing } from '@/constants/theme';
@@ -31,7 +31,7 @@ export const PlanQuickBuilderSuggestionRow: React.FC<PlanQuickBuilderSuggestionR
   }));
 
   const handlePress = useCallback(() => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => undefined);
+    triggerHaptic('light');
     scale.value = withSpring(0.94, springBouncy);
 
     setTimeout(() => {
@@ -90,6 +90,7 @@ const styles = StyleSheet.create({
   textGroup: {
     flex: 1,
     gap: spacing.xs,
+    flexShrink: 1,
   },
   addButton: {
     width: 36,

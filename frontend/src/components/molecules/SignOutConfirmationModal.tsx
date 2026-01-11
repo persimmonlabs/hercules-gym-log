@@ -7,7 +7,7 @@ import React from 'react';
 import { Modal, StyleSheet, View, Pressable } from 'react-native';
 import { BlurView } from 'expo-blur';
 import Animated, { useSharedValue, withSpring } from 'react-native-reanimated';
-import * as Haptics from 'expo-haptics';
+import { triggerHaptic } from '@/utils/haptics';
 
 import { Text } from '@/components/atoms/Text';
 import { Button } from '@/components/atoms/Button';
@@ -32,7 +32,7 @@ export const SignOutConfirmationModal: React.FC<SignOutConfirmationModalProps> =
   const scale = useSharedValue(1);
 
   const handleCancelPress = () => {
-    void Haptics.selectionAsync();
+    triggerHaptic('selection');
     scale.value = withSpring(0.95, { damping: 15, stiffness: 300 });
     setTimeout(() => {
       scale.value = withSpring(1);
@@ -41,7 +41,7 @@ export const SignOutConfirmationModal: React.FC<SignOutConfirmationModalProps> =
   };
 
   const handleSignOutPress = () => {
-    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+    triggerHaptic('warning');
     onConfirm();
   };
 

@@ -6,7 +6,7 @@
 import React, { useMemo } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import * as Haptics from 'expo-haptics';
+import { triggerHaptic } from '@/utils/haptics';
 
 import { Text } from '@/components/atoms/Text';
 import { ExerciseSetEditor } from '@/components/molecules/ExerciseSetEditor';
@@ -45,7 +45,7 @@ export const EditableWorkoutExerciseCard: React.FC<EditableWorkoutExerciseCardPr
   const badgeLabel = useMemo(() => String(index + 1).padStart(2, '0'), [index]);
 
   const handleMove = (callback: () => void) => {
-    void Haptics.selectionAsync();
+    triggerHaptic('selection');
     callback();
   };
 

@@ -115,7 +115,17 @@ export const useActiveScheduleStore = create<ActiveScheduleStore>((set, get) => 
   isLoading: false,
 
   setActiveRule: async (rule) => {
+    const previousRule = get().state.activeRule;
     const normalizedRule = normalizeRule(rule);
+    
+    // Log schedule changes for debugging
+    if (rule === null && previousRule !== null) {
+      console.log('[activeScheduleStore] Schedule being cleared. Previous rule type:', previousRule.type);
+      console.trace('[activeScheduleStore] Stack trace for schedule clearing:');
+    } else if (rule !== null) {
+      console.log('[activeScheduleStore] Schedule being set/updated. Type:', rule.type);
+    }
+    
     const newState: ActiveScheduleState = {
       ...get().state,
       activeRule: normalizedRule,
@@ -310,10 +320,18 @@ export const useActiveScheduleStore = create<ActiveScheduleStore>((set, get) => 
           activeRule: normalizeRule(scheduleData.activeRule),
         };
         set({ state: normalizedState, isLoading: false });
-        console.log('[activeScheduleStore] Hydrated from Supabase');
+        console.log('[activeScheduleStore] Hydrated from Supabase. Rule type:', normalizedState.activeRule?.type || 'none');
       } else {
-        set({ state: createDefaultState(), isLoading: false });
-        console.log('[activeScheduleStore] No existing schedule, using defaults');
+        // Only set default state if there's truly no data - don't overwrite existing local state
+        const currentState = get().state;
+        if (!currentState.activeRule) {
+          set({ state: createDefaultState(), isLoading: false });
+          console.log('[activeScheduleStore] No existing schedule in Supabase, using defaults');
+        } else {
+          // Keep existing local state, just mark as not loading
+          set({ isLoading: false });
+          console.log('[activeScheduleStore] No Supabase data but local state exists, preserving local state');
+        }
       }
     } catch (error) {
       console.warn('[activeScheduleStore] Hydration failed:', error);

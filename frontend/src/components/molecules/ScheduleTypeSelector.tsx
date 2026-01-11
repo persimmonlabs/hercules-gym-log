@@ -4,7 +4,7 @@
  */
 import React from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
-import * as Haptics from 'expo-haptics';
+import { triggerHaptic } from '@/utils/haptics';
 
 import { Text } from '@/components/atoms/Text';
 import { IconSymbol } from '@/components/ui/icon-symbol';
@@ -64,7 +64,7 @@ export const ScheduleTypeSelector: React.FC<ScheduleTypeSelectorProps> = ({
 }) => {
   const handlePress = (type: ScheduleType) => {
     if (type !== value) {
-      void Haptics.selectionAsync();
+      triggerHaptic('selection');
       onChange(type);
     }
   };

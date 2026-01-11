@@ -5,7 +5,7 @@
  */
 import React, { useCallback, useEffect, useState } from 'react';
 import { Modal, Pressable, StyleSheet, View } from 'react-native';
-import * as Haptics from 'expo-haptics';
+import { triggerHaptic } from '@/utils/haptics';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 import { Text } from '@/components/atoms/Text';
@@ -55,7 +55,7 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
   const { hours, mins, secs } = parseDigitsToTime(digits);
 
   const handleDigitPress = useCallback((digit: string) => {
-    void Haptics.selectionAsync();
+    triggerHaptic('selection');
     setDigits((prev) => {
       const maxLength = 6;
       if (prev.length >= maxLength) {
@@ -66,7 +66,7 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
   }, []);
 
   const handleDoubleZeroPress = useCallback(() => {
-    void Haptics.selectionAsync();
+    triggerHaptic('selection');
     setDigits((prev) => {
       const maxLength = 6;
       if (prev.length >= maxLength - 1) {
@@ -77,12 +77,12 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
   }, []);
 
   const handleBackspace = useCallback(() => {
-    void Haptics.selectionAsync();
+    triggerHaptic('selection');
     setDigits((prev) => prev.slice(0, -1));
   }, []);
 
   const handleConfirm = useCallback(() => {
-    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    triggerHaptic('light');
     const { hours: h, mins: m, secs: s } = parseDigitsToTime(digits);
     const clampedSecs = Math.min(s, 59);
     const totalSeconds = h * 3600 + m * 60 + clampedSecs;
@@ -90,7 +90,7 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
   }, [digits, onConfirm, parseDigitsToTime]);
 
   const handleCancel = useCallback(() => {
-    void Haptics.selectionAsync();
+    triggerHaptic('selection');
     onClose();
   }, [onClose]);
 

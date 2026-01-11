@@ -5,9 +5,9 @@
  */
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Modal, Pressable, StyleSheet, View } from 'react-native';
+import { Modal, Pressable, StyleSheet, View, BackHandler } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import * as Haptics from 'expo-haptics';
+import { triggerHaptic } from '@/utils/haptics';
 import Animated from 'react-native-reanimated';
 
 import { Button } from '@/components/atoms/Button';
@@ -88,12 +88,23 @@ const WorkoutDetailScreen: React.FC = () => {
     onDismiss: handleDismiss,
   });
 
+  // Handle Android hardware back button
+  useEffect(() => {
+    const backAction = () => {
+      handleBackPress();
+      return true;
+    };
+
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
+    return () => backHandler.remove();
+  }, [handleBackPress]);
+
   const handleDeletePress = useCallback(() => {
     if (!workout) {
       return;
     }
 
-    void Haptics.selectionAsync();
+    triggerHaptic('selection');
     setIsDeleteDialogVisible(true);
   }, [workout]);
 
@@ -107,7 +118,7 @@ const WorkoutDetailScreen: React.FC = () => {
     }
 
     await deleteWorkout(workout.id);
-    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    triggerHaptic('success');
     setIsDeleteDialogVisible(false);
     handleDismiss();
   }, [deleteWorkout, handleDismiss, workout]);

@@ -8,7 +8,7 @@ import React, { useState, useMemo, useCallback } from 'react';
 import { View, StyleSheet, Pressable, TouchableOpacity } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { VictoryPie } from 'victory-native';
-import * as Haptics from 'expo-haptics';
+import { triggerHaptic } from '@/utils/haptics';
 import { Ionicons } from '@expo/vector-icons';
 
 import { Text } from '@/components/atoms/Text';
@@ -81,7 +81,7 @@ export const FractalBubbleChart: React.FC<FractalBubbleChartProps> = ({ data, on
   }, [breadcrumb, data]);
 
   const handleSlicePress = useCallback((name: string) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    triggerHaptic('light');
     
     if (selectedSlice === name) {
       // Second tap - drill down or navigate
@@ -103,7 +103,7 @@ export const FractalBubbleChart: React.FC<FractalBubbleChartProps> = ({ data, on
   }, [selectedSlice, hasChildren, breadcrumb, onMusclePress]);
 
   const handleBreadcrumbPress = useCallback((index: number) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    triggerHaptic('light');
     setBreadcrumb(breadcrumb.slice(0, index + 1));
     setSelectedSlice(null);
   }, [breadcrumb]);
@@ -179,6 +179,8 @@ export const FractalBubbleChart: React.FC<FractalBubbleChartProps> = ({ data, on
               height={PIE_SIZE + 40}
               colorScale={colorScale}
               innerRadius={58}
+              startAngle={0}
+              endAngle={-360}
               radius={({ datum }) => selectedSlice === datum.x ? PIE_SIZE / 2 + 8 : PIE_SIZE / 2}
               padAngle={2}
               style={{

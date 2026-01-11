@@ -4,10 +4,10 @@
  */
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { FlatList, Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { FlatList, Pressable, StyleSheet, TextInput, View, BackHandler } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import * as Haptics from 'expo-haptics';
+import { triggerHaptic } from '@/utils/haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
@@ -16,6 +16,7 @@ import { SurfaceCard } from '@/components/atoms/SurfaceCard';
 import { Text } from '@/components/atoms/Text';
 import { EditableWorkoutExerciseCard } from '@/components/molecules/EditableWorkoutExerciseCard';
 import { CreateExerciseModal } from '@/components/molecules/CreateExerciseModal';
+import { DeleteConfirmationModal } from '@/components/molecules/DeleteConfirmationModal';
 import { colors, radius, spacing, sizing } from '@/constants/theme';
 import { useWorkoutEditor } from '@/hooks/useWorkoutEditor';
 import { exercises, createCustomExerciseCatalogItem } from '@/constants/exercises';
@@ -76,7 +77,7 @@ const WorkoutEditScreen: React.FC = () => {
   const handleSelectExercise = useCallback(
     (exercise: any) => {
       addExercise(exercise);
-      void Haptics.selectionAsync();
+      triggerHaptic('selection');
     },
     [addExercise],
   );
@@ -88,13 +89,25 @@ const WorkoutEditScreen: React.FC = () => {
       return;
     }
 
-    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    triggerHaptic('success');
     router.back();
   }, [router, saveWorkout]);
+
+  // Handle Android hardware back button
+  useEffect(() => {
+    const backAction = () => {
+      router.back();
+      return true;
+    };
+
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
+    return () => backHandler.remove();
+  }, [router]);
 
   const [isInteractionLocked, setInteractionLocked] = React.useState(false);
   const [isPickerVisible, setIsPickerVisible] = React.useState(false);
   const [isCreateExerciseModalVisible, setIsCreateExerciseModalVisible] = useState(false);
+  const [exerciseToRemove, setExerciseToRemove] = useState<string | null>(null);
   const pickerListRef = useRef<FlatList>(null);
   const customExercises = useCustomExerciseStore((state) => state.customExercises);
 
@@ -186,19 +199,20 @@ const WorkoutEditScreen: React.FC = () => {
             onToggle={() => toggleExercise(item.name)}
             onSaveSets={(sets) => {
               updateExerciseSets(item.name, sets);
-              void Haptics.selectionAsync();
+              triggerHaptic('selection');
             }}
             onRemove={() => {
-              removeExercise(item.name);
-              void Haptics.selectionAsync();
+              console.log('[workout-edit] onRemove triggered for:', item.name);
+              setExerciseToRemove(item.name);
+              triggerHaptic('selection');
             }}
             onMoveUp={() => {
               moveExercise(item.name, 'up');
-              void Haptics.selectionAsync();
+              triggerHaptic('selection');
             }}
             onMoveDown={() => {
               moveExercise(item.name, 'down');
-              void Haptics.selectionAsync();
+              triggerHaptic('selection');
             }}
             canMoveUp={index > 0}
             canMoveDown={index < exerciseDrafts.length - 1}
@@ -251,7 +265,7 @@ const WorkoutEditScreen: React.FC = () => {
                 <Pressable
                   style={styles.createExerciseButton}
                   onPress={() => {
-                    void Haptics.selectionAsync();
+                    triggerHaptic('selection');
                     setIsPickerVisible(false);
                     setIsCreateExerciseModalVisible(true);
                   }}
@@ -289,6 +303,21 @@ const WorkoutEditScreen: React.FC = () => {
           }
           setIsCreateExerciseModalVisible(false);
         }}
+      />
+      <DeleteConfirmationModal
+        visible={!!exerciseToRemove}
+        onClose={() => setExerciseToRemove(null)}
+        onConfirm={() => {
+          if (exerciseToRemove) {
+            removeExercise(exerciseToRemove);
+            setExerciseToRemove(null);
+            triggerHaptic('success');
+          }
+        }}
+        title="Remove Exercise?"
+        message="Are you sure you want to remove this exercise from your workout?"
+        confirmLabel="Remove"
+        cancelLabel="Keep"
       />
     </View>
   );

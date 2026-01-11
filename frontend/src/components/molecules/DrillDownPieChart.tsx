@@ -16,7 +16,7 @@ import Animated, {
   SlideOutLeft,
 } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
-import * as Haptics from 'expo-haptics';
+import { triggerHaptic } from '@/utils/haptics';
 
 import { Text } from '@/components/atoms/Text';
 import { ChartWrapper } from '@/components/atoms/ChartWrapper';
@@ -170,7 +170,7 @@ export const DrillDownPieChart: React.FC<DrillDownPieChartProps> = ({
 
   // Handle tap on mini chart - navigate to that level
   const handleMiniChartPress = useCallback((sliceName: string) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    triggerHaptic('light');
     
     if (sliceName === 'Other') return;
 
@@ -207,7 +207,7 @@ export const DrillDownPieChart: React.FC<DrillDownPieChartProps> = ({
 
   // Handle tap on main detail chart - drill deeper
   const handleDetailChartPress = useCallback((sliceName: string) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    triggerHaptic('light');
     
     if (sliceName === 'Other') {
       setSelectedInMain(sliceName);
@@ -253,7 +253,7 @@ export const DrillDownPieChart: React.FC<DrillDownPieChartProps> = ({
 
   // Handle back button
   const handleBack = useCallback(() => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    triggerHaptic('light');
     setPath((prev) => prev.slice(0, -1));
     setSelectedInMini(null);
     setSelectedInMain(null);
@@ -261,7 +261,7 @@ export const DrillDownPieChart: React.FC<DrillDownPieChartProps> = ({
 
   // Handle breadcrumb navigation
   const handleBreadcrumbPress = useCallback((index: number) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    triggerHaptic('light');
     if (index === -1) {
       setPath([]);
     } else {

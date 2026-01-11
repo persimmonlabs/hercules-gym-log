@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import { View, StyleSheet, Pressable, ScrollView } from 'react-native';
-import * as Haptics from 'expo-haptics';
+import { triggerHaptic } from '@/utils/haptics';
 
 import { Text } from '@/components/atoms/Text';
 import { Button } from '@/components/atoms/Button';
@@ -95,7 +95,7 @@ export const AddOverrideModal: React.FC<AddOverrideModalProps> = ({
   }, [overrides]);
 
   const handleDateSelect = useCallback((date: string) => {
-    void Haptics.selectionAsync();
+    triggerHaptic('selection');
     setSelectedDate(date);
 
     // If this date has an existing override, load it for editing
@@ -110,7 +110,7 @@ export const AddOverrideModal: React.FC<AddOverrideModalProps> = ({
   }, [overrides]);
 
   const handleWorkoutSelect = useCallback((workoutId: string | null) => {
-    void Haptics.selectionAsync();
+    triggerHaptic('selection');
     if (workoutId === null) {
       setIsRest(true);
       setSelectedWorkoutId(null);
@@ -121,7 +121,7 @@ export const AddOverrideModal: React.FC<AddOverrideModalProps> = ({
   }, []);
 
   const handleSave = useCallback(async () => {
-    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    triggerHaptic('success');
 
     if (!selectedDate) return;
 
@@ -137,13 +137,13 @@ export const AddOverrideModal: React.FC<AddOverrideModalProps> = ({
   const handleRemove = useCallback(async () => {
     if (!selectedDate) return;
 
-    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+    triggerHaptic('warning');
     await removeOverride(selectedDate);
     onClose();
   }, [selectedDate, removeOverride, onClose]);
 
   const handleClose = useCallback(() => {
-    void Haptics.selectionAsync();
+    triggerHaptic('selection');
     setSelectedDate(null);
     setSelectedWorkoutId(null);
     setIsRest(false);

@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from 'react';
-import * as Haptics from 'expo-haptics';
+import { triggerHaptic } from '@/utils/haptics';
 
 import { exercises, type Exercise } from '@/constants/exercises';
 import type { PlanExercise } from '@/types/plan';
@@ -89,7 +89,7 @@ export const usePlanBuilder = (): UsePlanBuilderReturn => {
       return [...prev, { id: exercise.id, name: exercise.name, sets: setsNumber }];
     });
 
-    await Haptics.selectionAsync();
+    await triggerHaptic('selection');
     closeModal();
     return 'success';
   }, [closeModal, pendingExercise, setCountInput]);
@@ -125,7 +125,7 @@ export const usePlanBuilder = (): UsePlanBuilderReturn => {
         exercises: exerciseObjects,
       });
 
-      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      await triggerHaptic('success');
       return 'success';
     } catch (error) {
       console.error('[usePlanBuilder] failed to save plan', error);

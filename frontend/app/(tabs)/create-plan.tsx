@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo } from 'react';
 import { Alert, Pressable, StyleSheet, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import * as Haptics from 'expo-haptics';
+import { triggerHaptic } from '@/utils/haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 
@@ -128,7 +128,7 @@ const CreatePlanScreen: React.FC = () => {
 
 
   const handleBackPress = useCallback(() => {
-    void Haptics.selectionAsync();
+    triggerHaptic('selection');
     router.replace({
       pathname: '/(tabs)/add-workout',
       params: { mode: 'workout' }
@@ -142,7 +142,7 @@ const CreatePlanScreen: React.FC = () => {
       if (result === 'success') {
         router.push('/(tabs)/plans');
       } else if (result === 'duplicate-name') {
-        void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+        triggerHaptic('error');
         Alert.alert(
           'Plan Name Taken',
           'A workout plan with this name already exists. Please choose a different name.',
@@ -153,7 +153,7 @@ const CreatePlanScreen: React.FC = () => {
   }, [handleSavePlan, router]);
 
   const handleAddExercisesPress = useCallback(() => {
-    void Haptics.selectionAsync();
+    triggerHaptic('selection');
     router.push('/add-exercises');
   }, [router]);
 

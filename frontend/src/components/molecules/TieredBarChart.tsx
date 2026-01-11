@@ -6,7 +6,7 @@
 import React, { useState, useCallback } from 'react';
 import { View, StyleSheet, Dimensions, TouchableOpacity } from 'react-native';
 import { VictoryChart, VictoryBar, VictoryAxis, VictoryTheme } from 'victory-native';
-import * as Haptics from 'expo-haptics';
+import { triggerHaptic } from '@/utils/haptics';
 
 import { Text } from '@/components/atoms/Text';
 import { ChartWrapper } from '@/components/atoms/ChartWrapper';
@@ -66,7 +66,7 @@ export const TieredBarChart: React.FC<TieredBarChartProps> = ({
   }));
 
   const handleBarPress = useCallback((label: string, value: number, originalLabel: string) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    triggerHaptic('light');
     setSelectedBar((prev) => (prev?.label === label ? null : { label, value }));
     if (onBarPress) {
       onBarPress(originalLabel);
