@@ -37,11 +37,9 @@ export const MonthlyCalendar: React.FC<MonthlyCalendarProps> = ({ onDayLongPress
 
   const prevScale = useSharedValue(1);
   const nextScale = useSharedValue(1);
-  const animatedPrevScale = useDerivedValue(() => prevScale.value, [prevScale]);
-  const animatedNextScale = useDerivedValue(() => nextScale.value, [nextScale]);
 
-  const prevAnimatedStyle = useAnimatedStyle(() => ({ transform: [{ scale: animatedPrevScale as any }] }));
-  const nextAnimatedStyle = useAnimatedStyle(() => ({ transform: [{ scale: animatedNextScale as any }] }));
+  const prevAnimatedStyle = useAnimatedStyle(() => ({ transform: [{ scale: prevScale.value }] }));
+  const nextAnimatedStyle = useAnimatedStyle(() => ({ transform: [{ scale: nextScale.value }] }));
 
   const animatePressIn = useCallback((scaleRef: SharedValue<number>) => {
     scaleRef.value = withSpring(0.92, springSmooth);

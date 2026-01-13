@@ -29,10 +29,9 @@ interface TimeRangeChipProps {
 
 const TimeRangeChip: React.FC<TimeRangeChipProps> = ({ label, active, onPress }) => {
   const scale = useSharedValue(1);
-  const animatedScale = useDerivedValue(() => scale.value, [scale]);
 
   const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: animatedScale as any }],
+    transform: [{ scale: scale.value }],
   }));
 
   const handlePress = useCallback(() => {

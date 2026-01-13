@@ -45,7 +45,6 @@ export const CalendarDayCell: React.FC<CalendarDayCellProps> = ({
 }) => {
   const { theme } = useTheme();
   const scale = useSharedValue(1);
-  const animatedScale = useDerivedValue(() => scale.value, [scale]);
 
   const handlePress = () => {
     scale.value = withSpring(0.94, springSmooth);
@@ -58,7 +57,7 @@ export const CalendarDayCell: React.FC<CalendarDayCellProps> = ({
   };
 
   const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: animatedScale as any }],
+    transform: [{ scale: scale.value }],
   }));
 
   const showMarkerFill = hasMarker && !isSelected;
