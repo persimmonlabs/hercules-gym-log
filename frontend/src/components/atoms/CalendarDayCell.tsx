@@ -6,7 +6,7 @@
 
 import React, { useMemo } from 'react';
 import { StyleProp, StyleSheet, TouchableOpacity, View, ViewStyle } from 'react-native';
-import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
+import Animated, { useAnimatedStyle, useSharedValue, useDerivedValue, withSpring } from 'react-native-reanimated';
 import { triggerHaptic } from '@/utils/haptics';
 
 import { Text } from '@/components/atoms/Text';
@@ -45,6 +45,7 @@ export const CalendarDayCell: React.FC<CalendarDayCellProps> = ({
 }) => {
   const { theme } = useTheme();
   const scale = useSharedValue(1);
+  const animatedScale = useDerivedValue(() => scale.value, [scale]);
 
   const handlePress = () => {
     scale.value = withSpring(0.94, springSmooth);
@@ -57,7 +58,7 @@ export const CalendarDayCell: React.FC<CalendarDayCellProps> = ({
   };
 
   const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
+    transform: [{ scale: animatedScale as any }],
   }));
 
   const showMarkerFill = hasMarker && !isSelected;

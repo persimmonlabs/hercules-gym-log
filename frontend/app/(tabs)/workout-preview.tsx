@@ -7,7 +7,7 @@
  * - Instant load (no loading states - data already in store)
  * - Shows workout name, description, exercises
  * - "Add to My Workouts" button to save
- * - Back navigation to browse or quiz
+ * - Back navigation to browse workouts
  */
 import React, { useCallback, useState, useRef, useEffect } from 'react';
 import { View, StyleSheet, ScrollView, Alert, Pressable, BackHandler } from 'react-native';
@@ -112,12 +112,8 @@ const styles = StyleSheet.create({
 export default function WorkoutPreviewScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { workoutId, from, goal, experience, equipment } = useLocalSearchParams<{
+  const { workoutId } = useLocalSearchParams<{
     workoutId: string;
-    from?: string;
-    goal?: string;
-    experience?: string;
-    equipment?: string;
   }>();
 
   const { premadeWorkouts } = useProgramsStore();
@@ -133,27 +129,11 @@ export default function WorkoutPreviewScreen() {
 
   const handleBack = useCallback(() => {
     triggerHaptic('selection');
-
-    if (from === 'quiz') {
-      // Return to quiz results with preferences preserved
-      router.replace({
-        pathname: '/quiz',
-        params: {
-          mode: 'workout',
-          resume: 'results',
-          goal: goal || undefined,
-          experience: experience || undefined,
-          equipment: equipment || undefined,
-        }
-      });
-    } else {
-      // Default to browse workouts
-      router.navigate({
-        pathname: '/(tabs)/browse-programs',
-        params: { mode: 'workout' }
-      });
-    }
-  }, [router, from, goal, experience, equipment]);
+    router.navigate({
+      pathname: '/(tabs)/browse-programs',
+      params: { mode: 'workout' }
+    });
+  }, [router]);
 
   const scrollRef = useRef<ScrollView>(null);
 

@@ -4,7 +4,7 @@
  */
 import React, { useCallback, useMemo } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
-import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
+import Animated, { useAnimatedStyle, useSharedValue, useDerivedValue, withSpring } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import { triggerHaptic } from '@/utils/haptics';
 
@@ -25,9 +25,10 @@ export const PlanQuickBuilderSuggestionRow: React.FC<PlanQuickBuilderSuggestionR
   onAdd,
 }) => {
   const scale = useSharedValue(1);
+  const animatedScale = useDerivedValue(() => scale.value, [scale]);
 
   const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
+    transform: [{ scale: animatedScale as any }],
   }));
 
   const handlePress = useCallback(() => {

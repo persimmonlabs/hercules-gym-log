@@ -193,7 +193,12 @@
         "daysPerWeek": 6,
         "durationWeeks": 12,
         "description": "Classic 6-day Push/Pull/Legs split for intermediate lifters seeking maximum hypertrophy.",
-        "tags": ["hypertrophy", "ppl", "split", "intermediate"]
+        "tags": [
+          "hypertrophy",
+          "ppl",
+          "split",
+          "intermediate"
+        ]
       },
       "scheduleType": "rotation",
       "workouts": [
@@ -201,71 +206,199 @@
           "id": "ppl-int-push1",
           "name": "Push Day 1",
           "exercises": [
-            { "id": "exercise_001", "name": "Barbell Bench Press", "sets": 4 },
-            { "id": "exercise_099", "name": "Incline Barbell Bench Press", "sets": 4 },
-            { "id": "exercise_005", "name": "Dumbbell Shoulder Press", "sets": 3 },
-            { "id": "exercise_004", "name": "Lateral Raises", "sets": 3 },
-            { "id": "exercise_006", "name": "Cable Triceps Pushdown", "sets": 3 }
+            {
+              "id": "exercise_001",
+              "name": "Barbell Bench Press",
+              "sets": 4
+            },
+            {
+              "id": "exercise_099",
+              "name": "Incline Barbell Bench Press",
+              "sets": 4
+            },
+            {
+              "id": "exercise_005",
+              "name": "Dumbbell Shoulder Press",
+              "sets": 3
+            },
+            {
+              "id": "exercise_004",
+              "name": "Lateral Raises",
+              "sets": 3
+            },
+            {
+              "id": "exercise_006",
+              "name": "Cable Triceps Pushdown",
+              "sets": 3
+            }
           ]
         },
         {
           "id": "ppl-int-pull1",
           "name": "Pull Day 1",
           "exercises": [
-            { "id": "exercise_020", "name": "Barbell Deadlift", "sets": 4 },
-            { "id": "exercise_008", "name": "Wide Grip Lat Pulldown", "sets": 4 },
-            { "id": "exercise_052", "name": "Barbell Bent-Over Row", "sets": 3 },
-            { "id": "exercise_096", "name": "Face Pull", "sets": 3 },
-            { "id": "exercise_031", "name": "Barbell Bicep Curl", "sets": 3 }
+            {
+              "id": "exercise_020",
+              "name": "Barbell Deadlift",
+              "sets": 4
+            },
+            {
+              "id": "exercise_008",
+              "name": "Wide Grip Lat Pulldown",
+              "sets": 4
+            },
+            {
+              "id": "exercise_052",
+              "name": "Barbell Bent-Over Row",
+              "sets": 3
+            },
+            {
+              "id": "exercise_096",
+              "name": "Face Pull",
+              "sets": 3
+            },
+            {
+              "id": "exercise_031",
+              "name": "Barbell Bicep Curl",
+              "sets": 3
+            }
           ]
         },
         {
           "id": "ppl-int-legs1",
           "name": "Legs Day 1",
           "exercises": [
-            { "id": "exercise_019", "name": "Barbell Squat", "sets": 4 },
-            { "id": "exercise_047", "name": "Barbell Romanian Deadlift", "sets": 4 },
-            { "id": "exercise_014", "name": "Leg Press", "sets": 3 },
-            { "id": "exercise_025", "name": "Lying Leg Curl", "sets": 3 },
-            { "id": "exercise_024", "name": "Standing Calf Raise Machine", "sets": 4 }
+            {
+              "id": "exercise_019",
+              "name": "Barbell Squat",
+              "sets": 4
+            },
+            {
+              "id": "exercise_047",
+              "name": "Barbell Romanian Deadlift",
+              "sets": 4
+            },
+            {
+              "id": "exercise_014",
+              "name": "Leg Press",
+              "sets": 3
+            },
+            {
+              "id": "exercise_025",
+              "name": "Lying Leg Curl",
+              "sets": 3
+            },
+            {
+              "id": "exercise_024",
+              "name": "Standing Calf Raise Machine",
+              "sets": 4
+            }
           ]
         },
         {
           "id": "ppl-int-push2",
           "name": "Push Day 2",
           "exercises": [
-            { "id": "exercise_076", "name": "Dumbbell Bench Press", "sets": 4 },
-            { "id": "exercise_054", "name": "Cable Crossover", "sets": 3 },
-            { "id": "exercise_030", "name": "Arnold Press", "sets": 3 },
-            { "id": "exercise_004", "name": "Lateral Raises", "sets": 3 },
-            { "id": "exercise_060", "name": "Cable Incline Triceps Extension", "sets": 3 }
+            {
+              "id": "exercise_076",
+              "name": "Dumbbell Bench Press",
+              "sets": 4
+            },
+            {
+              "id": "exercise_054",
+              "name": "Cable Crossover",
+              "sets": 3
+            },
+            {
+              "id": "exercise_030",
+              "name": "Arnold Press",
+              "sets": 3
+            },
+            {
+              "id": "exercise_004",
+              "name": "Lateral Raises",
+              "sets": 3
+            },
+            {
+              "id": "exercise_060",
+              "name": "Cable Incline Triceps Extension",
+              "sets": 3
+            }
           ]
         },
         {
           "id": "ppl-int-pull2",
           "name": "Pull Day 2",
           "exercises": [
-            { "id": "exercise_067", "name": "Chest Supported T-Bar Row", "sets": 4 },
-            { "id": "exercise_064", "name": "Cable Underhand Pulldown", "sets": 4 },
-            { "id": "exercise_077", "name": "Dumbbell Row", "sets": 3 },
-            { "id": "exercise_096", "name": "Face Pull", "sets": 3 },
-            { "id": "exercise_011", "name": "Dumbbell Hammer Curls", "sets": 3 }
+            {
+              "id": "exercise_067",
+              "name": "Chest Supported T-Bar Row",
+              "sets": 4
+            },
+            {
+              "id": "exercise_064",
+              "name": "Cable Underhand Pulldown",
+              "sets": 4
+            },
+            {
+              "id": "exercise_077",
+              "name": "Dumbbell Row",
+              "sets": 3
+            },
+            {
+              "id": "exercise_096",
+              "name": "Face Pull",
+              "sets": 3
+            },
+            {
+              "id": "exercise_011",
+              "name": "Dumbbell Hammer Curls",
+              "sets": 3
+            }
           ]
         },
         {
           "id": "ppl-int-legs2",
           "name": "Legs Day 2",
           "exercises": [
-            { "id": "exercise_038", "name": "Barbell Front Squat", "sets": 4 },
-            { "id": "exercise_023", "name": "Dumbbell Bulgarian Split Squat", "sets": 3 },
-            { "id": "exercise_015", "name": "Leg Extensions", "sets": 3 },
-            { "id": "exercise_016", "name": "Seated Leg Curl", "sets": 3 },
-            { "id": "exercise_066", "name": "Calf Press on a Leg Press Machine", "sets": 4 }
+            {
+              "id": "exercise_038",
+              "name": "Barbell Front Squat",
+              "sets": 4
+            },
+            {
+              "id": "exercise_023",
+              "name": "Dumbbell Bulgarian Split Squat",
+              "sets": 3
+            },
+            {
+              "id": "exercise_015",
+              "name": "Leg Extensions",
+              "sets": 3
+            },
+            {
+              "id": "exercise_016",
+              "name": "Seated Leg Curl",
+              "sets": 3
+            },
+            {
+              "id": "exercise_066",
+              "name": "Calf Press on a Leg Press Machine",
+              "sets": 4
+            }
           ]
         }
       ],
       "suggestedSchedule": {
-        "rotation": ["ppl-int-push1", "ppl-int-pull1", "ppl-int-legs1", "ppl-int-push2", "ppl-int-pull2", "ppl-int-legs2", null]
+        "rotation": [
+          "ppl-int-push1",
+          "ppl-int-pull1",
+          "ppl-int-legs1",
+          "ppl-int-push2",
+          "ppl-int-pull2",
+          "ppl-int-legs2",
+          null
+        ]
       },
       "isPremade": true
     },
@@ -279,7 +412,12 @@
         "daysPerWeek": 6,
         "durationWeeks": 16,
         "description": "High-volume PPL for advanced lifters with periodization and intensity techniques.",
-        "tags": ["hypertrophy", "ppl", "advanced", "high-volume"]
+        "tags": [
+          "hypertrophy",
+          "ppl",
+          "advanced",
+          "high-volume"
+        ]
       },
       "scheduleType": "rotation",
       "workouts": [
@@ -287,77 +425,229 @@
           "id": "ppl-adv-push1",
           "name": "Push Day 1 (Heavy)",
           "exercises": [
-            { "id": "exercise_001", "name": "Barbell Bench Press", "sets": 5 },
-            { "id": "exercise_099", "name": "Incline Barbell Bench Press", "sets": 4 },
-            { "id": "exercise_005", "name": "Dumbbell Shoulder Press", "sets": 4 },
-            { "id": "exercise_004", "name": "Lateral Raises", "sets": 4 },
-            { "id": "exercise_054", "name": "Cable Crossover", "sets": 3 },
-            { "id": "exercise_006", "name": "Cable Triceps Pushdown", "sets": 4 }
+            {
+              "id": "exercise_001",
+              "name": "Barbell Bench Press",
+              "sets": 5
+            },
+            {
+              "id": "exercise_099",
+              "name": "Incline Barbell Bench Press",
+              "sets": 4
+            },
+            {
+              "id": "exercise_005",
+              "name": "Dumbbell Shoulder Press",
+              "sets": 4
+            },
+            {
+              "id": "exercise_004",
+              "name": "Lateral Raises",
+              "sets": 4
+            },
+            {
+              "id": "exercise_054",
+              "name": "Cable Crossover",
+              "sets": 3
+            },
+            {
+              "id": "exercise_006",
+              "name": "Cable Triceps Pushdown",
+              "sets": 4
+            }
           ]
         },
         {
           "id": "ppl-adv-pull1",
           "name": "Pull Day 1 (Heavy)",
           "exercises": [
-            { "id": "exercise_020", "name": "Barbell Deadlift", "sets": 5 },
-            { "id": "exercise_052", "name": "Barbell Bent-Over Row", "sets": 4 },
-            { "id": "exercise_008", "name": "Wide Grip Lat Pulldown", "sets": 4 },
-            { "id": "exercise_067", "name": "Chest Supported T-Bar Row", "sets": 3 },
-            { "id": "exercise_096", "name": "Face Pull", "sets": 3 },
-            { "id": "exercise_031", "name": "Barbell Bicep Curl", "sets": 4 }
+            {
+              "id": "exercise_020",
+              "name": "Barbell Deadlift",
+              "sets": 5
+            },
+            {
+              "id": "exercise_052",
+              "name": "Barbell Bent-Over Row",
+              "sets": 4
+            },
+            {
+              "id": "exercise_008",
+              "name": "Wide Grip Lat Pulldown",
+              "sets": 4
+            },
+            {
+              "id": "exercise_067",
+              "name": "Chest Supported T-Bar Row",
+              "sets": 3
+            },
+            {
+              "id": "exercise_096",
+              "name": "Face Pull",
+              "sets": 3
+            },
+            {
+              "id": "exercise_031",
+              "name": "Barbell Bicep Curl",
+              "sets": 4
+            }
           ]
         },
         {
           "id": "ppl-adv-legs1",
           "name": "Legs Day 1 (Heavy)",
           "exercises": [
-            { "id": "exercise_019", "name": "Barbell Squat", "sets": 5 },
-            { "id": "exercise_047", "name": "Barbell Romanian Deadlift", "sets": 4 },
-            { "id": "exercise_014", "name": "Leg Press", "sets": 4 },
-            { "id": "exercise_015", "name": "Leg Extensions", "sets": 3 },
-            { "id": "exercise_025", "name": "Lying Leg Curl", "sets": 3 },
-            { "id": "exercise_024", "name": "Standing Calf Raise Machine", "sets": 5 }
+            {
+              "id": "exercise_019",
+              "name": "Barbell Squat",
+              "sets": 5
+            },
+            {
+              "id": "exercise_047",
+              "name": "Barbell Romanian Deadlift",
+              "sets": 4
+            },
+            {
+              "id": "exercise_014",
+              "name": "Leg Press",
+              "sets": 4
+            },
+            {
+              "id": "exercise_015",
+              "name": "Leg Extensions",
+              "sets": 3
+            },
+            {
+              "id": "exercise_025",
+              "name": "Lying Leg Curl",
+              "sets": 3
+            },
+            {
+              "id": "exercise_024",
+              "name": "Standing Calf Raise Machine",
+              "sets": 5
+            }
           ]
         },
         {
           "id": "ppl-adv-push2",
           "name": "Push Day 2 (Volume)",
           "exercises": [
-            { "id": "exercise_076", "name": "Dumbbell Bench Press", "sets": 4 },
-            { "id": "exercise_003", "name": "Butterfly Machine", "sets": 4 },
-            { "id": "exercise_030", "name": "Arnold Press", "sets": 4 },
-            { "id": "exercise_004", "name": "Lateral Raises", "sets": 4 },
-            { "id": "exercise_028", "name": "Dumbbell Front Raises", "sets": 3 },
-            { "id": "exercise_053", "name": "Triceps Kickback", "sets": 3 }
+            {
+              "id": "exercise_076",
+              "name": "Dumbbell Bench Press",
+              "sets": 4
+            },
+            {
+              "id": "exercise_003",
+              "name": "Butterfly Machine",
+              "sets": 4
+            },
+            {
+              "id": "exercise_030",
+              "name": "Arnold Press",
+              "sets": 4
+            },
+            {
+              "id": "exercise_004",
+              "name": "Lateral Raises",
+              "sets": 4
+            },
+            {
+              "id": "exercise_028",
+              "name": "Dumbbell Front Raises",
+              "sets": 3
+            },
+            {
+              "id": "exercise_053",
+              "name": "Triceps Kickback",
+              "sets": 3
+            }
           ]
         },
         {
           "id": "ppl-adv-pull2",
           "name": "Pull Day 2 (Volume)",
           "exercises": [
-            { "id": "exercise_064", "name": "Cable Underhand Pulldown", "sets": 4 },
-            { "id": "exercise_077", "name": "Dumbbell Row", "sets": 4 },
-            { "id": "exercise_010", "name": "Seated Row Machine", "sets": 4 },
-            { "id": "exercise_048", "name": "Barbell Shrugs", "sets": 3 },
-            { "id": "exercise_096", "name": "Face Pull", "sets": 3 },
-            { "id": "exercise_011", "name": "Dumbbell Hammer Curls", "sets": 4 }
+            {
+              "id": "exercise_064",
+              "name": "Cable Underhand Pulldown",
+              "sets": 4
+            },
+            {
+              "id": "exercise_077",
+              "name": "Dumbbell Row",
+              "sets": 4
+            },
+            {
+              "id": "exercise_010",
+              "name": "Seated Row Machine",
+              "sets": 4
+            },
+            {
+              "id": "exercise_048",
+              "name": "Barbell Shrugs",
+              "sets": 3
+            },
+            {
+              "id": "exercise_096",
+              "name": "Face Pull",
+              "sets": 3
+            },
+            {
+              "id": "exercise_011",
+              "name": "Dumbbell Hammer Curls",
+              "sets": 4
+            }
           ]
         },
         {
           "id": "ppl-adv-legs2",
           "name": "Legs Day 2 (Volume)",
           "exercises": [
-            { "id": "exercise_038", "name": "Barbell Front Squat", "sets": 4 },
-            { "id": "exercise_023", "name": "Dumbbell Bulgarian Split Squat", "sets": 4 },
-            { "id": "exercise_042", "name": "Barbell Hip Thrust", "sets": 4 },
-            { "id": "exercise_015", "name": "Leg Extensions", "sets": 4 },
-            { "id": "exercise_016", "name": "Seated Leg Curl", "sets": 4 },
-            { "id": "exercise_066", "name": "Calf Press on a Leg Press Machine", "sets": 5 }
+            {
+              "id": "exercise_038",
+              "name": "Barbell Front Squat",
+              "sets": 4
+            },
+            {
+              "id": "exercise_023",
+              "name": "Dumbbell Bulgarian Split Squat",
+              "sets": 4
+            },
+            {
+              "id": "exercise_042",
+              "name": "Barbell Hip Thrust",
+              "sets": 4
+            },
+            {
+              "id": "exercise_015",
+              "name": "Leg Extensions",
+              "sets": 4
+            },
+            {
+              "id": "exercise_016",
+              "name": "Seated Leg Curl",
+              "sets": 4
+            },
+            {
+              "id": "exercise_066",
+              "name": "Calf Press on a Leg Press Machine",
+              "sets": 5
+            }
           ]
         }
       ],
       "suggestedSchedule": {
-        "rotation": ["ppl-adv-push1", "ppl-adv-pull1", "ppl-adv-legs1", "ppl-adv-push2", "ppl-adv-pull2", "ppl-adv-legs2", null]
+        "rotation": [
+          "ppl-adv-push1",
+          "ppl-adv-pull1",
+          "ppl-adv-legs1",
+          "ppl-adv-push2",
+          "ppl-adv-pull2",
+          "ppl-adv-legs2",
+          null
+        ]
       },
       "isPremade": true
     },
@@ -371,7 +661,12 @@
         "daysPerWeek": 4,
         "durationWeeks": 8,
         "description": "Simple 4-day upper/lower split perfect for beginners building a foundation.",
-        "tags": ["upper-lower", "split", "beginner", "hypertrophy"]
+        "tags": [
+          "upper-lower",
+          "split",
+          "beginner",
+          "hypertrophy"
+        ]
       },
       "scheduleType": "weekly",
       "workouts": [
@@ -379,46 +674,134 @@
           "id": "ul-beg-upper1",
           "name": "Upper Body A",
           "exercises": [
-            { "id": "exercise_001", "name": "Barbell Bench Press", "sets": 3 },
-            { "id": "exercise_052", "name": "Barbell Bent-Over Row", "sets": 3 },
-            { "id": "exercise_005", "name": "Dumbbell Shoulder Press", "sets": 3 },
-            { "id": "exercise_008", "name": "Wide Grip Lat Pulldown", "sets": 3 },
-            { "id": "exercise_027", "name": "Dumbbell Bicep Curls", "sets": 2 },
-            { "id": "exercise_006", "name": "Cable Triceps Pushdown", "sets": 2 }
+            {
+              "id": "exercise_001",
+              "name": "Barbell Bench Press",
+              "sets": 3
+            },
+            {
+              "id": "exercise_052",
+              "name": "Barbell Bent-Over Row",
+              "sets": 3
+            },
+            {
+              "id": "exercise_005",
+              "name": "Dumbbell Shoulder Press",
+              "sets": 3
+            },
+            {
+              "id": "exercise_008",
+              "name": "Wide Grip Lat Pulldown",
+              "sets": 3
+            },
+            {
+              "id": "exercise_027",
+              "name": "Dumbbell Bicep Curls",
+              "sets": 2
+            },
+            {
+              "id": "exercise_006",
+              "name": "Cable Triceps Pushdown",
+              "sets": 2
+            }
           ]
         },
         {
           "id": "ul-beg-lower1",
           "name": "Lower Body A",
           "exercises": [
-            { "id": "exercise_019", "name": "Barbell Squat", "sets": 3 },
-            { "id": "exercise_047", "name": "Barbell Romanian Deadlift", "sets": 3 },
-            { "id": "exercise_014", "name": "Leg Press", "sets": 3 },
-            { "id": "exercise_025", "name": "Lying Leg Curl", "sets": 3 },
-            { "id": "exercise_024", "name": "Standing Calf Raise Machine", "sets": 3 }
+            {
+              "id": "exercise_019",
+              "name": "Barbell Squat",
+              "sets": 3
+            },
+            {
+              "id": "exercise_047",
+              "name": "Barbell Romanian Deadlift",
+              "sets": 3
+            },
+            {
+              "id": "exercise_014",
+              "name": "Leg Press",
+              "sets": 3
+            },
+            {
+              "id": "exercise_025",
+              "name": "Lying Leg Curl",
+              "sets": 3
+            },
+            {
+              "id": "exercise_024",
+              "name": "Standing Calf Raise Machine",
+              "sets": 3
+            }
           ]
         },
         {
           "id": "ul-beg-upper2",
           "name": "Upper Body B",
           "exercises": [
-            { "id": "exercise_076", "name": "Dumbbell Bench Press", "sets": 3 },
-            { "id": "exercise_077", "name": "Dumbbell Row", "sets": 3 },
-            { "id": "exercise_022", "name": "Seated Shoulder Press Machine", "sets": 3 },
-            { "id": "exercise_010", "name": "Seated Row Machine", "sets": 3 },
-            { "id": "exercise_031", "name": "Barbell Bicep Curl", "sets": 2 },
-            { "id": "exercise_007", "name": "Seated Triceps Dip Machine", "sets": 2 }
+            {
+              "id": "exercise_076",
+              "name": "Dumbbell Bench Press",
+              "sets": 3
+            },
+            {
+              "id": "exercise_077",
+              "name": "Dumbbell Row",
+              "sets": 3
+            },
+            {
+              "id": "exercise_022",
+              "name": "Seated Shoulder Press Machine",
+              "sets": 3
+            },
+            {
+              "id": "exercise_010",
+              "name": "Seated Row Machine",
+              "sets": 3
+            },
+            {
+              "id": "exercise_031",
+              "name": "Barbell Bicep Curl",
+              "sets": 2
+            },
+            {
+              "id": "exercise_007",
+              "name": "Seated Triceps Dip Machine",
+              "sets": 2
+            }
           ]
         },
         {
           "id": "ul-beg-lower2",
           "name": "Lower Body B",
           "exercises": [
-            { "id": "exercise_014", "name": "Leg Press", "sets": 3 },
-            { "id": "exercise_020", "name": "Barbell Deadlift", "sets": 3 },
-            { "id": "exercise_015", "name": "Leg Extensions", "sets": 3 },
-            { "id": "exercise_016", "name": "Seated Leg Curl", "sets": 3 },
-            { "id": "exercise_066", "name": "Calf Press on a Leg Press Machine", "sets": 3 }
+            {
+              "id": "exercise_014",
+              "name": "Leg Press",
+              "sets": 3
+            },
+            {
+              "id": "exercise_020",
+              "name": "Barbell Deadlift",
+              "sets": 3
+            },
+            {
+              "id": "exercise_015",
+              "name": "Leg Extensions",
+              "sets": 3
+            },
+            {
+              "id": "exercise_016",
+              "name": "Seated Leg Curl",
+              "sets": 3
+            },
+            {
+              "id": "exercise_066",
+              "name": "Calf Press on a Leg Press Machine",
+              "sets": 3
+            }
           ]
         }
       ],
@@ -445,7 +828,12 @@
         "daysPerWeek": 4,
         "durationWeeks": 12,
         "description": "Progressive overload focused upper/lower split for intermediate lifters.",
-        "tags": ["upper-lower", "split", "intermediate", "progressive-overload"]
+        "tags": [
+          "upper-lower",
+          "split",
+          "intermediate",
+          "progressive-overload"
+        ]
       },
       "scheduleType": "weekly",
       "workouts": [
@@ -453,49 +841,149 @@
           "id": "ul-int-upper1",
           "name": "Upper Body A (Strength)",
           "exercises": [
-            { "id": "exercise_001", "name": "Barbell Bench Press", "sets": 4 },
-            { "id": "exercise_052", "name": "Barbell Bent-Over Row", "sets": 4 },
-            { "id": "exercise_005", "name": "Dumbbell Shoulder Press", "sets": 3 },
-            { "id": "exercise_008", "name": "Wide Grip Lat Pulldown", "sets": 3 },
-            { "id": "exercise_004", "name": "Lateral Raises", "sets": 3 },
-            { "id": "exercise_027", "name": "Dumbbell Bicep Curls", "sets": 3 },
-            { "id": "exercise_006", "name": "Cable Triceps Pushdown", "sets": 3 }
+            {
+              "id": "exercise_001",
+              "name": "Barbell Bench Press",
+              "sets": 4
+            },
+            {
+              "id": "exercise_052",
+              "name": "Barbell Bent-Over Row",
+              "sets": 4
+            },
+            {
+              "id": "exercise_005",
+              "name": "Dumbbell Shoulder Press",
+              "sets": 3
+            },
+            {
+              "id": "exercise_008",
+              "name": "Wide Grip Lat Pulldown",
+              "sets": 3
+            },
+            {
+              "id": "exercise_004",
+              "name": "Lateral Raises",
+              "sets": 3
+            },
+            {
+              "id": "exercise_027",
+              "name": "Dumbbell Bicep Curls",
+              "sets": 3
+            },
+            {
+              "id": "exercise_006",
+              "name": "Cable Triceps Pushdown",
+              "sets": 3
+            }
           ]
         },
         {
           "id": "ul-int-lower1",
           "name": "Lower Body A (Strength)",
           "exercises": [
-            { "id": "exercise_019", "name": "Barbell Squat", "sets": 4 },
-            { "id": "exercise_047", "name": "Barbell Romanian Deadlift", "sets": 4 },
-            { "id": "exercise_014", "name": "Leg Press", "sets": 3 },
-            { "id": "exercise_025", "name": "Lying Leg Curl", "sets": 3 },
-            { "id": "exercise_024", "name": "Standing Calf Raise Machine", "sets": 4 }
+            {
+              "id": "exercise_019",
+              "name": "Barbell Squat",
+              "sets": 4
+            },
+            {
+              "id": "exercise_047",
+              "name": "Barbell Romanian Deadlift",
+              "sets": 4
+            },
+            {
+              "id": "exercise_014",
+              "name": "Leg Press",
+              "sets": 3
+            },
+            {
+              "id": "exercise_025",
+              "name": "Lying Leg Curl",
+              "sets": 3
+            },
+            {
+              "id": "exercise_024",
+              "name": "Standing Calf Raise Machine",
+              "sets": 4
+            }
           ]
         },
         {
           "id": "ul-int-upper2",
           "name": "Upper Body B (Hypertrophy)",
           "exercises": [
-            { "id": "exercise_076", "name": "Dumbbell Bench Press", "sets": 4 },
-            { "id": "exercise_077", "name": "Dumbbell Row", "sets": 4 },
-            { "id": "exercise_099", "name": "Incline Barbell Bench Press", "sets": 3 },
-            { "id": "exercise_064", "name": "Cable Underhand Pulldown", "sets": 3 },
-            { "id": "exercise_030", "name": "Arnold Press", "sets": 3 },
-            { "id": "exercise_011", "name": "Dumbbell Hammer Curls", "sets": 3 },
-            { "id": "exercise_053", "name": "Triceps Kickback", "sets": 3 }
+            {
+              "id": "exercise_076",
+              "name": "Dumbbell Bench Press",
+              "sets": 4
+            },
+            {
+              "id": "exercise_077",
+              "name": "Dumbbell Row",
+              "sets": 4
+            },
+            {
+              "id": "exercise_099",
+              "name": "Incline Barbell Bench Press",
+              "sets": 3
+            },
+            {
+              "id": "exercise_064",
+              "name": "Cable Underhand Pulldown",
+              "sets": 3
+            },
+            {
+              "id": "exercise_030",
+              "name": "Arnold Press",
+              "sets": 3
+            },
+            {
+              "id": "exercise_011",
+              "name": "Dumbbell Hammer Curls",
+              "sets": 3
+            },
+            {
+              "id": "exercise_053",
+              "name": "Triceps Kickback",
+              "sets": 3
+            }
           ]
         },
         {
           "id": "ul-int-lower2",
           "name": "Lower Body B (Hypertrophy)",
           "exercises": [
-            { "id": "exercise_038", "name": "Barbell Front Squat", "sets": 4 },
-            { "id": "exercise_023", "name": "Dumbbell Bulgarian Split Squat", "sets": 3 },
-            { "id": "exercise_015", "name": "Leg Extensions", "sets": 4 },
-            { "id": "exercise_016", "name": "Seated Leg Curl", "sets": 4 },
-            { "id": "exercise_042", "name": "Barbell Hip Thrust", "sets": 3 },
-            { "id": "exercise_066", "name": "Calf Press on a Leg Press Machine", "sets": 4 }
+            {
+              "id": "exercise_038",
+              "name": "Barbell Front Squat",
+              "sets": 4
+            },
+            {
+              "id": "exercise_023",
+              "name": "Dumbbell Bulgarian Split Squat",
+              "sets": 3
+            },
+            {
+              "id": "exercise_015",
+              "name": "Leg Extensions",
+              "sets": 4
+            },
+            {
+              "id": "exercise_016",
+              "name": "Seated Leg Curl",
+              "sets": 4
+            },
+            {
+              "id": "exercise_042",
+              "name": "Barbell Hip Thrust",
+              "sets": 3
+            },
+            {
+              "id": "exercise_066",
+              "name": "Calf Press on a Leg Press Machine",
+              "sets": 4
+            }
           ]
         }
       ],
@@ -522,7 +1010,12 @@
         "daysPerWeek": 3,
         "durationWeeks": 8,
         "description": "Push/Pull/Legs split using only dumbbells - perfect for home gyms.",
-        "tags": ["ppl", "dumbbells", "home-gym", "intermediate"]
+        "tags": [
+          "ppl",
+          "dumbbells",
+          "home-gym",
+          "intermediate"
+        ]
       },
       "scheduleType": "rotation",
       "workouts": [
@@ -530,37 +1023,100 @@
           "id": "db-ppl-push",
           "name": "Push Day",
           "exercises": [
-            { "id": "exercise_076", "name": "Dumbbell Bench Press", "sets": 4 },
-            { "id": "exercise_005", "name": "Dumbbell Shoulder Press", "sets": 4 },
-            { "id": "exercise_004", "name": "Lateral Raises", "sets": 3 },
-            { "id": "exercise_028", "name": "Dumbbell Front Raises", "sets": 3 },
-            { "id": "exercise_053", "name": "Triceps Kickback", "sets": 3 }
+            {
+              "id": "exercise_076",
+              "name": "Dumbbell Bench Press",
+              "sets": 4
+            },
+            {
+              "id": "exercise_005",
+              "name": "Dumbbell Shoulder Press",
+              "sets": 4
+            },
+            {
+              "id": "exercise_004",
+              "name": "Lateral Raises",
+              "sets": 3
+            },
+            {
+              "id": "exercise_028",
+              "name": "Dumbbell Front Raises",
+              "sets": 3
+            },
+            {
+              "id": "exercise_053",
+              "name": "Triceps Kickback",
+              "sets": 3
+            }
           ]
         },
         {
           "id": "db-ppl-pull",
           "name": "Pull Day",
           "exercises": [
-            { "id": "exercise_077", "name": "Dumbbell Row", "sets": 4 },
-            { "id": "exercise_078", "name": "Dumbbell Romanian Deadlift", "sets": 4 },
-            { "id": "exercise_027", "name": "Dumbbell Bicep Curls", "sets": 3 },
-            { "id": "exercise_011", "name": "Dumbbell Hammer Curls", "sets": 3 }
+            {
+              "id": "exercise_077",
+              "name": "Dumbbell Row",
+              "sets": 4
+            },
+            {
+              "id": "exercise_078",
+              "name": "Dumbbell Romanian Deadlift",
+              "sets": 4
+            },
+            {
+              "id": "exercise_027",
+              "name": "Dumbbell Bicep Curls",
+              "sets": 3
+            },
+            {
+              "id": "exercise_011",
+              "name": "Dumbbell Hammer Curls",
+              "sets": 3
+            }
           ]
         },
         {
           "id": "db-ppl-legs",
           "name": "Legs Day",
           "exercises": [
-            { "id": "exercise_079", "name": "Dumbbell Goblet Squat", "sets": 4 },
-            { "id": "exercise_023", "name": "Dumbbell Bulgarian Split Squat", "sets": 4 },
-            { "id": "exercise_080", "name": "Dumbbell Lunges", "sets": 3 },
-            { "id": "exercise_078", "name": "Dumbbell Romanian Deadlift", "sets": 3 },
-            { "id": "exercise_081", "name": "Dumbbell Calf Raises", "sets": 4 }
+            {
+              "id": "exercise_079",
+              "name": "Dumbbell Goblet Squat",
+              "sets": 4
+            },
+            {
+              "id": "exercise_023",
+              "name": "Dumbbell Bulgarian Split Squat",
+              "sets": 4
+            },
+            {
+              "id": "exercise_080",
+              "name": "Dumbbell Lunges",
+              "sets": 3
+            },
+            {
+              "id": "exercise_078",
+              "name": "Dumbbell Romanian Deadlift",
+              "sets": 3
+            },
+            {
+              "id": "exercise_081",
+              "name": "Dumbbell Calf Raises",
+              "sets": 4
+            }
           ]
         }
       ],
       "suggestedSchedule": {
-        "rotation": ["db-ppl-push", null, "db-ppl-pull", null, "db-ppl-legs", null]
+        "rotation": [
+          "db-ppl-push",
+          null,
+          "db-ppl-pull",
+          null,
+          "db-ppl-legs",
+          null
+        ]
       },
       "isPremade": true
     },
@@ -574,7 +1130,12 @@
         "daysPerWeek": 3,
         "durationWeeks": 8,
         "description": "Build muscle with zero equipment using progressive calisthenics.",
-        "tags": ["bodyweight", "calisthenics", "beginner", "home"]
+        "tags": [
+          "bodyweight",
+          "calisthenics",
+          "beginner",
+          "home"
+        ]
       },
       "scheduleType": "rotation",
       "workouts": [
@@ -582,35 +1143,91 @@
           "id": "bw-hyp-push",
           "name": "Push Day",
           "exercises": [
-            { "id": "bodyweight_001", "name": "Push-ups", "sets": 4 },
-            { "id": "bodyweight_004", "name": "Dips", "sets": 3 },
-            { "id": "duration_001", "name": "Plank", "sets": 3 },
-            { "id": "bodyweight_010", "name": "Mountain Climbers", "sets": 3 }
+            {
+              "id": "bodyweight_001",
+              "name": "Push-ups",
+              "sets": 4
+            },
+            {
+              "id": "bodyweight_004",
+              "name": "Dips",
+              "sets": 3
+            },
+            {
+              "id": "duration_001",
+              "name": "Plank",
+              "sets": 3
+            },
+            {
+              "id": "bodyweight_010",
+              "name": "Mountain Climbers",
+              "sets": 3
+            }
           ]
         },
         {
           "id": "bw-hyp-pull",
           "name": "Pull Day",
           "exercises": [
-            { "id": "bodyweight_012", "name": "Inverted Rows", "sets": 4 },
-            { "id": "bodyweight_002", "name": "Pull-ups", "sets": 3 },
-            { "id": "bodyweight_007", "name": "Leg Raises", "sets": 3 },
-            { "id": "duration_004", "name": "Dead Hang", "sets": 3 }
+            {
+              "id": "bodyweight_012",
+              "name": "Inverted Rows",
+              "sets": 4
+            },
+            {
+              "id": "bodyweight_002",
+              "name": "Pull-ups",
+              "sets": 3
+            },
+            {
+              "id": "bodyweight_007",
+              "name": "Leg Raises",
+              "sets": 3
+            },
+            {
+              "id": "duration_004",
+              "name": "Dead Hang",
+              "sets": 3
+            }
           ]
         },
         {
           "id": "bw-hyp-legs",
           "name": "Legs Day",
           "exercises": [
-            { "id": "bodyweight_008", "name": "Air Squats", "sets": 4 },
-            { "id": "bodyweight_009", "name": "Lunges", "sets": 4 },
-            { "id": "duration_003", "name": "Wall Sit", "sets": 3 },
-            { "id": "duration_005", "name": "Glute Bridge Hold", "sets": 3 }
+            {
+              "id": "bodyweight_008",
+              "name": "Air Squats",
+              "sets": 4
+            },
+            {
+              "id": "bodyweight_009",
+              "name": "Lunges",
+              "sets": 4
+            },
+            {
+              "id": "duration_003",
+              "name": "Wall Sit",
+              "sets": 3
+            },
+            {
+              "id": "duration_005",
+              "name": "Glute Bridge Hold",
+              "sets": 3
+            }
           ]
         }
       ],
       "suggestedSchedule": {
-        "rotation": ["bw-hyp-push", null, "bw-hyp-pull", null, "bw-hyp-legs", null, null]
+        "rotation": [
+          "bw-hyp-push",
+          null,
+          "bw-hyp-pull",
+          null,
+          "bw-hyp-legs",
+          null,
+          null
+        ]
       },
       "isPremade": true
     },
@@ -624,7 +1241,12 @@
         "daysPerWeek": 3,
         "durationWeeks": 12,
         "description": "Linear progression program focusing on the big compound lifts.",
-        "tags": ["strength", "linear-progression", "beginner", "compound"]
+        "tags": [
+          "strength",
+          "linear-progression",
+          "beginner",
+          "compound"
+        ]
       },
       "scheduleType": "rotation",
       "workouts": [
@@ -632,23 +1254,53 @@
           "id": "ss-workout-a",
           "name": "Workout A",
           "exercises": [
-            { "id": "exercise_019", "name": "Barbell Squat", "sets": 3 },
-            { "id": "exercise_001", "name": "Barbell Bench Press", "sets": 3 },
-            { "id": "exercise_020", "name": "Barbell Deadlift", "sets": 1 }
+            {
+              "id": "exercise_019",
+              "name": "Barbell Squat",
+              "sets": 3
+            },
+            {
+              "id": "exercise_001",
+              "name": "Barbell Bench Press",
+              "sets": 3
+            },
+            {
+              "id": "exercise_020",
+              "name": "Barbell Deadlift",
+              "sets": 1
+            }
           ]
         },
         {
           "id": "ss-workout-b",
           "name": "Workout B",
           "exercises": [
-            { "id": "exercise_019", "name": "Barbell Squat", "sets": 3 },
-            { "id": "exercise_005", "name": "Dumbbell Shoulder Press", "sets": 3 },
-            { "id": "exercise_052", "name": "Barbell Bent-Over Row", "sets": 3 }
+            {
+              "id": "exercise_019",
+              "name": "Barbell Squat",
+              "sets": 3
+            },
+            {
+              "id": "exercise_005",
+              "name": "Dumbbell Shoulder Press",
+              "sets": 3
+            },
+            {
+              "id": "exercise_052",
+              "name": "Barbell Bent-Over Row",
+              "sets": 3
+            }
           ]
         }
       ],
       "suggestedSchedule": {
-        "rotation": ["ss-workout-a", null, "ss-workout-b", null, null]
+        "rotation": [
+          "ss-workout-a",
+          null,
+          "ss-workout-b",
+          null,
+          null
+        ]
       },
       "isPremade": true
     },
@@ -662,7 +1314,12 @@
         "daysPerWeek": 4,
         "durationWeeks": 12,
         "description": "5/3/1 style programming for intermediate strength athletes.",
-        "tags": ["strength", "531", "intermediate", "powerlifting"]
+        "tags": [
+          "strength",
+          "531",
+          "intermediate",
+          "powerlifting"
+        ]
       },
       "scheduleType": "weekly",
       "workouts": [
@@ -670,44 +1327,124 @@
           "id": "str-int-squat",
           "name": "Squat Day",
           "exercises": [
-            { "id": "exercise_019", "name": "Barbell Squat", "sets": 5 },
-            { "id": "exercise_014", "name": "Leg Press", "sets": 4 },
-            { "id": "exercise_025", "name": "Lying Leg Curl", "sets": 3 },
-            { "id": "exercise_015", "name": "Leg Extensions", "sets": 3 },
-            { "id": "exercise_063", "name": "Cable Crunch", "sets": 3 }
+            {
+              "id": "exercise_019",
+              "name": "Barbell Squat",
+              "sets": 5
+            },
+            {
+              "id": "exercise_014",
+              "name": "Leg Press",
+              "sets": 4
+            },
+            {
+              "id": "exercise_025",
+              "name": "Lying Leg Curl",
+              "sets": 3
+            },
+            {
+              "id": "exercise_015",
+              "name": "Leg Extensions",
+              "sets": 3
+            },
+            {
+              "id": "exercise_063",
+              "name": "Cable Crunch",
+              "sets": 3
+            }
           ]
         },
         {
           "id": "str-int-bench",
           "name": "Bench Day",
           "exercises": [
-            { "id": "exercise_001", "name": "Barbell Bench Press", "sets": 5 },
-            { "id": "exercise_076", "name": "Dumbbell Bench Press", "sets": 4 },
-            { "id": "exercise_077", "name": "Dumbbell Row", "sets": 4 },
-            { "id": "exercise_006", "name": "Cable Triceps Pushdown", "sets": 3 },
-            { "id": "exercise_027", "name": "Dumbbell Bicep Curls", "sets": 3 }
+            {
+              "id": "exercise_001",
+              "name": "Barbell Bench Press",
+              "sets": 5
+            },
+            {
+              "id": "exercise_076",
+              "name": "Dumbbell Bench Press",
+              "sets": 4
+            },
+            {
+              "id": "exercise_077",
+              "name": "Dumbbell Row",
+              "sets": 4
+            },
+            {
+              "id": "exercise_006",
+              "name": "Cable Triceps Pushdown",
+              "sets": 3
+            },
+            {
+              "id": "exercise_027",
+              "name": "Dumbbell Bicep Curls",
+              "sets": 3
+            }
           ]
         },
         {
           "id": "str-int-deadlift",
           "name": "Deadlift Day",
           "exercises": [
-            { "id": "exercise_020", "name": "Barbell Deadlift", "sets": 5 },
-            { "id": "exercise_047", "name": "Barbell Romanian Deadlift", "sets": 4 },
-            { "id": "exercise_052", "name": "Barbell Bent-Over Row", "sets": 3 },
-            { "id": "exercise_008", "name": "Wide Grip Lat Pulldown", "sets": 3 },
-            { "id": "exercise_013", "name": "Hyperextensions", "sets": 3 }
+            {
+              "id": "exercise_020",
+              "name": "Barbell Deadlift",
+              "sets": 5
+            },
+            {
+              "id": "exercise_047",
+              "name": "Barbell Romanian Deadlift",
+              "sets": 4
+            },
+            {
+              "id": "exercise_052",
+              "name": "Barbell Bent-Over Row",
+              "sets": 3
+            },
+            {
+              "id": "exercise_008",
+              "name": "Wide Grip Lat Pulldown",
+              "sets": 3
+            },
+            {
+              "id": "exercise_013",
+              "name": "Hyperextensions",
+              "sets": 3
+            }
           ]
         },
         {
           "id": "str-int-ohp",
           "name": "Overhead Press Day",
           "exercises": [
-            { "id": "exercise_005", "name": "Dumbbell Shoulder Press", "sets": 5 },
-            { "id": "exercise_099", "name": "Incline Barbell Bench Press", "sets": 4 },
-            { "id": "exercise_004", "name": "Lateral Raises", "sets": 3 },
-            { "id": "exercise_096", "name": "Face Pull", "sets": 3 },
-            { "id": "exercise_053", "name": "Triceps Kickback", "sets": 3 }
+            {
+              "id": "exercise_005",
+              "name": "Dumbbell Shoulder Press",
+              "sets": 5
+            },
+            {
+              "id": "exercise_099",
+              "name": "Incline Barbell Bench Press",
+              "sets": 4
+            },
+            {
+              "id": "exercise_004",
+              "name": "Lateral Raises",
+              "sets": 3
+            },
+            {
+              "id": "exercise_096",
+              "name": "Face Pull",
+              "sets": 3
+            },
+            {
+              "id": "exercise_053",
+              "name": "Triceps Kickback",
+              "sets": 3
+            }
           ]
         }
       ],
@@ -734,7 +1471,12 @@
         "daysPerWeek": 5,
         "durationWeeks": 16,
         "description": "Periodized powerlifting program for advanced strength athletes.",
-        "tags": ["strength", "powerlifting", "advanced", "periodization"]
+        "tags": [
+          "strength",
+          "powerlifting",
+          "advanced",
+          "periodization"
+        ]
       },
       "scheduleType": "weekly",
       "workouts": [
@@ -742,56 +1484,160 @@
           "id": "str-adv-squat",
           "name": "Squat Focus",
           "exercises": [
-            { "id": "exercise_019", "name": "Barbell Squat", "sets": 6 },
-            { "id": "exercise_038", "name": "Barbell Front Squat", "sets": 4 },
-            { "id": "exercise_014", "name": "Leg Press", "sets": 4 },
-            { "id": "exercise_015", "name": "Leg Extensions", "sets": 3 },
-            { "id": "exercise_063", "name": "Cable Crunch", "sets": 3 }
+            {
+              "id": "exercise_019",
+              "name": "Barbell Squat",
+              "sets": 6
+            },
+            {
+              "id": "exercise_038",
+              "name": "Barbell Front Squat",
+              "sets": 4
+            },
+            {
+              "id": "exercise_014",
+              "name": "Leg Press",
+              "sets": 4
+            },
+            {
+              "id": "exercise_015",
+              "name": "Leg Extensions",
+              "sets": 3
+            },
+            {
+              "id": "exercise_063",
+              "name": "Cable Crunch",
+              "sets": 3
+            }
           ]
         },
         {
           "id": "str-adv-bench",
           "name": "Bench Focus",
           "exercises": [
-            { "id": "exercise_001", "name": "Barbell Bench Press", "sets": 6 },
-            { "id": "exercise_068", "name": "Close Grip Barbell Bench Press", "sets": 4 },
-            { "id": "exercise_099", "name": "Incline Barbell Bench Press", "sets": 4 },
-            { "id": "exercise_052", "name": "Barbell Bent-Over Row", "sets": 4 },
-            { "id": "exercise_006", "name": "Cable Triceps Pushdown", "sets": 3 }
+            {
+              "id": "exercise_001",
+              "name": "Barbell Bench Press",
+              "sets": 6
+            },
+            {
+              "id": "exercise_068",
+              "name": "Close Grip Barbell Bench Press",
+              "sets": 4
+            },
+            {
+              "id": "exercise_099",
+              "name": "Incline Barbell Bench Press",
+              "sets": 4
+            },
+            {
+              "id": "exercise_052",
+              "name": "Barbell Bent-Over Row",
+              "sets": 4
+            },
+            {
+              "id": "exercise_006",
+              "name": "Cable Triceps Pushdown",
+              "sets": 3
+            }
           ]
         },
         {
           "id": "str-adv-deadlift",
           "name": "Deadlift Focus",
           "exercises": [
-            { "id": "exercise_020", "name": "Barbell Deadlift", "sets": 6 },
-            { "id": "exercise_047", "name": "Barbell Romanian Deadlift", "sets": 4 },
-            { "id": "exercise_040", "name": "Barbell Good Mornings", "sets": 3 },
-            { "id": "exercise_067", "name": "Chest Supported T-Bar Row", "sets": 4 },
-            { "id": "exercise_013", "name": "Hyperextensions", "sets": 3 }
+            {
+              "id": "exercise_020",
+              "name": "Barbell Deadlift",
+              "sets": 6
+            },
+            {
+              "id": "exercise_047",
+              "name": "Barbell Romanian Deadlift",
+              "sets": 4
+            },
+            {
+              "id": "exercise_040",
+              "name": "Barbell Good Mornings",
+              "sets": 3
+            },
+            {
+              "id": "exercise_067",
+              "name": "Chest Supported T-Bar Row",
+              "sets": 4
+            },
+            {
+              "id": "exercise_013",
+              "name": "Hyperextensions",
+              "sets": 3
+            }
           ]
         },
         {
           "id": "str-adv-upper",
           "name": "Upper Accessory",
           "exercises": [
-            { "id": "exercise_005", "name": "Dumbbell Shoulder Press", "sets": 4 },
-            { "id": "exercise_077", "name": "Dumbbell Row", "sets": 4 },
-            { "id": "exercise_076", "name": "Dumbbell Bench Press", "sets": 4 },
-            { "id": "exercise_008", "name": "Wide Grip Lat Pulldown", "sets": 3 },
-            { "id": "exercise_004", "name": "Lateral Raises", "sets": 3 },
-            { "id": "exercise_027", "name": "Dumbbell Bicep Curls", "sets": 3 }
+            {
+              "id": "exercise_005",
+              "name": "Dumbbell Shoulder Press",
+              "sets": 4
+            },
+            {
+              "id": "exercise_077",
+              "name": "Dumbbell Row",
+              "sets": 4
+            },
+            {
+              "id": "exercise_076",
+              "name": "Dumbbell Bench Press",
+              "sets": 4
+            },
+            {
+              "id": "exercise_008",
+              "name": "Wide Grip Lat Pulldown",
+              "sets": 3
+            },
+            {
+              "id": "exercise_004",
+              "name": "Lateral Raises",
+              "sets": 3
+            },
+            {
+              "id": "exercise_027",
+              "name": "Dumbbell Bicep Curls",
+              "sets": 3
+            }
           ]
         },
         {
           "id": "str-adv-lower",
           "name": "Lower Accessory",
           "exercises": [
-            { "id": "exercise_023", "name": "Dumbbell Bulgarian Split Squat", "sets": 4 },
-            { "id": "exercise_042", "name": "Barbell Hip Thrust", "sets": 4 },
-            { "id": "exercise_016", "name": "Seated Leg Curl", "sets": 4 },
-            { "id": "exercise_025", "name": "Lying Leg Curl", "sets": 3 },
-            { "id": "exercise_024", "name": "Standing Calf Raise Machine", "sets": 4 }
+            {
+              "id": "exercise_023",
+              "name": "Dumbbell Bulgarian Split Squat",
+              "sets": 4
+            },
+            {
+              "id": "exercise_042",
+              "name": "Barbell Hip Thrust",
+              "sets": 4
+            },
+            {
+              "id": "exercise_016",
+              "name": "Seated Leg Curl",
+              "sets": 4
+            },
+            {
+              "id": "exercise_025",
+              "name": "Lying Leg Curl",
+              "sets": 3
+            },
+            {
+              "id": "exercise_024",
+              "name": "Standing Calf Raise Machine",
+              "sets": 4
+            }
           ]
         }
       ],
@@ -818,7 +1664,12 @@
         "daysPerWeek": 3,
         "durationWeeks": 8,
         "description": "Build strength using only dumbbells with heavy compound movements.",
-        "tags": ["strength", "dumbbells", "home-gym", "intermediate"]
+        "tags": [
+          "strength",
+          "dumbbells",
+          "home-gym",
+          "intermediate"
+        ]
       },
       "scheduleType": "rotation",
       "workouts": [
@@ -826,38 +1677,105 @@
           "id": "db-str-upper",
           "name": "Upper Body",
           "exercises": [
-            { "id": "exercise_076", "name": "Dumbbell Bench Press", "sets": 5 },
-            { "id": "exercise_077", "name": "Dumbbell Row", "sets": 5 },
-            { "id": "exercise_005", "name": "Dumbbell Shoulder Press", "sets": 4 },
-            { "id": "exercise_027", "name": "Dumbbell Bicep Curls", "sets": 3 },
-            { "id": "exercise_053", "name": "Triceps Kickback", "sets": 3 }
+            {
+              "id": "exercise_076",
+              "name": "Dumbbell Bench Press",
+              "sets": 5
+            },
+            {
+              "id": "exercise_077",
+              "name": "Dumbbell Row",
+              "sets": 5
+            },
+            {
+              "id": "exercise_005",
+              "name": "Dumbbell Shoulder Press",
+              "sets": 4
+            },
+            {
+              "id": "exercise_027",
+              "name": "Dumbbell Bicep Curls",
+              "sets": 3
+            },
+            {
+              "id": "exercise_053",
+              "name": "Triceps Kickback",
+              "sets": 3
+            }
           ]
         },
         {
           "id": "db-str-lower",
           "name": "Lower Body",
           "exercises": [
-            { "id": "exercise_079", "name": "Dumbbell Goblet Squat", "sets": 5 },
-            { "id": "exercise_078", "name": "Dumbbell Romanian Deadlift", "sets": 5 },
-            { "id": "exercise_023", "name": "Dumbbell Bulgarian Split Squat", "sets": 4 },
-            { "id": "exercise_080", "name": "Dumbbell Lunges", "sets": 3 },
-            { "id": "exercise_081", "name": "Dumbbell Calf Raises", "sets": 4 }
+            {
+              "id": "exercise_079",
+              "name": "Dumbbell Goblet Squat",
+              "sets": 5
+            },
+            {
+              "id": "exercise_078",
+              "name": "Dumbbell Romanian Deadlift",
+              "sets": 5
+            },
+            {
+              "id": "exercise_023",
+              "name": "Dumbbell Bulgarian Split Squat",
+              "sets": 4
+            },
+            {
+              "id": "exercise_080",
+              "name": "Dumbbell Lunges",
+              "sets": 3
+            },
+            {
+              "id": "exercise_081",
+              "name": "Dumbbell Calf Raises",
+              "sets": 4
+            }
           ]
         },
         {
           "id": "db-str-full",
           "name": "Full Body",
           "exercises": [
-            { "id": "exercise_079", "name": "Dumbbell Goblet Squat", "sets": 4 },
-            { "id": "exercise_076", "name": "Dumbbell Bench Press", "sets": 4 },
-            { "id": "exercise_077", "name": "Dumbbell Row", "sets": 4 },
-            { "id": "exercise_005", "name": "Dumbbell Shoulder Press", "sets": 3 },
-            { "id": "exercise_078", "name": "Dumbbell Romanian Deadlift", "sets": 3 }
+            {
+              "id": "exercise_079",
+              "name": "Dumbbell Goblet Squat",
+              "sets": 4
+            },
+            {
+              "id": "exercise_076",
+              "name": "Dumbbell Bench Press",
+              "sets": 4
+            },
+            {
+              "id": "exercise_077",
+              "name": "Dumbbell Row",
+              "sets": 4
+            },
+            {
+              "id": "exercise_005",
+              "name": "Dumbbell Shoulder Press",
+              "sets": 3
+            },
+            {
+              "id": "exercise_078",
+              "name": "Dumbbell Romanian Deadlift",
+              "sets": 3
+            }
           ]
         }
       ],
       "suggestedSchedule": {
-        "rotation": ["db-str-upper", null, "db-str-lower", null, "db-str-full", null]
+        "rotation": [
+          "db-str-upper",
+          null,
+          "db-str-lower",
+          null,
+          "db-str-full",
+          null
+        ]
       },
       "isPremade": true
     },
@@ -871,7 +1789,12 @@
         "daysPerWeek": 3,
         "durationWeeks": 8,
         "description": "Circuit-style training for beginners focused on calorie burn.",
-        "tags": ["fat-loss", "circuit", "beginner", "conditioning"]
+        "tags": [
+          "fat-loss",
+          "circuit",
+          "beginner",
+          "conditioning"
+        ]
       },
       "scheduleType": "rotation",
       "workouts": [
@@ -879,38 +1802,106 @@
           "id": "fl-beg-a",
           "name": "Circuit A",
           "exercises": [
-            { "id": "exercise_014", "name": "Leg Press", "sets": 3 },
-            { "id": "exercise_002", "name": "Chest Press Machine", "sets": 3 },
-            { "id": "exercise_010", "name": "Seated Row Machine", "sets": 3 },
-            { "id": "exercise_022", "name": "Seated Shoulder Press Machine", "sets": 3 },
-            { "id": "exercise_063", "name": "Cable Crunch", "sets": 3 }
+            {
+              "id": "exercise_014",
+              "name": "Leg Press",
+              "sets": 3
+            },
+            {
+              "id": "exercise_002",
+              "name": "Chest Press Machine",
+              "sets": 3
+            },
+            {
+              "id": "exercise_010",
+              "name": "Seated Row Machine",
+              "sets": 3
+            },
+            {
+              "id": "exercise_022",
+              "name": "Seated Shoulder Press Machine",
+              "sets": 3
+            },
+            {
+              "id": "exercise_063",
+              "name": "Cable Crunch",
+              "sets": 3
+            }
           ]
         },
         {
           "id": "fl-beg-b",
           "name": "Circuit B",
           "exercises": [
-            { "id": "exercise_015", "name": "Leg Extensions", "sets": 3 },
-            { "id": "exercise_016", "name": "Seated Leg Curl", "sets": 3 },
-            { "id": "exercise_003", "name": "Butterfly Machine", "sets": 3 },
-            { "id": "exercise_008", "name": "Wide Grip Lat Pulldown", "sets": 3 },
-            { "id": "exercise_009", "name": "Bicep Curl Machine", "sets": 3 }
+            {
+              "id": "exercise_015",
+              "name": "Leg Extensions",
+              "sets": 3
+            },
+            {
+              "id": "exercise_016",
+              "name": "Seated Leg Curl",
+              "sets": 3
+            },
+            {
+              "id": "exercise_003",
+              "name": "Butterfly Machine",
+              "sets": 3
+            },
+            {
+              "id": "exercise_008",
+              "name": "Wide Grip Lat Pulldown",
+              "sets": 3
+            },
+            {
+              "id": "exercise_009",
+              "name": "Bicep Curl Machine",
+              "sets": 3
+            }
           ]
         },
         {
           "id": "fl-beg-c",
           "name": "Circuit C",
           "exercises": [
-            { "id": "exercise_014", "name": "Leg Press", "sets": 3 },
-            { "id": "exercise_010", "name": "Seated Row Machine", "sets": 3 },
-            { "id": "exercise_002", "name": "Chest Press Machine", "sets": 3 },
-            { "id": "exercise_007", "name": "Seated Triceps Dip Machine", "sets": 3 },
-            { "id": "exercise_024", "name": "Standing Calf Raise Machine", "sets": 3 }
+            {
+              "id": "exercise_014",
+              "name": "Leg Press",
+              "sets": 3
+            },
+            {
+              "id": "exercise_010",
+              "name": "Seated Row Machine",
+              "sets": 3
+            },
+            {
+              "id": "exercise_002",
+              "name": "Chest Press Machine",
+              "sets": 3
+            },
+            {
+              "id": "exercise_007",
+              "name": "Seated Triceps Dip Machine",
+              "sets": 3
+            },
+            {
+              "id": "exercise_024",
+              "name": "Standing Calf Raise Machine",
+              "sets": 3
+            }
           ]
         }
       ],
       "suggestedSchedule": {
-        "rotation": ["fl-beg-a", null, "fl-beg-b", null, "fl-beg-c", null, null]
+        "rotation": [
+          "fl-beg-a",
+          null,
+          "fl-beg-b",
+          null,
+          "fl-beg-c",
+          null,
+          null
+        ]
       },
       "isPremade": true
     },
@@ -924,7 +1915,12 @@
         "daysPerWeek": 4,
         "durationWeeks": 10,
         "description": "HIIT combined with strength training for maximum fat burning.",
-        "tags": ["fat-loss", "hiit", "intermediate", "strength"]
+        "tags": [
+          "fat-loss",
+          "hiit",
+          "intermediate",
+          "strength"
+        ]
       },
       "scheduleType": "weekly",
       "workouts": [
@@ -932,44 +1928,124 @@
           "id": "fl-int-upper",
           "name": "Upper Body Circuit",
           "exercises": [
-            { "id": "exercise_001", "name": "Barbell Bench Press", "sets": 4 },
-            { "id": "exercise_052", "name": "Barbell Bent-Over Row", "sets": 4 },
-            { "id": "exercise_005", "name": "Dumbbell Shoulder Press", "sets": 3 },
-            { "id": "exercise_008", "name": "Wide Grip Lat Pulldown", "sets": 3 },
-            { "id": "bodyweight_001", "name": "Push-ups", "sets": 3 }
+            {
+              "id": "exercise_001",
+              "name": "Barbell Bench Press",
+              "sets": 4
+            },
+            {
+              "id": "exercise_052",
+              "name": "Barbell Bent-Over Row",
+              "sets": 4
+            },
+            {
+              "id": "exercise_005",
+              "name": "Dumbbell Shoulder Press",
+              "sets": 3
+            },
+            {
+              "id": "exercise_008",
+              "name": "Wide Grip Lat Pulldown",
+              "sets": 3
+            },
+            {
+              "id": "bodyweight_001",
+              "name": "Push-ups",
+              "sets": 3
+            }
           ]
         },
         {
           "id": "fl-int-lower",
           "name": "Lower Body Circuit",
           "exercises": [
-            { "id": "exercise_019", "name": "Barbell Squat", "sets": 4 },
-            { "id": "exercise_047", "name": "Barbell Romanian Deadlift", "sets": 4 },
-            { "id": "exercise_014", "name": "Leg Press", "sets": 3 },
-            { "id": "exercise_025", "name": "Lying Leg Curl", "sets": 3 },
-            { "id": "bodyweight_009", "name": "Lunges", "sets": 3 }
+            {
+              "id": "exercise_019",
+              "name": "Barbell Squat",
+              "sets": 4
+            },
+            {
+              "id": "exercise_047",
+              "name": "Barbell Romanian Deadlift",
+              "sets": 4
+            },
+            {
+              "id": "exercise_014",
+              "name": "Leg Press",
+              "sets": 3
+            },
+            {
+              "id": "exercise_025",
+              "name": "Lying Leg Curl",
+              "sets": 3
+            },
+            {
+              "id": "bodyweight_009",
+              "name": "Lunges",
+              "sets": 3
+            }
           ]
         },
         {
           "id": "fl-int-hiit",
           "name": "HIIT Day",
           "exercises": [
-            { "id": "bodyweight_011", "name": "Burpees", "sets": 5 },
-            { "id": "bodyweight_010", "name": "Mountain Climbers", "sets": 5 },
-            { "id": "bodyweight_008", "name": "Air Squats", "sets": 5 },
-            { "id": "duration_001", "name": "Plank", "sets": 3 },
-            { "id": "duration_003", "name": "Wall Sit", "sets": 3 }
+            {
+              "id": "bodyweight_011",
+              "name": "Burpees",
+              "sets": 5
+            },
+            {
+              "id": "bodyweight_010",
+              "name": "Mountain Climbers",
+              "sets": 5
+            },
+            {
+              "id": "bodyweight_008",
+              "name": "Air Squats",
+              "sets": 5
+            },
+            {
+              "id": "duration_001",
+              "name": "Plank",
+              "sets": 3
+            },
+            {
+              "id": "duration_003",
+              "name": "Wall Sit",
+              "sets": 3
+            }
           ]
         },
         {
           "id": "fl-int-full",
           "name": "Full Body Burn",
           "exercises": [
-            { "id": "exercise_020", "name": "Barbell Deadlift", "sets": 4 },
-            { "id": "exercise_076", "name": "Dumbbell Bench Press", "sets": 3 },
-            { "id": "exercise_077", "name": "Dumbbell Row", "sets": 3 },
-            { "id": "exercise_023", "name": "Dumbbell Bulgarian Split Squat", "sets": 3 },
-            { "id": "bodyweight_011", "name": "Burpees", "sets": 3 }
+            {
+              "id": "exercise_020",
+              "name": "Barbell Deadlift",
+              "sets": 4
+            },
+            {
+              "id": "exercise_076",
+              "name": "Dumbbell Bench Press",
+              "sets": 3
+            },
+            {
+              "id": "exercise_077",
+              "name": "Dumbbell Row",
+              "sets": 3
+            },
+            {
+              "id": "exercise_023",
+              "name": "Dumbbell Bulgarian Split Squat",
+              "sets": 3
+            },
+            {
+              "id": "bodyweight_011",
+              "name": "Burpees",
+              "sets": 3
+            }
           ]
         }
       ],
@@ -996,7 +2072,12 @@
         "daysPerWeek": 4,
         "durationWeeks": 8,
         "description": "No-equipment fat burning program you can do anywhere.",
-        "tags": ["fat-loss", "bodyweight", "home", "beginner"]
+        "tags": [
+          "fat-loss",
+          "bodyweight",
+          "home",
+          "beginner"
+        ]
       },
       "scheduleType": "weekly",
       "workouts": [
@@ -1004,42 +2085,114 @@
           "id": "bw-fl-upper",
           "name": "Upper Body HIIT",
           "exercises": [
-            { "id": "bodyweight_001", "name": "Push-ups", "sets": 4 },
-            { "id": "bodyweight_012", "name": "Inverted Rows", "sets": 4 },
-            { "id": "bodyweight_010", "name": "Mountain Climbers", "sets": 4 },
-            { "id": "duration_001", "name": "Plank", "sets": 3 }
+            {
+              "id": "bodyweight_001",
+              "name": "Push-ups",
+              "sets": 4
+            },
+            {
+              "id": "bodyweight_012",
+              "name": "Inverted Rows",
+              "sets": 4
+            },
+            {
+              "id": "bodyweight_010",
+              "name": "Mountain Climbers",
+              "sets": 4
+            },
+            {
+              "id": "duration_001",
+              "name": "Plank",
+              "sets": 3
+            }
           ]
         },
         {
           "id": "bw-fl-lower",
           "name": "Lower Body HIIT",
           "exercises": [
-            { "id": "bodyweight_008", "name": "Air Squats", "sets": 4 },
-            { "id": "bodyweight_009", "name": "Lunges", "sets": 4 },
-            { "id": "bodyweight_011", "name": "Burpees", "sets": 4 },
-            { "id": "duration_003", "name": "Wall Sit", "sets": 3 }
+            {
+              "id": "bodyweight_008",
+              "name": "Air Squats",
+              "sets": 4
+            },
+            {
+              "id": "bodyweight_009",
+              "name": "Lunges",
+              "sets": 4
+            },
+            {
+              "id": "bodyweight_011",
+              "name": "Burpees",
+              "sets": 4
+            },
+            {
+              "id": "duration_003",
+              "name": "Wall Sit",
+              "sets": 3
+            }
           ]
         },
         {
           "id": "bw-fl-full",
           "name": "Full Body Burn",
           "exercises": [
-            { "id": "bodyweight_011", "name": "Burpees", "sets": 5 },
-            { "id": "bodyweight_001", "name": "Push-ups", "sets": 4 },
-            { "id": "bodyweight_008", "name": "Air Squats", "sets": 4 },
-            { "id": "bodyweight_010", "name": "Mountain Climbers", "sets": 4 },
-            { "id": "duration_001", "name": "Plank", "sets": 3 }
+            {
+              "id": "bodyweight_011",
+              "name": "Burpees",
+              "sets": 5
+            },
+            {
+              "id": "bodyweight_001",
+              "name": "Push-ups",
+              "sets": 4
+            },
+            {
+              "id": "bodyweight_008",
+              "name": "Air Squats",
+              "sets": 4
+            },
+            {
+              "id": "bodyweight_010",
+              "name": "Mountain Climbers",
+              "sets": 4
+            },
+            {
+              "id": "duration_001",
+              "name": "Plank",
+              "sets": 3
+            }
           ]
         },
         {
           "id": "bw-fl-core",
           "name": "Core & Conditioning",
           "exercises": [
-            { "id": "bodyweight_005", "name": "Crunches", "sets": 4 },
-            { "id": "bodyweight_007", "name": "Leg Raises", "sets": 4 },
-            { "id": "duration_002", "name": "Side Plank", "sets": 3 },
-            { "id": "duration_006", "name": "Hollow Body Hold", "sets": 3 },
-            { "id": "bodyweight_010", "name": "Mountain Climbers", "sets": 3 }
+            {
+              "id": "bodyweight_005",
+              "name": "Crunches",
+              "sets": 4
+            },
+            {
+              "id": "bodyweight_007",
+              "name": "Leg Raises",
+              "sets": 4
+            },
+            {
+              "id": "duration_002",
+              "name": "Side Plank",
+              "sets": 3
+            },
+            {
+              "id": "duration_006",
+              "name": "Hollow Body Hold",
+              "sets": 3
+            },
+            {
+              "id": "bodyweight_010",
+              "name": "Mountain Climbers",
+              "sets": 3
+            }
           ]
         }
       ],
@@ -1066,7 +2219,12 @@
         "daysPerWeek": 3,
         "durationWeeks": 8,
         "description": "Well-rounded program balancing strength and conditioning.",
-        "tags": ["general-fitness", "balanced", "intermediate", "conditioning"]
+        "tags": [
+          "general-fitness",
+          "balanced",
+          "intermediate",
+          "conditioning"
+        ]
       },
       "scheduleType": "rotation",
       "workouts": [
@@ -1074,37 +2232,100 @@
           "id": "gf-int-strength",
           "name": "Strength Day",
           "exercises": [
-            { "id": "exercise_019", "name": "Barbell Squat", "sets": 4 },
-            { "id": "exercise_001", "name": "Barbell Bench Press", "sets": 4 },
-            { "id": "exercise_052", "name": "Barbell Bent-Over Row", "sets": 4 },
-            { "id": "exercise_005", "name": "Dumbbell Shoulder Press", "sets": 3 }
+            {
+              "id": "exercise_019",
+              "name": "Barbell Squat",
+              "sets": 4
+            },
+            {
+              "id": "exercise_001",
+              "name": "Barbell Bench Press",
+              "sets": 4
+            },
+            {
+              "id": "exercise_052",
+              "name": "Barbell Bent-Over Row",
+              "sets": 4
+            },
+            {
+              "id": "exercise_005",
+              "name": "Dumbbell Shoulder Press",
+              "sets": 3
+            }
           ]
         },
         {
           "id": "gf-int-conditioning",
           "name": "Conditioning Day",
           "exercises": [
-            { "id": "bodyweight_011", "name": "Burpees", "sets": 4 },
-            { "id": "exercise_014", "name": "Leg Press", "sets": 3 },
-            { "id": "exercise_077", "name": "Dumbbell Row", "sets": 3 },
-            { "id": "bodyweight_010", "name": "Mountain Climbers", "sets": 3 },
-            { "id": "duration_001", "name": "Plank", "sets": 3 }
+            {
+              "id": "bodyweight_011",
+              "name": "Burpees",
+              "sets": 4
+            },
+            {
+              "id": "exercise_014",
+              "name": "Leg Press",
+              "sets": 3
+            },
+            {
+              "id": "exercise_077",
+              "name": "Dumbbell Row",
+              "sets": 3
+            },
+            {
+              "id": "bodyweight_010",
+              "name": "Mountain Climbers",
+              "sets": 3
+            },
+            {
+              "id": "duration_001",
+              "name": "Plank",
+              "sets": 3
+            }
           ]
         },
         {
           "id": "gf-int-full",
           "name": "Full Body",
           "exercises": [
-            { "id": "exercise_020", "name": "Barbell Deadlift", "sets": 4 },
-            { "id": "exercise_076", "name": "Dumbbell Bench Press", "sets": 3 },
-            { "id": "exercise_008", "name": "Wide Grip Lat Pulldown", "sets": 3 },
-            { "id": "exercise_023", "name": "Dumbbell Bulgarian Split Squat", "sets": 3 },
-            { "id": "exercise_063", "name": "Cable Crunch", "sets": 3 }
+            {
+              "id": "exercise_020",
+              "name": "Barbell Deadlift",
+              "sets": 4
+            },
+            {
+              "id": "exercise_076",
+              "name": "Dumbbell Bench Press",
+              "sets": 3
+            },
+            {
+              "id": "exercise_008",
+              "name": "Wide Grip Lat Pulldown",
+              "sets": 3
+            },
+            {
+              "id": "exercise_023",
+              "name": "Dumbbell Bulgarian Split Squat",
+              "sets": 3
+            },
+            {
+              "id": "exercise_063",
+              "name": "Cable Crunch",
+              "sets": 3
+            }
           ]
         }
       ],
       "suggestedSchedule": {
-        "rotation": ["gf-int-strength", null, "gf-int-conditioning", null, "gf-int-full", null]
+        "rotation": [
+          "gf-int-strength",
+          null,
+          "gf-int-conditioning",
+          null,
+          "gf-int-full",
+          null
+        ]
       },
       "isPremade": true
     },
@@ -1118,7 +2339,12 @@
         "daysPerWeek": 3,
         "durationWeeks": 8,
         "description": "Well-rounded fitness program using only dumbbells.",
-        "tags": ["general-fitness", "dumbbells", "beginner", "home-gym"]
+        "tags": [
+          "general-fitness",
+          "dumbbells",
+          "beginner",
+          "home-gym"
+        ]
       },
       "scheduleType": "rotation",
       "workouts": [
@@ -1126,38 +2352,106 @@
           "id": "db-fit-upper",
           "name": "Upper Body",
           "exercises": [
-            { "id": "exercise_076", "name": "Dumbbell Bench Press", "sets": 3 },
-            { "id": "exercise_077", "name": "Dumbbell Row", "sets": 3 },
-            { "id": "exercise_005", "name": "Dumbbell Shoulder Press", "sets": 3 },
-            { "id": "exercise_027", "name": "Dumbbell Bicep Curls", "sets": 2 },
-            { "id": "exercise_053", "name": "Triceps Kickback", "sets": 2 }
+            {
+              "id": "exercise_076",
+              "name": "Dumbbell Bench Press",
+              "sets": 3
+            },
+            {
+              "id": "exercise_077",
+              "name": "Dumbbell Row",
+              "sets": 3
+            },
+            {
+              "id": "exercise_005",
+              "name": "Dumbbell Shoulder Press",
+              "sets": 3
+            },
+            {
+              "id": "exercise_027",
+              "name": "Dumbbell Bicep Curls",
+              "sets": 2
+            },
+            {
+              "id": "exercise_053",
+              "name": "Triceps Kickback",
+              "sets": 2
+            }
           ]
         },
         {
           "id": "db-fit-lower",
           "name": "Lower Body",
           "exercises": [
-            { "id": "exercise_079", "name": "Dumbbell Goblet Squat", "sets": 3 },
-            { "id": "exercise_078", "name": "Dumbbell Romanian Deadlift", "sets": 3 },
-            { "id": "exercise_080", "name": "Dumbbell Lunges", "sets": 3 },
-            { "id": "exercise_023", "name": "Dumbbell Bulgarian Split Squat", "sets": 3 },
-            { "id": "exercise_081", "name": "Dumbbell Calf Raises", "sets": 3 }
+            {
+              "id": "exercise_079",
+              "name": "Dumbbell Goblet Squat",
+              "sets": 3
+            },
+            {
+              "id": "exercise_078",
+              "name": "Dumbbell Romanian Deadlift",
+              "sets": 3
+            },
+            {
+              "id": "exercise_080",
+              "name": "Dumbbell Lunges",
+              "sets": 3
+            },
+            {
+              "id": "exercise_023",
+              "name": "Dumbbell Bulgarian Split Squat",
+              "sets": 3
+            },
+            {
+              "id": "exercise_081",
+              "name": "Dumbbell Calf Raises",
+              "sets": 3
+            }
           ]
         },
         {
           "id": "db-fit-full",
           "name": "Full Body",
           "exercises": [
-            { "id": "exercise_079", "name": "Dumbbell Goblet Squat", "sets": 3 },
-            { "id": "exercise_076", "name": "Dumbbell Bench Press", "sets": 3 },
-            { "id": "exercise_077", "name": "Dumbbell Row", "sets": 3 },
-            { "id": "exercise_005", "name": "Dumbbell Shoulder Press", "sets": 2 },
-            { "id": "exercise_078", "name": "Dumbbell Romanian Deadlift", "sets": 2 }
+            {
+              "id": "exercise_079",
+              "name": "Dumbbell Goblet Squat",
+              "sets": 3
+            },
+            {
+              "id": "exercise_076",
+              "name": "Dumbbell Bench Press",
+              "sets": 3
+            },
+            {
+              "id": "exercise_077",
+              "name": "Dumbbell Row",
+              "sets": 3
+            },
+            {
+              "id": "exercise_005",
+              "name": "Dumbbell Shoulder Press",
+              "sets": 2
+            },
+            {
+              "id": "exercise_078",
+              "name": "Dumbbell Romanian Deadlift",
+              "sets": 2
+            }
           ]
         }
       ],
       "suggestedSchedule": {
-        "rotation": ["db-fit-upper", null, "db-fit-lower", null, "db-fit-full", null, null]
+        "rotation": [
+          "db-fit-upper",
+          null,
+          "db-fit-lower",
+          null,
+          "db-fit-full",
+          null,
+          null
+        ]
       },
       "isPremade": true
     },
@@ -1171,7 +2465,12 @@
         "daysPerWeek": 4,
         "durationWeeks": 8,
         "description": "Progressive calisthenics for overall fitness and athleticism.",
-        "tags": ["general-fitness", "bodyweight", "calisthenics", "intermediate"]
+        "tags": [
+          "general-fitness",
+          "bodyweight",
+          "calisthenics",
+          "intermediate"
+        ]
       },
       "scheduleType": "weekly",
       "workouts": [
@@ -1179,41 +2478,109 @@
           "id": "bw-fit-push",
           "name": "Push Day",
           "exercises": [
-            { "id": "bodyweight_001", "name": "Push-ups", "sets": 4 },
-            { "id": "bodyweight_004", "name": "Dips", "sets": 4 },
-            { "id": "duration_001", "name": "Plank", "sets": 3 },
-            { "id": "bodyweight_010", "name": "Mountain Climbers", "sets": 3 }
+            {
+              "id": "bodyweight_001",
+              "name": "Push-ups",
+              "sets": 4
+            },
+            {
+              "id": "bodyweight_004",
+              "name": "Dips",
+              "sets": 4
+            },
+            {
+              "id": "duration_001",
+              "name": "Plank",
+              "sets": 3
+            },
+            {
+              "id": "bodyweight_010",
+              "name": "Mountain Climbers",
+              "sets": 3
+            }
           ]
         },
         {
           "id": "bw-fit-pull",
           "name": "Pull Day",
           "exercises": [
-            { "id": "bodyweight_002", "name": "Pull-ups", "sets": 4 },
-            { "id": "bodyweight_012", "name": "Inverted Rows", "sets": 4 },
-            { "id": "bodyweight_003", "name": "Chin-ups", "sets": 3 },
-            { "id": "duration_004", "name": "Dead Hang", "sets": 3 }
+            {
+              "id": "bodyweight_002",
+              "name": "Pull-ups",
+              "sets": 4
+            },
+            {
+              "id": "bodyweight_012",
+              "name": "Inverted Rows",
+              "sets": 4
+            },
+            {
+              "id": "bodyweight_003",
+              "name": "Chin-ups",
+              "sets": 3
+            },
+            {
+              "id": "duration_004",
+              "name": "Dead Hang",
+              "sets": 3
+            }
           ]
         },
         {
           "id": "bw-fit-legs",
           "name": "Legs Day",
           "exercises": [
-            { "id": "bodyweight_008", "name": "Air Squats", "sets": 4 },
-            { "id": "bodyweight_009", "name": "Lunges", "sets": 4 },
-            { "id": "duration_003", "name": "Wall Sit", "sets": 3 },
-            { "id": "duration_005", "name": "Glute Bridge Hold", "sets": 3 }
+            {
+              "id": "bodyweight_008",
+              "name": "Air Squats",
+              "sets": 4
+            },
+            {
+              "id": "bodyweight_009",
+              "name": "Lunges",
+              "sets": 4
+            },
+            {
+              "id": "duration_003",
+              "name": "Wall Sit",
+              "sets": 3
+            },
+            {
+              "id": "duration_005",
+              "name": "Glute Bridge Hold",
+              "sets": 3
+            }
           ]
         },
         {
           "id": "bw-fit-core",
           "name": "Core & Conditioning",
           "exercises": [
-            { "id": "bodyweight_007", "name": "Leg Raises", "sets": 4 },
-            { "id": "bodyweight_005", "name": "Crunches", "sets": 4 },
-            { "id": "duration_006", "name": "Hollow Body Hold", "sets": 3 },
-            { "id": "duration_002", "name": "Side Plank", "sets": 3 },
-            { "id": "bodyweight_011", "name": "Burpees", "sets": 3 }
+            {
+              "id": "bodyweight_007",
+              "name": "Leg Raises",
+              "sets": 4
+            },
+            {
+              "id": "bodyweight_005",
+              "name": "Crunches",
+              "sets": 4
+            },
+            {
+              "id": "duration_006",
+              "name": "Hollow Body Hold",
+              "sets": 3
+            },
+            {
+              "id": "duration_002",
+              "name": "Side Plank",
+              "sets": 3
+            },
+            {
+              "id": "bodyweight_011",
+              "name": "Burpees",
+              "sets": 3
+            }
           ]
         }
       ],
@@ -1225,6 +2592,1816 @@
           "thursday": "bw-fit-legs",
           "friday": null,
           "saturday": "bw-fit-core",
+          "sunday": null
+        }
+      },
+      "isPremade": true
+    },
+    {
+      "id": "bro-split-5day",
+      "name": "Bro Split (5-Day)",
+      "metadata": {
+        "goal": "build-muscle",
+        "experienceLevel": "intermediate",
+        "equipment": "full-gym",
+        "daysPerWeek": 5,
+        "durationWeeks": 12,
+        "description": "Classic bodybuilding split training one muscle group per day.",
+        "tags": [
+          "bro-split",
+          "bodybuilding",
+          "hypertrophy",
+          "intermediate"
+        ]
+      },
+      "scheduleType": "weekly",
+      "workouts": [
+        {
+          "id": "bro-chest",
+          "name": "Chest Day",
+          "exercises": [
+            {
+              "id": "exercise_001",
+              "name": "Barbell Bench Press",
+              "sets": 4
+            },
+            {
+              "id": "exercise_099",
+              "name": "Incline Barbell Bench Press",
+              "sets": 4
+            },
+            {
+              "id": "exercise_076",
+              "name": "Dumbbell Bench Press",
+              "sets": 3
+            },
+            {
+              "id": "exercise_054",
+              "name": "Cable Crossover",
+              "sets": 3
+            },
+            {
+              "id": "exercise_003",
+              "name": "Butterfly Machine",
+              "sets": 3
+            }
+          ]
+        },
+        {
+          "id": "bro-back",
+          "name": "Back Day",
+          "exercises": [
+            {
+              "id": "exercise_020",
+              "name": "Barbell Deadlift",
+              "sets": 4
+            },
+            {
+              "id": "exercise_052",
+              "name": "Barbell Bent-Over Row",
+              "sets": 4
+            },
+            {
+              "id": "exercise_008",
+              "name": "Wide Grip Lat Pulldown",
+              "sets": 4
+            },
+            {
+              "id": "exercise_067",
+              "name": "Chest Supported T-Bar Row",
+              "sets": 3
+            },
+            {
+              "id": "exercise_048",
+              "name": "Barbell Shrugs",
+              "sets": 3
+            }
+          ]
+        },
+        {
+          "id": "bro-shoulders",
+          "name": "Shoulder Day",
+          "exercises": [
+            {
+              "id": "exercise_005",
+              "name": "Dumbbell Shoulder Press",
+              "sets": 4
+            },
+            {
+              "id": "exercise_004",
+              "name": "Lateral Raises",
+              "sets": 4
+            },
+            {
+              "id": "exercise_028",
+              "name": "Dumbbell Front Raises",
+              "sets": 3
+            },
+            {
+              "id": "exercise_030",
+              "name": "Arnold Press",
+              "sets": 3
+            },
+            {
+              "id": "exercise_096",
+              "name": "Face Pull",
+              "sets": 3
+            }
+          ]
+        },
+        {
+          "id": "bro-arms",
+          "name": "Arm Day",
+          "exercises": [
+            {
+              "id": "exercise_031",
+              "name": "Barbell Bicep Curl",
+              "sets": 4
+            },
+            {
+              "id": "exercise_006",
+              "name": "Cable Triceps Pushdown",
+              "sets": 4
+            },
+            {
+              "id": "exercise_027",
+              "name": "Dumbbell Bicep Curls",
+              "sets": 3
+            },
+            {
+              "id": "exercise_053",
+              "name": "Triceps Kickback",
+              "sets": 3
+            },
+            {
+              "id": "exercise_011",
+              "name": "Dumbbell Hammer Curls",
+              "sets": 3
+            }
+          ]
+        },
+        {
+          "id": "bro-legs",
+          "name": "Leg Day",
+          "exercises": [
+            {
+              "id": "exercise_019",
+              "name": "Barbell Squat",
+              "sets": 4
+            },
+            {
+              "id": "exercise_047",
+              "name": "Barbell Romanian Deadlift",
+              "sets": 4
+            },
+            {
+              "id": "exercise_014",
+              "name": "Leg Press",
+              "sets": 4
+            },
+            {
+              "id": "exercise_015",
+              "name": "Leg Extensions",
+              "sets": 3
+            },
+            {
+              "id": "exercise_025",
+              "name": "Lying Leg Curl",
+              "sets": 3
+            },
+            {
+              "id": "exercise_024",
+              "name": "Standing Calf Raise Machine",
+              "sets": 4
+            }
+          ]
+        }
+      ],
+      "suggestedSchedule": {
+        "weekly": {
+          "monday": "bro-chest",
+          "tuesday": "bro-back",
+          "wednesday": "bro-shoulders",
+          "thursday": null,
+          "friday": "bro-arms",
+          "saturday": "bro-legs",
+          "sunday": null
+        }
+      },
+      "isPremade": true
+    },
+    {
+      "id": "upper-lower-advanced",
+      "name": "Upper/Lower Advanced",
+      "metadata": {
+        "goal": "build-muscle",
+        "experienceLevel": "advanced",
+        "equipment": "full-gym",
+        "daysPerWeek": 5,
+        "durationWeeks": 12,
+        "description": "High-frequency upper/lower split for advanced lifters.",
+        "tags": [
+          "upper-lower",
+          "advanced",
+          "high-frequency",
+          "hypertrophy"
+        ]
+      },
+      "scheduleType": "weekly",
+      "workouts": [
+        {
+          "id": "ul-adv-upper1",
+          "name": "Upper Power",
+          "exercises": [
+            {
+              "id": "exercise_001",
+              "name": "Barbell Bench Press",
+              "sets": 5
+            },
+            {
+              "id": "exercise_052",
+              "name": "Barbell Bent-Over Row",
+              "sets": 5
+            },
+            {
+              "id": "exercise_005",
+              "name": "Dumbbell Shoulder Press",
+              "sets": 4
+            },
+            {
+              "id": "exercise_008",
+              "name": "Wide Grip Lat Pulldown",
+              "sets": 4
+            },
+            {
+              "id": "exercise_006",
+              "name": "Cable Triceps Pushdown",
+              "sets": 3
+            }
+          ]
+        },
+        {
+          "id": "ul-adv-lower1",
+          "name": "Lower Power",
+          "exercises": [
+            {
+              "id": "exercise_019",
+              "name": "Barbell Squat",
+              "sets": 5
+            },
+            {
+              "id": "exercise_020",
+              "name": "Barbell Deadlift",
+              "sets": 5
+            },
+            {
+              "id": "exercise_014",
+              "name": "Leg Press",
+              "sets": 4
+            },
+            {
+              "id": "exercise_025",
+              "name": "Lying Leg Curl",
+              "sets": 3
+            },
+            {
+              "id": "exercise_024",
+              "name": "Standing Calf Raise Machine",
+              "sets": 4
+            }
+          ]
+        },
+        {
+          "id": "ul-adv-upper2",
+          "name": "Upper Hypertrophy",
+          "exercises": [
+            {
+              "id": "exercise_076",
+              "name": "Dumbbell Bench Press",
+              "sets": 4
+            },
+            {
+              "id": "exercise_077",
+              "name": "Dumbbell Row",
+              "sets": 4
+            },
+            {
+              "id": "exercise_099",
+              "name": "Incline Barbell Bench Press",
+              "sets": 4
+            },
+            {
+              "id": "exercise_064",
+              "name": "Cable Underhand Pulldown",
+              "sets": 4
+            },
+            {
+              "id": "exercise_004",
+              "name": "Lateral Raises",
+              "sets": 4
+            },
+            {
+              "id": "exercise_027",
+              "name": "Dumbbell Bicep Curls",
+              "sets": 3
+            }
+          ]
+        },
+        {
+          "id": "ul-adv-lower2",
+          "name": "Lower Hypertrophy",
+          "exercises": [
+            {
+              "id": "exercise_038",
+              "name": "Barbell Front Squat",
+              "sets": 4
+            },
+            {
+              "id": "exercise_047",
+              "name": "Barbell Romanian Deadlift",
+              "sets": 4
+            },
+            {
+              "id": "exercise_023",
+              "name": "Dumbbell Bulgarian Split Squat",
+              "sets": 4
+            },
+            {
+              "id": "exercise_015",
+              "name": "Leg Extensions",
+              "sets": 4
+            },
+            {
+              "id": "exercise_016",
+              "name": "Seated Leg Curl",
+              "sets": 4
+            },
+            {
+              "id": "exercise_066",
+              "name": "Calf Press on a Leg Press Machine",
+              "sets": 4
+            }
+          ]
+        },
+        {
+          "id": "ul-adv-upper3",
+          "name": "Upper Volume",
+          "exercises": [
+            {
+              "id": "exercise_001",
+              "name": "Barbell Bench Press",
+              "sets": 4
+            },
+            {
+              "id": "exercise_067",
+              "name": "Chest Supported T-Bar Row",
+              "sets": 4
+            },
+            {
+              "id": "exercise_030",
+              "name": "Arnold Press",
+              "sets": 3
+            },
+            {
+              "id": "exercise_054",
+              "name": "Cable Crossover",
+              "sets": 3
+            },
+            {
+              "id": "exercise_096",
+              "name": "Face Pull",
+              "sets": 3
+            },
+            {
+              "id": "exercise_053",
+              "name": "Triceps Kickback",
+              "sets": 3
+            }
+          ]
+        }
+      ],
+      "suggestedSchedule": {
+        "weekly": {
+          "monday": "ul-adv-upper1",
+          "tuesday": "ul-adv-lower1",
+          "wednesday": null,
+          "thursday": "ul-adv-upper2",
+          "friday": "ul-adv-lower2",
+          "saturday": "ul-adv-upper3",
+          "sunday": null
+        }
+      },
+      "isPremade": true
+    },
+    {
+      "id": "powerbuilding",
+      "name": "Powerbuilding Program",
+      "metadata": {
+        "goal": "strength",
+        "experienceLevel": "intermediate",
+        "equipment": "full-gym",
+        "daysPerWeek": 4,
+        "durationWeeks": 12,
+        "description": "Blend of powerlifting and bodybuilding for strength and size.",
+        "tags": [
+          "powerbuilding",
+          "strength",
+          "hypertrophy",
+          "intermediate"
+        ]
+      },
+      "scheduleType": "weekly",
+      "workouts": [
+        {
+          "id": "pb-squat",
+          "name": "Squat Focus",
+          "exercises": [
+            {
+              "id": "exercise_019",
+              "name": "Barbell Squat",
+              "sets": 5
+            },
+            {
+              "id": "exercise_014",
+              "name": "Leg Press",
+              "sets": 4
+            },
+            {
+              "id": "exercise_015",
+              "name": "Leg Extensions",
+              "sets": 3
+            },
+            {
+              "id": "exercise_025",
+              "name": "Lying Leg Curl",
+              "sets": 3
+            },
+            {
+              "id": "exercise_063",
+              "name": "Cable Crunch",
+              "sets": 3
+            }
+          ]
+        },
+        {
+          "id": "pb-bench",
+          "name": "Bench Focus",
+          "exercises": [
+            {
+              "id": "exercise_001",
+              "name": "Barbell Bench Press",
+              "sets": 5
+            },
+            {
+              "id": "exercise_099",
+              "name": "Incline Barbell Bench Press",
+              "sets": 4
+            },
+            {
+              "id": "exercise_005",
+              "name": "Dumbbell Shoulder Press",
+              "sets": 3
+            },
+            {
+              "id": "exercise_006",
+              "name": "Cable Triceps Pushdown",
+              "sets": 3
+            },
+            {
+              "id": "exercise_004",
+              "name": "Lateral Raises",
+              "sets": 3
+            }
+          ]
+        },
+        {
+          "id": "pb-deadlift",
+          "name": "Deadlift Focus",
+          "exercises": [
+            {
+              "id": "exercise_020",
+              "name": "Barbell Deadlift",
+              "sets": 5
+            },
+            {
+              "id": "exercise_047",
+              "name": "Barbell Romanian Deadlift",
+              "sets": 4
+            },
+            {
+              "id": "exercise_052",
+              "name": "Barbell Bent-Over Row",
+              "sets": 4
+            },
+            {
+              "id": "exercise_008",
+              "name": "Wide Grip Lat Pulldown",
+              "sets": 3
+            },
+            {
+              "id": "exercise_027",
+              "name": "Dumbbell Bicep Curls",
+              "sets": 3
+            }
+          ]
+        },
+        {
+          "id": "pb-accessory",
+          "name": "Accessory Day",
+          "exercises": [
+            {
+              "id": "exercise_076",
+              "name": "Dumbbell Bench Press",
+              "sets": 4
+            },
+            {
+              "id": "exercise_077",
+              "name": "Dumbbell Row",
+              "sets": 4
+            },
+            {
+              "id": "exercise_023",
+              "name": "Dumbbell Bulgarian Split Squat",
+              "sets": 3
+            },
+            {
+              "id": "exercise_096",
+              "name": "Face Pull",
+              "sets": 3
+            },
+            {
+              "id": "exercise_011",
+              "name": "Dumbbell Hammer Curls",
+              "sets": 3
+            }
+          ]
+        }
+      ],
+      "suggestedSchedule": {
+        "weekly": {
+          "monday": "pb-squat",
+          "tuesday": "pb-bench",
+          "wednesday": null,
+          "thursday": "pb-deadlift",
+          "friday": "pb-accessory",
+          "saturday": null,
+          "sunday": null
+        }
+      },
+      "isPremade": true
+    },
+    {
+      "id": "dumbbell-upper-lower",
+      "name": "Dumbbell Upper/Lower",
+      "metadata": {
+        "goal": "build-muscle",
+        "experienceLevel": "intermediate",
+        "equipment": "dumbbells-only",
+        "daysPerWeek": 4,
+        "durationWeeks": 10,
+        "description": "Upper/lower split using only dumbbells for home gym training.",
+        "tags": [
+          "upper-lower",
+          "dumbbells",
+          "home-gym",
+          "intermediate"
+        ]
+      },
+      "scheduleType": "weekly",
+      "workouts": [
+        {
+          "id": "db-ul-upper1",
+          "name": "Upper Body A",
+          "exercises": [
+            {
+              "id": "exercise_076",
+              "name": "Dumbbell Bench Press",
+              "sets": 4
+            },
+            {
+              "id": "exercise_077",
+              "name": "Dumbbell Row",
+              "sets": 4
+            },
+            {
+              "id": "exercise_005",
+              "name": "Dumbbell Shoulder Press",
+              "sets": 3
+            },
+            {
+              "id": "exercise_004",
+              "name": "Lateral Raises",
+              "sets": 3
+            },
+            {
+              "id": "exercise_027",
+              "name": "Dumbbell Bicep Curls",
+              "sets": 3
+            }
+          ]
+        },
+        {
+          "id": "db-ul-lower1",
+          "name": "Lower Body A",
+          "exercises": [
+            {
+              "id": "exercise_079",
+              "name": "Dumbbell Goblet Squat",
+              "sets": 4
+            },
+            {
+              "id": "exercise_078",
+              "name": "Dumbbell Romanian Deadlift",
+              "sets": 4
+            },
+            {
+              "id": "exercise_023",
+              "name": "Dumbbell Bulgarian Split Squat",
+              "sets": 3
+            },
+            {
+              "id": "exercise_080",
+              "name": "Dumbbell Lunges",
+              "sets": 3
+            },
+            {
+              "id": "exercise_081",
+              "name": "Dumbbell Calf Raises",
+              "sets": 4
+            }
+          ]
+        },
+        {
+          "id": "db-ul-upper2",
+          "name": "Upper Body B",
+          "exercises": [
+            {
+              "id": "exercise_076",
+              "name": "Dumbbell Bench Press",
+              "sets": 4
+            },
+            {
+              "id": "exercise_077",
+              "name": "Dumbbell Row",
+              "sets": 4
+            },
+            {
+              "id": "exercise_030",
+              "name": "Arnold Press",
+              "sets": 3
+            },
+            {
+              "id": "exercise_028",
+              "name": "Dumbbell Front Raises",
+              "sets": 3
+            },
+            {
+              "id": "exercise_053",
+              "name": "Triceps Kickback",
+              "sets": 3
+            }
+          ]
+        },
+        {
+          "id": "db-ul-lower2",
+          "name": "Lower Body B",
+          "exercises": [
+            {
+              "id": "exercise_023",
+              "name": "Dumbbell Bulgarian Split Squat",
+              "sets": 4
+            },
+            {
+              "id": "exercise_078",
+              "name": "Dumbbell Romanian Deadlift",
+              "sets": 4
+            },
+            {
+              "id": "exercise_079",
+              "name": "Dumbbell Goblet Squat",
+              "sets": 3
+            },
+            {
+              "id": "exercise_080",
+              "name": "Dumbbell Lunges",
+              "sets": 3
+            },
+            {
+              "id": "exercise_081",
+              "name": "Dumbbell Calf Raises",
+              "sets": 4
+            }
+          ]
+        }
+      ],
+      "suggestedSchedule": {
+        "weekly": {
+          "monday": "db-ul-upper1",
+          "tuesday": "db-ul-lower1",
+          "wednesday": null,
+          "thursday": "db-ul-upper2",
+          "friday": "db-ul-lower2",
+          "saturday": null,
+          "sunday": null
+        }
+      },
+      "isPremade": true
+    },
+    {
+      "id": "bodyweight-strength-program",
+      "name": "Bodyweight Strength Program",
+      "metadata": {
+        "goal": "strength",
+        "experienceLevel": "intermediate",
+        "equipment": "bodyweight",
+        "daysPerWeek": 4,
+        "durationWeeks": 10,
+        "description": "Progressive bodyweight strength training with skill work.",
+        "tags": [
+          "bodyweight",
+          "strength",
+          "calisthenics",
+          "intermediate"
+        ]
+      },
+      "scheduleType": "weekly",
+      "workouts": [
+        {
+          "id": "bw-str-push",
+          "name": "Push Strength",
+          "exercises": [
+            {
+              "id": "bodyweight_001",
+              "name": "Push-ups",
+              "sets": 5
+            },
+            {
+              "id": "bodyweight_004",
+              "name": "Dips",
+              "sets": 5
+            },
+            {
+              "id": "bodyweight_015",
+              "name": "Handstand Push-ups",
+              "sets": 3
+            },
+            {
+              "id": "duration_001",
+              "name": "Plank",
+              "sets": 3
+            }
+          ]
+        },
+        {
+          "id": "bw-str-pull",
+          "name": "Pull Strength",
+          "exercises": [
+            {
+              "id": "bodyweight_002",
+              "name": "Pull-ups",
+              "sets": 5
+            },
+            {
+              "id": "bodyweight_003",
+              "name": "Chin-ups",
+              "sets": 5
+            },
+            {
+              "id": "bodyweight_012",
+              "name": "Inverted Rows",
+              "sets": 4
+            },
+            {
+              "id": "duration_004",
+              "name": "Dead Hang",
+              "sets": 3
+            }
+          ]
+        },
+        {
+          "id": "bw-str-legs",
+          "name": "Leg Strength",
+          "exercises": [
+            {
+              "id": "bodyweight_013",
+              "name": "Pistol Squats",
+              "sets": 5
+            },
+            {
+              "id": "bodyweight_008",
+              "name": "Air Squats",
+              "sets": 5
+            },
+            {
+              "id": "bodyweight_009",
+              "name": "Lunges",
+              "sets": 4
+            },
+            {
+              "id": "duration_003",
+              "name": "Wall Sit",
+              "sets": 3
+            }
+          ]
+        },
+        {
+          "id": "bw-str-skill",
+          "name": "Skill Work",
+          "exercises": [
+            {
+              "id": "bodyweight_016",
+              "name": "Muscle-ups",
+              "sets": 4
+            },
+            {
+              "id": "bodyweight_007",
+              "name": "Leg Raises",
+              "sets": 4
+            },
+            {
+              "id": "duration_007",
+              "name": "L-Sit Hold",
+              "sets": 3
+            },
+            {
+              "id": "duration_006",
+              "name": "Hollow Body Hold",
+              "sets": 3
+            }
+          ]
+        }
+      ],
+      "suggestedSchedule": {
+        "weekly": {
+          "monday": "bw-str-push",
+          "tuesday": "bw-str-pull",
+          "wednesday": null,
+          "thursday": "bw-str-legs",
+          "friday": null,
+          "saturday": "bw-str-skill",
+          "sunday": null
+        }
+      },
+      "isPremade": true
+    },
+    {
+      "id": "hiit-shred",
+      "name": "HIIT Shred Program",
+      "metadata": {
+        "goal": "lose-fat",
+        "experienceLevel": "intermediate",
+        "equipment": "minimal",
+        "daysPerWeek": 4,
+        "durationWeeks": 8,
+        "description": "High-intensity interval training for rapid fat loss.",
+        "tags": [
+          "hiit",
+          "fat-loss",
+          "conditioning",
+          "intermediate"
+        ]
+      },
+      "scheduleType": "weekly",
+      "workouts": [
+        {
+          "id": "hiit-upper",
+          "name": "Upper Body HIIT",
+          "exercises": [
+            {
+              "id": "bodyweight_001",
+              "name": "Push-ups",
+              "sets": 5
+            },
+            {
+              "id": "bodyweight_018",
+              "name": "Plyometric Push-ups",
+              "sets": 4
+            },
+            {
+              "id": "bodyweight_010",
+              "name": "Mountain Climbers",
+              "sets": 5
+            },
+            {
+              "id": "bodyweight_020",
+              "name": "Plank to Push-up",
+              "sets": 4
+            },
+            {
+              "id": "duration_001",
+              "name": "Plank",
+              "sets": 3
+            }
+          ]
+        },
+        {
+          "id": "hiit-lower",
+          "name": "Lower Body HIIT",
+          "exercises": [
+            {
+              "id": "bodyweight_017",
+              "name": "Jump Squats",
+              "sets": 5
+            },
+            {
+              "id": "bodyweight_011",
+              "name": "Burpees",
+              "sets": 5
+            },
+            {
+              "id": "bodyweight_009",
+              "name": "Lunges",
+              "sets": 4
+            },
+            {
+              "id": "bodyweight_019",
+              "name": "High Knees",
+              "sets": 4
+            },
+            {
+              "id": "duration_003",
+              "name": "Wall Sit",
+              "sets": 3
+            }
+          ]
+        },
+        {
+          "id": "hiit-full",
+          "name": "Full Body HIIT",
+          "exercises": [
+            {
+              "id": "bodyweight_011",
+              "name": "Burpees",
+              "sets": 6
+            },
+            {
+              "id": "bodyweight_010",
+              "name": "Mountain Climbers",
+              "sets": 5
+            },
+            {
+              "id": "bodyweight_017",
+              "name": "Jump Squats",
+              "sets": 5
+            },
+            {
+              "id": "bodyweight_001",
+              "name": "Push-ups",
+              "sets": 4
+            },
+            {
+              "id": "bodyweight_019",
+              "name": "High Knees",
+              "sets": 4
+            }
+          ]
+        },
+        {
+          "id": "hiit-core",
+          "name": "Core HIIT",
+          "exercises": [
+            {
+              "id": "bodyweight_010",
+              "name": "Mountain Climbers",
+              "sets": 5
+            },
+            {
+              "id": "bodyweight_007",
+              "name": "Leg Raises",
+              "sets": 4
+            },
+            {
+              "id": "bodyweight_005",
+              "name": "Crunches",
+              "sets": 4
+            },
+            {
+              "id": "duration_006",
+              "name": "Hollow Body Hold",
+              "sets": 3
+            },
+            {
+              "id": "duration_002",
+              "name": "Side Plank",
+              "sets": 3
+            }
+          ]
+        }
+      ],
+      "suggestedSchedule": {
+        "weekly": {
+          "monday": "hiit-upper",
+          "tuesday": "hiit-lower",
+          "wednesday": null,
+          "thursday": "hiit-full",
+          "friday": null,
+          "saturday": "hiit-core",
+          "sunday": null
+        }
+      },
+      "isPremade": true
+    },
+    {
+      "id": "full-body-3day-intermediate",
+      "name": "Full Body 3-Day",
+      "metadata": {
+        "goal": "build-muscle",
+        "experienceLevel": "intermediate",
+        "equipment": "full-gym",
+        "daysPerWeek": 3,
+        "durationWeeks": 10,
+        "description": "Efficient 3-day full body split for busy intermediate lifters.",
+        "tags": [
+          "full-body",
+          "intermediate",
+          "efficient",
+          "hypertrophy"
+        ]
+      },
+      "scheduleType": "rotation",
+      "workouts": [
+        {
+          "id": "fb3-day1",
+          "name": "Day 1",
+          "exercises": [
+            {
+              "id": "exercise_019",
+              "name": "Barbell Squat",
+              "sets": 4
+            },
+            {
+              "id": "exercise_001",
+              "name": "Barbell Bench Press",
+              "sets": 4
+            },
+            {
+              "id": "exercise_052",
+              "name": "Barbell Bent-Over Row",
+              "sets": 4
+            },
+            {
+              "id": "exercise_004",
+              "name": "Lateral Raises",
+              "sets": 3
+            },
+            {
+              "id": "exercise_027",
+              "name": "Dumbbell Bicep Curls",
+              "sets": 3
+            }
+          ]
+        },
+        {
+          "id": "fb3-day2",
+          "name": "Day 2",
+          "exercises": [
+            {
+              "id": "exercise_020",
+              "name": "Barbell Deadlift",
+              "sets": 4
+            },
+            {
+              "id": "exercise_005",
+              "name": "Dumbbell Shoulder Press",
+              "sets": 4
+            },
+            {
+              "id": "exercise_008",
+              "name": "Wide Grip Lat Pulldown",
+              "sets": 4
+            },
+            {
+              "id": "exercise_014",
+              "name": "Leg Press",
+              "sets": 3
+            },
+            {
+              "id": "exercise_006",
+              "name": "Cable Triceps Pushdown",
+              "sets": 3
+            }
+          ]
+        },
+        {
+          "id": "fb3-day3",
+          "name": "Day 3",
+          "exercises": [
+            {
+              "id": "exercise_038",
+              "name": "Barbell Front Squat",
+              "sets": 4
+            },
+            {
+              "id": "exercise_076",
+              "name": "Dumbbell Bench Press",
+              "sets": 4
+            },
+            {
+              "id": "exercise_077",
+              "name": "Dumbbell Row",
+              "sets": 4
+            },
+            {
+              "id": "exercise_047",
+              "name": "Barbell Romanian Deadlift",
+              "sets": 3
+            },
+            {
+              "id": "exercise_096",
+              "name": "Face Pull",
+              "sets": 3
+            }
+          ]
+        }
+      ],
+      "suggestedSchedule": {
+        "rotation": [
+          "fb3-day1",
+          null,
+          "fb3-day2",
+          null,
+          "fb3-day3",
+          null,
+          null
+        ]
+      },
+      "isPremade": true
+    },
+    {
+      "id": "athletic-performance-program",
+      "name": "Athletic Performance",
+      "metadata": {
+        "goal": "general-fitness",
+        "experienceLevel": "advanced",
+        "equipment": "full-gym",
+        "daysPerWeek": 4,
+        "durationWeeks": 12,
+        "description": "Sport-specific training for explosive power and athleticism.",
+        "tags": [
+          "athletic",
+          "power",
+          "performance",
+          "advanced"
+        ]
+      },
+      "scheduleType": "weekly",
+      "workouts": [
+        {
+          "id": "ath-power",
+          "name": "Power Day",
+          "exercises": [
+            {
+              "id": "exercise_045",
+              "name": "Barbell Power Clean",
+              "sets": 5
+            },
+            {
+              "id": "exercise_019",
+              "name": "Barbell Squat",
+              "sets": 4
+            },
+            {
+              "id": "exercise_001",
+              "name": "Barbell Bench Press",
+              "sets": 4
+            },
+            {
+              "id": "bodyweight_017",
+              "name": "Jump Squats",
+              "sets": 3
+            }
+          ]
+        },
+        {
+          "id": "ath-strength",
+          "name": "Strength Day",
+          "exercises": [
+            {
+              "id": "exercise_020",
+              "name": "Barbell Deadlift",
+              "sets": 5
+            },
+            {
+              "id": "exercise_052",
+              "name": "Barbell Bent-Over Row",
+              "sets": 4
+            },
+            {
+              "id": "exercise_005",
+              "name": "Dumbbell Shoulder Press",
+              "sets": 4
+            },
+            {
+              "id": "exercise_042",
+              "name": "Barbell Hip Thrust",
+              "sets": 4
+            }
+          ]
+        },
+        {
+          "id": "ath-speed",
+          "name": "Speed & Agility",
+          "exercises": [
+            {
+              "id": "cardio_008",
+              "name": "Sprint Intervals",
+              "sets": 8
+            },
+            {
+              "id": "bodyweight_017",
+              "name": "Jump Squats",
+              "sets": 4
+            },
+            {
+              "id": "bodyweight_011",
+              "name": "Burpees",
+              "sets": 4
+            },
+            {
+              "id": "bodyweight_019",
+              "name": "High Knees",
+              "sets": 4
+            }
+          ]
+        },
+        {
+          "id": "ath-conditioning",
+          "name": "Conditioning",
+          "exercises": [
+            {
+              "id": "exercise_014",
+              "name": "Leg Press",
+              "sets": 4
+            },
+            {
+              "id": "exercise_076",
+              "name": "Dumbbell Bench Press",
+              "sets": 3
+            },
+            {
+              "id": "exercise_077",
+              "name": "Dumbbell Row",
+              "sets": 3
+            },
+            {
+              "id": "bodyweight_011",
+              "name": "Burpees",
+              "sets": 4
+            },
+            {
+              "id": "bodyweight_010",
+              "name": "Mountain Climbers",
+              "sets": 4
+            }
+          ]
+        }
+      ],
+      "suggestedSchedule": {
+        "weekly": {
+          "monday": "ath-power",
+          "tuesday": "ath-strength",
+          "wednesday": null,
+          "thursday": "ath-speed",
+          "friday": null,
+          "saturday": "ath-conditioning",
+          "sunday": null
+        }
+      },
+      "isPremade": true
+    },
+    {
+      "id": "beginner-machine-program",
+      "name": "Beginner Machine Program",
+      "metadata": {
+        "goal": "build-muscle",
+        "experienceLevel": "beginner",
+        "equipment": "full-gym",
+        "daysPerWeek": 3,
+        "durationWeeks": 8,
+        "description": "Safe machine-based program for complete beginners.",
+        "tags": [
+          "beginner",
+          "machines",
+          "safe",
+          "hypertrophy"
+        ]
+      },
+      "scheduleType": "rotation",
+      "workouts": [
+        {
+          "id": "mach-upper",
+          "name": "Upper Body",
+          "exercises": [
+            {
+              "id": "exercise_002",
+              "name": "Chest Press Machine",
+              "sets": 3
+            },
+            {
+              "id": "exercise_010",
+              "name": "Seated Row Machine",
+              "sets": 3
+            },
+            {
+              "id": "exercise_022",
+              "name": "Seated Shoulder Press Machine",
+              "sets": 3
+            },
+            {
+              "id": "exercise_009",
+              "name": "Bicep Curl Machine",
+              "sets": 3
+            },
+            {
+              "id": "exercise_007",
+              "name": "Seated Triceps Dip Machine",
+              "sets": 3
+            }
+          ]
+        },
+        {
+          "id": "mach-lower",
+          "name": "Lower Body",
+          "exercises": [
+            {
+              "id": "exercise_014",
+              "name": "Leg Press",
+              "sets": 3
+            },
+            {
+              "id": "exercise_015",
+              "name": "Leg Extensions",
+              "sets": 3
+            },
+            {
+              "id": "exercise_016",
+              "name": "Seated Leg Curl",
+              "sets": 3
+            },
+            {
+              "id": "exercise_024",
+              "name": "Standing Calf Raise Machine",
+              "sets": 3
+            },
+            {
+              "id": "exercise_063",
+              "name": "Cable Crunch",
+              "sets": 3
+            }
+          ]
+        },
+        {
+          "id": "mach-full",
+          "name": "Full Body",
+          "exercises": [
+            {
+              "id": "exercise_014",
+              "name": "Leg Press",
+              "sets": 3
+            },
+            {
+              "id": "exercise_002",
+              "name": "Chest Press Machine",
+              "sets": 3
+            },
+            {
+              "id": "exercise_010",
+              "name": "Seated Row Machine",
+              "sets": 3
+            },
+            {
+              "id": "exercise_022",
+              "name": "Seated Shoulder Press Machine",
+              "sets": 2
+            },
+            {
+              "id": "exercise_003",
+              "name": "Butterfly Machine",
+              "sets": 2
+            }
+          ]
+        }
+      ],
+      "suggestedSchedule": {
+        "rotation": [
+          "mach-upper",
+          null,
+          "mach-lower",
+          null,
+          "mach-full",
+          null,
+          null
+        ]
+      },
+      "isPremade": true
+    },
+    {
+      "id": "minimalist-strength",
+      "name": "Minimalist Strength",
+      "metadata": {
+        "goal": "strength",
+        "experienceLevel": "beginner",
+        "equipment": "full-gym",
+        "daysPerWeek": 2,
+        "durationWeeks": 12,
+        "description": "Bare minimum effective training for busy schedules.",
+        "tags": [
+          "minimalist",
+          "strength",
+          "efficient",
+          "beginner"
+        ]
+      },
+      "scheduleType": "rotation",
+      "workouts": [
+        {
+          "id": "min-a",
+          "name": "Workout A",
+          "exercises": [
+            {
+              "id": "exercise_019",
+              "name": "Barbell Squat",
+              "sets": 3
+            },
+            {
+              "id": "exercise_001",
+              "name": "Barbell Bench Press",
+              "sets": 3
+            },
+            {
+              "id": "exercise_052",
+              "name": "Barbell Bent-Over Row",
+              "sets": 3
+            }
+          ]
+        },
+        {
+          "id": "min-b",
+          "name": "Workout B",
+          "exercises": [
+            {
+              "id": "exercise_020",
+              "name": "Barbell Deadlift",
+              "sets": 3
+            },
+            {
+              "id": "exercise_005",
+              "name": "Dumbbell Shoulder Press",
+              "sets": 3
+            },
+            {
+              "id": "exercise_008",
+              "name": "Wide Grip Lat Pulldown",
+              "sets": 3
+            }
+          ]
+        }
+      ],
+      "suggestedSchedule": {
+        "rotation": [
+          "min-a",
+          null,
+          null,
+          "min-b",
+          null,
+          null,
+          null
+        ]
+      },
+      "isPremade": true
+    },
+    {
+      "id": "dumbbell-6day",
+      "name": "Dumbbell 6-Day Split",
+      "metadata": {
+        "goal": "build-muscle",
+        "experienceLevel": "advanced",
+        "equipment": "dumbbells-only",
+        "daysPerWeek": 6,
+        "durationWeeks": 12,
+        "description": "High-volume dumbbell bodybuilding split for home gyms.",
+        "tags": [
+          "dumbbells",
+          "advanced",
+          "high-volume",
+          "bodybuilding"
+        ]
+      },
+      "scheduleType": "rotation",
+      "workouts": [
+        {
+          "id": "db6-chest",
+          "name": "Chest",
+          "exercises": [
+            {
+              "id": "exercise_076",
+              "name": "Dumbbell Bench Press",
+              "sets": 5
+            },
+            {
+              "id": "exercise_076",
+              "name": "Dumbbell Bench Press",
+              "sets": 4
+            },
+            {
+              "id": "exercise_076",
+              "name": "Dumbbell Bench Press",
+              "sets": 4
+            }
+          ]
+        },
+        {
+          "id": "db6-back",
+          "name": "Back",
+          "exercises": [
+            {
+              "id": "exercise_077",
+              "name": "Dumbbell Row",
+              "sets": 5
+            },
+            {
+              "id": "exercise_077",
+              "name": "Dumbbell Row",
+              "sets": 4
+            },
+            {
+              "id": "exercise_078",
+              "name": "Dumbbell Romanian Deadlift",
+              "sets": 4
+            }
+          ]
+        },
+        {
+          "id": "db6-shoulders",
+          "name": "Shoulders",
+          "exercises": [
+            {
+              "id": "exercise_005",
+              "name": "Dumbbell Shoulder Press",
+              "sets": 5
+            },
+            {
+              "id": "exercise_004",
+              "name": "Lateral Raises",
+              "sets": 4
+            },
+            {
+              "id": "exercise_028",
+              "name": "Dumbbell Front Raises",
+              "sets": 4
+            },
+            {
+              "id": "exercise_030",
+              "name": "Arnold Press",
+              "sets": 3
+            }
+          ]
+        },
+        {
+          "id": "db6-arms",
+          "name": "Arms",
+          "exercises": [
+            {
+              "id": "exercise_027",
+              "name": "Dumbbell Bicep Curls",
+              "sets": 4
+            },
+            {
+              "id": "exercise_053",
+              "name": "Triceps Kickback",
+              "sets": 4
+            },
+            {
+              "id": "exercise_011",
+              "name": "Dumbbell Hammer Curls",
+              "sets": 4
+            },
+            {
+              "id": "exercise_053",
+              "name": "Triceps Kickback",
+              "sets": 4
+            }
+          ]
+        },
+        {
+          "id": "db6-legs1",
+          "name": "Legs A",
+          "exercises": [
+            {
+              "id": "exercise_079",
+              "name": "Dumbbell Goblet Squat",
+              "sets": 5
+            },
+            {
+              "id": "exercise_078",
+              "name": "Dumbbell Romanian Deadlift",
+              "sets": 4
+            },
+            {
+              "id": "exercise_023",
+              "name": "Dumbbell Bulgarian Split Squat",
+              "sets": 4
+            },
+            {
+              "id": "exercise_081",
+              "name": "Dumbbell Calf Raises",
+              "sets": 4
+            }
+          ]
+        },
+        {
+          "id": "db6-legs2",
+          "name": "Legs B",
+          "exercises": [
+            {
+              "id": "exercise_023",
+              "name": "Dumbbell Bulgarian Split Squat",
+              "sets": 5
+            },
+            {
+              "id": "exercise_080",
+              "name": "Dumbbell Lunges",
+              "sets": 4
+            },
+            {
+              "id": "exercise_079",
+              "name": "Dumbbell Goblet Squat",
+              "sets": 4
+            },
+            {
+              "id": "exercise_081",
+              "name": "Dumbbell Calf Raises",
+              "sets": 4
+            }
+          ]
+        }
+      ],
+      "suggestedSchedule": {
+        "rotation": [
+          "db6-chest",
+          "db6-back",
+          "db6-shoulders",
+          "db6-arms",
+          "db6-legs1",
+          "db6-legs2",
+          null
+        ]
+      },
+      "isPremade": true
+    },
+    {
+      "id": "crossfit-inspired",
+      "name": "CrossFit Inspired",
+      "metadata": {
+        "goal": "general-fitness",
+        "experienceLevel": "intermediate",
+        "equipment": "full-gym",
+        "daysPerWeek": 5,
+        "durationWeeks": 8,
+        "description": "Varied functional fitness with strength, cardio, and gymnastics.",
+        "tags": [
+          "crossfit",
+          "functional",
+          "varied",
+          "conditioning"
+        ]
+      },
+      "scheduleType": "weekly",
+      "workouts": [
+        {
+          "id": "cf-strength",
+          "name": "Strength",
+          "exercises": [
+            {
+              "id": "exercise_019",
+              "name": "Barbell Squat",
+              "sets": 5
+            },
+            {
+              "id": "exercise_001",
+              "name": "Barbell Bench Press",
+              "sets": 5
+            },
+            {
+              "id": "exercise_020",
+              "name": "Barbell Deadlift",
+              "sets": 3
+            }
+          ]
+        },
+        {
+          "id": "cf-metcon",
+          "name": "MetCon",
+          "exercises": [
+            {
+              "id": "bodyweight_011",
+              "name": "Burpees",
+              "sets": 5
+            },
+            {
+              "id": "exercise_014",
+              "name": "Leg Press",
+              "sets": 4
+            },
+            {
+              "id": "bodyweight_002",
+              "name": "Pull-ups",
+              "sets": 4
+            },
+            {
+              "id": "bodyweight_010",
+              "name": "Mountain Climbers",
+              "sets": 4
+            }
+          ]
+        },
+        {
+          "id": "cf-gymnastics",
+          "name": "Gymnastics",
+          "exercises": [
+            {
+              "id": "bodyweight_002",
+              "name": "Pull-ups",
+              "sets": 5
+            },
+            {
+              "id": "bodyweight_004",
+              "name": "Dips",
+              "sets": 5
+            },
+            {
+              "id": "bodyweight_015",
+              "name": "Handstand Push-ups",
+              "sets": 4
+            },
+            {
+              "id": "duration_007",
+              "name": "L-Sit Hold",
+              "sets": 3
+            }
+          ]
+        },
+        {
+          "id": "cf-wod",
+          "name": "WOD",
+          "exercises": [
+            {
+              "id": "exercise_045",
+              "name": "Barbell Power Clean",
+              "sets": 5
+            },
+            {
+              "id": "bodyweight_011",
+              "name": "Burpees",
+              "sets": 5
+            },
+            {
+              "id": "exercise_019",
+              "name": "Barbell Squat",
+              "sets": 4
+            },
+            {
+              "id": "bodyweight_002",
+              "name": "Pull-ups",
+              "sets": 4
+            }
+          ]
+        },
+        {
+          "id": "cf-endurance",
+          "name": "Endurance",
+          "exercises": [
+            {
+              "id": "cardio_003",
+              "name": "Rowing Machine",
+              "sets": 3
+            },
+            {
+              "id": "cardio_008",
+              "name": "Sprint Intervals",
+              "sets": 5
+            },
+            {
+              "id": "bodyweight_008",
+              "name": "Air Squats",
+              "sets": 4
+            },
+            {
+              "id": "bodyweight_009",
+              "name": "Lunges",
+              "sets": 4
+            }
+          ]
+        }
+      ],
+      "suggestedSchedule": {
+        "weekly": {
+          "monday": "cf-strength",
+          "tuesday": "cf-metcon",
+          "wednesday": "cf-gymnastics",
+          "thursday": null,
+          "friday": "cf-wod",
+          "saturday": "cf-endurance",
           "sunday": null
         }
       },

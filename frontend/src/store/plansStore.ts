@@ -93,6 +93,7 @@ export const usePlansStore = create<PlansState>((set, get) => ({
       const newId = await createWorkoutTemplate(user.id, {
         name: trimmedName,
         exercises: templateExercises,
+        source: source || 'custom',
       });
 
       // Update local state
@@ -215,6 +216,7 @@ export const usePlansStore = create<PlansState>((set, get) => ({
           name: template.name,
           exercises: normalizedExercises,
           createdAt: new Date(template.created_at).getTime(),
+          source: template.source || 'custom',
         };
       });
 

@@ -2,7 +2,7 @@ import React, { useCallback, useEffect } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { triggerHaptic } from '@/utils/haptics';
-import Animated, { useAnimatedStyle, useSharedValue, withSpring, withTiming } from 'react-native-reanimated';
+import Animated, { useAnimatedStyle, useSharedValue, useDerivedValue, withSpring, withTiming } from 'react-native-reanimated';
 
 import { Text } from '@/components/atoms/Text';
 import { springBouncy, timingMedium } from '@/constants/animations';
@@ -22,6 +22,9 @@ export const WorkoutCompletionOverlay: React.FC<WorkoutCompletionOverlayProps> =
   const scale = useSharedValue(0.7);
   const cardOpacity = useSharedValue(0);
   const overlayOpacity = useSharedValue(0);
+  const animatedScale = useDerivedValue(() => scale.value, [scale]);
+  const animatedCardOpacity = useDerivedValue(() => cardOpacity.value, [cardOpacity]);
+  const animatedOverlayOpacity = useDerivedValue(() => overlayOpacity.value, [overlayOpacity]);
 
   useEffect(() => {
     overlayOpacity.value = withTiming(1, timingMedium);
@@ -49,12 +52,12 @@ export const WorkoutCompletionOverlay: React.FC<WorkoutCompletionOverlayProps> =
   }, [onDismiss]);
 
   const overlayStyle = useAnimatedStyle(() => ({
-    opacity: overlayOpacity.value,
+    opacity: animatedOverlayOpacity as any,
   }));
 
   const cardStyle = useAnimatedStyle(() => ({
-    opacity: cardOpacity.value,
-    transform: [{ scale: scale.value }],
+    opacity: animatedCardOpacity as any,
+    transform: [{ scale: animatedScale as any }],
   }));
 
   return (

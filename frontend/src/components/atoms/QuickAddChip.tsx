@@ -4,7 +4,7 @@
  */
 import React, { useCallback } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
-import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
+import Animated, { useAnimatedStyle, useSharedValue, useDerivedValue, withSpring } from 'react-native-reanimated';
 import { triggerHaptic } from '@/utils/haptics';
 
 import { Text } from '@/components/atoms/Text';
@@ -19,9 +19,10 @@ interface QuickAddChipProps {
 
 export const QuickAddChip: React.FC<QuickAddChipProps> = ({ label, onPress, testID }) => {
   const scale = useSharedValue(1);
+  const animatedScale = useDerivedValue(() => scale.value, [scale]);
 
   const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
+    transform: [{ scale: animatedScale as any }],
   }));
 
   const handlePress = useCallback(() => {

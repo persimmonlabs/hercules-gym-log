@@ -554,6 +554,7 @@ export interface WorkoutTemplateDB {
     id: string;
     name: string;
     exercises: Array<{ id: string; name: string; sets?: number }>;
+    source?: 'premade' | 'custom' | 'library' | 'recommended';
     created_at: string;
     updated_at: string;
 }
@@ -579,6 +580,7 @@ export async function fetchWorkoutTemplates(userId: string): Promise<WorkoutTemp
                 id: row.id,
                 name: row.name,
                 exercises: row.exercises || [],
+                source: row.source,
                 created_at: row.created_at,
                 updated_at: row.updated_at,
             }));
@@ -590,7 +592,7 @@ export async function fetchWorkoutTemplates(userId: string): Promise<WorkoutTemp
 
 export async function createWorkoutTemplate(
     userId: string,
-    template: { name: string; exercises: Array<{ id: string; name: string; sets?: number }> }
+    template: { name: string; exercises: Array<{ id: string; name: string; sets?: number }>; source?: 'premade' | 'custom' | 'library' | 'recommended' }
 ): Promise<string> {
     return withRetry(async () => {
         const { data, error } = await supabaseClient
@@ -599,6 +601,7 @@ export async function createWorkoutTemplate(
                 user_id: userId,
                 name: template.name,
                 exercises: template.exercises,
+                source: template.source || 'custom',
             })
             .select('id')
             .single();

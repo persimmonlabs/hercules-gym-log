@@ -157,7 +157,6 @@ export default function AddWorkoutScreen() {
   const isWorkoutMode = mode === 'workout';
 
   const browseLiftAnimation = useCardLiftAnimation(shadowConfigs.sm, shadowConfigs.md);
-  const recommendationLiftAnimation = useCardLiftAnimation(shadowConfigs.sm, shadowConfigs.md);
   const scratchLiftAnimation = useCardLiftAnimation(shadowConfigs.sm, shadowConfigs.md);
 
   const handleBack = useCallback(() => {
@@ -180,14 +179,6 @@ export default function AddWorkoutScreen() {
     triggerHaptic('selection');
     router.push({
       pathname: '/(tabs)/browse-programs',
-      params: { mode: isWorkoutMode ? 'workout' : 'program' }
-    });
-  }, [router, isWorkoutMode]);
-
-  const handleStartQuiz = useCallback(() => {
-    triggerHaptic('selection');
-    router.push({
-      pathname: '/quiz',
       params: { mode: isWorkoutMode ? 'workout' : 'program' }
     });
   }, [router, isWorkoutMode]);
@@ -234,25 +225,6 @@ export default function AddWorkoutScreen() {
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md, justifyContent: 'space-between' }}>
                   <View style={{ flex: 1, gap: spacing.xs }}>
                     <Text variant="bodySemibold" color="primary">{isWorkoutMode ? 'Browse Workouts' : 'Browse Plans'}</Text>
-                  </View>
-                  <IconSymbol name="chevron-right" size={20} color={colors.text.tertiary} />
-                </View>
-              </Pressable>
-            </Animated.View>
-
-            <Animated.View style={recommendationLiftAnimation.animatedStyle}>
-              <Pressable
-                style={[styles.planCardShell, { minHeight: 60 }]}
-                onPressIn={recommendationLiftAnimation.onPressIn}
-                onPressOut={recommendationLiftAnimation.onPressOut}
-                onPress={() => {
-                  recommendationLiftAnimation.onPressOut();
-                  handleStartQuiz();
-                }}
-              >
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md, justifyContent: 'space-between' }}>
-                  <View style={{ flex: 1, gap: spacing.xs }}>
-                    <Text variant="bodySemibold" color="primary">Get Recommendation</Text>
                   </View>
                   <IconSymbol name="chevron-right" size={20} color={colors.text.tertiary} />
                 </View>

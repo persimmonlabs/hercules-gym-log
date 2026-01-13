@@ -6,19 +6,14 @@ import { triggerHaptic } from '@/utils/haptics';
 
 import { Text } from '@/components/atoms/Text';
 import { ProgramCard } from '@/components/molecules/ProgramCard';
-import { QuickFilterChip } from '@/components/atoms/QuickFilterChip';
+import { WorkoutFilters, type WorkoutFilterState } from '@/components/molecules/WorkoutFilters';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { colors, spacing, radius, sizing } from '@/constants/theme';
 import { useProgramsStore } from '@/store/programsStore';
 import { usePlansStore } from '@/store/plansStore';
+import { usePremiumStatus } from '@/hooks/usePremiumStatus';
 import type { PremadeProgram, UserProgram, ExperienceLevel, PremadeWorkout } from '@/types/premadePlan';
 
-const FILTERS: { label: string; value: ExperienceLevel | 'all' }[] = [
-  { label: 'All Levels', value: 'all' },
-  { label: 'Beginner', value: 'beginner' },
-  { label: 'Intermediate', value: 'intermediate' },
-  { label: 'Advanced', value: 'advanced' },
-];
 
 const styles = StyleSheet.create({
   container: {
@@ -45,14 +40,7 @@ const styles = StyleSheet.create({
   titleWrapper: {
     paddingBottom: spacing.xs,
   },
-  filtersContainer: {
-    paddingHorizontal: spacing.md,
-    paddingBottom: spacing.lg,
-  },
-  filtersContent: {
-    gap: spacing.sm,
-  },
-  listContent: {
+    listContent: {
     paddingBottom: spacing['2xl'],
     gap: spacing.md,
   },
@@ -73,16 +61,49 @@ export default function BrowseProgramsScreen() {
 
   const { premadePrograms, premadeWorkouts, userPrograms } = useProgramsStore();
   const { plans } = usePlansStore();
+  const { isPremium } = usePremiumStatus();
 
-  const [selectedFilter, setSelectedFilter] = useState<ExperienceLevel | 'all'>('all');
+  const [filters, setFilters] = useState<WorkoutFilterState>({
+    experienceLevel: 'all',
+    equipment: 'all',
+    goal: 'all',
+    duration: 'all',
+  });
 
   const filteredItems = useMemo(() => {
     if (isWorkoutMode) {
       let filtered = premadeWorkouts;
 
       // Apply experience level filter
-      if (selectedFilter !== 'all') {
-        filtered = filtered.filter(p => p.metadata.experienceLevel === selectedFilter);
+      if (filters.experienceLevel !== 'all') {
+        filtered = filtered.filter(p => p.metadata.experienceLevel === filters.experienceLevel);
+      }
+
+      // Apply equipment filter
+      if (filters.equipment !== 'all') {
+        filtered = filtered.filter(p => p.metadata.equipment === filters.equipment);
+      }
+
+      // Apply goal filter
+      if (filters.goal !== 'all') {
+        filtered = filtered.filter(p => p.metadata.goal === filters.goal);
+      }
+
+      // Apply duration filter
+      if (filters.duration !== 'all') {
+        filtered = filtered.filter(p => {
+          const duration = (p as PremadeWorkout).metadata.durationMinutes;
+          switch (filters.duration) {
+            case 'quick':
+              return duration <= 30;
+            case 'medium':
+              return duration > 30 && duration <= 60;
+            case 'long':
+              return duration > 60;
+            default:
+              return true;
+          }
+        });
       }
 
       // Filter out workouts that have been added to My Workouts
@@ -99,8 +120,18 @@ export default function BrowseProgramsScreen() {
       let filtered = premadePrograms;
 
       // Apply experience level filter
-      if (selectedFilter !== 'all') {
-        filtered = filtered.filter(p => p.metadata.experienceLevel === selectedFilter);
+      if (filters.experienceLevel !== 'all') {
+        filtered = filtered.filter(p => p.metadata.experienceLevel === filters.experienceLevel);
+      }
+
+      // Apply equipment filter
+      if (filters.equipment !== 'all') {
+        filtered = filtered.filter(p => p.metadata.equipment === filters.equipment);
+      }
+
+      // Apply goal filter
+      if (filters.goal !== 'all') {
+        filtered = filtered.filter(p => p.metadata.goal === filters.goal);
       }
 
       // Filter out already-added plans
@@ -109,7 +140,7 @@ export default function BrowseProgramsScreen() {
 
       return filtered;
     }
-  }, [premadePrograms, premadeWorkouts, selectedFilter, isWorkoutMode, userPrograms, plans]);
+  }, [premadePrograms, premadeWorkouts, filters, isWorkoutMode, userPrograms, plans]);
 
   const handleBack = useCallback(() => {
     triggerHaptic('selection');
@@ -126,6 +157,11 @@ export default function BrowseProgramsScreen() {
     const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
     return () => backHandler.remove();
   }, [handleBack]);
+
+  const handleUnlock = useCallback(() => {
+    triggerHaptic('selection');
+    router.push('/premium');
+  }, [router]);
 
   const handleProgramPress = useCallback((item: PremadeProgram | UserProgram | PremadeWorkout) => {
     triggerHaptic('selection');
@@ -145,9 +181,6 @@ export default function BrowseProgramsScreen() {
     }
   }, [router, isWorkoutMode]);
 
-  const handleFilterPress = useCallback((value: ExperienceLevel | 'all') => {
-    setSelectedFilter(value);
-  }, []);
 
   return (
     <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom + sizing.tabBarHeight }]}>
@@ -173,36 +206,37 @@ export default function BrowseProgramsScreen() {
             </View>
 
             {/* Filters */}
-            <View>
-              <FlatList
-                horizontal
-                data={FILTERS}
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={[styles.filtersContent, styles.filtersContainer]}
-                keyExtractor={(item) => item.value}
-                renderItem={({ item }) => (
-                  <QuickFilterChip
-                    label={item.label}
-                    active={selectedFilter === item.value}
-                    onPress={() => handleFilterPress(item.value)}
-                  />
-                )}
-              />
-            </View>
+            <WorkoutFilters
+              filters={filters}
+              onFiltersChange={setFilters}
+              showDurationFilter={isWorkoutMode}
+            />
           </>
         }
-        renderItem={({ item }) => (
-          <View style={{ paddingHorizontal: spacing.md }}>
-            <ProgramCard
-              program={item}
-              onPress={handleProgramPress}
-            />
-          </View>
-        )}
+        renderItem={({ item }) => {
+          // Check if this is a premium workout that should be locked
+          const isWorkout = 'durationMinutes' in item.metadata;
+          const isLocked = isWorkout && !(item as any).isFree && !isPremium;
+          
+          return (
+            <View style={{ paddingHorizontal: spacing.md }}>
+              <ProgramCard
+                program={item}
+                onPress={handleProgramPress}
+                isLocked={isLocked}
+                onUnlock={handleUnlock}
+              />
+            </View>
+          );
+        }}
         ListEmptyComponent={
           <View style={styles.emptyState}>
             <IconSymbol name="search" size={48} color={colors.neutral.gray400} />
-            <Text variant="body" color="secondary">No {isWorkoutMode ? 'workouts' : 'programs'} found for this level.</Text>
+            <Text variant="body" color="secondary">
+              {Object.values(filters).filter(v => v !== 'all').length > 0 
+                ? `No ${isWorkoutMode ? 'workouts' : 'programs'} found matching your filters.` 
+                : `No ${isWorkoutMode ? 'workouts' : 'programs'} found.`}
+            </Text>
           </View>
         }
       />

@@ -113,7 +113,7 @@ const styles = StyleSheet.create({
 export default function ProgramDetailsScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { programId, from } = useLocalSearchParams<{ programId: string; from?: string }>();
+  const { programId } = useLocalSearchParams<{ programId: string }>();
   const { premadePrograms, userPrograms, clonePremadeProgram, setActiveRotation } = useProgramsStore();
   const [isAdding, setIsAdding] = useState(false);
   const [showLimitModal, setShowLimitModal] = useState(false);
@@ -124,17 +124,8 @@ export default function ProgramDetailsScreen() {
 
   const handleBack = useCallback(() => {
     triggerHaptic('selection');
-    if (from === 'quiz') {
-      if (router.canGoBack()) {
-        router.back();
-      } else {
-        router.navigate('/quiz');
-      }
-    } else {
-      // Default to browse programs
-      router.navigate('/(tabs)/browse-programs');
-    }
-  }, [router, from]);
+    router.navigate('/(tabs)/browse-programs');
+  }, [router]);
 
   const scrollRef = useRef<ScrollView>(null);
 

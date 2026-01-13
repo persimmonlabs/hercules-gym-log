@@ -282,7 +282,7 @@ const ProfileModal: React.FC = () => {
               />
 
               <PreferenceItem
-                icon="fitness-center"
+                icon="straighten"
                 title="Units of Measurement"
                 subtitle={`${weightUnit === 'kg' ? 'kg' : 'lbs'} • ${distanceUnit === 'km' ? 'km' : 'mi'} • ${sizeUnit === 'cm' ? 'cm' : 'in'}`}
                 onPress={() => {

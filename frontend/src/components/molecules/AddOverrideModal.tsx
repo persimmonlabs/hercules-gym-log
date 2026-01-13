@@ -210,17 +210,9 @@ export const AddOverrideModal: React.FC<AddOverrideModalProps> = ({
             ]}
             onPress={() => handleWorkoutSelect(null)}
           >
-            <IconSymbol
-              name="bedtime"
-              size={24}
-              color={isRest ? theme.accent.orange : theme.text.primary}
-            />
             <View style={styles.optionContent}>
               <Text variant="bodySemibold" color="primary">
-                Rest Day
-              </Text>
-              <Text variant="bodySemibold" color="primary">
-                Take the day off from training
+                Rest
               </Text>
             </View>
           </Pressable>
@@ -239,17 +231,9 @@ export const AddOverrideModal: React.FC<AddOverrideModalProps> = ({
                   ]}
                   onPress={() => handleWorkoutSelect(workout.id)}
                 >
-                  <IconSymbol
-                    name="fitness-center"
-                    size={24}
-                    color={isSelected ? theme.accent.orange : theme.text.tertiary}
-                  />
                   <View style={styles.optionContent}>
                     <Text variant="bodySemibold" color="primary">
                       {workout.name}
-                    </Text>
-                    <Text variant="caption" color="secondary">
-                      {workout.source}
                     </Text>
                   </View>
                 </Pressable>
@@ -289,7 +273,7 @@ const styles = StyleSheet.create({
   },
   section: {
     marginBottom: spacing.xl,
-    gap: spacing.md,
+    gap: spacing.sm,
   },
   dateGrid: {
     flexDirection: 'row',
@@ -307,7 +291,7 @@ const styles = StyleSheet.create({
   optionCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: spacing.lg,
+    padding: spacing.md,
     borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: colors.accent.orange,
@@ -315,7 +299,6 @@ const styles = StyleSheet.create({
   },
   optionContent: {
     flex: 1,
-    gap: spacing.xxs,
   },
   workoutList: {
     gap: spacing.sm,

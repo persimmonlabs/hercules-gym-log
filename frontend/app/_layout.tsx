@@ -242,13 +242,6 @@ const RootLayoutNav = ({
             }}
           />
           <Stack.Screen
-            name="quiz"
-            options={{
-              headerShown: false,
-              animation: 'none',
-            }}
-          />
-          <Stack.Screen
             name="modals"
             options={{
               headerShown: false,

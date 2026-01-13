@@ -6,7 +6,7 @@
 
 import React, { useCallback } from 'react';
 import { View, Pressable, StyleSheet } from 'react-native';
-import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
+import Animated, { useAnimatedStyle, useSharedValue, useDerivedValue, withSpring } from 'react-native-reanimated';
 import { triggerHaptic } from '@/utils/haptics';
 
 import { Text } from '@/components/atoms/Text';
@@ -29,9 +29,10 @@ interface TimeRangeChipProps {
 
 const TimeRangeChip: React.FC<TimeRangeChipProps> = ({ label, active, onPress }) => {
   const scale = useSharedValue(1);
+  const animatedScale = useDerivedValue(() => scale.value, [scale]);
 
   const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
+    transform: [{ scale: animatedScale as any }],
   }));
 
   const handlePress = useCallback(() => {

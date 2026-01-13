@@ -5091,5 +5091,327 @@
     "is_compound": true,
     "push_pull": null,
     "upper_lower": null
+  },
+  {
+    "id": "bodyweight_013",
+    "name": "Pistol Squats",
+    "exercise_type": "weight",
+    "distance_unit": null,
+    "muscles": {
+      "Quads": 0.35,
+      "Glutes": 0.25,
+      "Hamstrings": 0.15,
+      "Calves": 0.1,
+      "Upper Abs": 0.05,
+      "Lower Abs": 0.05,
+      "Obliques": 0.05
+    },
+    "equipment": [
+      "Bodyweight"
+    ],
+    "movement_pattern": "Squat",
+    "difficulty": "Advanced",
+    "is_compound": true,
+    "push_pull": null,
+    "upper_lower": "lower"
+  },
+  {
+    "id": "bodyweight_014",
+    "name": "Pistol Squats (Bodyweight)",
+    "exercise_type": "bodyweight",
+    "distance_unit": null,
+    "muscles": {
+      "Quads": 0.35,
+      "Glutes": 0.25,
+      "Hamstrings": 0.15,
+      "Calves": 0.1,
+      "Upper Abs": 0.05,
+      "Lower Abs": 0.05,
+      "Obliques": 0.05
+    },
+    "equipment": [
+      "Bodyweight"
+    ],
+    "movement_pattern": "Squat",
+    "difficulty": "Advanced",
+    "is_compound": true,
+    "push_pull": null,
+    "upper_lower": "lower"
+  },
+  {
+    "id": "bodyweight_015",
+    "name": "Handstand Push-ups",
+    "exercise_type": "bodyweight",
+    "distance_unit": null,
+    "muscles": {
+      "Front Delts": 0.35,
+      "Triceps - Long Head": 0.15,
+      "Triceps - Lateral Head": 0.15,
+      "Triceps - Medial Head": 0.15,
+      "Upper Chest": 0.08,
+      "Mid Chest": 0.05,
+      "Upper Back": 0.04,
+      "Upper Abs": 0.015,
+      "Lower Abs": 0.015,
+      "Obliques": 0.01
+    },
+    "equipment": [
+      "Bodyweight"
+    ],
+    "movement_pattern": "Vertical Push",
+    "difficulty": "Advanced",
+    "is_compound": true,
+    "push_pull": "push",
+    "upper_lower": "upper"
+  },
+  {
+    "id": "bodyweight_016",
+    "name": "Muscle-ups",
+    "exercise_type": "bodyweight",
+    "distance_unit": null,
+    "muscles": {
+      "Lats": 0.2,
+      "Mid Back": 0.1,
+      "Upper Back": 0.08,
+      "Biceps - Long Head": 0.1,
+      "Biceps - Short Head": 0.1,
+      "Brachialis": 0.08,
+      "Triceps - Long Head": 0.08,
+      "Triceps - Lateral Head": 0.08,
+      "Triceps - Medial Head": 0.08,
+      "Front Delts": 0.05,
+      "Rear Delts": 0.03,
+      "Upper Abs": 0.01,
+      "Lower Abs": 0.01
+    },
+    "equipment": [
+      "Bodyweight"
+    ],
+    "movement_pattern": "Compound Pull/Push",
+    "difficulty": "Advanced",
+    "is_compound": true,
+    "push_pull": null,
+    "upper_lower": "upper"
+  },
+  {
+    "id": "duration_007",
+    "name": "L-Sit Hold",
+    "exercise_type": "duration",
+    "distance_unit": null,
+    "muscles": {
+      "Upper Abs": 0.25,
+      "Lower Abs": 0.25,
+      "Hip Flexors": 0.2,
+      "Triceps - Long Head": 0.08,
+      "Triceps - Lateral Head": 0.08,
+      "Triceps - Medial Head": 0.08,
+      "Front Delts": 0.04,
+      "Obliques": 0.02
+    },
+    "equipment": [
+      "Bodyweight"
+    ],
+    "movement_pattern": "Isometric",
+    "difficulty": "Advanced",
+    "is_compound": true,
+    "push_pull": null,
+    "upper_lower": null
+  },
+  {
+    "id": "bodyweight_017",
+    "name": "Jump Squats",
+    "exercise_type": "bodyweight",
+    "distance_unit": null,
+    "muscles": {
+      "Quads": 0.3,
+      "Glutes": 0.25,
+      "Hamstrings": 0.2,
+      "Calves": 0.15,
+      "Lower Back": 0.05,
+      "Upper Abs": 0.025,
+      "Lower Abs": 0.025
+    },
+    "equipment": [
+      "Bodyweight"
+    ],
+    "movement_pattern": "Plyometric",
+    "difficulty": "Intermediate",
+    "is_compound": true,
+    "push_pull": null,
+    "upper_lower": "lower"
+  },
+  {
+    "id": "bodyweight_018",
+    "name": "Plyometric Push-ups",
+    "exercise_type": "bodyweight",
+    "distance_unit": null,
+    "muscles": {
+      "Upper Chest": 0.15,
+      "Mid Chest": 0.15,
+      "Lower Chest": 0.08,
+      "Front Delts": 0.15,
+      "Triceps - Long Head": 0.12,
+      "Triceps - Lateral Head": 0.12,
+      "Triceps - Medial Head": 0.12,
+      "Upper Abs": 0.04,
+      "Lower Abs": 0.04,
+      "Obliques": 0.03
+    },
+    "equipment": [
+      "Bodyweight"
+    ],
+    "movement_pattern": "Plyometric",
+    "difficulty": "Advanced",
+    "is_compound": true,
+    "push_pull": "push",
+    "upper_lower": "upper"
+  },
+  {
+    "id": "bodyweight_019",
+    "name": "High Knees",
+    "exercise_type": "bodyweight",
+    "distance_unit": null,
+    "muscles": {
+      "Hip Flexors": 0.3,
+      "Quads": 0.25,
+      "Calves": 0.15,
+      "Glutes": 0.1,
+      "Hamstrings": 0.1,
+      "Upper Abs": 0.05,
+      "Lower Abs": 0.05
+    },
+    "equipment": [
+      "Bodyweight"
+    ],
+    "movement_pattern": "Cardio",
+    "difficulty": "Beginner",
+    "is_compound": true,
+    "push_pull": null,
+    "upper_lower": "lower"
+  },
+  {
+    "id": "bodyweight_020",
+    "name": "Plank to Push-up",
+    "exercise_type": "bodyweight",
+    "distance_unit": null,
+    "muscles": {
+      "Upper Abs": 0.2,
+      "Lower Abs": 0.2,
+      "Obliques": 0.15,
+      "Triceps - Long Head": 0.1,
+      "Triceps - Lateral Head": 0.1,
+      "Triceps - Medial Head": 0.1,
+      "Front Delts": 0.08,
+      "Upper Chest": 0.04,
+      "Mid Chest": 0.03
+    },
+    "equipment": [
+      "Bodyweight"
+    ],
+    "movement_pattern": "Dynamic Core",
+    "difficulty": "Intermediate",
+    "is_compound": true,
+    "push_pull": null,
+    "upper_lower": "upper"
+  },
+  {
+    "id": "bodyweight_021",
+    "name": "Bulgarian Split Squats (Bodyweight)",
+    "exercise_type": "bodyweight",
+    "distance_unit": null,
+    "muscles": {
+      "Quads": 0.35,
+      "Glutes": 0.3,
+      "Hamstrings": 0.2,
+      "Calves": 0.08,
+      "Upper Abs": 0.025,
+      "Lower Abs": 0.025,
+      "Obliques": 0.02
+    },
+    "equipment": [
+      "Bodyweight"
+    ],
+    "movement_pattern": "Lunge",
+    "difficulty": "Intermediate",
+    "is_compound": true,
+    "push_pull": null,
+    "upper_lower": "lower"
+  },
+  {
+    "id": "bodyweight_022",
+    "name": "One-Arm Push-ups",
+    "exercise_type": "bodyweight",
+    "distance_unit": null,
+    "muscles": {
+      "Upper Chest": 0.18,
+      "Mid Chest": 0.18,
+      "Lower Chest": 0.09,
+      "Front Delts": 0.15,
+      "Triceps - Long Head": 0.1,
+      "Triceps - Lateral Head": 0.1,
+      "Triceps - Medial Head": 0.1,
+      "Obliques": 0.05,
+      "Upper Abs": 0.025,
+      "Lower Abs": 0.025
+    },
+    "equipment": [
+      "Bodyweight"
+    ],
+    "movement_pattern": "Horizontal Push",
+    "difficulty": "Advanced",
+    "is_compound": true,
+    "push_pull": "push",
+    "upper_lower": "upper"
+  },
+  {
+    "id": "bodyweight_023",
+    "name": "Archer Pull-ups",
+    "exercise_type": "bodyweight",
+    "distance_unit": null,
+    "muscles": {
+      "Lats": 0.25,
+      "Mid Back": 0.15,
+      "Upper Back": 0.1,
+      "Biceps - Long Head": 0.13,
+      "Biceps - Short Head": 0.13,
+      "Brachialis": 0.1,
+      "Rear Delts": 0.08,
+      "Flexors": 0.03,
+      "Upper Abs": 0.015,
+      "Lower Abs": 0.015
+    },
+    "equipment": [
+      "Bodyweight"
+    ],
+    "movement_pattern": "Vertical Pull",
+    "difficulty": "Advanced",
+    "is_compound": true,
+    "push_pull": "pull",
+    "upper_lower": "upper"
+  },
+  {
+    "id": "bodyweight_024",
+    "name": "Dragon Flags",
+    "exercise_type": "bodyweight",
+    "distance_unit": null,
+    "muscles": {
+      "Upper Abs": 0.3,
+      "Lower Abs": 0.35,
+      "Obliques": 0.15,
+      "Hip Flexors": 0.1,
+      "Lats": 0.05,
+      "Upper Back": 0.03,
+      "Triceps - Long Head": 0.007,
+      "Triceps - Lateral Head": 0.007,
+      "Triceps - Medial Head": 0.006
+    },
+    "equipment": [
+      "Bodyweight"
+    ],
+    "movement_pattern": "Core",
+    "difficulty": "Advanced",
+    "is_compound": true,
+    "push_pull": null,
+    "upper_lower": null
   }
 ]

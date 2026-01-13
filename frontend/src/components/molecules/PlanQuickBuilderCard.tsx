@@ -6,7 +6,7 @@ import {
   type LayoutChangeEvent,
   type TextInput,
 } from 'react-native';
-import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
+import Animated, { useAnimatedStyle, useSharedValue, useDerivedValue, withTiming } from 'react-native-reanimated';
 import { triggerHaptic } from '@/utils/haptics';
 import { InputField } from '@/components/atoms/InputField';
 import { SurfaceCard } from '@/components/atoms/SurfaceCard';
@@ -63,15 +63,19 @@ export const PlanQuickBuilderCard: React.FC<PlanQuickBuilderCardProps> = ({
   isNameDuplicate = false,
 }) => {
   const fadeProgress = useSharedValue(0);
+  const animatedFadeProgress = useDerivedValue(() => fadeProgress.value, [fadeProgress]);
   
   useEffect(() => {
     fadeProgress.value = withTiming(1, timingMedium);
   }, [fadeProgress]);
 
-  const animatedStyle = useAnimatedStyle(() => ({
-    opacity: fadeProgress.value,
-    transform: [{ translateY: withTiming(fadeProgress.value === 1 ? 0 : spacing.md, timingMedium) }],
-  }));
+  const animatedStyle = useAnimatedStyle(() => {
+    const shouldShow = fadeProgress.value === 1;
+    return {
+      opacity: animatedFadeProgress as any,
+      transform: [{ translateY: withTiming(shouldShow ? 0 : spacing.md, timingMedium) }],
+    };
+  });
 
   const handleEmptyStatePress = useCallback(() => {
     triggerHaptic('selection');

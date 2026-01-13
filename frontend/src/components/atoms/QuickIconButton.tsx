@@ -1,7 +1,7 @@
 import React, { memo, useCallback, useRef } from 'react';
 import { Pressable, StyleProp, StyleSheet, ViewStyle } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
+import Animated, { useAnimatedStyle, useSharedValue, useDerivedValue, withTiming } from 'react-native-reanimated';
 import { colors, radius, sizing, spacing } from '@/constants/theme';
 
 interface QuickIconButtonProps {
@@ -23,9 +23,10 @@ const QuickIconButtonInner: React.FC<QuickIconButtonProps> = ({
   onPressRef.current = onPress;
 
   const scale = useSharedValue(1);
+  const animatedScale = useDerivedValue(() => scale.value, [scale]);
 
   const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
+    transform: [{ scale: animatedScale as any }],
   }));
 
   const handlePressIn = useCallback(() => {

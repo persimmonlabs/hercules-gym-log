@@ -5,7 +5,7 @@
 
 import React, { useCallback, useMemo } from 'react';
 import { StyleSheet, TouchableOpacity, View } from 'react-native';
-import Animated, { SharedValue, useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
+import Animated, { SharedValue, useAnimatedStyle, useSharedValue, useDerivedValue, withSpring } from 'react-native-reanimated';
 import { triggerHaptic } from '@/utils/haptics';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -37,9 +37,11 @@ export const MonthlyCalendar: React.FC<MonthlyCalendarProps> = ({ onDayLongPress
 
   const prevScale = useSharedValue(1);
   const nextScale = useSharedValue(1);
+  const animatedPrevScale = useDerivedValue(() => prevScale.value, [prevScale]);
+  const animatedNextScale = useDerivedValue(() => nextScale.value, [nextScale]);
 
-  const prevAnimatedStyle = useAnimatedStyle(() => ({ transform: [{ scale: prevScale.value }] }));
-  const nextAnimatedStyle = useAnimatedStyle(() => ({ transform: [{ scale: nextScale.value }] }));
+  const prevAnimatedStyle = useAnimatedStyle(() => ({ transform: [{ scale: animatedPrevScale as any }] }));
+  const nextAnimatedStyle = useAnimatedStyle(() => ({ transform: [{ scale: animatedNextScale as any }] }));
 
   const animatePressIn = useCallback((scaleRef: SharedValue<number>) => {
     scaleRef.value = withSpring(0.92, springSmooth);
