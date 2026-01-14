@@ -153,7 +153,7 @@ const styles = StyleSheet.create({
     paddingTop: spacing.md,
     paddingBottom: spacing.xs,
     borderBottomWidth: 1,
-    borderBottomColor: colors.accent.orange + '40',
+    borderBottomColor: colors.border.medium,
   },
   headerText: {
     flex: 1,
@@ -177,7 +177,7 @@ const styles = StyleSheet.create({
     paddingTop: spacing.sm,
     marginTop: spacing.sm,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255, 107, 74, 0.12)',
+    borderTopColor: colors.border.light,
   },
   headerRightContainer: {
     alignSelf: 'center',

@@ -313,7 +313,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     borderRadius: radius.md,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.accent.warning + '40',
+    borderColor: colors.border.light,
   },
   dayLabel: {
     width: 100,

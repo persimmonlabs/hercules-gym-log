@@ -2,7 +2,7 @@ import React, { memo, useCallback, useRef } from 'react';
 import { Pressable, StyleProp, StyleSheet, ViewStyle } from 'react-native';
 import { triggerHaptic } from '@/utils/haptics';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import Animated, { useAnimatedStyle, useSharedValue, useDerivedValue, withTiming } from 'react-native-reanimated';
+import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { colors, radius, sizing, spacing } from '@/constants/theme';
 
 interface HoldRepeatIconButtonProps {
@@ -27,11 +27,10 @@ const HoldRepeatIconButtonInner: React.FC<HoldRepeatIconButtonProps> = ({
   onStepRef.current = onStep;
 
   const scale = useSharedValue(1);
-  const animatedScale = useDerivedValue(() => scale.value, [scale]);
   const wasPressed = useRef(false);
 
   const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: animatedScale as any }],
+    transform: [{ scale: scale.value }],
   }));
 
   const handlePressIn = useCallback(() => {

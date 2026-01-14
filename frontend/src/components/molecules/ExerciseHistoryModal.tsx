@@ -6,7 +6,7 @@ import { colors, radius, spacing } from '@/constants/theme';
 import { useWorkoutSessionsStore } from '@/store/workoutSessionsStore';
 import { useSettingsStore } from '@/store/settingsStore';
 import { SheetModal } from './SheetModal';
-import type { ExerciseType } from '@/constants/exercises';
+import type { ExerciseType } from '@/types/exercise';
 import { exercises as exerciseCatalog } from '@/constants/exercises';
 
 interface ExerciseHistoryModalProps {
@@ -36,6 +36,9 @@ export const ExerciseHistoryModal: React.FC<ExerciseHistoryModalProps> = ({
   exerciseType = 'weight',
   distanceUnit,
 }) => {
+  // Subscribe to unit values to trigger re-renders when units change
+  const weightUnitPref = useSettingsStore((state) => state.weightUnit);
+  const distanceUnitPref = useSettingsStore((state) => state.distanceUnit);
   const { formatWeight, formatDistanceForExercise } = useSettingsStore();
   
   // Look up distanceUnit from catalog if not provided

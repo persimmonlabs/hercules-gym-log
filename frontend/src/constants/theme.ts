@@ -68,9 +68,9 @@ export const colors = {
 
   // Borders and dividers
   border: {
-    light: 'rgba(255, 107, 74, 0.12)',     // Soft coral border
-    medium: 'rgba(255, 69, 129, 0.18)',    // Medium pink-orange border
-    dark: 'rgba(0, 0, 0, 0.12)',           // Neutral divider
+    light: 'rgba(0, 0, 0, 0.08)',          // Soft neutral border
+    medium: 'rgba(0, 0, 0, 0.12)',         // Medium neutral border
+    dark: 'rgba(0, 0, 0, 0.16)',           // Stronger neutral divider
   },
 
   // Scrims and overlays
@@ -143,9 +143,9 @@ export const darkColors = {
 
   // Borders and dividers
   border: {
-    light: 'rgba(255, 107, 74, 0.20)',     // Soft coral border
-    medium: 'rgba(255, 69, 129, 0.25)',    // Medium pink-orange border
-    dark: 'rgba(255, 255, 255, 0.15)',     // Light divider
+    light: 'rgba(255, 255, 255, 0.10)',    // Soft neutral border
+    medium: 'rgba(255, 255, 255, 0.15)',   // Medium neutral border
+    dark: 'rgba(255, 255, 255, 0.20)',     // Stronger neutral divider
   },
 
   // Scrims and overlays

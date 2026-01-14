@@ -29,6 +29,8 @@ interface CardioStatsContentProps {
 }
 
 const CardioStatsContent: React.FC<CardioStatsContentProps> = ({ stats, timeRange }) => {
+  // Subscribe to distanceUnit to trigger re-renders when units change
+  const distanceUnitPref = useSettingsStore((state) => state.distanceUnit);
   const { formatDistanceForExercise } = useSettingsStore();
   const { totalDuration, totalDistanceByType } = stats;
 

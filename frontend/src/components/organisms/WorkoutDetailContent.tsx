@@ -25,6 +25,8 @@ interface WorkoutDetailContentProps {
  * @param workout - Completed workout session to visualize.
  */
 export const WorkoutDetailContent: React.FC<WorkoutDetailContentProps> = ({ workout }) => {
+  // Subscribe to weightUnit to trigger re-renders when units change
+  const weightUnit = useSettingsStore((state) => state.weightUnit);
   const { formatWeight } = useSettingsStore();
   const durationLabel = useMemo(() => formatDurationLabel(workout.duration), [workout.duration]);
   const { completedSets } = useMemo(() => getWorkoutTotals(workout), [workout]);
@@ -32,7 +34,7 @@ export const WorkoutDetailContent: React.FC<WorkoutDetailContentProps> = ({ work
   const volumeLabel = useMemo(() => {
     if (totalVolume === 0) return '—';
     return formatWeight(totalVolume);
-  }, [totalVolume, formatWeight]);
+  }, [totalVolume, formatWeight, weightUnit]);
 
   return (
     <Animated.View layout={Layout.springify()} style={styles.container}>

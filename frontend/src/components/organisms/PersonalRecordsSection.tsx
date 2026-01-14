@@ -158,7 +158,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingBottom: spacing.xs,
     borderBottomWidth: 1,
-    borderBottomColor: colors.accent.orange + '40',
+    borderBottomColor: colors.border.medium,
   },
   list: {
     gap: spacing.lg,
@@ -172,7 +172,7 @@ const styles = StyleSheet.create({
   searchInput: {
     backgroundColor: colors.primary.bg,
     borderWidth: 1,
-    borderColor: colors.accent.orange + '66',
+    borderColor: colors.border.medium,
     padding: spacing.md,
     borderRadius: radius.md,
     fontSize: 16,
@@ -188,6 +188,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: spacing.md,
     borderBottomWidth: 0.5,
-    borderBottomColor: colors.accent.orange + '66',
+    borderBottomColor: colors.border.light,
   },
 });

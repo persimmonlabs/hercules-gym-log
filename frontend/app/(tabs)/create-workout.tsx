@@ -60,7 +60,7 @@ const styles = StyleSheet.create({
   missingPlanCard: {
     gap: spacing.md,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.accent.orangeLight,
+    borderColor: colors.border.light,
     borderRadius: radius.lg,
     backgroundColor: colors.surface.card,
     position: 'relative',

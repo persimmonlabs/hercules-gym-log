@@ -156,14 +156,9 @@ export const createSetsWithHistory = (
     }
 
     // No history - create type-appropriate default sets
+    // Note: 'cardio' and 'duration' types are already handled and returned above
     let defaultSets: SetLog[];
     switch (exerciseType) {
-        case 'cardio':
-            defaultSets = [{ duration: 0, distance: 0, completed: false }];
-            break;
-        case 'duration':
-            defaultSets = [{ duration: 30, completed: false }];
-            break;
         case 'bodyweight':
         case 'reps_only':
             defaultSets = Array.from({ length: targetSetCount }, () => ({ reps: 10, completed: false }));

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * GpsActivityTracker
  * GPS-based activity tracker for outdoor cardio exercises.
  * Shows Start button initially, then live timer/distance with Pause/Stop controls.
@@ -151,8 +151,6 @@ export const GpsActivityTracker: React.FC<GpsActivityTrackerProps> = ({
   distanceUnit = 'miles',
 }) => {
   const { theme } = useTheme();
-  // Subscribe to distanceUnit to trigger re-renders when units change
-  const distanceUnitPref = useSettingsStore((state) => state.distanceUnit);
   const { convertDistance, getDistanceUnitShort } = useSettingsStore();
   const {
     state,

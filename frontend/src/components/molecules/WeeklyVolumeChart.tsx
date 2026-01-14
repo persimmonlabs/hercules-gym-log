@@ -250,6 +250,8 @@ const ChartPage: React.FC<ChartPageProps> = ({ title, data, selectedBar, setSele
 
 export const WeeklyVolumeChart: React.FC = () => {
     const workouts = useWorkoutSessionsStore((state) => state.workouts);
+    // Subscribe to weightUnit to trigger re-renders when units change
+    const weightUnit = useSettingsStore((state) => state.weightUnit);
     const { formatWeight, getWeightUnit, convertWeight } = useSettingsStore();
     const [currentPage, setCurrentPage] = useState(0);
     // Per-page selected bar state to prevent cross-page artifacts
@@ -353,7 +355,7 @@ export const WeeklyVolumeChart: React.FC = () => {
         const hasData = [volumeL1, volumeL2].some(dict => Object.values(dict).some(v => v > 0));
 
         return { dataL1, dataUpper, dataLower, dataCore, hasData };
-    }, [workouts, convertWeight]);
+    }, [workouts, convertWeight, weightUnit]);
 
     const handleMomentumScrollEnd = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
         const contentOffsetX = event.nativeEvent.contentOffset.x;

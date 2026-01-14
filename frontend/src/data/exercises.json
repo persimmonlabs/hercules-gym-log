@@ -5413,5 +5413,27 @@
     "is_compound": true,
     "push_pull": null,
     "upper_lower": null
+  },
+  {
+    "id": "bodyweight_025",
+    "name": "Russian Twist",
+    "exercise_type": "bodyweight",
+    "distance_unit": null,
+    "muscles": {
+      "Obliques": 0.4,
+      "Upper Abs": 0.3,
+      "Lower Abs": 0.2,
+      "Lower Back": 0.05,
+      "Mid Back": 0.03,
+      "Upper Back": 0.02
+    },
+    "equipment": [
+      "Bodyweight"
+    ],
+    "movement_pattern": "Horizontal Rotation",
+    "difficulty": "Beginner",
+    "is_compound": false,
+    "push_pull": null,
+    "upper_lower": null
   }
 ]

@@ -43,7 +43,7 @@ export const PlanExerciseCard: React.FC<PlanExerciseCardProps> = ({ exercise, on
 const styles = StyleSheet.create({
   card: {
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.accent.orangeLight,
+    borderColor: colors.border.light,
     borderRadius: radius.lg,
     backgroundColor: colors.surface.card,
   },

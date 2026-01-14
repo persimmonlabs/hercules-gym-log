@@ -117,6 +117,10 @@ const WorkoutSessionScreen: React.FC = () => {
   const [pickerVisible, setPickerVisible] = useState<boolean>(false);
   const [createExerciseModalVisible, setCreateExerciseModalVisible] = useState<boolean>(false);
   const pickerListRef = useRef<FlatList>(null);
+  const exerciseListRef = useRef<FlatList>(null);
+  const scrollOffsetRef = useRef<number>(0);
+  const focusedInputYRef = useRef<number | null>(null);
+  const focusedInputHeightRef = useRef<number>(0);
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [expandedExercises, setExpandedExercises] = useState<Set<string>>(
     () => new Set(sessionExercises.length > 0 ? [sessionExercises[0].name] : [])
@@ -141,6 +145,42 @@ const WorkoutSessionScreen: React.FC = () => {
   useEffect(() => {
     Keyboard.dismiss();
   }, []);
+
+  // Keyboard-aware scroll: when keyboard shows, scroll to keep focused input visible
+  useEffect(() => {
+    const EXTRA_PADDING = 225; // Extra space above keyboard for comfortable viewing
+
+    const handleKeyboardShow = (event: { endCoordinates: { height: number } }) => {
+      const keyboardHeight = event.endCoordinates.height;
+      const inputY = focusedInputYRef.current;
+      const inputHeight = focusedInputHeightRef.current;
+
+      if (inputY === null || !exerciseListRef.current) {
+        return;
+      }
+
+      const screenHeight = Dimensions.get('window').height;
+      const visibleAreaBottom = screenHeight - keyboardHeight;
+      const inputBottom = inputY + inputHeight;
+
+      // Check if input is covered by keyboard
+      if (inputBottom > visibleAreaBottom - EXTRA_PADDING) {
+        const scrollAmount = inputBottom - visibleAreaBottom + EXTRA_PADDING;
+        exerciseListRef.current.scrollToOffset({
+          offset: scrollOffsetRef.current + scrollAmount,
+          animated: true,
+        });
+      }
+    };
+
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const subscription = Keyboard.addListener(showEvent, handleKeyboardShow);
+
+    return () => {
+      subscription.remove();
+    };
+  }, []);
+
   const [exerciseProgress, setExerciseProgress] = useState<Record<string, ExerciseProgressSnapshot>>({});
   const insets = useSafeAreaInsets();
   const setCompletionOverlayVisible = useSessionStore((state) => state.setCompletionOverlayVisible);
@@ -656,7 +696,7 @@ const WorkoutSessionScreen: React.FC = () => {
   const listFooterComponent = useMemo(
     () => (
       <View
-        style={[styles.footerStack, { paddingBottom: 320 }]}
+        style={styles.footerStack}
       >
         <Button
           label="Add Exercise"
@@ -719,11 +759,18 @@ const WorkoutSessionScreen: React.FC = () => {
           <Pressable style={styles.menuBackdrop} onPress={closeAllMenus} accessibilityLabel="Dismiss exercise menu" />
         ) : null}
         <FlatList
+          ref={exerciseListRef}
           data={sessionExercises}
           keyExtractor={(item) => item.name}
           style={[styles.list, { marginBottom: tabBarTopOffset }]}
           contentContainerStyle={listContentStyle}
           extraData={{ expandedExercises: Array.from(expandedExercises), exerciseProgress, activeMenu }}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="interactive"
+          onScroll={(event) => {
+            scrollOffsetRef.current = event.nativeEvent.contentOffset.y;
+          }}
+          scrollEventThrottle={16}
           maintainVisibleContentPosition={{
             minIndexForVisible: 0,
             autoscrollToTopThreshold: 10,
@@ -734,7 +781,7 @@ const WorkoutSessionScreen: React.FC = () => {
           ItemSeparatorComponent={renderExerciseSeparator}
           renderItem={({ item, index }) => {
             const totalSets = exerciseProgress[item.name]?.totalSets ?? item.sets.length;
-            const completedSets = exerciseProgress[item.name]?.completedSets ?? item.sets.filter((set) => set.completed).length;
+            const completedSets = exerciseProgress[item.name]?.completedSets ?? item.sets.filter((set: SetLog) => set.completed).length;
             const isComplete = totalSets > 0 && completedSets === totalSets;
             const isExpanded = expandedExercises.has(item.name);
 
@@ -836,6 +883,10 @@ const WorkoutSessionScreen: React.FC = () => {
                         onOpenSetMenu={(index) => handleOpenSetMenu(item.name, index)}
                         onCloseSetMenu={closeAllMenus}
                         onShowHistory={() => handleHistoryPress(item.name)}
+                        onInputFocus={(inputY, inputHeight) => {
+                          focusedInputYRef.current = inputY;
+                          focusedInputHeightRef.current = inputHeight;
+                        }}
                       />
                     </View>
                   ) : null}

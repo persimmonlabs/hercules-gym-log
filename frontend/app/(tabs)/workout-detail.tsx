@@ -267,7 +267,7 @@ const styles = StyleSheet.create({
   placeholderCard: {
     gap: spacing.sm,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.accent.orangeLight,
+    borderColor: colors.border.light,
     borderRadius: radius.lg,
     backgroundColor: colors.surface.card,
   },
@@ -283,7 +283,7 @@ const styles = StyleSheet.create({
     maxWidth: 360,
     gap: spacing.md,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.accent.orangeLight,
+    borderColor: colors.border.light,
     borderRadius: radius.lg,
     backgroundColor: colors.surface.card,
   },

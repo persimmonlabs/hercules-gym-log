@@ -76,7 +76,7 @@ const styles = StyleSheet.create({
   exercisesCard: {
     gap: spacing.md,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.accent.orangeLight,
+    borderColor: colors.border.light,
     borderRadius: radius.lg,
     backgroundColor: colors.surface.card,
   },
@@ -97,7 +97,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     gap: spacing.sm,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.accent.orangeLight,
+    borderColor: colors.border.light,
     borderRadius: radius.lg,
     backgroundColor: colors.surface.card,
   },

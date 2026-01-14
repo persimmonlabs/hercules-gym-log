@@ -85,11 +85,14 @@ export const WorkoutExerciseSummaryCard: React.FC<WorkoutExerciseSummaryCardProp
   exercise,
   index,
 }) => {
+  // Subscribe to unit values to trigger re-renders when units change
+  const weightUnit = useSettingsStore((state) => state.weightUnit);
+  const distanceUnitPref = useSettingsStore((state) => state.distanceUnit);
   const { formatWeight, formatDistanceForExercise } = useSettingsStore();
   // Look up exercise type from catalog
   const catalogEntry = exerciseCatalog.find(e => e.name === exercise.name);
   const exerciseType: ExerciseType = catalogEntry?.exerciseType || 'weight';
-  const distanceUnit = catalogEntry?.distanceUnit;
+  const exerciseDistanceUnit = catalogEntry?.distanceUnit;
 
   // Only show completed sets in the summary
   const completedSets = exercise.sets
@@ -114,7 +117,7 @@ export const WorkoutExerciseSummaryCard: React.FC<WorkoutExerciseSummaryCardProp
 
         <View style={styles.setList}>
           {completedSets.map(({ set, originalIndex }, displayIndex) => {
-            const effortLabel = getSetEffortLabel(set, exerciseType, formatWeight, formatDistanceForExercise, distanceUnit);
+            const effortLabel = getSetEffortLabel(set, exerciseType, formatWeight, formatDistanceForExercise, exerciseDistanceUnit);
 
             return (
               <View key={`${exercise.name}-${originalIndex}`} style={styles.setRow}>

@@ -3,7 +3,7 @@
  * Inline drop-down editor for workout exercise sets.
  */
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, TextInput, View, findNodeHandle, UIManager } from 'react-native';
 import Animated, { Layout } from 'react-native-reanimated';
 import { triggerHaptic } from '@/utils/haptics';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -11,8 +11,8 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Text } from '@/components/atoms/Text';
 import { Button } from '@/components/atoms/Button';
 import { HoldRepeatIconButton } from '@/components/atoms/HoldRepeatIconButton';
-import { GpsActivityTracker } from '@/components/molecules/GpsActivityTracker';
 import { TimePickerModal } from '@/components/molecules/TimePickerModal';
+import { GpsActivityTracker } from '@/components/molecules/GpsActivityTracker';
 import { springGentle } from '@/constants/animations';
 import { colors, radius, shadows, sizing, spacing, zIndex } from '@/constants/theme';
 import type { SetLog } from '@/types/workout';
@@ -36,6 +36,8 @@ interface ExerciseSetEditorProps {
   onOpenSetMenu?: (index: number) => void;
   onCloseSetMenu?: () => void;
   onShowHistory?: () => void;
+  // Keyboard-aware scroll callback
+  onInputFocus?: (inputY: number, inputHeight: number) => void;
 }
 
 const DEFAULT_NEW_SET: SetLog = {
@@ -295,7 +297,11 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
   onOpenSetMenu,
   onCloseSetMenu,
   onShowHistory,
+  onInputFocus,
 }) => {
+  // Subscribe to unit values to trigger re-renders when units change
+  const weightUnitPref = useSettingsStore((state) => state.weightUnit);
+  const distanceUnitPref = useSettingsStore((state) => state.distanceUnit);
   const { getWeightUnit, formatWeight, getDistanceUnitForExercise, formatDistanceForExercise, convertDistanceForExercise, convertDistanceToMilesForExercise } = useSettingsStore();
   const weightUnit = getWeightUnit();
   const distanceUnitLabel = getDistanceUnitForExercise(distanceUnit);
@@ -331,6 +337,22 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
   const setsRef = useRef<SetDraft[]>([]);
   const completedSetsRef = useRef(0);
   const totalSetsRef = useRef(0);
+
+  // Helper to measure input position and notify parent for keyboard-aware scrolling
+  const measureAndScrollToInput = useCallback((inputRef: TextInput | null) => {
+    if (!inputRef || !onInputFocus) {
+      return;
+    }
+
+    const nodeHandle = findNodeHandle(inputRef);
+    if (!nodeHandle) {
+      return;
+    }
+
+    UIManager.measureInWindow(nodeHandle, (x, y, width, height) => {
+      onInputFocus(y, height);
+    });
+  }, [onInputFocus]);
 
   // Helper for controlled vs uncontrolled menu state
   const isMenuControlled = activeSetMenuIndex !== undefined && onOpenSetMenu && onCloseSetMenu;
@@ -716,7 +738,8 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
 
   const handleDistanceFocus = useCallback((index: number) => {
     setActiveSelection({ type: 'distance', index });
-  }, []);
+    measureAndScrollToInput(distanceInputRefs.current[index]);
+  }, [measureAndScrollToInput]);
 
   const handleDistanceBlur = useCallback((index: number) => {
     setActiveSelection(null);
@@ -884,11 +907,13 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
 
   const handleWeightFocus = useCallback((index: number) => {
     setActiveSelection({ type: 'weight', index });
-  }, []);
+    measureAndScrollToInput(weightInputRefs.current[index]);
+  }, [measureAndScrollToInput]);
 
   const handleRepsFocus = useCallback((index: number) => {
     setActiveSelection({ type: 'reps', index });
-  }, []);
+    measureAndScrollToInput(repsInputRefs.current[index]);
+  }, [measureAndScrollToInput]);
 
   const handleGpsActivityComplete = useCallback((durationSeconds: number, distanceMiles: number) => {
     const completedSet: SetDraft = {
@@ -1079,164 +1104,6 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
     return null;
   }
 
-  if (supportsGpsTracking) {
-    const existingSet = sets[0];
-    const isCompleted = existingSet?.completed ?? false;
-    const hasData = (existingSet?.duration ?? 0) > 0 || (existingSet?.distance ?? 0) > 0;
-
-    return (
-      <Animated.View style={containerStyle}>
-        <View style={contentStyle}>
-          {embedded ? null : (
-            <View style={styles.headerRow}>
-              <Text variant="heading2" color="primary">
-                {exerciseName}
-              </Text>
-            </View>
-          )}
-          {isCompleted ? (
-            <View style={[styles.setCard, styles.setCardCompleted, { marginBottom: spacing.lg }]}>
-              <Pressable
-                style={styles.completedRow}
-                onPress={() => toggleSetCompletion(0)}
-                accessibilityRole="button"
-                accessibilityLabel="Edit activity"
-              >
-                <Text variant="bodySemibold" color="onAccent">
-                  {formatDistanceForExercise(existingSet.distance ?? 0, distanceUnit)} • {formatDurationForSummary(existingSet.duration ?? 0)}
-                </Text>
-              </Pressable>
-            </View>
-          ) : hasData && existingSet ? (
-            <View style={[styles.setCard, { marginBottom: spacing.lg }]}>
-              <View style={styles.setHeader} pointerEvents="box-none">
-                <Text variant="bodySemibold" color="primary">
-                  Activity
-                </Text>
-              </View>
-
-              <View style={styles.metricSection} pointerEvents="box-none">
-                <Text variant="label" color="neutral" style={styles.metricLabel}>
-                  Distance ({distanceUnitLabel})
-                </Text>
-                <View style={styles.metricControls}>
-                  <HoldRepeatIconButton
-                    iconName="minus"
-                    style={styles.adjustButton}
-                    accessibilityLabel="Decrease distance"
-                    onStep={() => {
-                      const current = setsRef.current[0];
-                      if (!current) return;
-
-                      const currentDisplayValue = convertDistanceForExercise(current.distance ?? 0, distanceUnit);
-                      const increment = distanceUnit === 'meters' ? 50 : 0.25;
-                      const newDisplayValue = Math.max(0, currentDisplayValue - increment);
-                      const newMiles = convertDistanceToMilesForExercise(newDisplayValue, distanceUnit);
-                      const nextDistance = Math.round(newMiles * 100) / 100;
-                      const nextText = formatDistanceValue(newDisplayValue);
-
-                      const distanceRef = distanceInputRefs.current[0];
-                      if (distanceRef) {
-                        distanceRef.setNativeProps({ text: nextText });
-                      }
-
-                      updateSet(0, {
-                        distance: nextDistance,
-                        distanceInput: nextText,
-                      });
-                    }}
-                  />
-                  <TextInput
-                    ref={(ref) => {
-                      distanceInputRefs.current[0] = ref;
-                    }}
-                    value={existingSet.distanceInput}
-                    onChangeText={(value) => handleDistanceInput(0, value)}
-                    keyboardType="decimal-pad"
-                    style={styles.metricValue}
-                    textAlign="center"
-                    placeholder="0.00"
-                    placeholderTextColor={colors.text.tertiary}
-                    cursorColor={colors.accent.primary}
-                    selectionColor={colors.accent.orangeLight}
-                    selection={
-                      activeSelection?.type === 'distance' && activeSelection.index === 0
-                        ? { start: 0, end: existingSet.distanceInput.length }
-                        : undefined
-                    }
-                    onFocus={() => handleDistanceFocus(0)}
-                    onBlur={() => handleDistanceBlur(0)}
-                  />
-                  <HoldRepeatIconButton
-                    iconName="plus"
-                    style={styles.adjustButton}
-                    accessibilityLabel="Increase distance"
-                    onStep={() => {
-                      const current = setsRef.current[0];
-                      if (!current) return;
-
-                      const currentDisplayValue = convertDistanceForExercise(current.distance ?? 0, distanceUnit);
-                      const increment = distanceUnit === 'meters' ? 50 : 0.25;
-                      const newDisplayValue = distanceUnit === 'meters' ? currentDisplayValue + increment : Math.round((currentDisplayValue + increment) * 100) / 100;
-                      const newMiles = convertDistanceToMilesForExercise(newDisplayValue, distanceUnit);
-                      const nextDistance = Math.round(newMiles * 100) / 100;
-                      const nextText = formatDistanceValue(newDisplayValue);
-
-                      const distanceRef = distanceInputRefs.current[0];
-                      if (distanceRef) {
-                        distanceRef.setNativeProps({ text: nextText });
-                      }
-
-                      updateSet(0, {
-                        distance: nextDistance,
-                        distanceInput: nextText,
-                      });
-                    }}
-                  />
-                </View>
-              </View>
-
-              <View style={styles.metricSection} pointerEvents="box-none">
-                <Text variant="label" color="neutral" style={styles.metricLabel}>
-                  Time {(existingSet.hoursInput !== '00' ? '(hr:min:sec)' : '(min:sec)')}
-                </Text>
-                <View style={styles.metricControls}>
-                  <Pressable
-                    style={styles.timeDisplayButton}
-                    onPress={() => openTimePicker(0)}
-                    accessibilityLabel="Edit time"
-                  >
-                    <Text style={styles.timeDisplayText}>
-                      {(existingSet.hoursInput !== '00' ? `${existingSet.hoursInput}:` : '')}{existingSet.minutesInput || '00'}:{existingSet.secondsInput || '00'}
-                    </Text>
-                  </Pressable>
-                </View>
-              </View>
-
-              <Button
-                label="Complete"
-                onPress={() => handleCompleteSetPress(0)}
-                variant="primary"
-                size="md"
-              />
-            </View>
-          ) : (
-            <GpsActivityTracker
-              onComplete={handleGpsActivityComplete}
-              distanceUnit={distanceUnit}
-            />
-          )}
-        </View>
-        <TimePickerModal
-          visible={timePickerVisible}
-          onClose={() => setTimePickerVisible(false)}
-          onConfirm={handleTimePickerConfirm}
-          initialSeconds={sets[timePickerIndex]?.duration ?? 0}
-        />
-      </Animated.View>
-    );
-  }
-
   return (
     <Animated.View
       style={containerStyle}
@@ -1253,7 +1120,12 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
             </Text>
           </View>
         )}
-        {hasSets ? (
+        {supportsGpsTracking ? (
+          <GpsActivityTracker
+            onComplete={handleGpsActivityComplete}
+            distanceUnit={distanceUnit}
+          />
+        ) : hasSets ? (
           sets.map((set, index) => {
             const isCompleted = set.completed;
 

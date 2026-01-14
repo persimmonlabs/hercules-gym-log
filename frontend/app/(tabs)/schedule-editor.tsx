@@ -187,7 +187,7 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: 360,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.accent.orangeLight,
+    borderColor: colors.border.light,
     borderRadius: radius.lg,
     backgroundColor: colors.surface.card,
   },
@@ -197,7 +197,7 @@ const styles = StyleSheet.create({
   modalOption: {
     borderRadius: radius.md,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.accent.orangeLight,
+    borderColor: colors.border.light,
     backgroundColor: colors.surface.card,
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.lg,

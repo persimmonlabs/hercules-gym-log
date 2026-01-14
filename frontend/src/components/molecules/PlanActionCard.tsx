@@ -49,7 +49,7 @@ export const PlanActionCard: React.FC<PlanActionCardProps> = ({
 const styles = StyleSheet.create({
   cardShell: {
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.accent.orangeLight,
+    borderColor: colors.border.light,
     backgroundColor: colors.surface.card,
     borderRadius: radius.lg,
   },
