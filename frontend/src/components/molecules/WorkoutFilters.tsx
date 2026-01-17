@@ -4,7 +4,7 @@
  */
 import React, { useState } from 'react';
 import { ScrollView, StyleSheet, View, Pressable } from 'react-native';
-import Animated, { useAnimatedStyle, useSharedValue, useDerivedValue, withSpring } from 'react-native-reanimated';
+import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import { triggerHaptic } from '@/utils/haptics';
 
 import { Text } from '@/components/atoms/Text';
@@ -59,10 +59,9 @@ const EXPERIENCE_FILTERS = [
 export const WorkoutFilters: React.FC<WorkoutFiltersProps> = ({ filters, onFiltersChange, showDurationFilter = true }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const rotation = useSharedValue(0);
-  const animatedRotation = useDerivedValue(() => rotation.value, [rotation]);
 
   const animatedRotationStyle = useAnimatedStyle(() => ({
-    transform: [{ rotate: `${animatedRotation as any}deg` }],
+    transform: [{ rotate: `${rotation.value}deg` }],
   }));
 
   const toggleExpanded = () => {

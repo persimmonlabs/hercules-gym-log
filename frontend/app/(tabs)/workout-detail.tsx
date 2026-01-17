@@ -5,8 +5,9 @@
  */
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Modal, Pressable, StyleSheet, View, BackHandler } from 'react-native';
+import { Modal, Pressable, StyleSheet, TextInput, View, BackHandler } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { triggerHaptic } from '@/utils/haptics';
 import Animated from 'react-native-reanimated';
 
@@ -15,27 +16,36 @@ import { Text } from '@/components/atoms/Text';
 import { SurfaceCard } from '@/components/atoms/SurfaceCard';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { WorkoutDetailContent } from '@/components/organisms/WorkoutDetailContent';
+import { EditableWorkoutDetailContent } from '@/components/organisms/EditableWorkoutDetailContent';
 import { TabSwipeContainer } from '@/components/templates/TabSwipeContainer';
-import { colors, radius, spacing } from '@/constants/theme';
+import { colors, radius, spacing, shadows, zIndex } from '@/constants/theme';
+import { useTheme } from '@/hooks/useTheme';
 import { usePlansStore, type PlansState } from '@/store/plansStore';
 import { useWorkoutSessionsStore, type WorkoutSessionsState } from '@/store/workoutSessionsStore';
 import { formatSessionDateTime, formatWorkoutTitle } from '@/utils/workout';
 import { useWorkoutDetailAnimation } from '@/hooks/useWorkoutDetailAnimation';
-import type { Workout } from '@/types/workout';
+import type { Workout, WorkoutExercise } from '@/types/workout';
 import { useNavigationStore } from '@/store/navigationStore';
 
 const WorkoutDetailScreen: React.FC = () => {
   const router = useRouter();
+  const { theme } = useTheme();
+  const insets = useSafeAreaInsets();
   const { workoutId, from } = useLocalSearchParams<{ workoutId?: string; from?: string }>();
   const workouts = useWorkoutSessionsStore((state: WorkoutSessionsState) => state.workouts);
   const hydrateWorkouts = useWorkoutSessionsStore((state: WorkoutSessionsState) => state.hydrateWorkouts);
   const deleteWorkout = useWorkoutSessionsStore((state: WorkoutSessionsState) => state.deleteWorkout);
+  const updateWorkout = useWorkoutSessionsStore((state: WorkoutSessionsState) => state.updateWorkout);
   const plans = usePlansStore((state: PlansState) => state.plans);
   const hydratePlans = usePlansStore((state: PlansState) => state.hydratePlans);
   const setWorkoutDetailSource = useNavigationStore((state) => state.setWorkoutDetailSource);
   const clearWorkoutDetailSource = useNavigationStore((state) => state.clearWorkoutDetailSource);
   const [isDeleteDialogVisible, setIsDeleteDialogVisible] = useState<boolean>(false);
   const [lastKnownWorkout, setLastKnownWorkout] = useState<Workout | null>(null);
+  const [isEditing, setIsEditing] = useState<boolean>(false);
+  const [editedName, setEditedName] = useState<string>('');
+  const [editedExercises, setEditedExercises] = useState<WorkoutExercise[]>([]);
+  const [isSaving, setIsSaving] = useState<boolean>(false);
 
   useEffect(() => {
     void hydrateWorkouts();
@@ -63,6 +73,50 @@ const WorkoutDetailScreen: React.FC = () => {
   }, [workoutFromStore]);
 
   const workout = workoutFromStore ?? lastKnownWorkout;
+
+  // Initialize edit state when entering edit mode
+  const handleStartEditing = useCallback(() => {
+    if (!workout) return;
+    triggerHaptic('selection');
+    setEditedName(workout.name ?? '');
+    setEditedExercises(JSON.parse(JSON.stringify(workout.exercises)));
+    setIsEditing(true);
+  }, [workout]);
+
+  const handleCancelEdit = useCallback(() => {
+    triggerHaptic('selection');
+    setIsEditing(false);
+    setEditedName('');
+    setEditedExercises([]);
+  }, []);
+
+  const handleSaveEdit = useCallback(async () => {
+    if (!workout || isSaving) return;
+    
+    setIsSaving(true);
+    triggerHaptic('success');
+    
+    const updatedWorkout: Workout = {
+      ...workout,
+      name: editedName.trim() || workout.name,
+      exercises: editedExercises,
+    };
+    
+    try {
+      await updateWorkout(updatedWorkout);
+      setIsEditing(false);
+      setEditedName('');
+      setEditedExercises([]);
+    } catch (error) {
+      console.error('[workout-detail] Failed to save workout', error);
+    } finally {
+      setIsSaving(false);
+    }
+  }, [workout, editedName, editedExercises, updateWorkout, isSaving]);
+
+  const handleExercisesChange = useCallback((exercises: WorkoutExercise[]) => {
+    setEditedExercises(exercises);
+  }, []);
 
   const planName = useMemo(() => {
     if (!workout?.planId) {
@@ -99,6 +153,10 @@ const WorkoutDetailScreen: React.FC = () => {
     return () => backHandler.remove();
   }, [handleBackPress]);
 
+  const handleEditPress = useCallback(() => {
+    handleStartEditing();
+  }, [handleStartEditing]);
+
   const handleDeletePress = useCallback(() => {
     if (!workout) {
       return;
@@ -124,49 +182,116 @@ const WorkoutDetailScreen: React.FC = () => {
   }, [deleteWorkout, handleDismiss, workout]);
 
   return (
-    <TabSwipeContainer
-      contentContainerStyle={styles.scrollContent}
-      showsVerticalScrollIndicator={false}
-    >
-      <View style={styles.topSection}>
-        <View style={styles.headerRow}>
-          <View style={styles.headerContent}>
-            <Text variant="heading1" color="primary">
-              {workoutTitle}
-            </Text>
-            <Text style={{ fontSize: 16, fontWeight: '500', color: colors.text.primary, marginTop: spacing.xxs }}>
+    <>
+      {/* Sticky header for edit mode */}
+      {isEditing && (
+        <View style={[styles.stickyHeader, { backgroundColor: theme.primary.bg, paddingTop: insets.top + spacing.md }]}>
+          <View style={styles.stickyHeaderContent}>
+            <Text variant="heading3" color="primary">Editing Workout</Text>
+            <View style={styles.stickyActions}>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Cancel editing"
+                onPress={handleCancelEdit}
+                hitSlop={spacing.xs}
+                style={[styles.stickyButton, { backgroundColor: theme.surface.card, borderColor: theme.border.medium, borderWidth: 1 }]}
+              >
+                <IconSymbol name="close" color={theme.text.secondary} size={20} />
+              </Pressable>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Save changes"
+                onPress={handleSaveEdit}
+                hitSlop={spacing.xs}
+                style={[styles.stickyButton, styles.saveButton, { backgroundColor: theme.accent.orange }]}
+                disabled={isSaving}
+              >
+                <IconSymbol name="check" color={theme.text.onAccent} size={20} />
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      )}
+      <TabSwipeContainer
+        contentContainerStyle={[styles.scrollContent, { paddingTop: isEditing ? 70 + insets.top : insets.top }]}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.topSection}>
+          <View style={styles.headerRow}>
+            <View style={styles.headerContent}>
+            {isEditing ? (
+              <TextInput
+                style={[
+                  styles.titleInput,
+                  { color: theme.text.primary, borderColor: theme.accent.orangeMuted, backgroundColor: theme.surface.card }
+                ]}
+                value={editedName}
+                onChangeText={setEditedName}
+                placeholder="Workout name"
+                placeholderTextColor={theme.text.tertiary}
+                autoCapitalize="words"
+                returnKeyType="done"
+              />
+            ) : (
+              <Text variant="heading1" color="primary">
+                {workoutTitle}
+              </Text>
+            )}
+            <Text style={{ fontSize: 16, fontWeight: '500', color: theme.text.primary, marginTop: spacing.xxs }}>
               {sessionDateTime}
             </Text>
           </View>
           <View style={styles.actionIcons}>
-            <Animated.View style={[styles.backButtonContainer, animatedBackStyle]}>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Go back to dashboard"
-                onPress={handleBackPress}
-                hitSlop={spacing.sm}
-                style={styles.backButtonPressable}
-              >
-                <IconSymbol name="arrow-back" color={colors.text.primary} size={24} />
-              </Pressable>
-            </Animated.View>
-            {workout ? (
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Delete workout"
-                onPress={handleDeletePress}
-                hitSlop={spacing.xs}
-                style={styles.iconButton}
-              >
-                <IconSymbol name="delete" color={colors.accent.orange} size={24} />
-              </Pressable>
-            ) : null}
+            {!isEditing && (
+              <>
+                <Animated.View style={[styles.backButtonContainer, animatedBackStyle]}>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Go back to dashboard"
+                    onPress={handleBackPress}
+                    hitSlop={spacing.sm}
+                    style={styles.backButtonPressable}
+                  >
+                    <IconSymbol name="arrow-back" color={theme.text.primary} size={24} />
+                  </Pressable>
+                </Animated.View>
+                {workout ? (
+                  <>
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel="Edit workout"
+                      onPress={handleEditPress}
+                      hitSlop={spacing.xs}
+                      style={styles.iconButton}
+                    >
+                      <IconSymbol name="edit" color={theme.accent.orangeLight} size={24} />
+                    </Pressable>
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel="Delete workout"
+                      onPress={handleDeletePress}
+                      hitSlop={spacing.xs}
+                      style={styles.iconButton}
+                    >
+                      <IconSymbol name="delete" color={theme.accent.orange} size={24} />
+                    </Pressable>
+                  </>
+                ) : null}
+              </>
+            )}
           </View>
         </View>
       </View>
 
       {workout ? (
-        <WorkoutDetailContent workout={workout} />
+        isEditing ? (
+          <EditableWorkoutDetailContent
+            workout={{ ...workout, exercises: editedExercises }}
+            onExercisesChange={handleExercisesChange}
+          />
+        ) : (
+          <WorkoutDetailContent workout={workout} />
+        )
       ) : (
         <SurfaceCard tone="neutral" padding="xl" showAccentStripe={false} style={styles.placeholderCard}>
           <Text variant="bodySemibold" color="primary">
@@ -219,7 +344,8 @@ const WorkoutDetailScreen: React.FC = () => {
           </Pressable>
         </Pressable>
       </Modal>
-    </TabSwipeContainer>
+      </TabSwipeContainer>
+    </>
   );
 };
 
@@ -231,7 +357,6 @@ const styles = StyleSheet.create({
     gap: spacing['2xl'],
     paddingHorizontal: spacing.md,
     paddingTop: spacing.lg,
-    // paddingBottom handled by TabSwipeContainer
   },
   topSection: { gap: spacing.md },
   backButtonContainer: { alignSelf: 'flex-start' },
@@ -259,6 +384,51 @@ const styles = StyleSheet.create({
     padding: spacing.xs,
     borderRadius: radius.full,
     backgroundColor: 'transparent',
+  },
+  saveButton: {
+    backgroundColor: colors.accent.orange,
+  },
+  titleInput: {
+    fontSize: 32,
+    fontWeight: '700',
+    lineHeight: 40,
+    color: colors.text.primary,
+    padding: spacing.sm,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.accent.orangeMuted,
+    backgroundColor: colors.surface.card,
+    minHeight: 48,
+  },
+  stickyHeader: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: zIndex.sticky,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.sm,
+    paddingHorizontal: spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border.light,
+    ...shadows.sm,
+  },
+  stickyHeaderContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  stickyActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  stickyButton: {
+    width: 40,
+    height: 40,
+    borderRadius: radius.full,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   dialogCardPressable: {
     borderRadius: radius.lg,

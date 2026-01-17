@@ -25,6 +25,7 @@ export interface SessionState {
   getHistorySetCount: (exerciseName: string) => number;
   updateExercise: (exerciseName: string, updatedExercise: WorkoutExercise) => void;
   removeExercise: (exerciseName: string) => void;
+  reorderExercises: (fromIndex: number, toIndex: number) => void;
   endSession: () => Workout | null;
   clearSession: () => void;
   getCurrentSession: () => SessionDraft | null;
@@ -111,6 +112,24 @@ export const useSessionStore = create<SessionState>()(
         const nextSession: SessionDraft = {
           ...currentSession,
           exercises: currentSession.exercises.filter((exercise) => exercise.name !== exerciseName),
+        };
+
+        set({ currentSession: nextSession });
+      },
+      reorderExercises: (fromIndex, toIndex) => {
+        const { currentSession } = get();
+
+        if (!currentSession) {
+          return;
+        }
+
+        const exercises = [...currentSession.exercises];
+        const [movedExercise] = exercises.splice(fromIndex, 1);
+        exercises.splice(toIndex, 0, movedExercise);
+
+        const nextSession: SessionDraft = {
+          ...currentSession,
+          exercises,
         };
 
         set({ currentSession: nextSession });

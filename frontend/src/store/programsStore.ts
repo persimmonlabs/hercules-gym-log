@@ -122,15 +122,27 @@ export const useProgramsStore = create<ProgramsState>((set, get) => ({
   },
 
   loadPremadePrograms: () => {
-    // Deep clone premade data to prevent accidental mutations
-    // The premade library should ALWAYS show the original, unmodified versions
-    const clonedPrograms = JSON.parse(JSON.stringify(premadeData.programs)) as PremadeProgram[];
-    const clonedWorkouts = JSON.parse(JSON.stringify(premadeWorkoutsData.workouts)) as PremadeWorkout[];
+    try {
+      // Deep clone premade data to prevent accidental mutations
+      // The premade library should ALWAYS show the original, unmodified versions
+      const clonedPrograms = JSON.parse(JSON.stringify(premadeData.programs || [])) as PremadeProgram[];
+      const clonedWorkouts = JSON.parse(JSON.stringify(premadeWorkoutsData.workouts || [])) as PremadeWorkout[];
 
-    set({
-      premadePrograms: clonedPrograms,
-      premadeWorkouts: clonedWorkouts
-    });
+      // Validate data before setting
+      const validPrograms = clonedPrograms.filter(p => p && p.id && p.name && p.metadata);
+      const validWorkouts = clonedWorkouts.filter(w => w && w.id && w.name && w.metadata);
+
+      set({
+        premadePrograms: validPrograms,
+        premadeWorkouts: validWorkouts
+      });
+    } catch (error) {
+      console.error('[programsStore] Error loading premade programs:', error);
+      set({
+        premadePrograms: [],
+        premadeWorkouts: []
+      });
+    }
   },
 
   hydratePrograms: async (userId?: string) => {

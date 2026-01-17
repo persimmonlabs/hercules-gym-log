@@ -1251,6 +1251,52 @@ const DashboardScreen: React.FC = () => {
               </SurfaceCard>
             </Animated.View>
 
+            {/* Hercules AI Card */}
+            <Animated.View style={recentWorkoutsAnimatedStyle}>
+              <SurfaceCard tone="card" padding="xl" showAccentStripe={true} style={{ borderWidth: 0 }}>
+                <View style={styles.dashboardCardHeader}>
+                  <Text variant="heading3" color="primary">
+                    Hercules AI
+                  </Text>
+                </View>
+                <Pressable
+                  style={styles.pressableStretch}
+                  onPress={() => {
+                    triggerHaptic('selection');
+                    router.push('/hercules-ai');
+                  }}
+                >
+                  <SurfaceCard
+                    tone="neutral"
+                    padding="lg"
+                    showAccentStripe={false}
+                    style={styles.inlineCard}
+                  >
+                    <View style={styles.quickLinkRow}>
+                      <View style={styles.quickLinkInfo}>
+                        <Text variant="bodySemibold" color="primary">
+                          Chat with your AI Coach
+                        </Text>
+                        <Text variant="body" color="secondary">
+                          Get workout advice, form tips, and personalized guidance
+                        </Text>
+                      </View>
+                      <View style={styles.quickLinkButton}>
+                        <LinearGradient
+                          colors={[theme.accent.gradientStart, theme.accent.gradientEnd]}
+                          start={{ x: 0, y: 0 }}
+                          end={{ x: 1, y: 1 }}
+                          style={styles.planStartButtonGradient}
+                        />
+                        <Text variant="bodySemibold" color="onAccent">
+                          →
+                        </Text>
+                      </View>
+                    </View>
+                  </SurfaceCard>
+                </Pressable>
+              </SurfaceCard>
+            </Animated.View>
 
           </View>
         </View>

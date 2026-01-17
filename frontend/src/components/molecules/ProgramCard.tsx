@@ -83,11 +83,19 @@ const styles = StyleSheet.create({
 });
 
 export const ProgramCard: React.FC<ProgramCardProps> = ({ program, onPress, style, isLocked = false, onUnlock }) => {
-  const { name, metadata } = program;
-  const isWorkout = 'durationMinutes' in metadata;
+  // Defensive checks for corrupted data
+  if (!program || typeof program !== 'object') {
+    return null;
+  }
+  
+  const name = program.name || 'Untitled';
+  const metadata = program.metadata || {};
+  const isWorkout = metadata && 'durationMinutes' in metadata;
   // Workouts don't have a 'workouts' array of their own, they contain exercises directly
-  const itemCount = 'workouts' in program ? program.workouts.length : program.exercises.length;
-  const itemLabel = 'workouts' in program ? 'workouts' : 'exercises';
+  const workoutsArray = 'workouts' in program && Array.isArray(program.workouts) ? program.workouts : [];
+  const exercisesArray = 'exercises' in program && Array.isArray(program.exercises) ? program.exercises : [];
+  const itemCount = workoutsArray.length > 0 ? workoutsArray.length : exercisesArray.length;
+  const itemLabel = workoutsArray.length > 0 ? 'workouts' : 'exercises';
 
   // Show locked card for premium content
   if (isLocked) {
@@ -133,16 +141,16 @@ export const ProgramCard: React.FC<ProgramCardProps> = ({ program, onPress, styl
         </View>
 
         <View style={styles.tags}>
-          <Badge label={metadata.goal.replace('-', ' ')} variant="workout" size="sm" />
-          <Badge label={metadata.experienceLevel} variant="workout" size="sm" />
-          <Badge label={metadata.equipment.replace('-', ' ')} variant="workout" size="sm" />
+          {metadata.goal && <Badge label={String(metadata.goal).replace('-', ' ')} variant="workout" size="sm" />}
+          {metadata.experienceLevel && <Badge label={String(metadata.experienceLevel)} variant="workout" size="sm" />}
+          {metadata.equipment && <Badge label={String(metadata.equipment).replace('-', ' ')} variant="workout" size="sm" />}
         </View>
 
         <View style={styles.footer}>
           <Text variant="caption" color="secondary">
             {itemCount} {itemLabel} • {isWorkout
-              ? `${(metadata as any).durationMinutes} min`
-              : `${(metadata as any).daysPerWeek} days/week`
+              ? `${(metadata as any).durationMinutes || 0} min`
+              : `${(metadata as any).daysPerWeek || 0} days/week`
             }
           </Text>
         </View>

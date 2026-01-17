@@ -154,7 +154,8 @@ const useCardLiftAnimation = (initialShadow: ShadowConfig, activeShadow: ShadowC
 export default function AddWorkoutScreen() {
   const router = useRouter();
   const { mode } = useLocalSearchParams<{ mode?: 'program' | 'workout' }>();
-  const isWorkoutMode = mode === 'workout';
+  const modeString = Array.isArray(mode) ? mode[0] : mode;
+  const isWorkoutMode = modeString === 'workout';
 
   const browseLiftAnimation = useCardLiftAnimation(shadowConfigs.sm, shadowConfigs.md);
   const scratchLiftAnimation = useCardLiftAnimation(shadowConfigs.sm, shadowConfigs.md);

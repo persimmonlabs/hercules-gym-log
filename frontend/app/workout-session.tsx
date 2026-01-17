@@ -108,6 +108,7 @@ const WorkoutSessionScreen: React.FC = () => {
   const clearSession = useSessionStore((state) => state.clearSession);
   const updateExercise = useSessionStore((state) => state.updateExercise);
   const removeExercise = useSessionStore((state) => state.removeExercise);
+  const reorderExercises = useSessionStore((state) => state.reorderExercises);
   const addWorkout = useWorkoutSessionsStore((state) => state.addWorkout);
   const { activeRotation, advanceRotation } = useProgramsStore();
   const customExercises = useCustomExerciseStore((state) => state.customExercises);
@@ -557,6 +558,24 @@ const WorkoutSessionScreen: React.FC = () => {
     setHistoryModalVisible(false);
   }, []);
 
+  const handleMoveExerciseUp = useCallback((exerciseName: string) => {
+    const index = sessionExercises.findIndex(e => e.name === exerciseName);
+    if (index > 0) {
+      triggerHaptic('selection');
+      reorderExercises(index, index - 1);
+      closeAllMenus();
+    }
+  }, [sessionExercises, reorderExercises, closeAllMenus]);
+
+  const handleMoveExerciseDown = useCallback((exerciseName: string) => {
+    const index = sessionExercises.findIndex(e => e.name === exerciseName);
+    if (index < sessionExercises.length - 1) {
+      triggerHaptic('selection');
+      reorderExercises(index, index + 1);
+      closeAllMenus();
+    }
+  }, [sessionExercises, reorderExercises, closeAllMenus]);
+
   const exerciseNames = useMemo(
     () => sessionExercises.map((exercise) => exercise.name),
     [sessionExercises],
@@ -771,10 +790,6 @@ const WorkoutSessionScreen: React.FC = () => {
             scrollOffsetRef.current = event.nativeEvent.contentOffset.y;
           }}
           scrollEventThrottle={16}
-          maintainVisibleContentPosition={{
-            minIndexForVisible: 0,
-            autoscrollToTopThreshold: 10,
-          }}
           ListHeaderComponent={listHeaderComponent}
           ListEmptyComponent={listEmptyComponent}
           ListFooterComponent={listFooterComponent}
@@ -793,10 +808,7 @@ const WorkoutSessionScreen: React.FC = () => {
             const isMenuOpen = activeMenu?.type === 'exercise' && activeMenu.exerciseName === item.name;
 
             return (
-              <Animated.View
-                layout={Layout.duration(200)}
-                style={[styles.exerciseItem, isMenuOpen && styles.exerciseItemMenuActive]}
-              >
+              <View style={[styles.exerciseItem, isMenuOpen && styles.exerciseItemMenuActive]}>
                 <View style={[styles.exerciseCard, isMenuOpen && styles.exerciseCardMenuActive]}>
                   <Pressable
                     style={[styles.exerciseHeader, { minHeight: spacing.md }]}
@@ -845,7 +857,6 @@ const WorkoutSessionScreen: React.FC = () => {
                                 if (isMenuOpen) {
                                   closeAllMenus();
                                 } else {
-                                  // Get button position and open menu
                                   const target = event.currentTarget as any;
                                   target.measure((x: number, y: number, width: number, height: number, pageX: number, pageY: number) => {
                                     openExerciseMenu(item.name, pageX, pageY, width, height);
@@ -864,8 +875,6 @@ const WorkoutSessionScreen: React.FC = () => {
                       </View>
                     </View>
                   </Pressable>
-
-                  {/* Menu is now rendered at root level */}
 
                   {isExpanded ? (
                     <View style={styles.exerciseContent} pointerEvents="box-none">
@@ -891,7 +900,7 @@ const WorkoutSessionScreen: React.FC = () => {
                     </View>
                   ) : null}
                 </View>
-              </Animated.View>
+              </View>
             );
           }}
         />
@@ -974,6 +983,24 @@ const WorkoutSessionScreen: React.FC = () => {
       {/* Render menu at root level for reliable touch handling */}
       {activeMenu?.type === 'exercise' && (
         <View style={[styles.menuPopover, { top: menuPosition.top, right: menuPosition.right }]} pointerEvents="auto">
+          {sessionExercises.findIndex(e => e.name === activeMenu.exerciseName) > 0 && (
+            <Pressable
+              style={styles.menuPopoverItem}
+              onPress={() => handleMoveExerciseUp(activeMenu.exerciseName)}
+            >
+              <MaterialCommunityIcons name="arrow-up" size={sizing.iconSM} color={colors.text.primary} style={{ marginRight: spacing.xs }} />
+              <Text variant="body">Move Up</Text>
+            </Pressable>
+          )}
+          {sessionExercises.findIndex(e => e.name === activeMenu.exerciseName) < sessionExercises.length - 1 && (
+            <Pressable
+              style={styles.menuPopoverItem}
+              onPress={() => handleMoveExerciseDown(activeMenu.exerciseName)}
+            >
+              <MaterialCommunityIcons name="arrow-down" size={sizing.iconSM} color={colors.text.primary} style={{ marginRight: spacing.xs }} />
+              <Text variant="body">Move Down</Text>
+            </Pressable>
+          )}
           <Pressable
             style={styles.menuPopoverItem}
             onPress={() => {
@@ -1177,6 +1204,8 @@ const styles = StyleSheet.create({
     minWidth: 150,
   },
   menuPopoverItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingVertical: spacing.xs,
     paddingHorizontal: spacing.sm,
   },

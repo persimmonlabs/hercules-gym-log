@@ -1,10 +1,11 @@
-import React, { useMemo, useState, useCallback, useEffect } from 'react';
+import React, { useMemo, useState, useCallback, useEffect, Component, type ErrorInfo, type ReactNode } from 'react';
 import { StyleSheet, FlatList, Pressable, View, BackHandler } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { triggerHaptic } from '@/utils/haptics';
 
 import { Text } from '@/components/atoms/Text';
+import { Button } from '@/components/atoms/Button';
 import { ProgramCard } from '@/components/molecules/ProgramCard';
 import { WorkoutFilters, type WorkoutFilterState } from '@/components/molecules/WorkoutFilters';
 import { IconSymbol } from '@/components/ui/icon-symbol';
@@ -13,6 +14,41 @@ import { useProgramsStore } from '@/store/programsStore';
 import { usePlansStore } from '@/store/plansStore';
 import { usePremiumStatus } from '@/hooks/usePremiumStatus';
 import type { PremadeProgram, UserProgram, ExperienceLevel, PremadeWorkout } from '@/types/premadePlan';
+
+interface ErrorBoundaryState {
+  hasError: boolean;
+  error: Error | null;
+}
+
+class BrowseErrorBoundary extends Component<{ children: ReactNode; onReset: () => void }, ErrorBoundaryState> {
+  constructor(props: { children: ReactNode; onReset: () => void }) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    console.error('[BrowseProgramsScreen] Error caught by boundary:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20, backgroundColor: colors.primary.bg }}>
+          <Text variant="heading3" color="primary" style={{ marginBottom: 12 }}>Something went wrong</Text>
+          <Text variant="body" color="secondary" style={{ marginBottom: 20, textAlign: 'center' }}>
+            {this.state.error?.message || 'An unexpected error occurred'}
+          </Text>
+          <Button label="Go Back" onPress={this.props.onReset} />
+        </View>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 
 const styles = StyleSheet.create({
@@ -53,11 +89,12 @@ const styles = StyleSheet.create({
   },
 });
 
-export default function BrowseProgramsScreen() {
+function BrowseProgramsScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { mode } = useLocalSearchParams<{ mode?: 'program' | 'workout' }>();
-  const isWorkoutMode = mode === 'workout';
+  const modeString = Array.isArray(mode) ? mode[0] : mode;
+  const isWorkoutMode = modeString === 'workout';
 
   const { premadePrograms, premadeWorkouts, userPrograms } = useProgramsStore();
   const { plans } = usePlansStore();
@@ -71,74 +108,82 @@ export default function BrowseProgramsScreen() {
   });
 
   const filteredItems = useMemo(() => {
-    if (isWorkoutMode) {
-      let filtered = premadeWorkouts;
+    try {
+      if (isWorkoutMode) {
+        let filtered = premadeWorkouts || [];
 
-      // Apply experience level filter
-      if (filters.experienceLevel !== 'all') {
-        filtered = filtered.filter(p => p.metadata.experienceLevel === filters.experienceLevel);
+        // Apply experience level filter
+        if (filters.experienceLevel !== 'all') {
+          filtered = filtered.filter(p => p?.metadata?.experienceLevel === filters.experienceLevel);
+        }
+
+        // Apply equipment filter
+        if (filters.equipment !== 'all') {
+          filtered = filtered.filter(p => p?.metadata?.equipment === filters.equipment);
+        }
+
+        // Apply goal filter
+        if (filters.goal !== 'all') {
+          filtered = filtered.filter(p => p?.metadata?.goal === filters.goal);
+        }
+
+        // Apply duration filter
+        if (filters.duration !== 'all') {
+          filtered = filtered.filter(p => {
+            const duration = (p as PremadeWorkout)?.metadata?.durationMinutes;
+            if (typeof duration !== 'number') return true;
+            switch (filters.duration) {
+              case 'quick':
+                return duration <= 30;
+              case 'medium':
+                return duration > 30 && duration <= 60;
+              case 'long':
+                return duration > 60;
+              default:
+                return true;
+            }
+          });
+        }
+
+        // Filter out workouts that have been added to My Workouts
+        // Compare by name (case-insensitive) since premade workouts get new IDs when added
+        const safePlans = (plans || []).filter(plan => plan && typeof plan.name === 'string');
+        const addedWorkoutNames = new Set(
+          safePlans
+            .filter(plan => plan.source === 'premade' || plan.source === 'library' || plan.source === 'recommended')
+            .map(plan => plan.name.trim().toLowerCase())
+        );
+        filtered = filtered.filter(w => w?.name && !addedWorkoutNames.has(w.name.trim().toLowerCase()));
+
+        return filtered;
+      } else {
+        let filtered = premadePrograms || [];
+
+        // Apply experience level filter
+        if (filters.experienceLevel !== 'all') {
+          filtered = filtered.filter(p => p?.metadata?.experienceLevel === filters.experienceLevel);
+        }
+
+        // Apply equipment filter
+        if (filters.equipment !== 'all') {
+          filtered = filtered.filter(p => p?.metadata?.equipment === filters.equipment);
+        }
+
+        // Apply goal filter
+        if (filters.goal !== 'all') {
+          filtered = filtered.filter(p => p?.metadata?.goal === filters.goal);
+        }
+
+        // Filter out already-added plans
+        const safeUserPrograms = (userPrograms || []).filter(up => up && up.sourceId);
+        const addedSourceIds = new Set(safeUserPrograms.map(up => up.sourceId));
+        filtered = filtered.filter(p => p?.id && !addedSourceIds.has(p.id));
+
+        return filtered;
       }
-
-      // Apply equipment filter
-      if (filters.equipment !== 'all') {
-        filtered = filtered.filter(p => p.metadata.equipment === filters.equipment);
-      }
-
-      // Apply goal filter
-      if (filters.goal !== 'all') {
-        filtered = filtered.filter(p => p.metadata.goal === filters.goal);
-      }
-
-      // Apply duration filter
-      if (filters.duration !== 'all') {
-        filtered = filtered.filter(p => {
-          const duration = (p as PremadeWorkout).metadata.durationMinutes;
-          switch (filters.duration) {
-            case 'quick':
-              return duration <= 30;
-            case 'medium':
-              return duration > 30 && duration <= 60;
-            case 'long':
-              return duration > 60;
-            default:
-              return true;
-          }
-        });
-      }
-
-      // Filter out workouts that have been added to My Workouts
-      // Compare by name (case-insensitive) since premade workouts get new IDs when added
-      const addedWorkoutNames = new Set(
-        plans
-          .filter(plan => plan.source === 'premade' || plan.source === 'library' || plan.source === 'recommended')
-          .map(plan => plan.name.trim().toLowerCase())
-      );
-      filtered = filtered.filter(w => !addedWorkoutNames.has(w.name.trim().toLowerCase()));
-
-      return filtered;
-    } else {
-      let filtered = premadePrograms;
-
-      // Apply experience level filter
-      if (filters.experienceLevel !== 'all') {
-        filtered = filtered.filter(p => p.metadata.experienceLevel === filters.experienceLevel);
-      }
-
-      // Apply equipment filter
-      if (filters.equipment !== 'all') {
-        filtered = filtered.filter(p => p.metadata.equipment === filters.equipment);
-      }
-
-      // Apply goal filter
-      if (filters.goal !== 'all') {
-        filtered = filtered.filter(p => p.metadata.goal === filters.goal);
-      }
-
-      // Filter out already-added plans
-      const addedSourceIds = new Set(userPrograms.map(up => up.sourceId).filter(Boolean));
-      filtered = filtered.filter(p => !addedSourceIds.has(p.id));
-
-      return filtered;
+    } catch (error) {
+      console.error('[BrowseProgramsScreen] Error filtering items:', error);
+      return [];
     }
   }, [premadePrograms, premadeWorkouts, filters, isWorkoutMode, userPrograms, plans]);
 
@@ -166,17 +211,23 @@ export default function BrowseProgramsScreen() {
   const handleProgramPress = useCallback((item: PremadeProgram | UserProgram | PremadeWorkout) => {
     triggerHaptic('selection');
 
+    // Ensure ID is a string, not an object
+    const itemId = typeof item?.id === 'string' ? item.id : String(item?.id || '');
+    if (!itemId) {
+      console.error('[BrowseProgramsScreen] Invalid item ID:', item);
+      return;
+    }
+
     if (isWorkoutMode) {
       // Navigate to workout preview (take-it-or-leave-it style, like program-details)
-      const workout = item as PremadeWorkout;
       router.push({
         pathname: '/(tabs)/workout-preview',
-        params: { workoutId: workout.id, from: 'browse' }
+        params: { workoutId: itemId, from: 'browse' }
       });
     } else {
       router.push({
         pathname: '/(tabs)/program-details',
-        params: { programId: item.id, from: 'browse' }
+        params: { programId: itemId, from: 'browse' }
       });
     }
   }, [router, isWorkoutMode]);
@@ -187,7 +238,7 @@ export default function BrowseProgramsScreen() {
       <FlatList
         data={filteredItems as any}
         contentContainerStyle={styles.listContent}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item, index) => item?.id || `item-${index}`}
         ListHeaderComponent={
           <>
             {/* Header */}
@@ -214,8 +265,13 @@ export default function BrowseProgramsScreen() {
           </>
         }
         renderItem={({ item }) => {
+          // Skip rendering if item is invalid
+          if (!item || !item.metadata) {
+            return null;
+          }
+          
           // Check if this is a premium workout that should be locked
-          const isWorkout = 'durationMinutes' in item.metadata;
+          const isWorkout = item.metadata && 'durationMinutes' in item.metadata;
           const isLocked = isWorkout && !(item as any).isFree && !isPremium;
           
           return (
@@ -241,5 +297,19 @@ export default function BrowseProgramsScreen() {
         }
       />
     </View>
+  );
+}
+
+export default function BrowseProgramsScreenWithErrorBoundary() {
+  const router = useRouter();
+  
+  const handleReset = useCallback(() => {
+    router.replace('/(tabs)/plans');
+  }, [router]);
+
+  return (
+    <BrowseErrorBoundary onReset={handleReset}>
+      <BrowseProgramsScreen />
+    </BrowseErrorBoundary>
   );
 }

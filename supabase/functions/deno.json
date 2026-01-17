@@ -1,0 +1,9 @@
+{
+  "imports": {
+    "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@2.80.0"
+  },
+  "compilerOptions": {
+    "lib": ["deno.ns", "dom"],
+    "target": "ES2022"
+  }
+}

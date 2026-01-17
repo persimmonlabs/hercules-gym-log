@@ -576,14 +576,29 @@ export async function fetchWorkoutTemplates(userId: string): Promise<WorkoutTemp
 
             console.log('[Supabase] Successfully fetched', data?.length ?? 0, 'workout templates');
 
-            return (data || []).map((row) => ({
-                id: row.id,
-                name: row.name,
-                exercises: row.exercises || [],
-                source: row.source,
-                created_at: row.created_at,
-                updated_at: row.updated_at,
-            }));
+            return (data || []).map((row) => {
+                // Validate and sanitize the data
+                const exercises = Array.isArray(row.exercises) ? row.exercises : [];
+                const sanitizedExercises = exercises.filter((ex: any) => {
+                    // Filter out invalid exercise objects
+                    if (!ex || typeof ex !== 'object') return false;
+                    if (typeof ex.id !== 'string') return false;
+                    return true;
+                }).map((ex: any) => ({
+                    id: String(ex.id),
+                    name: String(ex.name || ''),
+                    sets: typeof ex.sets === 'number' ? ex.sets : 3,
+                }));
+
+                return {
+                    id: String(row.id),
+                    name: String(row.name || 'Untitled'),
+                    exercises: sanitizedExercises,
+                    source: row.source,
+                    created_at: row.created_at,
+                    updated_at: row.updated_at,
+                };
+            });
         },
         [], // fallback to empty array
         'fetchWorkoutTemplates'

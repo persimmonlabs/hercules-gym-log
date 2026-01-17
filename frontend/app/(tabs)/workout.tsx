@@ -295,7 +295,7 @@ const WorkoutScreen: React.FC = () => {
                     accessibilityRole="button"
                     accessibilityLabel={`Start ${workout.name}`}
                   >
-                    <SurfaceCard tone="neutral" padding="md" showAccentStripe={true} style={styles.planCard}>
+                    <SurfaceCard tone="neutral" padding="md" showAccentStripe={false} style={styles.planCard}>
                       <View style={styles.planCardContent}>
                         <Text variant="bodySemibold" color="primary">
                           {workout.name}
@@ -308,7 +308,7 @@ const WorkoutScreen: React.FC = () => {
                   </Pressable>
                 ))
               ) : (
-                <SurfaceCard tone="neutral" padding="md" showAccentStripe={true} style={styles.planCard}>
+                <SurfaceCard tone="neutral" padding="md" showAccentStripe={false} style={styles.planCard}>
                   <View style={styles.planCardContent}>
                     <Text variant="bodySemibold" color="primary">
                       No saved workouts yet

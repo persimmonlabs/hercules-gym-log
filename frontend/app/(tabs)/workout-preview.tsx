@@ -112,9 +112,10 @@ const styles = StyleSheet.create({
 export default function WorkoutPreviewScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { workoutId } = useLocalSearchParams<{
-    workoutId: string;
-  }>();
+  const scrollRef = useRef<ScrollView>(null);
+  const params = useLocalSearchParams<{ workoutId: string; from?: string }>();
+  const workoutId = Array.isArray(params.workoutId) ? params.workoutId[0] : params.workoutId;
+  const from = Array.isArray(params.from) ? params.from[0] : params.from;
 
   const { premadeWorkouts } = useProgramsStore();
   const { addPlan, plans } = usePlansStore();
@@ -134,8 +135,6 @@ export default function WorkoutPreviewScreen() {
       params: { mode: 'workout' }
     });
   }, [router]);
-
-  const scrollRef = useRef<ScrollView>(null);
 
   // Reset scroll position when screen gains focus
   useFocusEffect(

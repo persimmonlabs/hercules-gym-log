@@ -201,24 +201,57 @@ export const usePlansStore = create<PlansState>((set, get) => ({
       const templates = await fetchWorkoutTemplates(uid);
       console.log('[plansStore] HYDRATING PLANS from Supabase', templates);
 
-      const exerciseLookup = exercises.reduce<Record<string, Exercise>>((acc, exercise) => {
+      const exerciseLookupById = exercises.reduce<Record<string, Exercise>>((acc, exercise) => {
         acc[exercise.id] = exercise;
         return acc;
       }, {});
 
-      const normalizedPlans: Plan[] = templates.map((template) => {
-        const normalizedExercises = template.exercises
-          .map((item) => exerciseLookup[item.id])
-          .filter((exercise): exercise is Exercise => Boolean(exercise));
+      const exerciseLookupByName = exercises.reduce<Record<string, Exercise>>((acc, exercise) => {
+        acc[exercise.name.toLowerCase().trim()] = exercise;
+        return acc;
+      }, {});
 
-        return {
-          id: template.id,
-          name: template.name,
-          exercises: normalizedExercises,
-          createdAt: new Date(template.created_at).getTime(),
-          source: template.source || 'custom',
-        };
-      });
+      const normalizedPlans: Plan[] = [];
+      
+      for (const template of templates) {
+        try {
+          // Skip templates with invalid data
+          if (!template || typeof template.name !== 'string' || !template.id) {
+            console.warn('[plansStore] Skipping invalid template:', template?.id);
+            continue;
+          }
+
+          // Ensure exercises is an array
+          const templateExercises = Array.isArray(template.exercises) ? template.exercises : [];
+          
+          const normalizedExercises = templateExercises
+            .filter((item) => {
+              // Filter out invalid exercise objects
+              return item && typeof item === 'object' && typeof item.id === 'string';
+            })
+            .map((item) => {
+              if (exerciseLookupById[item.id]) {
+                return exerciseLookupById[item.id];
+              }
+              const nameKey = item.name?.toLowerCase().trim();
+              if (nameKey && exerciseLookupByName[nameKey]) {
+                return exerciseLookupByName[nameKey];
+              }
+              return null;
+            })
+            .filter((exercise): exercise is Exercise => Boolean(exercise));
+
+          normalizedPlans.push({
+            id: template.id,
+            name: template.name,
+            exercises: normalizedExercises,
+            createdAt: new Date(template.created_at).getTime(),
+            source: template.source || 'custom',
+          });
+        } catch (templateError) {
+          console.warn('[plansStore] Error processing template:', template?.id, templateError);
+        }
+      }
 
       set({ plans: normalizedPlans, isLoading: false });
       console.log('[plansStore] Hydrated', normalizedPlans.length, 'workout templates from Supabase');
