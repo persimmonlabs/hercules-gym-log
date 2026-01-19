@@ -87,8 +87,13 @@ export const formatDurationLabel = (duration?: number): string => {
     return 'Not tracked';
   }
 
-  const minutes = Math.floor(duration / 60);
+  const hours = Math.floor(duration / 3600);
+  const minutes = Math.floor((duration % 3600) / 60);
   const seconds = duration % 60;
+
+  if (hours > 0) {
+    return `${hours}h ${minutes.toString().padStart(2, '0')}m ${seconds.toString().padStart(2, '0')}s`;
+  }
 
   if (minutes === 0) {
     return `${seconds}s`;

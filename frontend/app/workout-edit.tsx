@@ -22,7 +22,7 @@ import { useWorkoutEditor } from '@/hooks/useWorkoutEditor';
 import { exercises, createCustomExerciseCatalogItem } from '@/constants/exercises';
 import { useCustomExerciseStore } from '@/store/customExerciseStore';
 import { useWorkoutSessionsStore } from '@/store/workoutSessionsStore';
-import { normalizeSearchText } from '@/utils/strings';
+import { searchExercises } from '@/utils/exerciseSearch';
 import { getExerciseDisplayTagText } from '@/utils/exerciseDisplayTags';
 import type { Exercise } from '@/constants/exercises';
 import hierarchyData from '@/data/hierarchy.json';
@@ -111,22 +111,14 @@ const WorkoutEditScreen: React.FC = () => {
   const pickerListRef = useRef<FlatList>(null);
   const customExercises = useCustomExerciseStore((state) => state.customExercises);
 
-  // Merge custom exercises with filtered exercises
+  // Merge custom exercises with filtered exercises and apply search
   const allFilteredExercises = useMemo(() => {
     const customCatalogItems = customExercises.map((ce) =>
       createCustomExerciseCatalogItem(ce.id, ce.name, ce.exerciseType)
     );
     const combinedExercises = [...filteredExercises, ...customCatalogItems];
-    // Filter by search term if present
-    let result = combinedExercises;
-    if (searchTerm.trim()) {
-      const query = searchTerm.toLowerCase();
-      result = combinedExercises.filter((e) =>
-        e.name.toLowerCase().includes(query)
-      );
-    }
-    // Sort alphabetically A-Z by name
-    return result.sort((a, b) => a.name.localeCompare(b.name));
+    // Use unified search with fuzzy matching and relevance ranking
+    return searchExercises(searchTerm, combinedExercises);
   }, [filteredExercises, customExercises, searchTerm]);
 
   const handleOpenPicker = useCallback(() => {

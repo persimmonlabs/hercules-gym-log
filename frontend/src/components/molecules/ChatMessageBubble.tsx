@@ -61,7 +61,7 @@ export const ChatMessageBubble: React.FC<ChatMessageBubbleProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    marginVertical: spacing.xs,
+    marginVertical: spacing.sm,
     paddingHorizontal: spacing.md,
   },
   bubble: {

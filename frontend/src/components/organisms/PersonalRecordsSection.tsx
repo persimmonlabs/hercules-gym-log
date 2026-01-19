@@ -11,7 +11,8 @@ import { useWorkoutSessionsStore } from '@/store/workoutSessionsStore';
 import { usePersonalRecordsStore } from '@/store/personalRecordsStore';
 import { useSettingsStore } from '@/store/settingsStore';
 import type { Workout } from '@/types/workout';
-import exercisesData from '@/data/exercises.json';
+import { exercises as exerciseCatalog } from '@/constants/exercises';
+import { searchExercises } from '@/utils/exerciseSearch';
 import { SheetModal } from '@/components/molecules/SheetModal';
 
 export const PersonalRecordsSection: React.FC = () => {
@@ -84,12 +85,10 @@ export const PersonalRecordsSection: React.FC = () => {
   };
 
   const filteredExercises = useMemo(() => {
-    return exercisesData
-      .filter(ex =>
-        ex.name.toLowerCase().includes(searchQuery.toLowerCase()) &&
-        !trackedExercises.includes(ex.name)
-      )
-      .sort((a, b) => a.name.localeCompare(b.name));
+    const excludeIds = exerciseCatalog
+      .filter(ex => trackedExercises.includes(ex.name))
+      .map(ex => ex.id);
+    return searchExercises(searchQuery, exerciseCatalog, { excludeIds, limit: 50 });
   }, [searchQuery, trackedExercises]);
 
   return (

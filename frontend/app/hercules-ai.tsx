@@ -9,15 +9,21 @@ import {
   StyleSheet,
   TextInput,
   FlatList,
-  KeyboardAvoidingView,
   Platform,
   Pressable,
   ActivityIndicator,
+  Keyboard,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
-import Animated, { FadeIn } from 'react-native-reanimated';
+import Animated, {
+  FadeIn,
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+  Easing,
+} from 'react-native-reanimated';
 
 import { Text } from '@/components/atoms/Text';
 import { Button } from '@/components/atoms/Button';
@@ -31,7 +37,7 @@ import { ChatHistoryModal } from '@/components/molecules/ChatHistoryModal';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { useTheme } from '@/hooks/useTheme';
 import { usePremiumStatus } from '@/hooks/usePremiumStatus';
-import { spacing, radius, typography } from '@/constants/theme';
+import { spacing, radius, typography, shadows } from '@/constants/theme';
 import { triggerHaptic } from '@/utils/haptics';
 import {
   sendChatMessage,
@@ -56,6 +62,42 @@ const HerculesAIScreen: React.FC = () => {
   const [usage, setUsage] = useState<UsageInfo | null>(null);
   const [disclaimerAccepted, setDisclaimerAccepted] = useState(false);
   const [historyModalVisible, setHistoryModalVisible] = useState(false);
+
+  // Keyboard handling with Reanimated
+  const keyboardHeight = useSharedValue(0);
+
+  useEffect(() => {
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+
+    const showSubscription = Keyboard.addListener(showEvent, (e) => {
+      // Add extra padding between input and keyboard for visual buffer
+      keyboardHeight.value = withTiming(e.endCoordinates.height - (insets.bottom || 0) + 60, {
+        duration: Platform.OS === 'ios' ? 250 : 150,
+        easing: Easing.out(Easing.cubic),
+      });
+    });
+
+    const hideSubscription = Keyboard.addListener(hideEvent, () => {
+      keyboardHeight.value = withTiming(0, {
+        duration: Platform.OS === 'ios' ? 250 : 150,
+        easing: Easing.out(Easing.cubic),
+      });
+    });
+
+    return () => {
+      showSubscription.remove();
+      hideSubscription.remove();
+    };
+  }, [keyboardHeight]);
+
+  const inputContainerAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: -keyboardHeight.value }],
+  }));
+
+  const messageListAnimatedStyle = useAnimatedStyle(() => ({
+    paddingBottom: keyboardHeight.value,
+  }));
 
   useEffect(() => {
     if (isPremium && disclaimerAccepted) {
@@ -278,7 +320,7 @@ const HerculesAIScreen: React.FC = () => {
                 By continuing, you acknowledge that you understand these limitations.
               </Text>
               <Button
-                label="I Understand, Continue"
+                label="I Understand"
                 variant="primary"
                 size="lg"
                 onPress={handleAcceptDisclaimer}
@@ -291,101 +333,118 @@ const HerculesAIScreen: React.FC = () => {
     );
   }
 
+
+  // Calculate input area height for FlatList bottom padding
+  const inputAreaHeight = 52 + spacing.sm + (insets.bottom || spacing.xs) + spacing.sm;
+
   return (
     <LinearGradient colors={gradientColors} style={styles.gradient}>
-      <KeyboardAvoidingView
-        style={styles.keyboardAvoid}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={0}
-      >
-        <View style={[styles.container, { paddingTop: insets.top }]}>
-          <View style={styles.header}>
-            <Pressable onPress={handleBack} hitSlop={12}>
-              <IconSymbol name="arrow-back" size={24} color={theme.text.primary} />
-            </Pressable>
-            <Text variant="heading3" color="primary" style={styles.headerTitle}>
-              Hercules AI
-            </Text>
-            <Pressable onPress={handleOpenHistory} hitSlop={12}>
-              <IconSymbol name="history" size={24} color={theme.text.primary} />
-            </Pressable>
-          </View>
-
-          {usage && (
-            <View style={styles.usageBannerWrapper}>
-              <ChatUsageBanner usage={usage} />
-            </View>
-          )}
-
-          <FlatList
-            ref={flatListRef}
-            data={messages}
-            renderItem={renderMessage}
-            keyExtractor={(item) => item.id}
-            contentContainerStyle={styles.messageList}
-            showsVerticalScrollIndicator={false}
-            ListFooterComponent={<TypingIndicator isVisible={isLoading} />}
-            ListEmptyComponent={
-              <Animated.View entering={FadeIn.duration(500)} style={styles.emptyState}>
-                <Text variant="heading2" color="primary" style={styles.emptyTitle}>
-                  Hey there! 👋
-                </Text>
-                <Text variant="body" color="secondary" style={styles.emptyText}>
-                  I&apos;m Hercules, your AI fitness assistant. Ask me anything about
-                  workouts, form, nutrition, or let me help you plan your next session.
-                </Text>
-              </Animated.View>
-            }
-          />
-
-          {pendingAction && (
-            <ActionApprovalCard
-              action={pendingAction}
-              onApprove={() => handleActionDecision('approve')}
-              onReject={() => handleActionDecision('reject')}
-              isLoading={actionLoading}
-            />
-          )}
-
-          <View style={[styles.inputContainer, { paddingBottom: Math.max(insets.bottom, spacing.xs) }]}>
-            <View style={[styles.inputWrapper, { backgroundColor: theme.surface.elevated, borderWidth: 2, borderColor: theme.accent.primary }]}>
-              <TextInput
-                style={[styles.input, { color: theme.text.primary }]}
-                placeholder="Ask Hercules anything..."
-                placeholderTextColor={theme.text.tertiary}
-                value={inputText}
-                onChangeText={setInputText}
-                multiline
-                maxLength={1000}
-                editable={!isLoading}
-              />
-              <Pressable
-                onPress={handleSend}
-                disabled={!inputText.trim() || isLoading}
-                style={[
-                  styles.sendButton,
-                  {
-                    backgroundColor:
-                      inputText.trim() && !isLoading
-                        ? theme.accent.primary
-                        : theme.surface.card,
-                  },
-                ]}
-              >
-                {isLoading ? (
-                  <ActivityIndicator size="small" color={theme.text.primary} />
-                ) : (
-                  <IconSymbol
-                    name="arrow-upward"
-                    size={20}
-                    color={inputText.trim() ? '#FFFFFF' : theme.text.tertiary}
-                  />
-                )}
-              </Pressable>
-            </View>
-          </View>
+      <View style={[styles.container, { paddingTop: insets.top }]}>
+        <View style={[styles.header, { borderBottomColor: theme.border.light }]}>
+          <Pressable 
+            onPress={handleBack} 
+            hitSlop={12}
+            style={[styles.headerButton, { backgroundColor: theme.surface.elevated }]}
+          >
+            <IconSymbol name="arrow-back" size={20} color={theme.text.primary} />
+          </Pressable>
+          <Text variant="heading3" color="primary" style={styles.headerTitle}>
+            Hercules AI
+          </Text>
+          <Pressable 
+            onPress={handleOpenHistory} 
+            hitSlop={12}
+            style={[styles.headerButton, { backgroundColor: theme.surface.elevated }]}
+          >
+            <IconSymbol name="menu" size={20} color={theme.text.primary} />
+          </Pressable>
         </View>
-      </KeyboardAvoidingView>
+
+        {usage && (
+          <View style={styles.usageBannerWrapper}>
+            <ChatUsageBanner usage={usage} />
+          </View>
+        )}
+
+        <Animated.FlatList
+          ref={flatListRef}
+          data={messages}
+          renderItem={renderMessage}
+          keyExtractor={(item) => item.id}
+          style={styles.messageListContainer}
+          contentContainerStyle={[styles.messageList, { paddingBottom: inputAreaHeight }]}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          ListFooterComponent={<TypingIndicator isVisible={isLoading} />}
+          ListEmptyComponent={
+            <Animated.View entering={FadeIn.duration(500)} style={styles.emptyState}>
+              <Text variant="heading2" color="primary" style={styles.emptyTitle}>
+                Hey there! 👋
+              </Text>
+              <Text variant="body" color="secondary" style={styles.emptyText}>
+                I&apos;m Hercules, your AI fitness assistant. Ask me anything about
+                workouts, form, nutrition, or let me help you plan your next session.
+              </Text>
+            </Animated.View>
+          }
+        />
+
+        {pendingAction && (
+          <ActionApprovalCard
+            action={pendingAction}
+            onApprove={() => handleActionDecision('approve')}
+            onReject={() => handleActionDecision('reject')}
+            isLoading={actionLoading}
+          />
+        )}
+
+        <Animated.View 
+          style={[
+            styles.inputContainer, 
+            { 
+              paddingBottom: insets.bottom || spacing.xs,
+              backgroundColor: theme.primary.bg,
+            },
+            inputContainerAnimatedStyle,
+          ]}
+        >
+          <View style={[styles.inputWrapper, { backgroundColor: theme.surface.card, borderWidth: 1.5, borderColor: theme.accent.primary, ...shadows.sm }]}>
+            <TextInput
+              style={[styles.input, { color: theme.text.primary }]}
+              placeholder="Ask Hercules anything..."
+              placeholderTextColor={theme.text.tertiary}
+              value={inputText}
+              onChangeText={setInputText}
+              multiline
+              maxLength={1000}
+              editable={!isLoading}
+            />
+            <Pressable
+              onPress={handleSend}
+              disabled={!inputText.trim() || isLoading}
+              style={[
+                styles.sendButton,
+                {
+                  backgroundColor:
+                    inputText.trim() && !isLoading
+                      ? theme.accent.primary
+                      : theme.surface.card,
+                },
+              ]}
+            >
+              {isLoading ? (
+                <ActivityIndicator size="small" color={theme.text.primary} />
+              ) : (
+                <IconSymbol
+                  name="arrow-upward"
+                  size={20}
+                  color={inputText.trim() ? '#FFFFFF' : theme.text.tertiary}
+                />
+              )}
+            </Pressable>
+          </View>
+        </Animated.View>
+      </View>
       <ChatHistoryModal
         visible={historyModalVisible}
         onClose={() => setHistoryModalVisible(false)}
@@ -400,9 +459,6 @@ const styles = StyleSheet.create({
   gradient: {
     flex: 1,
   },
-  keyboardAvoid: {
-    flex: 1,
-  },
   container: {
     flex: 1,
   },
@@ -415,8 +471,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderBottomWidth: 1,
+    minHeight: 56,
+  },
+  headerButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   headerTitle: {
     flex: 1,
@@ -449,38 +514,42 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     marginBottom: spacing.sm,
   },
+  messageListContainer: {
+    flex: 1,
+  },
   messageList: {
-    flexGrow: 1,
-    paddingVertical: spacing.md,
+    paddingTop: spacing.md,
   },
   emptyState: {
-    flex: 1,
-    justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: spacing.xl,
     paddingTop: spacing['2xl'],
   },
   emptyTitle: {
-    marginBottom: spacing.md,
+    marginBottom: spacing.sm,
     textAlign: 'center',
   },
   emptyText: {
     textAlign: 'center',
-    lineHeight: 22,
+    lineHeight: 24,
+    maxWidth: 280,
   },
   inputContainer: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
     paddingHorizontal: spacing.md,
     paddingTop: spacing.sm,
   },
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'flex-end',
-    borderRadius: radius.xl,
+    borderRadius: radius.lg,
     paddingLeft: spacing.md,
     paddingRight: spacing.xs,
     paddingVertical: spacing.xs,
-    minHeight: 48,
-    overflow: 'hidden',
+    minHeight: 52,
   },
   input: {
     flex: 1,
@@ -489,12 +558,12 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
   },
   sendButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
-    marginLeft: spacing.xs,
+    marginLeft: spacing.sm,
   },
 });
 

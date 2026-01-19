@@ -18,6 +18,7 @@ import { useTheme } from '@/hooks/useTheme';
 import { exercises as exerciseCatalog } from '@/constants/exercises';
 import { triggerHaptic } from '@/utils/haptics';
 import { formatDurationLabel, getWorkoutTotals, getWorkoutVolume } from '@/utils/workout';
+import { searchExercises } from '@/utils/exerciseSearch';
 import { useSettingsStore } from '@/store/settingsStore';
 import type { Workout, WorkoutExercise, SetLog } from '@/types/workout';
 import type { ExerciseType } from '@/types/exercise';
@@ -371,11 +372,10 @@ const AddExerciseModal: React.FC<AddExerciseModalProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
   
   const filteredExercises = useMemo(() => {
-    const normalizedSearch = searchTerm.toLowerCase().trim();
-    return exerciseCatalog
-      .filter(ex => !existingExerciseNames.includes(ex.name))
-      .filter(ex => normalizedSearch === '' || ex.name.toLowerCase().includes(normalizedSearch))
-      .slice(0, 50);
+    const excludeIds = exerciseCatalog
+      .filter(ex => existingExerciseNames.includes(ex.name))
+      .map(ex => ex.id);
+    return searchExercises(searchTerm, exerciseCatalog, { excludeIds, limit: 50 });
   }, [searchTerm, existingExerciseNames]);
   
   return (

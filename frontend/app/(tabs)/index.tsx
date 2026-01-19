@@ -819,10 +819,15 @@ const DashboardScreen: React.FC = () => {
       exercise.sets.length > 0 ? exercise.sets.some((set) => set.completed) : false
     );
     const completedCount = completedExercises.length;
-    const base = `${completedCount} completed ${completedCount === 1 ? 'exercise' : 'exercises'}`;
+    const base = `${completedCount} ${completedCount === 1 ? 'exercise' : 'exercises'}`;
     const durationMinutes = workout.duration ? Math.max(Math.round(workout.duration / 60), 1) : null;
 
     if (durationMinutes) {
+      if (durationMinutes >= 60) {
+        const hours = Math.floor(durationMinutes / 60);
+        const minutes = durationMinutes % 60;
+        return `${base} · ${hours} hr ${minutes} min`;
+      }
       return `${base} · ${durationMinutes} min`;
     }
 

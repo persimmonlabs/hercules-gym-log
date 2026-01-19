@@ -1,31 +1,41 @@
 /**
- * ChatHistoryModal
- * Modal for viewing and selecting past chat sessions
+ * ChatHistorySidePanel
+ * Side panel that slides from the right for viewing and selecting past chat sessions
  */
 
 import React, { useEffect, useState, useCallback } from 'react';
 import {
   View,
   StyleSheet,
-  Modal,
   Pressable,
   FlatList,
   ActivityIndicator,
+  Dimensions,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+  withSpring,
+  runOnJS,
+  Easing,
+} from 'react-native-reanimated';
 
 import { Text } from '@/components/atoms/Text';
 import { Button } from '@/components/atoms/Button';
-import { SurfaceCard } from '@/components/atoms/SurfaceCard';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { useTheme } from '@/hooks/useTheme';
-import { spacing, radius } from '@/constants/theme';
+import { spacing, radius, shadows } from '@/constants/theme';
 import { triggerHaptic } from '@/utils/haptics';
 import {
   fetchChatSessions,
   deleteChatSession,
 } from '@/services/herculesAIService';
 import type { ChatSessionSummary } from '@/types/herculesAI';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const PANEL_WIDTH = Math.min(SCREEN_WIDTH * 0.85, 320);
 
 interface ChatHistoryModalProps {
   visible: boolean;
@@ -45,6 +55,10 @@ export const ChatHistoryModal: React.FC<ChatHistoryModalProps> = ({
   const [sessions, setSessions] = useState<ChatSessionSummary[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isVisible, setIsVisible] = useState(false);
+
+  const translateX = useSharedValue(PANEL_WIDTH);
+  const backdropOpacity = useSharedValue(0);
 
   const loadSessions = useCallback(async () => {
     setIsLoading(true);
@@ -60,9 +74,23 @@ export const ChatHistoryModal: React.FC<ChatHistoryModalProps> = ({
 
   useEffect(() => {
     if (visible) {
+      setIsVisible(true);
       loadSessions();
+      translateX.value = withTiming(0, {
+        duration: 300,
+        easing: Easing.out(Easing.cubic),
+      });
+      backdropOpacity.value = withTiming(1, { duration: 250 });
+    } else {
+      translateX.value = withTiming(PANEL_WIDTH, {
+        duration: 250,
+        easing: Easing.out(Easing.cubic),
+      });
+      backdropOpacity.value = withTiming(0, { duration: 200 }, () => {
+        runOnJS(setIsVisible)(false);
+      });
     }
-  }, [visible, loadSessions]);
+  }, [visible, loadSessions, translateX, backdropOpacity]);
 
   const handleSelectSession = useCallback(
     (sessionId: string) => {
@@ -107,11 +135,29 @@ export const ChatHistoryModal: React.FC<ChatHistoryModalProps> = ({
     }
   };
 
+  const panelStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: translateX.value }],
+  }));
+
+  const backdropStyle = useAnimatedStyle(() => ({
+    opacity: backdropOpacity.value,
+  }));
+
   const renderSession = ({ item }: { item: ChatSessionSummary }) => (
     <Pressable
-      style={[styles.sessionItem, { backgroundColor: theme.surface.card }]}
+      style={[
+        styles.sessionItem,
+        {
+          backgroundColor: theme.surface.elevated,
+          borderColor: theme.accent.orangeLight,
+          borderWidth: 1,
+        },
+      ]}
       onPress={() => handleSelectSession(item.id)}
     >
+      <View style={styles.sessionIcon}>
+        <IconSymbol name="chat-bubble-outline" size={18} color={theme.accent.primary} />
+      </View>
       <View style={styles.sessionContent}>
         <Text variant="bodySemibold" color="primary" numberOfLines={1}>
           {item.title || 'Untitled Chat'}
@@ -125,104 +171,159 @@ export const ChatHistoryModal: React.FC<ChatHistoryModalProps> = ({
         hitSlop={8}
         style={styles.deleteButton}
       >
-        <IconSymbol name="delete" size={20} color={theme.text.tertiary} />
+        <IconSymbol name="close" size={16} color={theme.text.tertiary} />
       </Pressable>
     </Pressable>
   );
 
+  if (!isVisible) return null;
+
   return (
-    <Modal
-      visible={visible}
-      animationType="slide"
-      presentationStyle="pageSheet"
-      onRequestClose={onClose}
-    >
-      <View
+    <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
+      <Animated.View
         style={[
-          styles.container,
+          styles.backdrop,
+          { backgroundColor: theme.overlay.scrim },
+          backdropStyle,
+        ]}
+      >
+        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
+      </Animated.View>
+
+      <Animated.View
+        style={[
+          styles.panel,
           {
-            backgroundColor: theme.primary.bg,
+            width: PANEL_WIDTH,
+            backgroundColor: theme.surface.card,
             paddingTop: insets.top,
             paddingBottom: insets.bottom,
+            ...shadows.lg,
           },
+          panelStyle,
         ]}
       >
         <View style={styles.header}>
           <Text variant="heading3" color="primary">
-            Chat History
+            History
           </Text>
-          <Pressable onPress={onClose} hitSlop={12}>
-            <IconSymbol name="close" size={24} color={theme.text.primary} />
+          <Pressable
+            onPress={onClose}
+            hitSlop={12}
+            style={[styles.closeButton, { backgroundColor: theme.surface.elevated }]}
+          >
+            <IconSymbol name="close" size={18} color={theme.text.secondary} />
           </Pressable>
         </View>
 
-        <View style={styles.newChatWrapper}>
+        <View style={styles.content}>
+          {isLoading ? (
+            <View style={styles.centered}>
+              <ActivityIndicator size="large" color={theme.accent.primary} />
+            </View>
+          ) : error ? (
+            <View style={styles.centered}>
+              <Text variant="body" color="secondary" style={styles.errorText}>
+                {error}
+              </Text>
+              <Button label="Retry" variant="secondary" size="sm" onPress={loadSessions} />
+            </View>
+          ) : sessions.length === 0 ? (
+            <View style={styles.centered}>
+              <View style={[styles.emptyIcon, { backgroundColor: theme.surface.elevated }]}>
+                <IconSymbol name="chat-bubble-outline" size={32} color={theme.text.tertiary} />
+              </View>
+              <Text variant="body" color="secondary" style={styles.emptyText}>
+                No previous chats
+              </Text>
+              <Text variant="caption" color="tertiary" style={styles.emptySubtext}>
+                Start a conversation to see it here
+              </Text>
+            </View>
+          ) : (
+            <FlatList
+              data={sessions}
+              renderItem={renderSession}
+              keyExtractor={(item) => item.id}
+              contentContainerStyle={styles.list}
+              showsVerticalScrollIndicator={false}
+            />
+          )}
+        </View>
+
+        <View style={styles.footer}>
           <Button
-            label="Start New Chat"
+            label="New Chat"
             variant="primary"
             size="md"
             onPress={handleNewChat}
+            style={styles.newChatButton}
           />
         </View>
-
-        {isLoading ? (
-          <View style={styles.centered}>
-            <ActivityIndicator size="large" color={theme.accent.primary} />
-          </View>
-        ) : error ? (
-          <View style={styles.centered}>
-            <Text variant="body" color="secondary">
-              {error}
-            </Text>
-            <Button label="Retry" variant="secondary" size="sm" onPress={loadSessions} />
-          </View>
-        ) : sessions.length === 0 ? (
-          <View style={styles.centered}>
-            <IconSymbol name="chat-bubble-outline" size={48} color={theme.text.tertiary} />
-            <Text variant="body" color="secondary" style={styles.emptyText}>
-              No previous chats yet.{'\n'}Start a new conversation!
-            </Text>
-          </View>
-        ) : (
-          <FlatList
-            data={sessions}
-            renderItem={renderSession}
-            keyExtractor={(item) => item.id}
-            contentContainerStyle={styles.list}
-            showsVerticalScrollIndicator={false}
-          />
-        )}
-      </View>
-    </Modal>
+      </Animated.View>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
+  backdrop: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  panel: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    bottom: 0,
+    borderTopLeftRadius: radius.xl,
+    borderBottomLeftRadius: radius.xl,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-  },
-  newChatWrapper: {
-    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.md,
     paddingBottom: spacing.md,
+  },
+  closeButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  content: {
+    flex: 1,
   },
   centered: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    gap: spacing.md,
+    paddingHorizontal: spacing.lg,
+    gap: spacing.sm,
+  },
+  errorText: {
+    textAlign: 'center',
+    marginBottom: spacing.sm,
+  },
+  emptyIcon: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: spacing.md,
   },
   emptyText: {
     textAlign: 'center',
   },
+  emptySubtext: {
+    textAlign: 'center',
+    marginTop: spacing.xs,
+  },
   list: {
-    paddingHorizontal: spacing.lg,
+    paddingHorizontal: spacing.md,
+    paddingTop: spacing.md,
     gap: spacing.sm,
   },
   sessionItem: {
@@ -230,14 +331,32 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.md,
-    borderRadius: radius.lg,
-    marginBottom: spacing.sm,
+    borderRadius: radius.md,
+    gap: spacing.sm,
+  },
+  sessionIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 107, 74, 0.1)',
   },
   sessionContent: {
     flex: 1,
-    gap: spacing.xs,
+    gap: spacing.xxs,
   },
   deleteButton: {
-    padding: spacing.sm,
+    padding: spacing.xs,
+  },
+  footer: {
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(0, 0, 0, 0.06)',
+  },
+  newChatButton: {
+    width: '100%',
   },
 });
