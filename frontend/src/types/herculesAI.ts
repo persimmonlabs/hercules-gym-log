@@ -17,7 +17,7 @@ export interface ActionProposal {
   id: string;
   actionType: string;
   payload: Record<string, unknown>;
-  status: 'pending' | 'approved' | 'rejected' | 'executed';
+  status: 'pending' | 'approved' | 'rejected' | 'executed' | 'dismissed';
 }
 
 export interface ChatSession {

@@ -1,7 +1,6 @@
 /**
  * exerciseSearch
- * Unified exercise search utility with fuzzy matching, synonym expansion, and relevance ranking.
- * Industry-standard search that ranks close matches first.
+ * Unified exercise search utility with strict matching and relevance ranking.
  */
 
 import type { Exercise, ExerciseCatalogItem } from '@/types/exercise';
@@ -14,80 +13,36 @@ interface SearchOptions {
   excludeIds?: string[];
 }
 
-const TOKEN_SYNONYMS: Record<string, string[]> = {
-  chest: ['pec', 'pectorals', 'push', 'bench'],
-  pec: ['chest'],
-  back: ['pull', 'lats', 'posterior', 'lat'],
-  legs: ['lower', 'quads', 'glutes', 'squat', 'hamstrings', 'calves'],
-  shoulders: ['delts', 'press', 'overhead', 'military'],
-  hamstrings: ['posterior', 'hinge', 'legs'],
-  glutes: ['posterior', 'hips', 'butt', 'legs'],
-  full: ['total', 'compound'],
-  press: ['push', 'bench', 'overhead'],
-  row: ['pull', 'cable', 'back'],
-  squat: ['legs', 'quads', 'lower'],
-  deadlift: ['hinge', 'posterior', 'dl', 'back'],
-  dl: ['deadlift'],
-  hinge: ['posterior', 'deadlift'],
-  lunge: ['single', 'split', 'legs'],
-  carry: ['farmer', 'loaded'],
-  rotation: ['anti-rotation', 'twist', 'core'],
-  olympic: ['power', 'explosive', 'clean', 'snatch'],
-  arms: ['biceps', 'triceps', 'curls', 'extensions'],
-  biceps: ['arms', 'curl'],
-  triceps: ['arms', 'extension', 'pressdown'],
-  bike: ['cycling', 'stationary', 'bicycle', 'cardio'],
-  cycling: ['bike', 'cardio'],
-  run: ['running', 'jog', 'treadmill', 'cardio', 'sprint'],
-  walk: ['walking', 'cardio', 'treadmill'],
-  abs: ['core', 'abdominal', 'obliques', 'stomach'],
-  core: ['abs', 'abdominal', 'obliques', 'stomach', 'plank'],
-  pullup: ['chinup', 'back', 'lats', 'pull'],
-  chinup: ['pullup', 'back', 'lats', 'pull'],
-  bench: ['chest', 'press'],
-  fly: ['pec', 'chest'],
-  curl: ['bicep', 'arms'],
-  extension: ['tricep', 'leg', 'arms'],
-  cardio: ['run', 'walk', 'bike', 'cycling', 'elliptical', 'stair', 'rowing', 'hiit'],
-  weight: ['dumbbell', 'barbell', 'kettlebell', 'db', 'bb', 'kb'],
-  db: ['dumbbell', 'weight'],
-  bb: ['barbell', 'weight'],
-  kb: ['kettlebell', 'weight'],
-  cable: ['pulley', 'machine'],
-  machine: ['cable', 'lever', 'selectorized'],
-  trap: ['traps', 'shrug', 'neck', 'back'],
-  lat: ['back', 'pull', 'pullup', 'latissimus'],
-  calf: ['calves', 'legs', 'lower'],
-  hiit: ['cardio', 'intervals'],
-  plyo: ['plyometric', 'jump', 'explosive'],
+/**
+ * Check if a field starts with a token (word-boundary aware).
+ * e.g., "barbell row" starts with "row" at word boundary.
+ */
+const startsWithToken = (field: string, token: string): boolean => {
+  if (field.startsWith(token)) return true;
+  return field.includes(` ${token}`);
 };
 
 /**
- * Expands search tokens with synonyms for broader matching.
+ * Check if a field contains a token as a complete word or word prefix.
+ * More strict than simple includes() to avoid partial matches like "r" in "barbell".
  */
-const expandTokens = (tokens: string[]): string[] => {
-  const expanded = new Set(tokens);
-
-  tokens.forEach((token) => {
-    const synonyms = TOKEN_SYNONYMS[token];
-    if (synonyms) {
-      synonyms.forEach((synonym) => expanded.add(synonym));
-    }
-  });
-
-  return Array.from(expanded);
+const containsTokenStrict = (field: string, token: string): boolean => {
+  if (token.length <= 2) {
+    return field.startsWith(token) || field.includes(` ${token}`);
+  }
+  return field.includes(token);
 };
 
 /**
  * Calculates a relevance score for an exercise based on search tokens.
- * Higher scores = better matches.
+ * Higher scores = better matches. Uses strict matching to avoid noise.
  */
 const scoreExercise = <T extends SearchableExercise>(
   exercise: T,
-  tokens: string[],
+  originalTokens: string[],
   normalizedQuery: string,
 ): number => {
-  if (tokens.length === 0) {
+  if (originalTokens.length === 0) {
     return 0;
   }
 
@@ -100,64 +55,61 @@ const scoreExercise = <T extends SearchableExercise>(
   const searchIndex = 'searchIndex' in exercise ? exercise.searchIndex : '';
 
   let score = 0;
+  let hasDirectMatch = false;
 
   // Bonus for full phrase matching (prioritize exact and prefix matches)
   if (normalizedName === normalizedQuery) {
-    score += 50; // Exact name match is king
+    score += 100;
+    hasDirectMatch = true;
   } else if (normalizedName.startsWith(normalizedQuery)) {
-    score += 30; // Starts with query is very strong
+    score += 60;
+    hasDirectMatch = true;
+  } else if (startsWithToken(normalizedName, normalizedQuery)) {
+    score += 50;
+    hasDirectMatch = true;
   } else if (normalizedName.includes(normalizedQuery)) {
-    score += 20; // Contains full query is strong
+    score += 40;
+    hasDirectMatch = true;
   }
 
-  // Token-based scoring
-  return tokens.reduce((acc, token) => {
-    if (!token) {
-      return acc;
-    }
+  // Token-based scoring using original tokens (no synonym expansion)
+  for (const token of originalTokens) {
+    if (!token) continue;
 
     if (normalizedName === token) {
-      return acc + 10;
+      score += 25;
+      hasDirectMatch = true;
+    } else if (normalizedName.startsWith(token)) {
+      score += 20;
+      hasDirectMatch = true;
+    } else if (startsWithToken(normalizedName, token)) {
+      score += 18;
+      hasDirectMatch = true;
+    } else if (containsTokenStrict(normalizedName, token)) {
+      score += 15;
+      hasDirectMatch = true;
+    } else if (containsTokenStrict(muscleGroup, token) || containsTokenStrict(filterMuscleGroup, token)) {
+      score += 8;
+    } else if (secondaryMuscleGroups.some((target) => containsTokenStrict(target, token))) {
+      score += 6;
+    } else if (equipment.some((item) => containsTokenStrict(item, token))) {
+      score += 6;
+    } else if (containsTokenStrict(movementPattern, token)) {
+      score += 5;
+    } else if (token === 'compound' && exercise.isCompound) {
+      score += 8;
+    } else if (token === 'bodyweight' && exercise.isBodyweight) {
+      score += 8;
+    } else if (token.length >= 3 && containsTokenStrict(searchIndex, token)) {
+      score += 3;
     }
+  }
 
-    if (normalizedName.startsWith(token)) {
-      return acc + 7;
-    }
+  if (!hasDirectMatch && score === 0) {
+    return 0;
+  }
 
-    if (normalizedName.includes(token)) {
-      return acc + 6;
-    }
-
-    if (muscleGroup.includes(token) || filterMuscleGroup.includes(token)) {
-      return acc + 5;
-    }
-
-    if (secondaryMuscleGroups.some((target) => target.includes(token))) {
-      return acc + 4;
-    }
-
-    if (equipment.some((item) => item.includes(token))) {
-      return acc + 4;
-    }
-
-    if (movementPattern.includes(token)) {
-      return acc + 3;
-    }
-
-    if (token === 'compound' && exercise.isCompound) {
-      return acc + 5;
-    }
-
-    if (token === 'bodyweight' && exercise.isBodyweight) {
-      return acc + 5;
-    }
-
-    if (searchIndex.includes(token)) {
-      return acc + 2;
-    }
-
-    return acc;
-  }, score);
+  return score;
 };
 
 /**
@@ -186,19 +138,15 @@ export const searchExercises = <T extends SearchableExercise>(
     return limit ? sorted.slice(0, limit) : sorted;
   }
 
-  const tokens = expandTokens(normalizedQuery.split(' ').filter(Boolean));
+  const originalTokens = normalizedQuery.split(' ').filter(Boolean);
   const excluded = new Set(excludeIds);
 
   const scored = exercises
     .filter((exercise) => !excluded.has(exercise.id))
-    .map((exercise) => ({ exercise, score: scoreExercise(exercise, tokens, normalizedQuery) }))
+    .map((exercise) => ({ exercise, score: scoreExercise(exercise, originalTokens, normalizedQuery) }))
     .filter((entry) => entry.score > 0)
     .sort((a, b) => {
-      // Primary: sort by score descending
-      if (b.score !== a.score) {
-        return b.score - a.score;
-      }
-      // Secondary: alphabetical for same scores
+      if (b.score !== a.score) return b.score - a.score;
       return a.exercise.name.localeCompare(b.exercise.name);
     });
 
@@ -219,6 +167,6 @@ export const exerciseMatchesQuery = <T extends SearchableExercise>(
     return true;
   }
 
-  const tokens = expandTokens(normalizedQuery.split(' ').filter(Boolean));
-  return scoreExercise(exercise, tokens, normalizedQuery) > 0;
+  const originalTokens = normalizedQuery.split(' ').filter(Boolean);
+  return scoreExercise(exercise, originalTokens, normalizedQuery) > 0;
 };

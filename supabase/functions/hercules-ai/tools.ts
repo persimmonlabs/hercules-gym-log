@@ -86,11 +86,47 @@ export const STAT_TOOLS: ToolDefinition[] = [
     function: {
       name: 'getMuscleGroupVolume',
       description:
-        'Get volume breakdown by exercise, sorted by most trained. Useful for identifying which exercises the user focuses on most.',
+        'Get volume breakdown by MUSCLE GROUP (Chest, Back, Shoulders, etc.), showing total volume per muscle group and which exercises contributed. Use this for muscle balance analysis.',
       parameters: {
         type: 'object',
         properties: {},
         required: [],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'getExercisesByMuscleGroup',
+      description:
+        'REQUIRED: Call this FIRST when creating a workout to discover available exercises. Returns all exercises for specified muscle groups with their IDs. Use this to pick NEW exercises - do NOT copy exercises from user\'s existing workouts in context.',
+      parameters: {
+        type: 'object',
+        properties: {
+          muscleGroups: {
+            type: 'string',
+            description: 'Comma-separated muscle groups. For push day use "chest,shoulders,triceps". For pull day use "back,biceps". For leg day use "quads,hamstrings,glutes,calves". Available: chest, shoulders, triceps, back, biceps, quads, hamstrings, glutes, calves, core.',
+          },
+        },
+        required: ['muscleGroups'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'lookupExercises',
+      description:
+        'Validate exercise names and get their IDs. Use this AFTER selecting exercises from getExercisesByMuscleGroup to confirm they exist. Returns exercise ID, name, and equipment for each match.',
+      parameters: {
+        type: 'object',
+        properties: {
+          exerciseNames: {
+            type: 'string',
+            description: 'Comma-separated list of exercise names to look up (e.g., "Barbell Bench Press, Lateral Raises, Dips").',
+          },
+        },
+        required: ['exerciseNames'],
       },
     },
   },

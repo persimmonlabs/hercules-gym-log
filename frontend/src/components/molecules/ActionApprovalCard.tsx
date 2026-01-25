@@ -1,17 +1,16 @@
 /**
  * ActionApprovalCard
- * Card for approving or rejecting AI-proposed actions
+ * Simplified card for approving or rejecting AI-proposed actions
  */
 
 import React from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, Pressable } from 'react-native';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 
 import { Text } from '@/components/atoms/Text';
-import { Button } from '@/components/atoms/Button';
-import { SurfaceCard } from '@/components/atoms/SurfaceCard';
 import { useTheme } from '@/hooks/useTheme';
-import { spacing } from '@/constants/theme';
+import { spacing, radius } from '@/constants/theme';
+import { triggerHaptic } from '@/utils/haptics';
 import type { ActionProposal } from '@/types/herculesAI';
 
 interface ActionApprovalCardProps {
@@ -26,6 +25,10 @@ const ACTION_TYPE_LABELS: Record<string, string> = {
   add_workout_session: 'Log Workout',
   update_user_profile: 'Update Profile',
   create_plan: 'Create Plan',
+  create_program_plan: 'Create Program',
+  create_schedule: 'Create Schedule',
+  edit_workout_session: 'Edit Session',
+  delete_workout_session: 'Delete Session',
 };
 
 export const ActionApprovalCard: React.FC<ActionApprovalCardProps> = ({
@@ -37,63 +40,89 @@ export const ActionApprovalCard: React.FC<ActionApprovalCardProps> = ({
   const { theme } = useTheme();
   const actionLabel = ACTION_TYPE_LABELS[action.actionType] || action.actionType;
 
+  const handleApprove = () => {
+    triggerHaptic('light');
+    onApprove();
+  };
+
+  const handleReject = () => {
+    triggerHaptic('light');
+    onReject();
+  };
+
   return (
-    <Animated.View entering={FadeInUp.duration(300)} style={styles.container}>
-      <SurfaceCard tone="neutral" padding="lg" showAccentStripe>
-        <View style={styles.header}>
-          <Text variant="bodySemibold" color="orange">
-            Action Required
-          </Text>
-        </View>
-        <Text variant="body" color="primary" style={styles.label}>
+    <Animated.View entering={FadeInUp.duration(200)} style={styles.container}>
+      <View style={[styles.card, { backgroundColor: theme.surface.elevated, borderColor: theme.border.light }]}>
+        <Text variant="caption" color="secondary" style={styles.label}>
           {actionLabel}
         </Text>
-        <Text variant="caption" color="secondary" style={styles.description}>
-          Hercules AI wants to perform this action. Review and approve or reject.
-        </Text>
         <View style={styles.actions}>
-          <Button
-            label="Reject"
-            variant="secondary"
-            size="sm"
-            onPress={onReject}
+          <Pressable
+            onPress={handleReject}
             disabled={isLoading}
-            style={styles.button}
-          />
-          <Button
-            label="Approve"
-            variant="primary"
-            size="sm"
-            onPress={onApprove}
+            style={[
+              styles.button,
+              styles.rejectButton,
+              { borderColor: theme.border.medium },
+              isLoading && styles.buttonDisabled,
+            ]}
+          >
+            <Text variant="bodySemibold" color="secondary">
+              Reject
+            </Text>
+          </Pressable>
+          <Pressable
+            onPress={handleApprove}
             disabled={isLoading}
-            style={styles.button}
-          />
+            style={[
+              styles.button,
+              styles.approveButton,
+              { backgroundColor: theme.accent.primary },
+              isLoading && styles.buttonDisabled,
+            ]}
+          >
+            <Text variant="bodySemibold" color="onAccent">
+              Approve
+            </Text>
+          </Pressable>
         </View>
-      </SurfaceCard>
+      </View>
     </Animated.View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    marginVertical: spacing.sm,
-    marginHorizontal: spacing.md,
+    marginTop: spacing.sm,
   },
-  header: {
-    marginBottom: spacing.xs,
+  card: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.lg,
+    borderWidth: 1,
   },
   label: {
-    marginBottom: spacing.xs,
-  },
-  description: {
-    marginBottom: spacing.md,
+    flex: 1,
   },
   actions: {
     flexDirection: 'row',
-    justifyContent: 'flex-end',
     gap: spacing.sm,
   },
   button: {
-    minWidth: 80,
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.md,
+    minWidth: 70,
+    alignItems: 'center',
+  },
+  rejectButton: {
+    borderWidth: 1,
+  },
+  approveButton: {},
+  buttonDisabled: {
+    opacity: 0.5,
   },
 });

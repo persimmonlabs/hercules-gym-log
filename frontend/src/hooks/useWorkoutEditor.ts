@@ -240,13 +240,45 @@ export const useWorkoutEditor = (workoutId?: string): WorkoutEditorHook => {
     const query = searchTerm.trim().toLowerCase();
 
     if (!query) {
-      return allExercises;
+      return allExercises.sort((a, b) => a.name.localeCompare(b.name));
     }
 
-    return allExercises.filter((exercise) => (
-      exercise.name.toLowerCase().includes(query) ||
-      exercise.muscleGroup.toLowerCase().includes(query)
-    ));
+    // For short queries (1-2 chars), require word-start match
+    const isShortQuery = query.length <= 2;
+
+    const filtered = allExercises.filter((exercise) => {
+      const name = exercise.name.toLowerCase();
+      const muscleGroup = exercise.muscleGroup.toLowerCase();
+
+      if (isShortQuery) {
+        // Require word-start match for short queries
+        return name.startsWith(query) || name.includes(` ${query}`) ||
+               muscleGroup.startsWith(query) || muscleGroup.includes(` ${query}`);
+      }
+
+      // For longer queries, standard includes is fine
+      return name.includes(query) || muscleGroup.includes(query);
+    });
+
+    // Sort by relevance: exact/prefix matches first, then alphabetically
+    return filtered.sort((a, b) => {
+      const aName = a.name.toLowerCase();
+      const bName = b.name.toLowerCase();
+
+      const aExact = aName === query;
+      const bExact = bName === query;
+      if (aExact !== bExact) return aExact ? -1 : 1;
+
+      const aStarts = aName.startsWith(query);
+      const bStarts = bName.startsWith(query);
+      if (aStarts !== bStarts) return aStarts ? -1 : 1;
+
+      const aWordStarts = aName.includes(` ${query}`);
+      const bWordStarts = bName.includes(` ${query}`);
+      if (aWordStarts !== bWordStarts) return aWordStarts ? -1 : 1;
+
+      return aName.localeCompare(bName);
+    });
   }, [searchTerm, allExercises]);
 
   const exerciseCount = exerciseDrafts.length;

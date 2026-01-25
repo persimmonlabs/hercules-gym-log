@@ -8,10 +8,15 @@ export const createSchedule = async (
   userId: string,
   payload: Record<string, unknown>
 ): Promise<ActionExecutionResult> => {
+  console.log('[HerculesAI] createSchedule called with payload:', JSON.stringify(payload, null, 2));
+  
   const name = getString(payload.name) ?? 'Workout Schedule';
   const scheduleData = normalizeScheduleData(payload.scheduleData ?? payload.schedule);
 
+  console.log('[HerculesAI] createSchedule: name=', name, 'scheduleData=', scheduleData);
+
   if (!scheduleData) {
+    console.error('[HerculesAI] createSchedule: scheduleData is invalid or missing type field');
     throw new Error('Schedule data is required and must include type: weekly|rotating.');
   }
 
@@ -27,11 +32,13 @@ export const createSchedule = async (
     .single();
 
   if (error || !data) {
+    console.error('[HerculesAI] createSchedule: insert failed', error);
     throw new Error('Failed to create schedule.');
   }
 
+  console.log('[HerculesAI] createSchedule: SUCCESS - created with ID:', data.id);
   return {
-    summary: `Schedule "${name}" created.`,
+    summary: `Schedule "${name}" created successfully! You can view it in your Schedules.`,
     data: { id: data.id },
   };
 };

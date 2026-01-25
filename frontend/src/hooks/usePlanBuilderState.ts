@@ -148,12 +148,30 @@ export const usePlanBuilderState = (editingPlanId: string | null): PlanBuilderSt
 
       if (workout) {
         // Create fresh copies of exercises to prevent mutations affecting the program data
+        // CRITICAL FIX: Don't filter out exercises that aren't in the catalog!
+        // AI-generated exercises may have slightly different names than catalog entries
         const mappedExercises = workout.exercises
           .map(ex => {
-            const found = allExercises.find(e => e.name === ex.name);
-            return found ? { ...found } : null;
-          })
-          .filter((e): e is ExerciseCatalogItem => e !== null);
+            // Try to find exact match in catalog first
+            const found = allExercises.find(e => e.name.toLowerCase() === ex.name.toLowerCase());
+            if (found) {
+              return { ...found };
+            }
+            
+            // If not found, create a placeholder exercise from the stored data
+            // This ensures AI-created exercises are preserved even if not in catalog
+            return {
+              id: ex.id || `ai-exercise-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+              name: ex.name,
+              muscles: (ex as any).muscles || [],
+              equipment: (ex as any).equipment || 'other',
+              difficulty: (ex as any).difficulty || 'intermediate',
+              exerciseType: (ex as any).exerciseType || 'strength',
+              isCustom: true,
+            } as ExerciseCatalogItem;
+          });
+
+        console.log('[usePlanBuilderState] Loaded program workout:', workout.name, 'with', mappedExercises.length, 'exercises');
 
         return {
           id: workout.id,
@@ -307,11 +325,18 @@ export const usePlanBuilderState = (editingPlanId: string | null): PlanBuilderSt
       const normalizedName = normalizeSearchText(exercise.name);
 
       return searchTokens.every((token) => {
-        if (token.length <= 1) {
-          return normalizedName.startsWith(token);
+        // For short tokens (1-2 chars), require word-start match
+        if (token.length <= 2) {
+          return normalizedName.startsWith(token) || normalizedName.includes(` ${token}`);
         }
 
-        return normalizedName.includes(token) || exercise.searchIndex.includes(token);
+        // For longer tokens, check name first (word-boundary aware), then searchIndex
+        if (normalizedName.includes(token)) {
+          return true;
+        }
+
+        // Only check searchIndex for 3+ char tokens to avoid noise
+        return exercise.searchIndex.includes(token);
       });
     },
     [searchTokens],

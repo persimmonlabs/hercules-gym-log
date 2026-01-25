@@ -12,7 +12,7 @@ export const OPENROUTER_MODEL = getOptionalEnv(
 
 export const OPENROUTER_MAX_TOKENS = getOptionalNumber(
   'OPENROUTER_MAX_TOKENS',
-  600
+  2000
 );
 
 export const OPENROUTER_TEMPERATURE = getOptionalNumber(

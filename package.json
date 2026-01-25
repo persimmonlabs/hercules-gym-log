@@ -1,6 +1,7 @@
 {
   "dependencies": {
     "@supabase/supabase-js": "^2.80.0",
+    "dotenv": "^17.2.3",
     "expo": "^54.0.25",
     "expo-location": "^19.0.8",
     "expo-task-manager": "^14.0.9",

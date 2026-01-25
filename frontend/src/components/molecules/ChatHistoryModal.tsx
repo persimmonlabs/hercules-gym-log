@@ -149,7 +149,7 @@ export const ChatHistoryModal: React.FC<ChatHistoryModalProps> = ({
         styles.sessionItem,
         {
           backgroundColor: theme.surface.elevated,
-          borderColor: theme.accent.orangeLight,
+          borderColor: theme.accent.primary,
           borderWidth: 1,
         },
       ]}
@@ -340,7 +340,7 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 107, 74, 0.1)',
+    backgroundColor: 'rgba(255, 107, 74, 0.15)',
   },
   sessionContent: {
     flex: 1,
@@ -354,7 +354,7 @@ const styles = StyleSheet.create({
     paddingTop: spacing.md,
     paddingBottom: spacing.md,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(0, 0, 0, 0.06)',
+    borderTopColor: 'rgba(255, 107, 74, 0.2)',
   },
   newChatButton: {
     width: '100%',

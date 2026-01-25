@@ -87,28 +87,17 @@ export const TypingIndicator: React.FC<TypingIndicatorProps> = ({ isVisible }) =
   if (!isVisible) return null;
 
   return (
-    <View style={[styles.container, { alignItems: 'flex-start' }]}>
-      <View
-        style={[
-          styles.bubble,
-          {
-            backgroundColor: theme.surface.elevated,
-            borderWidth: 1.5,
-            borderColor: theme.accent.primary,
-          },
-        ]}
-      >
-        <View style={styles.dotsContainer}>
-          <Animated.View
-            style={[styles.dot, { backgroundColor: theme.accent.primary }, dot1Style]}
-          />
-          <Animated.View
-            style={[styles.dot, { backgroundColor: theme.accent.primary }, dot2Style]}
-          />
-          <Animated.View
-            style={[styles.dot, { backgroundColor: theme.accent.primary }, dot3Style]}
-          />
-        </View>
+    <View style={styles.container}>
+      <View style={styles.dotsContainer}>
+        <Animated.View
+          style={[styles.dot, { backgroundColor: theme.text.secondary }, dot1Style]}
+        />
+        <Animated.View
+          style={[styles.dot, { backgroundColor: theme.text.secondary }, dot2Style]}
+        />
+        <Animated.View
+          style={[styles.dot, { backgroundColor: theme.text.secondary }, dot3Style]}
+        />
       </View>
     </View>
   );
@@ -116,13 +105,11 @@ export const TypingIndicator: React.FC<TypingIndicatorProps> = ({ isVisible }) =
 
 const styles = StyleSheet.create({
   container: {
-    marginVertical: spacing.xs,
-    paddingHorizontal: spacing.md,
-  },
-  bubble: {
+    marginVertical: spacing.sm,
+    paddingLeft: spacing.md,
+    paddingRight: spacing.md,
     paddingVertical: spacing.md,
-    paddingHorizontal: spacing.lg,
-    borderRadius: radius.lg,
+    width: '100%',
   },
   dotsContainer: {
     flexDirection: 'row',

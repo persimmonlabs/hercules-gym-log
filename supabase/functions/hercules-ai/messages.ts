@@ -98,6 +98,7 @@ export const fetchRecentMessages = async (
     .from('ai_chat_messages')
     .select('role, content')
     .eq('session_id', sessionId)
+    .in('role', ['user', 'assistant']) // Only fetch user and assistant messages, not tool messages
     .order('created_at', { ascending: false })
     .limit(limit);
 
@@ -111,6 +112,7 @@ export const fetchRecentMessages = async (
       role: row.role as ChatRole,
       content: row.content as string,
     }))
+    .filter((msg) => msg.content && msg.content.trim().length > 0) // Filter out empty messages
     .reverse();
 };
 

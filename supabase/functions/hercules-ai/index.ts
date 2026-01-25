@@ -17,7 +17,7 @@ import {
 } from './messages.ts';
 import { callOpenRouter, type ToolCall, type OpenRouterUsage } from './openrouter.ts';
 import { buildContextMessage, SYSTEM_PROMPT } from './prompts.ts';
-import { parseAssistantResponse } from './response.ts';
+import { parseAssistantResponse, constructActionFromMessage } from './response.ts';
 import { executeStatFunction, type StatFunction } from './stats.ts';
 import { createSupabaseAdmin } from './supabase.ts';
 import { STAT_TOOLS } from './tools.ts';
@@ -144,6 +144,13 @@ Deno.serve(async (request: Request): Promise<Response> => {
         );
       }
 
+      console.log('[HerculesAI] Processing action decision:', {
+        actionRequestId,
+        decision,
+        actionType: actionRequest.action_type,
+        payloadKeys: Object.keys(actionRequest.payload || {}),
+      });
+
       if (decision === 'reject') {
         await supabase
           .from('ai_action_requests')
@@ -182,12 +189,17 @@ Deno.serve(async (request: Request): Promise<Response> => {
         .eq('user_id', userId);
 
       try {
+        console.log('[HerculesAI] Executing action:', actionRequest.action_type);
+        console.log('[HerculesAI] Action payload:', JSON.stringify(actionRequest.payload, null, 2));
+        
         const result = await executeAction(
           supabase,
           userId,
           actionRequest.action_type,
           actionRequest.payload
         );
+        
+        console.log('[HerculesAI] Action execution result:', result);
 
         await supabase
           .from('ai_action_requests')
@@ -301,6 +313,7 @@ Deno.serve(async (request: Request): Promise<Response> => {
 
     for (let iteration = 0; iteration < MAX_TOOL_ITERATIONS; iteration++) {
       console.log(`[HerculesAI] Tool iteration ${iteration + 1}/${MAX_TOOL_ITERATIONS}`);
+      // Note: Don't use forceJson when tools are present - some models don't support both
       const result = await callOpenRouter(modelMessages, { tools: STAT_TOOLS });
 
       console.log(`[HerculesAI] Response: finishReason=${result.finishReason}, toolCalls=${result.toolCalls.length}, hasContent=${!!result.content}`);
@@ -353,7 +366,8 @@ Deno.serve(async (request: Request): Promise<Response> => {
 
       // If this was the last iteration and we still have tool calls, get final response
       if (iteration === MAX_TOOL_ITERATIONS - 1) {
-        const finalResult = await callOpenRouter(modelMessages, { tools: STAT_TOOLS, toolChoice: 'none' });
+        // toolChoice: 'none' means no tools will be called, so we can use forceJson
+        const finalResult = await callOpenRouter(modelMessages, { toolChoice: 'none', forceJson: true });
         finalContent = finalResult.content;
         if (finalResult.usage) {
           totalUsage.promptTokens += finalResult.usage.promptTokens;
@@ -367,7 +381,79 @@ Deno.serve(async (request: Request): Promise<Response> => {
       throw new Error('[HerculesAI] Failed to get final response after tool calls');
     }
 
-    const parsed = parseAssistantResponse(finalContent);
+    let parsed = parseAssistantResponse(finalContent);
+
+    // CRITICAL: If message looks like a proposal but has no action, try to construct it
+    if (parsed.type === 'message' && !parsed.action) {
+      const lowerMessage = parsed.message.toLowerCase();
+      const looksLikeProposal = lowerMessage.includes('would you like me to create') ||
+        lowerMessage.includes('would you like me to set up') ||
+        lowerMessage.includes('shall i create') ||
+        lowerMessage.includes('tap approve') ||
+        lowerMessage.includes('click approve') ||
+        (lowerMessage.includes('day 1') && lowerMessage.includes('day 2'));
+      
+      if (looksLikeProposal) {
+        console.warn('[HerculesAI] Message looks like proposal but has no action - attempting to construct action');
+        
+        // Determine likely action type
+        let likelyActionType: string | null = null;
+        if (lowerMessage.includes('program') || lowerMessage.includes('plan') || 
+            (lowerMessage.includes('day 1') && lowerMessage.includes('day 2'))) {
+          likelyActionType = 'create_program_plan';
+        } else if (lowerMessage.includes('schedule') || lowerMessage.includes('weekly')) {
+          likelyActionType = 'create_schedule';
+        } else if (lowerMessage.includes('workout') || lowerMessage.includes('exercise')) {
+          likelyActionType = 'create_workout_template';
+        }
+        
+        // Try to construct the action from the message content
+        const constructedAction = constructActionFromMessage(parsed.message, likelyActionType);
+        if (constructedAction) {
+          console.log('[HerculesAI] Successfully constructed action from message:', constructedAction.actionType);
+          parsed = {
+            ...parsed,
+            type: 'action',
+            action: constructedAction,
+          };
+        } else {
+          console.warn('[HerculesAI] Could not construct action from message - retrying with AI');
+          
+          // Fallback: retry with explicit instruction
+          const retryMessages: ChatMessage[] = [
+            ...modelMessages,
+            buildChatMessage('assistant', finalContent),
+            buildChatMessage('user', 'SYSTEM: Your previous response proposed creating something but you forgot to include the action payload. The user CANNOT see Accept/Reject buttons without it. Please re-output your response as valid JSON with the action field included. Use type: "action" and include the full action object with actionType and payload.'),
+          ];
+          
+          try {
+            const retryResult = await callOpenRouter(retryMessages, { forceJson: true });
+            if (retryResult.content) {
+              const retryParsed = parseAssistantResponse(retryResult.content);
+              if (retryParsed.action) {
+                console.log('[HerculesAI] Retry successful - action payload now present');
+                parsed = retryParsed;
+                if (retryResult.usage) {
+                  totalUsage.promptTokens += retryResult.usage.promptTokens;
+                  totalUsage.completionTokens += retryResult.usage.completionTokens;
+                  totalUsage.totalTokens += retryResult.usage.totalTokens;
+                }
+              } else {
+                console.error('[HerculesAI] Retry failed - still no action payload');
+              }
+            }
+          } catch (retryError) {
+            console.error('[HerculesAI] Retry call failed:', retryError);
+          }
+        }
+      }
+    }
+
+    // Ensure type is 'action' if we have an action payload
+    if (parsed.action && parsed.type !== 'action') {
+      console.log('[HerculesAI] Correcting type to action since action payload is present');
+      parsed = { ...parsed, type: 'action' };
+    }
 
     const actionRequest =
       parsed.type === 'action' && parsed.action

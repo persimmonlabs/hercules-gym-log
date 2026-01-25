@@ -45,6 +45,7 @@ const buildUsage = (usage: Record<string, unknown> | null | undefined): OpenRout
 export interface CallOpenRouterOptions {
   tools?: ToolDefinition[];
   toolChoice?: 'auto' | 'none' | { type: 'function'; function: { name: string } };
+  forceJson?: boolean;
 }
 
 export const callOpenRouter = async (
@@ -58,6 +59,11 @@ export const callOpenRouter = async (
     temperature: OPENROUTER_TEMPERATURE,
     max_tokens: OPENROUTER_MAX_TOKENS,
   };
+
+  // Force JSON output when requested - this helps ensure valid JSON responses
+  if (options?.forceJson) {
+    payload.response_format = { type: 'json_object' };
+  }
 
   if (options?.tools && options.tools.length > 0) {
     payload.tools = options.tools;

@@ -291,9 +291,14 @@ const WorkoutSessionScreen: React.FC = () => {
     const existingNames = new Set(sessionExercises.map((e) => e.name));
     const filtered = candidates.filter((exercise) => !existingNames.has(exercise.name));
 
-    // Sort alphabetically A-Z by name
-    return filtered.sort((a, b) => a.name.localeCompare(b.name));
-  }, [searchTerm, semanticResults, sessionExercises]);
+    // Only sort alphabetically when NOT searching - preserve relevance ranking when searching
+    if (!trimmedQuery) {
+      return filtered.sort((a, b) => a.name.localeCompare(b.name));
+    }
+
+    // When searching, results are already ranked by relevance from semantic search
+    return filtered;
+  }, [searchTerm, semanticResults, sessionExercises, exerciseCatalog]);
 
   const dismissPicker = useCallback(() => {
     runOnJS(Keyboard.dismiss)();
@@ -325,15 +330,8 @@ const WorkoutSessionScreen: React.FC = () => {
     const allWorkouts = useWorkoutSessionsStore.getState().workouts;
 
     if (targetName) {
-      const existing = sessionExercises.find((item) => item.name === targetName);
-      let sets = existing?.sets;
-      let historySetCount = 0;
-
-      if (!sets) {
-        const result = createSetsWithHistory(exercise.name, allWorkouts);
-        sets = result.sets;
-        historySetCount = result.historySetCount;
-      }
+      // Always fetch new exercise's history when replacing
+      const { sets, historySetCount } = createSetsWithHistory(exercise.name, allWorkouts);
 
       const nextExercise: WorkoutExercise = {
         name: exercise.name,
@@ -342,20 +340,19 @@ const WorkoutSessionScreen: React.FC = () => {
 
       updateExercise(targetName, nextExercise);
 
-      // Update history set count for the new exercise
-      if (historySetCount > 0) {
-        const currentSession = useSessionStore.getState().currentSession;
-        if (currentSession) {
-          useSessionStore.setState({
-            currentSession: {
-              ...currentSession,
-              historySetCounts: {
-                ...currentSession.historySetCounts,
-                [exercise.name]: historySetCount,
-              },
+      // Update history set counts: remove old exercise, add new exercise
+      const currentSession = useSessionStore.getState().currentSession;
+      if (currentSession) {
+        const { [targetName]: _removed, ...remainingCounts } = currentSession.historySetCounts;
+        useSessionStore.setState({
+          currentSession: {
+            ...currentSession,
+            historySetCounts: {
+              ...remainingCounts,
+              [exercise.name]: historySetCount,
             },
-          });
-        }
+          },
+        });
       }
 
       setExpandedExercises((prev) => {

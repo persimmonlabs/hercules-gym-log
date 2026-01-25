@@ -1,6 +1,7 @@
 const fs = require('fs/promises');
 const path = require('path');
 const { createClient } = require('@supabase/supabase-js');
+require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
 
 const KB_DIR = path.join(__dirname, '..', 'docs', 'hercules-ai');
 const DEFAULT_CHUNK_SIZE = 900;

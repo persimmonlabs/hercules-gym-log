@@ -4,6 +4,7 @@
  */
 
 import { supabaseClient } from '@/lib/supabaseClient';
+import { sanitizeMessageForDisplay } from '@/utils/messageSanitizer';
 import type {
   ChatRequestBody,
   ChatResponseBody,
@@ -211,7 +212,10 @@ export async function fetchChatMessages(sessionId: string): Promise<{
       .map((row) => ({
         id: row.id,
         role: row.role as 'user' | 'assistant',
-        content: row.content,
+        // CRITICAL: Sanitize assistant messages to ensure no JSON is ever shown to users
+        content: row.role === 'assistant' 
+          ? sanitizeMessageForDisplay(row.content) 
+          : row.content,
         createdAt: row.created_at,
       }));
 

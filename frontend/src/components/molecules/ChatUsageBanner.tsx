@@ -27,16 +27,15 @@ export const ChatUsageBanner: React.FC<ChatUsageBannerProps> = ({ usage }) => {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.surface.elevated }]}>
-      <Text variant="caption" color={isLow ? 'warning' : 'secondary'}>
-        {messagesRemaining} messages remaining this week
-      </Text>
+      {/* Usage banner content removed */}
     </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    paddingVertical: spacing.xs,
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.xs,
     paddingHorizontal: spacing.md,
     borderRadius: radius.sm,
     alignItems: 'center',
