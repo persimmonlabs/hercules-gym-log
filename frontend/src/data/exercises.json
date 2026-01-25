@@ -517,7 +517,7 @@
   },
   {
     "id": "exercise_017",
-    "name": "Thigh Adductor",
+    "name": "Hip Adductor",
     "exercise_type": "weight",
     "distance_unit": null,
     "muscles": {
@@ -543,7 +543,7 @@
   },
   {
     "id": "exercise_018",
-    "name": "Thigh Abductor",
+    "name": "Hip Abductor",
     "exercise_type": "weight",
     "distance_unit": null,
     "muscles": {
@@ -4333,6 +4333,61 @@
     "upper_lower": "upper"
   },
   {
+    "id": "exercise_153",
+    "name": "Dumbbell Goblet Squat",
+    "exercise_type": "weight",
+    "distance_unit": null,
+    "muscles": {
+      "Quads": 0.38,
+      "Glutes": 0.22,
+      "Hamstrings": 0.12,
+      "Lower Back": 0.09,
+      "Adductors": 0.05,
+      "Upper Abs": 0.03,
+      "Upper Back": 0.03,
+      "Mid Back": 0.02,
+      "Lower Abs": 0.02,
+      "Obliques": 0.02,
+      "Abductors": 0.01,
+      "Calves - Medial Head": 0.004,
+      "Calves - Lateral Head": 0.003,
+      "Soleus": 0.003
+    },
+    "equipment": [
+      "Dumbbell"
+    ],
+    "movement_pattern": "Vertical Push",
+    "difficulty": "Beginner",
+    "is_compound": true,
+    "push_pull": "push",
+    "upper_lower": "lower"
+  },
+  {
+    "id": "exercise_154",
+    "name":"Dumbbell Calf Raises",
+    "exercise_type": "weight",
+    "distance_unit": null,
+    "muscles": {
+      "Calves - Medial Head": 0.45,
+      "Calves - Lateral Head": 0.4,
+      "Soleus": 0.1,
+      "Lower Back": 0.01,
+      "Upper Abs": 0.01,
+      "Lower Abs": 0.01,
+      "Obliques": 0.01,
+      "Flexors": 0.005,
+      "Extensors": 0.005
+    },
+    "equipment": [
+      "Machine"
+    ],
+    "movement_pattern": "Vertical Push",
+    "difficulty": "Beginner",
+    "is_compound": false,
+    "push_pull": "push",
+    "upper_lower": "lower"
+  },
+  {
     "id": "cardio_001",
     "name": "Treadmill",
     "exercise_type": "cardio",
@@ -5435,5 +5490,561 @@
     "is_compound": false,
     "push_pull": null,
     "upper_lower": null
+  },
+  {
+    "id": "bodyweight_026",
+    "name": "Pike Push-ups",
+    "exercise_type": "bodyweight",
+    "distance_unit": null,
+    "muscles": {
+      "Front Delts": 0.35,
+      "Triceps - Long Head": 0.15,
+      "Triceps - Lateral Head": 0.12,
+      "Triceps - Medial Head": 0.10,
+      "Upper Chest": 0.10,
+      "Mid Chest": 0.05,
+      "Upper Back": 0.05,
+      "Upper Abs": 0.04,
+      "Lower Abs": 0.03,
+      "Lateral Delts": 0.01
+    },
+    "equipment": [
+      "Bodyweight"
+    ],
+    "movement_pattern": "Vertical Push",
+    "difficulty": "Intermediate",
+    "is_compound": true,
+    "push_pull": "push",
+    "upper_lower": "upper"
+  },
+  {
+    "id": "bodyweight_027",
+    "name": "Knee Push-ups",
+    "exercise_type": "bodyweight",
+    "distance_unit": null,
+    "muscles": {
+      "Mid Chest": 0.30,
+      "Upper Chest": 0.20,
+      "Front Delts": 0.18,
+      "Triceps - Long Head": 0.10,
+      "Triceps - Lateral Head": 0.08,
+      "Triceps - Medial Head": 0.06,
+      "Lower Chest": 0.05,
+      "Upper Abs": 0.02,
+      "Lower Abs": 0.01
+    },
+    "equipment": [
+      "Bodyweight"
+    ],
+    "movement_pattern": "Horizontal Push",
+    "difficulty": "Beginner",
+    "is_compound": true,
+    "push_pull": "push",
+    "upper_lower": "upper"
+  },
+  {
+    "id": "bodyweight_028",
+    "name": "Jumping Jacks",
+    "exercise_type": "bodyweight",
+    "distance_unit": null,
+    "muscles": {
+      "Quads": 0.20,
+      "Calves - Medial Head": 0.15,
+      "Calves - Lateral Head": 0.10,
+      "Soleus": 0.10,
+      "Glutes": 0.15,
+      "Front Delts": 0.10,
+      "Lateral Delts": 0.08,
+      "Abductors": 0.05,
+      "Upper Abs": 0.04,
+      "Lower Abs": 0.03
+    },
+    "equipment": [
+      "Bodyweight"
+    ],
+    "movement_pattern": "Cardio",
+    "difficulty": "Beginner",
+    "is_compound": true,
+    "push_pull": null,
+    "upper_lower": null
+  },
+  {
+    "id": "bodyweight_029",
+    "name": "Butt Kicks",
+    "exercise_type": "bodyweight",
+    "distance_unit": null,
+    "muscles": {
+      "Hamstrings": 0.35,
+      "Quads": 0.20,
+      "Calves - Medial Head": 0.12,
+      "Calves - Lateral Head": 0.08,
+      "Soleus": 0.08,
+      "Glutes": 0.10,
+      "Upper Abs": 0.04,
+      "Lower Abs": 0.03
+    },
+    "equipment": [
+      "Bodyweight"
+    ],
+    "movement_pattern": "Cardio",
+    "difficulty": "Beginner",
+    "is_compound": true,
+    "push_pull": null,
+    "upper_lower": "lower"
+  },
+  {
+    "id": "bodyweight_030",
+    "name": "Dead Bugs",
+    "exercise_type": "bodyweight",
+    "distance_unit": null,
+    "muscles": {
+      "Lower Abs": 0.35,
+      "Upper Abs": 0.30,
+      "Obliques": 0.20,
+      "Hip Flexors": 0.10,
+      "Lower Back": 0.05
+    },
+    "equipment": [
+      "Bodyweight"
+    ],
+    "movement_pattern": "Core",
+    "difficulty": "Beginner",
+    "is_compound": false,
+    "push_pull": null,
+    "upper_lower": null
+  },
+  {
+    "id": "bodyweight_031",
+    "name": "Bird Dogs",
+    "exercise_type": "bodyweight",
+    "distance_unit": null,
+    "muscles": {
+      "Lower Back": 0.25,
+      "Glutes": 0.20,
+      "Upper Abs": 0.15,
+      "Lower Abs": 0.15,
+      "Hamstrings": 0.10,
+      "Front Delts": 0.08,
+      "Obliques": 0.07
+    },
+    "equipment": [
+      "Bodyweight"
+    ],
+    "movement_pattern": "Core",
+    "difficulty": "Beginner",
+    "is_compound": true,
+    "push_pull": null,
+    "upper_lower": null
+  },
+  {
+    "id": "bodyweight_032",
+    "name": "Bicycle Crunches",
+    "exercise_type": "bodyweight",
+    "distance_unit": null,
+    "muscles": {
+      "Obliques": 0.35,
+      "Upper Abs": 0.30,
+      "Lower Abs": 0.25,
+      "Hip Flexors": 0.10
+    },
+    "equipment": [
+      "Bodyweight"
+    ],
+    "movement_pattern": "Core",
+    "difficulty": "Beginner",
+    "is_compound": false,
+    "push_pull": null,
+    "upper_lower": null
+  },
+  {
+    "id": "bodyweight_033",
+    "name": "Bodyweight Reverse Lunges",
+    "exercise_type": "bodyweight",
+    "distance_unit": null,
+    "muscles": {
+      "Quads": 0.35,
+      "Glutes": 0.30,
+      "Hamstrings": 0.20,
+      "Calves - Medial Head": 0.05,
+      "Calves - Lateral Head": 0.03,
+      "Soleus": 0.03,
+      "Upper Abs": 0.02,
+      "Lower Abs": 0.02
+    },
+    "equipment": [
+      "Bodyweight"
+    ],
+    "movement_pattern": "Lunge",
+    "difficulty": "Beginner",
+    "is_compound": true,
+    "push_pull": null,
+    "upper_lower": "lower"
+  },
+  {
+    "id": "bodyweight_034",
+    "name": "Bodyweight Walking Lunges",
+    "exercise_type": "bodyweight",
+    "distance_unit": null,
+    "muscles": {
+      "Quads": 0.35,
+      "Glutes": 0.28,
+      "Hamstrings": 0.20,
+      "Calves - Medial Head": 0.05,
+      "Calves - Lateral Head": 0.04,
+      "Soleus": 0.03,
+      "Upper Abs": 0.03,
+      "Lower Abs": 0.02
+    },
+    "equipment": [
+      "Bodyweight"
+    ],
+    "movement_pattern": "Lunge",
+    "difficulty": "Beginner",
+    "is_compound": true,
+    "push_pull": null,
+    "upper_lower": "lower"
+  },
+  {
+    "id": "bodyweight_035",
+    "name": "Jump Lunges",
+    "exercise_type": "bodyweight",
+    "distance_unit": null,
+    "muscles": {
+      "Quads": 0.30,
+      "Glutes": 0.25,
+      "Hamstrings": 0.18,
+      "Calves - Medial Head": 0.08,
+      "Calves - Lateral Head": 0.06,
+      "Soleus": 0.05,
+      "Upper Abs": 0.04,
+      "Lower Abs": 0.04
+    },
+    "equipment": [
+      "Bodyweight"
+    ],
+    "movement_pattern": "Plyometric",
+    "difficulty": "Intermediate",
+    "is_compound": true,
+    "push_pull": null,
+    "upper_lower": "lower"
+  },
+  {
+    "id": "bodyweight_036",
+    "name": "Plank Jacks",
+    "exercise_type": "bodyweight",
+    "distance_unit": null,
+    "muscles": {
+      "Upper Abs": 0.25,
+      "Lower Abs": 0.25,
+      "Obliques": 0.15,
+      "Abductors": 0.10,
+      "Front Delts": 0.08,
+      "Glutes": 0.07,
+      "Quads": 0.05,
+      "Adductors": 0.05
+    },
+    "equipment": [
+      "Bodyweight"
+    ],
+    "movement_pattern": "Core",
+    "difficulty": "Intermediate",
+    "is_compound": true,
+    "push_pull": null,
+    "upper_lower": null
+  },
+  {
+    "id": "bodyweight_037",
+    "name": "Bodyweight Glute Bridges",
+    "exercise_type": "bodyweight",
+    "distance_unit": null,
+    "muscles": {
+      "Glutes": 0.55,
+      "Hamstrings": 0.25,
+      "Lower Back": 0.10,
+      "Upper Abs": 0.05,
+      "Lower Abs": 0.05
+    },
+    "equipment": [
+      "Bodyweight"
+    ],
+    "movement_pattern": "Hip Hinge",
+    "difficulty": "Beginner",
+    "is_compound": true,
+    "push_pull": null,
+    "upper_lower": "lower"
+  },
+  {
+    "id": "exercise_143",
+    "name": "Dumbbell Overhead Tricep Extension",
+    "exercise_type": "weight",
+    "distance_unit": null,
+    "muscles": {
+      "Triceps - Long Head": 0.48,
+      "Triceps - Lateral Head": 0.25,
+      "Triceps - Medial Head": 0.15,
+      "Front Delts": 0.05,
+      "Upper Back": 0.04,
+      "Upper Abs": 0.02,
+      "Lower Abs": 0.01
+    },
+    "equipment": [
+      "Dumbbell"
+    ],
+    "movement_pattern": "Vertical Push",
+    "difficulty": "Beginner",
+    "is_compound": false,
+    "push_pull": "push",
+    "upper_lower": "upper"
+  },
+  {
+    "id": "exercise_144",
+    "name": "Dumbbell Hip Thrusts",
+    "exercise_type": "weight",
+    "distance_unit": null,
+    "muscles": {
+      "Glutes": 0.55,
+      "Hamstrings": 0.22,
+      "Quads": 0.08,
+      "Lower Back": 0.05,
+      "Upper Abs": 0.05,
+      "Lower Abs": 0.03,
+      "Adductors": 0.02
+    },
+    "equipment": [
+      "Dumbbell",
+      "Bench"
+    ],
+    "movement_pattern": "Hip Hinge",
+    "difficulty": "Beginner",
+    "is_compound": true,
+    "push_pull": null,
+    "upper_lower": "lower"
+  },
+  {
+    "id": "exercise_145",
+    "name": "Single-Arm Dumbbell Row",
+    "exercise_type": "weight",
+    "distance_unit": null,
+    "muscles": {
+      "Lats": 0.35,
+      "Mid Back": 0.18,
+      "Biceps - Long Head": 0.10,
+      "Biceps - Short Head": 0.08,
+      "Rear Delts": 0.08,
+      "Upper Back": 0.07,
+      "Brachialis": 0.06,
+      "Lower Back": 0.04,
+      "Obliques": 0.04
+    },
+    "equipment": [
+      "Dumbbell",
+      "Bench"
+    ],
+    "movement_pattern": "Horizontal Pull",
+    "difficulty": "Beginner",
+    "is_compound": true,
+    "push_pull": "pull",
+    "upper_lower": "upper"
+  },
+  {
+    "id": "exercise_146",
+    "name": "Single-Leg Romanian Deadlift",
+    "exercise_type": "weight",
+    "distance_unit": null,
+    "muscles": {
+      "Hamstrings": 0.40,
+      "Glutes": 0.28,
+      "Lower Back": 0.12,
+      "Upper Back": 0.05,
+      "Calves - Medial Head": 0.04,
+      "Mid Back": 0.04,
+      "Obliques": 0.04,
+      "Calves - Lateral Head": 0.02,
+      "Soleus": 0.01
+    },
+    "equipment": [
+      "Dumbbell"
+    ],
+    "movement_pattern": "Hip Hinge",
+    "difficulty": "Intermediate",
+    "is_compound": true,
+    "push_pull": "pull",
+    "upper_lower": "lower"
+  },
+  {
+    "id": "exercise_147",
+    "name": "Straight-Arm Pulldown",
+    "exercise_type": "weight",
+    "distance_unit": null,
+    "muscles": {
+      "Lats": 0.50,
+      "Rear Delts": 0.12,
+      "Triceps - Long Head": 0.10,
+      "Mid Back": 0.08,
+      "Upper Back": 0.06,
+      "Upper Abs": 0.05,
+      "Lower Abs": 0.04,
+      "Flexors": 0.03,
+      "Front Delts": 0.02
+    },
+    "equipment": [
+      "Cable"
+    ],
+    "movement_pattern": "Vertical Pull",
+    "difficulty": "Beginner",
+    "is_compound": false,
+    "push_pull": "pull",
+    "upper_lower": "upper"
+  },
+  {
+    "id": "exercise_148",
+    "name": "Rear Delt Fly Machine",
+    "exercise_type": "weight",
+    "distance_unit": null,
+    "muscles": {
+      "Rear Delts": 0.55,
+      "Upper Back": 0.18,
+      "Mid Back": 0.12,
+      "Lateral Delts": 0.06,
+      "Biceps - Long Head": 0.03,
+      "Biceps - Short Head": 0.03,
+      "Flexors": 0.02,
+      "Brachialis": 0.01
+    },
+    "equipment": [
+      "Machine"
+    ],
+    "movement_pattern": "Horizontal Pull",
+    "difficulty": "Beginner",
+    "is_compound": false,
+    "push_pull": "pull",
+    "upper_lower": "upper"
+  },
+  {
+    "id": "exercise_149",
+    "name": "Glute Kickback Machine",
+    "exercise_type": "weight",
+    "distance_unit": null,
+    "muscles": {
+      "Glutes": 0.65,
+      "Hamstrings": 0.20,
+      "Lower Back": 0.08,
+      "Upper Abs": 0.04,
+      "Lower Abs": 0.03
+    },
+    "equipment": [
+      "Machine"
+    ],
+    "movement_pattern": "Hip Extension",
+    "difficulty": "Beginner",
+    "is_compound": false,
+    "push_pull": null,
+    "upper_lower": "lower"
+  },
+  {
+    "id": "exercise_150",
+    "name": "Weighted Pull-ups",
+    "exercise_type": "weight",
+    "distance_unit": null,
+    "muscles": {
+      "Lats": 0.38,
+      "Mid Back": 0.14,
+      "Upper Back": 0.10,
+      "Biceps - Long Head": 0.09,
+      "Brachialis": 0.07,
+      "Biceps - Short Head": 0.07,
+      "Rear Delts": 0.05,
+      "Flexors": 0.05,
+      "Lower Back": 0.03,
+      "Upper Abs": 0.01,
+      "Lower Abs": 0.01
+    },
+    "equipment": [
+      "Bodyweight"
+    ],
+    "movement_pattern": "Vertical Pull",
+    "difficulty": "Advanced",
+    "is_compound": true,
+    "push_pull": "pull",
+    "upper_lower": "upper"
+  },
+  {
+    "id": "exercise_151",
+    "name": "Weighted Dips",
+    "exercise_type": "weight",
+    "distance_unit": null,
+    "muscles": {
+      "Triceps - Long Head": 0.24,
+      "Triceps - Lateral Head": 0.20,
+      "Upper Chest": 0.12,
+      "Front Delts": 0.12,
+      "Mid Chest": 0.10,
+      "Triceps - Medial Head": 0.08,
+      "Lower Chest": 0.05,
+      "Flexors": 0.03,
+      "Upper Back": 0.03,
+      "Mid Back": 0.02,
+      "Lower Back": 0.01
+    },
+    "equipment": [
+      "Bodyweight",
+      "Dumbbell"
+    ],
+    "movement_pattern": "Vertical Push",
+    "difficulty": "Advanced",
+    "is_compound": true,
+    "push_pull": "push",
+    "upper_lower": "upper"
+  },
+  {
+    "id": "exercise_152",
+    "name": "Medicine Ball Slams",
+    "exercise_type": "weight",
+    "distance_unit": null,
+    "muscles": {
+      "Upper Abs": 0.20,
+      "Lower Abs": 0.18,
+      "Lats": 0.15,
+      "Front Delts": 0.12,
+      "Obliques": 0.10,
+      "Triceps - Long Head": 0.08,
+      "Quads": 0.06,
+      "Glutes": 0.05,
+      "Mid Back": 0.04,
+      "Triceps - Lateral Head": 0.02
+    },
+    "equipment": [
+      "Medicine Ball"
+    ],
+    "movement_pattern": "Explosive",
+    "difficulty": "Intermediate",
+    "is_compound": true,
+    "push_pull": null,
+    "upper_lower": null
+  },
+  {
+    "id": "exercise_155",
+    "name": "Barbell Overhead Press",
+    "exercise_type": "weight",
+    "distance_unit": null,
+    "muscles": {
+      "Front Delts": 0.3,
+      "Lateral Delts": 0.15,
+      "Upper Chest": 0.15,
+      "Triceps - Long Head": 0.1058,
+      "Triceps - Lateral Head": 0.0858,
+      "Triceps - Medial Head": 0.0658,
+      "Flexors": 0.0558,
+      "Upper Back": 0.0458,
+      "Lower Back": 0.0408
+    },
+    "equipment": [
+      "Barbell"
+    ],
+    "movement_pattern": "Vertical Push",
+    "difficulty": "Intermediate",
+    "is_compound": true,
+    "push_pull": "push",
+    "upper_lower": "upper"
   }
 ]

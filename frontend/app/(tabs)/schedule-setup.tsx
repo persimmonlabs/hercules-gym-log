@@ -893,7 +893,7 @@ const ScheduleSetupScreen: React.FC = () => {
                   <Text variant="bodySemibold" color={item.isRest ? 'tertiary' : 'primary'}>
                     {item.name}
                   </Text>
-                  {item.source && !item.isRest && (
+                  {item.source && !item.isRest && item.source !== 'My Workouts' && (
                     <Text variant="caption" color="secondary">
                       {item.source}
                     </Text>

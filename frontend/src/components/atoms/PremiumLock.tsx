@@ -50,7 +50,7 @@ export const PremiumLock: React.FC<PremiumLockProps> = ({
       )}
 
       <Text variant="caption" color="secondary" style={styles.description}>
-        Unlock detailed analytics with Hercules Pro
+        Unlock premium features with Hercules Pro
       </Text>
 
       <TouchableOpacity
