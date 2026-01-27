@@ -16,8 +16,9 @@ import { springBouncy } from '@/constants/animations';
 
 export type WorkoutFilterState = {
   experienceLevel: 'all' | 'beginner' | 'intermediate' | 'advanced';
-  equipment: 'all' | 'full-gym' | 'dumbbells-only' | 'bodyweight';
+  equipment: 'all' | 'full-gym' | 'dumbbells-only' | 'bodyweight' | 'minimal-equipment';
   goal: 'all' | 'build-muscle' | 'strength' | 'lose-fat' | 'general-fitness';
+  workoutType: 'all' | 'full-body' | 'push' | 'pull' | 'upper-body' | 'lower-body' | 'core-mobility';
   duration: 'all' | 'quick' | 'medium' | 'long';
 };
 
@@ -25,6 +26,7 @@ interface WorkoutFiltersProps {
   filters: WorkoutFilterState;
   onFiltersChange: (filters: WorkoutFilterState) => void;
   showDurationFilter?: boolean;
+  showWorkoutTypeFilter?: boolean;
 }
 
 const EQUIPMENT_FILTERS = [
@@ -32,6 +34,7 @@ const EQUIPMENT_FILTERS = [
   { label: 'Full Gym', value: 'full-gym' as const },
   { label: 'Dumbbells Only', value: 'dumbbells-only' as const },
   { label: 'Bodyweight', value: 'bodyweight' as const },
+  { label: 'Minimal Equipment', value: 'minimal-equipment' as const },
 ];
 
 const GOAL_FILTERS = [
@@ -49,6 +52,16 @@ const DURATION_FILTERS = [
   { label: 'Long (>60min)', value: 'long' as const },
 ];
 
+const WORKOUT_TYPE_FILTERS = [
+  { label: 'All Types', value: 'all' as const },
+  { label: 'Full Body', value: 'full-body' as const },
+  { label: 'Push', value: 'push' as const },
+  { label: 'Pull', value: 'pull' as const },
+  { label: 'Upper Body', value: 'upper-body' as const },
+  { label: 'Lower Body', value: 'lower-body' as const },
+  { label: 'Core & Mobility', value: 'core-mobility' as const },
+];
+
 const EXPERIENCE_FILTERS = [
   { label: 'All Levels', value: 'all' as const },
   { label: 'Beginner', value: 'beginner' as const },
@@ -56,7 +69,7 @@ const EXPERIENCE_FILTERS = [
   { label: 'Advanced', value: 'advanced' as const },
 ];
 
-export const WorkoutFilters: React.FC<WorkoutFiltersProps> = ({ filters, onFiltersChange, showDurationFilter = true }) => {
+export const WorkoutFilters: React.FC<WorkoutFiltersProps> = ({ filters, onFiltersChange, showDurationFilter = true, showWorkoutTypeFilter = true }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const rotation = useSharedValue(0);
 
@@ -82,6 +95,7 @@ export const WorkoutFilters: React.FC<WorkoutFiltersProps> = ({ filters, onFilte
     if (filters.experienceLevel !== 'all') count++;
     if (filters.equipment !== 'all') count++;
     if (filters.goal !== 'all') count++;
+    if (showWorkoutTypeFilter && filters.workoutType !== 'all') count++;
     if (showDurationFilter && filters.duration !== 'all') count++;
     return count;
   };
@@ -94,6 +108,8 @@ export const WorkoutFilters: React.FC<WorkoutFiltersProps> = ({ filters, onFilte
         return EQUIPMENT_FILTERS.find(f => f.value === value)?.label || value;
       case 'goal':
         return GOAL_FILTERS.find(f => f.value === value)?.label || value;
+      case 'workoutType':
+        return WORKOUT_TYPE_FILTERS.find(f => f.value === value)?.label || value;
       case 'duration':
         return DURATION_FILTERS.find(f => f.value === value)?.label || value;
       default:
@@ -110,6 +126,7 @@ export const WorkoutFilters: React.FC<WorkoutFiltersProps> = ({ filters, onFilte
       experienceLevel: 'all',
       equipment: 'all',
       goal: 'all',
+      workoutType: 'all',
       duration: 'all',
     });
   };
@@ -169,6 +186,12 @@ export const WorkoutFilters: React.FC<WorkoutFiltersProps> = ({ filters, onFilte
                 onRemove={() => clearFilter('goal')}
               />
             )}
+            {showWorkoutTypeFilter && filters.workoutType !== 'all' && (
+              <FilterChip
+                label={getFilterLabel('workoutType', filters.workoutType)}
+                onRemove={() => clearFilter('workoutType')}
+              />
+            )}
             {showDurationFilter && filters.duration !== 'all' && (
               <FilterChip
                 label={getFilterLabel('duration', filters.duration)}
@@ -226,6 +249,23 @@ export const WorkoutFilters: React.FC<WorkoutFiltersProps> = ({ filters, onFilte
               ))}
             </View>
           </View>
+
+          {/* Workout Type */}
+          {showWorkoutTypeFilter && (
+            <View style={styles.filterSection}>
+              <Text variant="captionMedium" color="primary" style={styles.sectionTitle}>Workout Type:</Text>
+              <View style={styles.chipsContainer}>
+                {WORKOUT_TYPE_FILTERS.map((filter) => (
+                  <QuickFilterChip
+                    key={filter.value}
+                    label={filter.label}
+                    active={filters.workoutType === filter.value}
+                    onPress={() => updateFilter('workoutType', filter.value)}
+                  />
+                ))}
+              </View>
+            </View>
+          )}
 
           {/* Duration */}
           {showDurationFilter && (

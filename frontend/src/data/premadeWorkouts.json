@@ -99,8 +99,8 @@
       "exercises": [
         { "id": "bodyweight_001", "name": "Push-ups", "sets": 3 },
         { "id": "bodyweight_026", "name": "Pike Push-ups", "sets": 3 },
-        { "id": "bodyweight_008", "name": "Air Squats", "sets": 3 },
-        { "id": "bodyweight_033", "name": "Reverse Lunges", "sets": 3 },
+        { "id": "bodyweight_008", "name": "Bodyweight Squats", "sets": 3 },
+        { "id": "bodyweight_033", "name": "Bodyweight Reverse Lunges", "sets": 3 },
         { "id": "bodyweight_037", "name": "Bodyweight Glute Bridges", "sets": 3 },
         { "id": "bodyweight_010", "name": "Mountain Climbers", "sets": 3 },
         { "id": "duration_001", "name": "Plank", "sets": 3 }
@@ -146,11 +146,11 @@
       "name": "Beginner HIIT Cardio",
       "exercises": [
         { "id": "bodyweight_028", "name": "Jumping Jacks", "sets": 4 },
-        { "id": "bodyweight_008", "name": "Air Squats", "sets": 4 },
+        { "id": "bodyweight_008", "name": "Bodyweight Squats", "sets": 4 },
         { "id": "bodyweight_019", "name": "High Knees", "sets": 4 },
         { "id": "bodyweight_001", "name": "Push-ups", "sets": 4 },
         { "id": "bodyweight_029", "name": "Butt Kicks", "sets": 4 },
-        { "id": "bodyweight_033", "name": "Reverse Lunges", "sets": 4 },
+        { "id": "bodyweight_033", "name": "Bodyweight Reverse Lunges", "sets": 4 },
         { "id": "bodyweight_010", "name": "Mountain Climbers", "sets": 4 },
         { "id": "duration_001", "name": "Plank", "sets": 4 }
       ],
@@ -176,7 +176,7 @@
         { "id": "bodyweight_037", "name": "Bodyweight Glute Bridges", "sets": 3 },
         { "id": "bodyweight_031", "name": "Bird Dogs", "sets": 3 },
         { "id": "bodyweight_032", "name": "Bicycle Crunches", "sets": 3 },
-        { "id": "bodyweight_007", "name": "Lying Leg Raises", "sets": 3 }
+        { "id": "bodyweight_007", "name": "Leg Raises", "sets": 3 }
       ],
       "metadata": {
         "goal": "general-fitness",
@@ -343,7 +343,7 @@
         { "id": "bodyweight_001", "name": "Push-ups", "sets": 3 },
         { "id": "bodyweight_014", "name": "Pistol Squats (Bodyweight)", "sets": 3 },
         { "id": "bodyweight_021", "name": "Bulgarian Split Squats (Bodyweight)", "sets": 3 },
-        { "id": "bodyweight_038", "name": "Hanging Leg Raises", "sets": 3 },
+        { "id": "bodyweight_007", "name": "Leg Raises", "sets": 3 },
         { "id": "duration_007", "name": "L-Sit Hold", "sets": 3 }
       ],
       "metadata": {
@@ -386,7 +386,7 @@
       "name": "Bodyweight Fat Burner",
       "exercises": [
         { "id": "bodyweight_011", "name": "Burpees", "sets": 4 },
-        { "id": "bodyweight_008", "name": "Air Squats", "sets": 4 },
+        { "id": "bodyweight_008", "name": "Bodyweight Squats", "sets": 4 },
         { "id": "bodyweight_010", "name": "Mountain Climbers", "sets": 4 },
         { "id": "bodyweight_001", "name": "Push-ups", "sets": 4 },
         { "id": "bodyweight_035", "name": "Jump Lunges", "sets": 4 },
@@ -535,7 +535,7 @@
         { "id": "exercise_019", "name": "Barbell Squat", "sets": 5 },
         { "id": "exercise_038", "name": "Barbell Front Squat", "sets": 4 },
         { "id": "exercise_047", "name": "Barbell Romanian Deadlift", "sets": 4 },
-        { "id": "bodyweight_034", "name": "Walking Lunges", "sets": 3 },
+        { "id": "bodyweight_034", "name": "Bodyweight Walking Lunges", "sets": 3 },
         { "id": "exercise_014", "name": "Leg Press", "sets": 4 },
         { "id": "exercise_016", "name": "Seated Leg Curl", "sets": 4 },
         { "id": "exercise_015", "name": "Leg Extensions", "sets": 3 },
@@ -613,7 +613,7 @@
         { "id": "exercise_062", "name": "Cable Pull Through", "sets": 3 },
         { "id": "exercise_018", "name": "Hip Abductor", "sets": 4 },
         { "id": "exercise_149", "name": "Glute Kickback Machine", "sets": 3 },
-        { "id": "bodyweight_034", "name": "Walking Lunges", "sets": 3 }
+        { "id": "bodyweight_034", "name": "Bodyweight Walking Lunges", "sets": 3 }
       ],
       "metadata": {
         "goal": "build-muscle",

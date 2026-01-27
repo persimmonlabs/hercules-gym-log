@@ -104,6 +104,7 @@ function BrowseProgramsScreen() {
     experienceLevel: 'all',
     equipment: 'all',
     goal: 'all',
+    workoutType: 'all',
     duration: 'all',
   });
 
@@ -125,24 +126,6 @@ function BrowseProgramsScreen() {
         // Apply goal filter
         if (filters.goal !== 'all') {
           filtered = filtered.filter(p => p?.metadata?.goal === filters.goal);
-        }
-
-        // Apply duration filter
-        if (filters.duration !== 'all') {
-          filtered = filtered.filter(p => {
-            const duration = (p as PremadeWorkout)?.metadata?.durationMinutes;
-            if (typeof duration !== 'number') return true;
-            switch (filters.duration) {
-              case 'quick':
-                return duration <= 30;
-              case 'medium':
-                return duration > 30 && duration <= 60;
-              case 'long':
-                return duration > 60;
-              default:
-                return true;
-            }
-          });
         }
 
         // Filter out workouts that have been added to My Workouts
@@ -260,7 +243,8 @@ function BrowseProgramsScreen() {
             <WorkoutFilters
               filters={filters}
               onFiltersChange={setFilters}
-              showDurationFilter={isWorkoutMode}
+              showDurationFilter={false}
+              showWorkoutTypeFilter={false}
             />
           </>
         }

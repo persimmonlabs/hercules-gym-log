@@ -782,7 +782,7 @@ const HerculesAIScreen: React.FC = () => {
 
 
   // Calculate input area height for FlatList bottom padding
-  // Add significant extra buffer (100px) so content appears higher on screen, not hidden behind input
+  // Add buffer so content appears higher on screen, not hidden behind input
   const inputAreaHeight = 52 + spacing.sm + (insets.bottom || spacing.xs) + spacing.sm + spacing.xl + 100;
 
   return (
@@ -999,7 +999,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 0,
     right: 0,
-    bottom: 15,
+    bottom: 0,
   },
   inputContainer: {
     paddingHorizontal: spacing.md,

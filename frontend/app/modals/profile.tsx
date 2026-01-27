@@ -21,6 +21,7 @@ import { SignOutConfirmationModal } from '@/components/molecules/SignOutConfirma
 import { FeedbackModal } from '@/components/molecules/FeedbackModal';
 import { colors, spacing, radius, shadows, sizing } from '@/constants/theme';
 import { useTheme } from '@/hooks/useTheme';
+import { usePremiumStatus } from '@/hooks/usePremiumStatus';
 import { useAuth } from '@/providers/AuthProvider';
 import { supabaseClient } from '@/lib/supabaseClient';
 import { useUserProfileStore } from '@/store/userProfileStore';
@@ -40,8 +41,11 @@ const ProfileModal: React.FC = () => {
   const [isNotificationsModalVisible, setIsNotificationsModalVisible] = useState(false);
   const [isSignOutModalVisible, setIsSignOutModalVisible] = useState(false);
   const [isFeedbackModalVisible, setIsFeedbackModalVisible] = useState(false);
+  const [isDeleteAccountModalVisible, setIsDeleteAccountModalVisible] = useState(false);
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
   const { weightUnit, distanceUnit, sizeUnit, formatWeight, hapticsEnabled, setHapticsEnabled } = useSettingsStore();
   const { notificationsEnabled, configs } = useNotificationStore();
+  const { isPremium, isLoading: isPremiumLoading } = usePremiumStatus();
   const { premiumOverride, setPremiumOverride } = useDevToolsStore();
   const backScale = useSharedValue(1);
 
@@ -84,6 +88,38 @@ const ProfileModal: React.FC = () => {
   const handleCloseSignOutModal = () => {
     if (!isSigningOut) {
       setIsSignOutModalVisible(false);
+    }
+  };
+
+  const handleDeleteAccount = () => {
+    triggerHaptic('warning');
+    setIsDeleteAccountModalVisible(true);
+  };
+
+  const handleDeleteAccountConfirm = async () => {
+    setIsDeletingAccount(true);
+    try {
+      // TODO: Implement account deletion logic
+      // This should:
+      // 1. Delete user data from profiles table
+      // 2. Delete user data from workouts table
+      // 3. Delete user from auth
+      // 4. Sign out and redirect
+      
+      // For now, just show a placeholder
+      Alert.alert('Coming Soon', 'Account deletion will be implemented in a future update.');
+      setIsDeleteAccountModalVisible(false);
+    } catch (error) {
+      console.error('Delete account error:', error);
+      Alert.alert('Error', 'Failed to delete account. Please contact support.');
+    } finally {
+      setIsDeletingAccount(false);
+    }
+  };
+
+  const handleCloseDeleteAccountModal = () => {
+    if (!isDeletingAccount) {
+      setIsDeleteAccountModalVisible(false);
     }
   };
 
@@ -198,25 +234,28 @@ const ProfileModal: React.FC = () => {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.primary.bg }]}>
-      <View style={[styles.header, { backgroundColor: theme.primary.bg }]}>
-        <Animated.View style={{ transform: [{ scale: backScale.value }] }}>
-          <Pressable
-            style={styles.backButton}
-            onPress={handleBackPress}
-            accessibilityRole="button"
-            accessibilityLabel="Back to Dashboard"
-          >
-            <IconSymbol
-              name="arrow-back"
-              color={theme.text.primary}
-              size={24}
-            />
-          </Pressable>
-        </Animated.View>
-        <Text variant="heading1" color="primary">
-          Profile
-        </Text>
-        <View style={styles.headerSpacer} />
+      <View style={[styles.headerContainer, { backgroundColor: theme.primary.bg }]}>
+        <View style={[styles.header, { backgroundColor: theme.primary.bg }]}>
+          <Animated.View style={{ transform: [{ scale: backScale.value }] }}>
+            <Pressable
+              style={styles.backButton}
+              onPress={handleBackPress}
+              accessibilityRole="button"
+              accessibilityLabel="Back to Dashboard"
+            >
+              <IconSymbol
+                name="arrow-back"
+                color={theme.text.primary}
+                size={22}
+              />
+            </Pressable>
+          </Animated.View>
+          <Text variant="heading3" color="primary" style={{ fontWeight: '600' }}>
+            Settings
+          </Text>
+          <View style={styles.headerSpacer} />
+        </View>
+        <View style={[styles.headerDivider, { backgroundColor: theme.text.tertiary }]} />
       </View>
 
       <ScrollView
@@ -224,178 +263,226 @@ const ProfileModal: React.FC = () => {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.contentContainer}
       >
-        {/* Profile Info Card */}
-        <SurfaceCard tone="card" padding="xl" style={styles.profileCard}>
-          <View style={styles.profileHeader}>
-            <View style={[
-              profile?.firstName ? styles.avatarWithInitial : styles.avatar,
-              { backgroundColor: theme.accent.orange, borderColor: theme.accent.orange }
-            ]}>
-              {profile?.firstName ? (
-                <Text variant="heading1" style={styles.avatarInitialText}>
-                  {profile.firstName.charAt(0).toUpperCase()}
-                </Text>
-              ) : (
-                <IconSymbol
-                  name="person"
-                  color="#FFFFFF"
-                  size={48}
-                />
-              )}
-            </View>
-            <View style={styles.profileInfo}>
-              <Text variant="heading2" color="primary">
-                {getUserDisplayName()}
+        {/* Profile Info */}
+        <View style={styles.profileHeader}>
+          <View style={[
+            profile?.firstName ? styles.avatarWithInitial : styles.avatar,
+            { backgroundColor: theme.accent.orange, borderColor: theme.accent.orange }
+          ]}>
+            {profile?.firstName ? (
+              <Text variant="heading2" style={styles.avatarInitialText}>
+                {profile.firstName.charAt(0).toUpperCase()}
               </Text>
-              <Text variant="body" color="secondary">
-                {user?.email || 'No email'}
-              </Text>
-              <Text variant="caption" color="secondary">
-                {formatMemberSince(user?.created_at)}
-              </Text>
-            </View>
+            ) : (
+              <IconSymbol
+                name="person"
+                color="#FFFFFF"
+                size={40}
+              />
+            )}
           </View>
-        </SurfaceCard>
+          <View style={styles.profileInfo}>
+            <Text variant="heading3" color="primary" style={{ fontWeight: '600' }}>
+              {getUserDisplayName()}
+            </Text>
+            <Text variant="body" color="secondary" style={{ fontSize: 14 }}>
+              {user?.email || 'No email'}
+            </Text>
+            <Text variant="caption" color="secondary" style={{ fontSize: 12 }}>
+              {formatMemberSince(user?.created_at)}
+            </Text>
+          </View>
+        </View>
+
+        <View style={[styles.sectionDivider, { backgroundColor: theme.text.tertiary }]} />
+
+        {/* Premium Section */}
+        <View style={styles.section}>
+          <Text variant="caption" color="secondary" style={styles.sectionTitle}>
+            PREMIUM
+          </Text>
+
+          <View style={[styles.settingsGroup, { backgroundColor: theme.surface.card }]}>
+            {!isPremiumLoading && !isPremium ? (
+              <SettingsItem
+                icon="star"
+                title="Go Premium"
+                subtitle="Unlock advanced analytics and unlimited workouts"
+                onPress={() => router.push('/premium' as any)}
+              />
+            ) : isPremiumLoading ? (
+              <View style={styles.settingsItem}>
+                <View style={styles.settingsItemIcon}>
+                  <IconSymbol name="star" color={theme.accent.orange} size={22} />
+                </View>
+                <View style={styles.settingsItemContent}>
+                  <Text variant="bodySemibold" color="primary" style={{ fontSize: 15 }}>
+                    Loading Premium Status
+                  </Text>
+                  <Text variant="caption" color="secondary" style={{ fontSize: 13 }}>
+                    Checking subscription details...
+                  </Text>
+                </View>
+              </View>
+            ) : (
+              <SettingsItem
+                icon="credit-card"
+                title="Manage Subscription"
+                subtitle="View billing history and manage your premium plan"
+                onPress={() => router.push('/manage-subscription' as any)}
+              />
+            )}
+          </View>
+        </View>
+
+        <View style={[styles.sectionDivider, { backgroundColor: theme.text.tertiary }]} />
 
         {/* Account Preferences */}
-        <SurfaceCard tone="card" padding="lg" style={{ borderWidth: 0 }}>
-          <View style={styles.section}>
-            <Text variant="heading3" color="primary" style={styles.sectionTitle}>
-              Account Preferences
-            </Text>
+        <View style={styles.section}>
+          <Text variant="caption" color="secondary" style={styles.sectionTitle}>
+            PREFERENCES
+          </Text>
 
-            <View style={styles.preferencesList}>
-              <PreferenceItem
-                icon="person"
-                title="Name"
-                subtitle={getUserDisplayName()}
-                onPress={handleNameEdit}
-              />
-              <PreferenceItem
-                icon="notifications"
-                title="Notifications"
-                subtitle={notificationsEnabled ? `${configs.length} reminder${configs.length !== 1 ? 's' : ''} active` : 'Set workout reminders'}
-                onPress={() => {
-                  triggerHaptic('selection');
-                  setIsNotificationsModalVisible(true);
-                }}
-              />
-
-              <PreferenceItem
-                icon="straighten"
-                title="Units of Measurement"
-                subtitle={`${weightUnit === 'kg' ? 'kg' : 'lbs'} • ${distanceUnit === 'km' ? 'km' : 'mi'} • ${sizeUnit === 'cm' ? 'cm' : 'in'}`}
-                onPress={() => {
-                  triggerHaptic('selection');
-                  setIsUnitsModalVisible(true);
-                }}
-              />
-              <TogglePreferenceItem
-                icon="vibration"
-                title="Haptic Feedback"
-                subtitle={hapticsEnabled ? "Haptics enabled" : "Haptics disabled"}
-                value={hapticsEnabled}
-                onValueChange={(val) => {
-                  setHapticsEnabled(val);
-                  if (val) triggerHaptic('selection');
-                }}
-              />
-            </View>
+          <View style={[styles.settingsGroup, { backgroundColor: theme.surface.card }]}>
+            <SettingsItem
+              icon="person"
+              title="Name"
+              subtitle={getUserDisplayName()}
+              onPress={handleNameEdit}
+              showDivider
+            />
+            <SettingsItem
+              icon="notifications"
+              title="Notifications"
+              subtitle={notificationsEnabled ? `${configs.length} reminder${configs.length !== 1 ? 's' : ''} active` : 'Set workout reminders'}
+              onPress={() => {
+                triggerHaptic('selection');
+                setIsNotificationsModalVisible(true);
+              }}
+              showDivider
+            />
+            <SettingsItem
+              icon="straighten"
+              title="Units of Measurement"
+              subtitle={`${weightUnit === 'kg' ? 'kg' : 'lbs'} • ${distanceUnit === 'km' ? 'km' : 'mi'} • ${sizeUnit === 'cm' ? 'cm' : 'in'}`}
+              onPress={() => {
+                triggerHaptic('selection');
+                setIsUnitsModalVisible(true);
+              }}
+              showDivider
+            />
+            <ToggleSettingsItem
+              icon="vibration"
+              title="Haptic Feedback"
+              subtitle={hapticsEnabled ? "Enabled" : "Disabled"}
+              value={hapticsEnabled}
+              onValueChange={(val) => {
+                setHapticsEnabled(val);
+                if (val) triggerHaptic('selection');
+              }}
+            />
           </View>
-        </SurfaceCard>
+        </View>
+
+        <View style={[styles.sectionDivider, { backgroundColor: theme.text.tertiary }]} />
 
         {/* Support */}
-        <SurfaceCard tone="card" padding="lg" style={{ borderWidth: 0 }}>
-          <View style={styles.section}>
-            <Text variant="heading3" color="primary" style={styles.sectionTitle}>
-              Support
-            </Text>
+        <View style={styles.section}>
+          <Text variant="caption" color="secondary" style={styles.sectionTitle}>
+            SUPPORT
+          </Text>
 
-            <View style={styles.preferencesList}>
-              <PreferenceItem
-                icon="feedback"
-                title="Send Feedback"
-                subtitle="Help us improve the app"
-                onPress={() => handlePreferencePress('Send Feedback')}
-              />
-              <PreferenceItem
-                icon="info"
-                title="About"
-                subtitle="App version and legal information"
-                onPress={() => handlePreferencePress('About')}
-              />
-            </View>
+          <View style={[styles.settingsGroup, { backgroundColor: theme.surface.card }]}>
+            <SettingsItem
+              icon="feedback"
+              title="Send Feedback"
+              subtitle="Help us improve the app"
+              onPress={() => handlePreferencePress('Send Feedback')}
+              showDivider
+            />
+            <SettingsItem
+              icon="question-mark-circle"
+              title="FAQ"
+              subtitle="Frequently asked questions"
+              onPress={() => handlePreferencePress('FAQ')}
+              showDivider
+            />
+            <SettingsItem
+              icon="info"
+              title="About"
+              subtitle="App version and legal information"
+              onPress={() => handlePreferencePress('About')}
+            />
           </View>
-        </SurfaceCard>
+        </View>
+
+        <View style={[styles.sectionDivider, { backgroundColor: theme.text.tertiary }]} />
 
         {/* Dev Tools (only in development) */}
         {__DEV__ && (
-          <SurfaceCard tone="card" padding="lg" style={{ borderWidth: 0 }}>
-            <View style={styles.section}>
-              <Text variant="heading3" color="primary" style={styles.sectionTitle}>
-                Developer Tools
-              </Text>
+          <View style={styles.section}>
+            <Text variant="caption" color="secondary" style={styles.sectionTitle}>
+              DEVELOPER TOOLS
+            </Text>
 
-              <View style={styles.preferencesList}>
-                <Pressable
-                  style={styles.devToggleRow}
-                  onPress={() => {
-                    triggerHaptic('selection');
-                    const newValue = premiumOverride === 'premium' ? 'free' : 'premium';
-                    setPremiumOverride(newValue);
-                  }}
-                >
-                  <View style={styles.devToggleInfo}>
-                    <IconSymbol name="star" size={24} color={theme.accent.orange} />
-                    <View style={{ marginLeft: spacing.md, flex: 1 }}>
-                      <Text variant="bodySemibold" color="primary">Premium Status</Text>
-                      <Text variant="caption" color="secondary">
-                        {premiumOverride === 'premium' ? 'Premium (tap to switch to Free)' : 'Free (tap to switch to Premium)'}
-                      </Text>
-                    </View>
-                  </View>
-                  <View style={[
-                    styles.devToggleBadge,
-                    { backgroundColor: premiumOverride === 'premium' ? theme.accent.orange : theme.surface.elevated }
-                  ]}>
-                    <Text variant="captionSmall" style={{ color: premiumOverride === 'premium' ? '#FFF' : theme.text.secondary }}>
-                      {premiumOverride === 'premium' ? 'PRO' : 'FREE'}
+            <View style={[styles.settingsGroup, { backgroundColor: theme.surface.card }]}>
+              <Pressable
+                style={styles.devToggleRow}
+                onPress={() => {
+                  triggerHaptic('selection');
+                  const newValue = premiumOverride === 'premium' ? 'free' : 'premium';
+                  setPremiumOverride(newValue);
+                }}
+              >
+                <View style={styles.devToggleInfo}>
+                  <IconSymbol name="star" size={22} color={theme.accent.orange} />
+                  <View style={{ marginLeft: spacing.md, flex: 1 }}>
+                    <Text variant="bodySemibold" color="primary">Premium Status</Text>
+                    <Text variant="caption" color="secondary" style={{ fontSize: 13 }}>
+                      {premiumOverride === 'premium' ? 'Premium' : 'Free'}
                     </Text>
                   </View>
-                </Pressable>
-              </View>
+                </View>
+                <View style={[
+                  styles.devToggleBadge,
+                  { backgroundColor: premiumOverride === 'premium' ? theme.accent.orange : theme.surface.elevated }
+                ]}>
+                  <Text variant="captionSmall" style={{ color: premiumOverride === 'premium' ? '#FFF' : theme.text.secondary }}>
+                    {premiumOverride === 'premium' ? 'PRO' : 'FREE'}
+                  </Text>
+                </View>
+              </Pressable>
             </View>
-          </SurfaceCard>
+          </View>
         )}
 
-        {/* Sign Out Button */}
-        <View style={styles.signOutSection}>
-          <SurfaceCard tone="neutral" padding="lg" showAccentStripe={false} style={styles.signOutCard}>
-            <Pressable
-              style={styles.signOutButton}
+        <View style={[styles.sectionDivider, { backgroundColor: theme.text.tertiary }]} />
+
+        {/* Account */}
+        <View style={styles.section}>
+          <Text variant="caption" color="secondary" style={styles.sectionTitle}>
+            ACCOUNT
+          </Text>
+
+          <View style={[styles.settingsGroup, { backgroundColor: theme.surface.card }]}>
+            <SettingsItem
+              icon="logout"
+              title="Sign Out"
+              subtitle="Sign out of your account"
               onPress={handleSignOut}
-              disabled={isSigningOut}
-              accessibilityRole="button"
-              accessibilityLabel="Sign Out"
-            >
-              {isSigningOut ? (
-                <ActivityIndicator color="#FF0000" />
-              ) : (
-                <>
-                  <IconSymbol
-                    name="logout"
-                    color="#FF0000"
-                    size={24}
-                  />
-                  <Text variant="bodySemibold" style={{ color: '#FF0000' }}>
-                    Sign Out
-                  </Text>
-                </>
-              )}
-            </Pressable>
-          </SurfaceCard>
+              showDivider
+            />
+            <SettingsItem
+              icon="trash"
+              title="Delete Account"
+              subtitle="Permanently delete your account and data"
+              onPress={handleDeleteAccount}
+            />
+          </View>
         </View>
       </ScrollView>
+
+      <View style={[styles.bottomDivider, { backgroundColor: theme.text.tertiary }]} />
 
       <NameEditModal
         visible={isNameModalVisible}
@@ -435,64 +522,67 @@ const ProfileModal: React.FC = () => {
         visible={isFeedbackModalVisible}
         onClose={() => setIsFeedbackModalVisible(false)}
       />
+
+      <DeleteAccountConfirmationModal
+        visible={isDeleteAccountModalVisible}
+        onClose={handleCloseDeleteAccountModal}
+        onConfirm={handleDeleteAccountConfirm}
+        isLoading={isDeletingAccount}
+      />
     </SafeAreaView>
   );
 };
 
-interface PreferenceItemProps {
+interface SettingsItemProps {
   icon: string;
   title: string;
   subtitle: string;
   onPress: () => void;
+  showDivider?: boolean;
 }
 
-const PreferenceItem: React.FC<PreferenceItemProps> = ({ icon, title, subtitle, onPress }) => {
+const SettingsItem: React.FC<SettingsItemProps> = ({ icon, title, subtitle, onPress, showDivider }) => {
   const { theme } = useTheme();
-  const scale = useSharedValue(1);
 
   return (
-    <Pressable
-      onPress={() => {
-        scale.value = withSpring(0.95, { damping: 15, stiffness: 300 });
-        triggerHaptic('selection');
-        setTimeout(() => {
-          scale.value = withSpring(1, { damping: 15, stiffness: 300 });
+    <>
+      <Pressable
+        onPress={() => {
+          triggerHaptic('selection');
           onPress();
-        }, 100);
-      }}
-      accessibilityRole="button"
-      accessibilityLabel={title}
-    >
-      <SurfaceCard
-        tone="neutral"
-        padding="lg"
-        showAccentStripe={false}
-        style={{ transform: [{ scale: scale.value }], borderWidth: 0, height: 88 }}
+        }}
+        accessibilityRole="button"
+        accessibilityLabel={title}
+        style={({ pressed }) => [
+          styles.settingsItem,
+          { backgroundColor: pressed ? theme.surface.elevated : 'transparent' }
+        ]}
       >
-        <View style={styles.preferenceItemContent}>
-          <View style={styles.preferenceIcon}>
-            <IconSymbol
-              name={icon}
-              color={theme.accent.orange}
-              size={24}
-            />
-          </View>
-          <View style={styles.preferenceContent}>
-            <Text variant="bodySemibold" color="primary">
-              {title}
-            </Text>
-            <Text variant="caption" color="secondary">
-              {subtitle}
-            </Text>
-          </View>
+        <View style={styles.settingsItemIcon}>
           <IconSymbol
-            name="chevron-right"
-            color={theme.text.tertiary}
-            size={20}
+            name={icon}
+            color={theme.accent.orange}
+            size={22}
           />
         </View>
-      </SurfaceCard>
-    </Pressable>
+        <View style={styles.settingsItemContent}>
+          <Text variant="bodySemibold" color="primary" style={{ fontSize: 15 }}>
+            {title}
+          </Text>
+          <Text variant="caption" color="secondary" style={{ fontSize: 13 }}>
+            {subtitle}
+          </Text>
+        </View>
+        <IconSymbol
+          name="chevron-right"
+          color={theme.text.tertiary}
+          size={18}
+        />
+      </Pressable>
+      {showDivider && (
+        <View style={[styles.settingsItemDivider, { backgroundColor: theme.surface.elevated }]} />
+      )}
+    </>
   );
 };
 
@@ -501,13 +591,16 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.primary.bg,
   },
+  headerContainer: {
+    backgroundColor: colors.primary.bg,
+  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: spacing.md,
-    paddingTop: spacing.lg,
-    paddingBottom: spacing.md,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.xs,
     backgroundColor: colors.primary.bg,
   },
   backButton: {
@@ -524,42 +617,39 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   contentContainer: {
-    paddingHorizontal: spacing.md,
-    paddingTop: spacing.lg,
+    paddingTop: spacing.sm,
     paddingBottom: spacing.xl + spacing.lg,
-    gap: spacing.xl + spacing.lg,
-  },
-  profileCard: {
-    alignItems: 'center',
-    borderWidth: 0,
   },
   profileHeader: {
     alignItems: 'center',
     gap: spacing.md,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.lg,
   },
   avatar: {
-    width: sizing.avatar,
-    height: sizing.avatar,
+    width: 80,
+    height: 80,
     borderRadius: radius.full,
     backgroundColor: colors.surface.card,
-    borderWidth: 3,
+    borderWidth: 2,
     borderColor: colors.accent.orange,
     justifyContent: 'center',
     alignItems: 'center',
   },
   avatarWithInitial: {
-    width: sizing.avatar,
-    height: sizing.avatar,
+    width: 80,
+    height: 80,
     borderRadius: radius.full,
     backgroundColor: colors.surface.card,
-    borderWidth: 3,
+    borderWidth: 2,
     borderColor: colors.accent.orange,
     justifyContent: 'center',
     alignItems: 'center',
   },
   avatarInitialText: {
     color: '#FFFFFF',
-    fontSize: 40,
+    fontSize: 32,
     fontWeight: '600',
   },
   profileInfo: {
@@ -567,11 +657,58 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
   },
   section: {
-    gap: spacing.md,
+    marginBottom: spacing.sm,
+  },
+  sectionDivider: {
+    height: 1,
+    marginVertical: spacing.lg,
+    opacity: 0.15,
+  },
+  headerDivider: {
+    height: 1,
+    opacity: 0.15,
+  },
+  bottomDivider: {
+    height: 1,
+    opacity: 0.15,
   },
   sectionTitle: {
-    marginBottom: spacing.xs,
-    paddingHorizontal: spacing.sm,
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.sm,
+    fontSize: 12,
+    fontWeight: '600',
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+  },
+  settingsGroup: {
+    marginHorizontal: spacing.lg,
+    marginTop: spacing.xs,
+    borderRadius: radius.lg,
+    overflow: 'hidden',
+  },
+  settingsItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: spacing.md + 2,
+    paddingHorizontal: spacing.lg,
+    minHeight: 64,
+  },
+  settingsItemDivider: {
+    height: 0.5,
+    marginLeft: spacing.lg + spacing.xl + spacing.md,
+    opacity: 0.5,
+  },
+  settingsItemIcon: {
+    width: 32,
+    height: 32,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: spacing.md,
+  },
+  settingsItemContent: {
+    flex: 1,
+    gap: 3,
+    justifyContent: 'center',
   },
   preferencesList: {
     gap: spacing.md,
@@ -593,26 +730,13 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: spacing.xxs,
   },
-  signOutSection: {
-    marginTop: spacing.md,
-  },
-  signOutCard: {
-    borderWidth: 1,
-    borderColor: '#FF0000',
-    backgroundColor: '#FFFFFF',
-  },
-  signOutButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.sm,
-  },
   devToggleRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.md + 2,
+    paddingHorizontal: spacing.lg,
+    minHeight: 64,
   },
   devToggleInfo: {
     flexDirection: 'row',
@@ -633,43 +757,40 @@ const styles = StyleSheet.create({
   },
 });
 
-interface TogglePreferenceItemProps {
+interface ToggleSettingsItemProps {
   icon: string;
   title: string;
   subtitle: string;
   value: boolean;
   onValueChange: (value: boolean) => void;
+  showDivider?: boolean;
 }
 
-const TogglePreferenceItem: React.FC<TogglePreferenceItemProps> = ({
+const ToggleSettingsItem: React.FC<ToggleSettingsItemProps> = ({
   icon,
   title,
   subtitle,
   value,
-  onValueChange
+  onValueChange,
+  showDivider
 }) => {
   const { theme } = useTheme();
 
   return (
-    <SurfaceCard
-      tone="neutral"
-      padding="lg"
-      showAccentStripe={false}
-      style={{ borderWidth: 0, height: 88 }}
-    >
-      <View style={styles.preferenceItemContent}>
-        <View style={styles.preferenceIcon}>
+    <>
+      <View style={styles.settingsItem}>
+        <View style={styles.settingsItemIcon}>
           <IconSymbol
             name={icon}
             color={theme.accent.orange}
-            size={24}
+            size={22}
           />
         </View>
-        <View style={styles.preferenceContent}>
-          <Text variant="bodySemibold" color="primary">
+        <View style={styles.settingsItemContent}>
+          <Text variant="bodySemibold" color="primary" style={{ fontSize: 15 }}>
             {title}
           </Text>
-          <Text variant="caption" color="secondary">
+          <Text variant="caption" color="secondary" style={{ fontSize: 13 }}>
             {subtitle}
           </Text>
         </View>
@@ -681,8 +802,145 @@ const TogglePreferenceItem: React.FC<TogglePreferenceItemProps> = ({
           ios_backgroundColor={theme.surface.subtle}
         />
       </View>
-    </SurfaceCard>
+      {showDivider && (
+        <View style={[styles.settingsItemDivider, { backgroundColor: theme.surface.elevated }]} />
+      )}
+    </>
   );
 };
+
+interface DeleteAccountConfirmationModalProps {
+  visible: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+  isLoading: boolean;
+}
+
+const DeleteAccountConfirmationModal: React.FC<DeleteAccountConfirmationModalProps> = ({
+  visible,
+  onClose,
+  onConfirm,
+  isLoading
+}) => {
+  const { theme } = useTheme();
+
+  if (!visible) return null;
+
+  return (
+    <View style={modalStyles.overlay}>
+      <View style={[modalStyles.container, { backgroundColor: theme.surface.card }]}>
+        <View style={modalStyles.header}>
+          <IconSymbol name="warning" size={32} color="#FF3B30" />
+          <Text variant="heading3" color="primary" style={{ marginTop: spacing.md }}>
+            Delete Account
+          </Text>
+        </View>
+
+        <View style={modalStyles.content}>
+          <Text variant="body" color="secondary" style={{ textAlign: 'center', lineHeight: 22 }}>
+            This action cannot be undone. Deleting your account will permanently remove:
+          </Text>
+          
+          <View style={modalStyles.warningList}>
+            <Text variant="body" color="secondary" style={modalStyles.warningItem}>
+              • All your workout data and history
+            </Text>
+            <Text variant="body" color="secondary" style={modalStyles.warningItem}>
+              • Personal profile information
+            </Text>
+            <Text variant="body" color="secondary" style={modalStyles.warningItem}>
+              • Premium subscription (if active)
+            </Text>
+            <Text variant="body" color="secondary" style={modalStyles.warningItem}>
+              • All app preferences and settings
+            </Text>
+          </View>
+
+          <Text variant="body" color="secondary" style={{ textAlign: 'center', lineHeight: 22 }}>
+            Are you sure you want to continue?
+          </Text>
+        </View>
+
+        <View style={modalStyles.actions}>
+          <Pressable
+            style={[modalStyles.button, modalStyles.cancelButton, { backgroundColor: theme.surface.elevated }]}
+            onPress={onClose}
+            disabled={isLoading}
+          >
+            <Text variant="bodySemibold" color="primary">
+              Cancel
+            </Text>
+          </Pressable>
+
+          <Pressable
+            style={[modalStyles.button, modalStyles.deleteButton, { backgroundColor: '#FF3B30' }]}
+            onPress={onConfirm}
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <ActivityIndicator color="#FFFFFF" />
+            ) : (
+              <Text variant="bodySemibold" style={{ color: '#FFFFFF' }}>
+                Delete Account
+              </Text>
+            )}
+          </Pressable>
+        </View>
+      </View>
+    </View>
+  );
+};
+
+const modalStyles = StyleSheet.create({
+  overlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: spacing.lg,
+  },
+  container: {
+    borderRadius: radius.lg,
+    padding: spacing.xl,
+    maxWidth: 400,
+    width: '100%',
+  },
+  header: {
+    alignItems: 'center',
+    marginBottom: spacing.lg,
+  },
+  content: {
+    gap: spacing.md,
+    marginBottom: spacing.xl,
+  },
+  warningList: {
+    gap: spacing.xs,
+    marginVertical: spacing.md,
+  },
+  warningItem: {
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  actions: {
+    gap: spacing.md,
+  },
+  button: {
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    borderRadius: radius.lg,
+    alignItems: 'center',
+    minHeight: 48,
+    justifyContent: 'center',
+  },
+  cancelButton: {
+    borderWidth: 1,
+    borderColor: colors.surface.elevated,
+  },
+  deleteButton: {},
+});
 
 export default ProfileModal;
