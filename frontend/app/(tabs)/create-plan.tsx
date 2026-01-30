@@ -32,23 +32,24 @@ const styles = StyleSheet.create({
   },
   topSection: {
     width: '100%',
-    marginBottom: spacing.sm,
+    marginBottom: spacing.lg,
     gap: spacing.md,
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingBottom: spacing.md,
+    position: 'relative',
   },
   headerContent: {
-    gap: spacing.sm,
-    alignItems: 'flex-start',
+    gap: spacing.md,
+    alignItems: 'center',
     flex: 1,
   },
   headerTitle: {
-    textAlign: 'left',
+    textAlign: 'center',
   },
   headerSubtitle: {
-    textAlign: 'left',
-    maxWidth: 320,
+    textAlign: 'center',
+    maxWidth: '100%',
   },
   missingPlanCard: {
     gap: spacing.md,
@@ -172,22 +173,22 @@ const CreatePlanScreen: React.FC = () => {
         enableAutomaticScroll={false}
       >
         <View style={styles.topSection}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Go Back"
+            onPress={handleBackPress}
+            style={{ padding: spacing.sm, paddingTop: spacing.xs, borderRadius: radius.full, position: 'absolute', left: 0, top: 0 }}
+          >
+            <IconSymbol name="arrow-back" size={sizing.iconMD} color={colors.text.primary} />
+          </Pressable>
           <View style={styles.headerContent}>
-            <Text variant="heading2" color="primary" style={styles.headerTitle} fadeIn>
+            <Text variant="display1" color="primary" style={styles.headerTitle} fadeIn>
               {headerTitle}
             </Text>
             <Text variant="body" color="secondary" style={styles.headerSubtitle} fadeIn>
               {headerSubtitle}
             </Text>
           </View>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Go Back"
-            onPress={handleBackPress}
-            style={{ padding: spacing.sm, paddingTop: spacing.xs, borderRadius: radius.full }}
-          >
-            <IconSymbol name="arrow-back" size={sizing.iconMD} color={colors.text.primary} />
-          </Pressable>
         </View>
 
         {isEditing && isEditingPlanMissing ? (

@@ -121,10 +121,10 @@ export const MyScheduleCard: React.FC<MyScheduleCardProps> = ({
 
   const renderEmptyState = () => (
     <View style={styles.emptyCard}>
-      <Text variant="bodySemibold" color="primary">
+      <Text variant="heading4" color="primary" style={{ textAlign: 'center' }}>
         No schedule yet
       </Text>
-      <Text variant="body" color="secondary">
+      <Text variant="body" color="secondary" style={{ textAlign: 'center' }}>
         Create a schedule to see it here.
       </Text>
     </View>
@@ -237,50 +237,42 @@ export const MyScheduleCard: React.FC<MyScheduleCardProps> = ({
   };
 
   return (
-    <SurfaceCard padding="xl" tone="neutral" showAccentStripe={true} style={{ borderWidth: 0 }}>
-      <View style={styles.content}>
-        <View style={styles.cardHeader}>
+    <View style={styles.content}>
+      <SurfaceCard tone="neutral" padding="lg" showAccentStripe={true}>
+        <View style={styles.innerContent}>
           <Text variant="heading3" color="primary">
             My Schedule
           </Text>
-        </View>
+          {renderScheduleContent()}
 
-        {renderScheduleContent()}
-
-        {activeRule ? (
-          <View style={styles.buttonRow}>
-            <View style={styles.buttonWrapper}>
+          {activeRule ? (
+            <View style={styles.buttonRow}>
               <Button
                 label="Edit Schedule"
                 variant="primary"
                 size="md"
                 onPress={onEditPress}
+                style={styles.primaryButton}
               />
-            </View>
-            <View style={styles.buttonWrapper}>
               <Button
                 label="Add Override"
-                variant="ghost"
+                variant="secondary"
                 size="md"
                 onPress={onAddOverridePress}
-                textColor={colors.accent.warning}
+                style={styles.secondaryButton}
               />
             </View>
-          </View>
-        ) : (
-          <View style={styles.buttonRow}>
-            <View style={styles.buttonWrapper}>
-              <Button
-                label="Create Schedule"
-                variant="primary"
-                size="md"
-                onPress={onEditPress}
-              />
-            </View>
-          </View>
-        )}
-      </View>
-    </SurfaceCard>
+          ) : (
+            <Button
+              label="Create Schedule"
+              variant="primary"
+              size="md"
+              onPress={onEditPress}
+            />
+          )}
+        </View>
+      </SurfaceCard>
+    </View>
   );
 };
 
@@ -288,19 +280,15 @@ const styles = StyleSheet.create({
   content: {
     gap: spacing.md,
   },
-  cardHeader: {
-    width: '100%',
-    gap: spacing.xs,
-    paddingBottom: spacing.sm,
+  innerContent: {
+    gap: spacing.md,
   },
   emptyCard: {
     borderRadius: radius.lg,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border.light,
-    backgroundColor: colors.surface.card,
-    padding: spacing.lg,
+    backgroundColor: colors.surface.elevated,
+    padding: spacing.xl,
     gap: spacing.xs,
-    ...shadows.cardSoft,
+    alignItems: 'center',
   },
   scheduleList: {
     gap: spacing.sm,
@@ -309,24 +297,24 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
-    borderRadius: radius.md,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border.light,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    borderRadius: radius.lg,
   },
   dayLabel: {
-    width: 100,
+    minWidth: 90,
+    fontSize: 16,
   },
   workoutLabel: {
     flex: 1,
     textAlign: 'right',
+    fontSize: 16,
   },
   buttonRow: {
     gap: spacing.sm,
-    marginTop: spacing.md,
   },
-  buttonWrapper: {
-    // Remove flex: 1 to allow full width buttons
+  primaryButton: {
+  },
+  secondaryButton: {
   },
 });

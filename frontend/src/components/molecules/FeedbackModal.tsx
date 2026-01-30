@@ -103,6 +103,7 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({ visible, onClose }
         transparent
         visible={visible}
         onRequestClose={handleCancel}
+        statusBarTranslucent
       >
         <TouchableWithoutFeedback onPress={handleCancel}>
           <View style={styles.overlay}>
@@ -116,7 +117,7 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({ visible, onClose }
                   Help us improve Hercules by sharing your thoughts, suggestions, or reporting issues.
                 </Text>
 
-                <ScrollView style={styles.scrollContent} showsVerticalScrollIndicator={false}>
+                <ScrollView style={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardDismissMode="on-drag">
                   <View style={styles.form}>
                     <View style={[styles.textInputContainer, { 
                       backgroundColor: theme.surface.elevated,
@@ -192,7 +193,7 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({ visible, onClose }
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: colors.overlay.scrim,
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: spacing.lg,

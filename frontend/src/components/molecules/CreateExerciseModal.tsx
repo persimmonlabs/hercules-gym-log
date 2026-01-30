@@ -116,6 +116,7 @@ export const CreateExerciseModal: React.FC<CreateExerciseModalProps> = ({
       transparent
       animationType="fade"
       onRequestClose={handleClose}
+      statusBarTranslucent
     >
       <Pressable style={styles.overlay} onPress={handleClose}>
         <Pressable
@@ -125,6 +126,7 @@ export const CreateExerciseModal: React.FC<CreateExerciseModalProps> = ({
           <ScrollView
             showsVerticalScrollIndicator={false}
             contentContainerStyle={styles.scrollContent}
+            keyboardDismissMode="on-drag"
           >
             <View style={styles.header}>
               <Text variant="heading3" color="primary">

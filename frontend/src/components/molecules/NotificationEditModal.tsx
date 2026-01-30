@@ -167,7 +167,7 @@ export const NotificationEditModal: React.FC<NotificationEditModalProps> = ({
 
   return (
     <>
-      <Modal visible={visible} animationType="fade" transparent onRequestClose={handleClose}>
+      <Modal visible={visible} animationType="fade" transparent onRequestClose={handleClose} statusBarTranslucent>
         {hasOverlay ? (
           <Pressable style={styles.overlay} onPress={handleClose}>
             <Pressable style={styles.modalContent} onPress={(e) => e.stopPropagation()}>
@@ -175,7 +175,7 @@ export const NotificationEditModal: React.FC<NotificationEditModalProps> = ({
                 {config ? 'Edit Reminder' : 'Add Reminder'}
               </Text>
 
-              <ScrollView style={styles.scrollContent} showsVerticalScrollIndicator={false}>
+              <ScrollView style={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardDismissMode="on-drag">
                 {/* Time Selection */}
                 <View style={styles.section}>
                   <Text variant="bodySemibold" color="primary" style={styles.sectionLabel}>
@@ -276,7 +276,7 @@ export const NotificationEditModal: React.FC<NotificationEditModalProps> = ({
               {config ? 'Edit Reminder' : 'Add Reminder'}
             </Text>
 
-            <ScrollView style={styles.scrollContent} showsVerticalScrollIndicator={false}>
+            <ScrollView style={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardDismissMode="on-drag">
               {/* Time Selection */}
               <View style={styles.section}>
                 <Text variant="bodySemibold" color="primary" style={styles.sectionLabel}>
@@ -374,7 +374,7 @@ export const NotificationEditModal: React.FC<NotificationEditModalProps> = ({
     </Modal>
     
     {/* Simple Time Picker Modal */}
-    <Modal visible={showTimePickerModal} animationType="fade" transparent onRequestClose={handleCloseTimePicker}>
+    <Modal visible={showTimePickerModal} animationType="fade" transparent onRequestClose={handleCloseTimePicker} statusBarTranslucent>
       <View style={styles.timePickerModalContainer}>
         <View style={styles.timePickerModalContent}>
           <Text variant="heading2" color="primary" style={styles.timePickerTitle}>
@@ -505,7 +505,7 @@ export const NotificationEditModal: React.FC<NotificationEditModalProps> = ({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: colors.overlay.scrim,
     justifyContent: 'center',
     alignItems: 'center',
     padding: spacing.lg,

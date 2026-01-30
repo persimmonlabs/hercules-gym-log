@@ -14,10 +14,12 @@ import { TimeRangeSelector } from '@/components/atoms/TimeRangeSelector';
 import { colors, spacing, radius } from '@/constants/theme';
 import { useWorkoutSessionsStore } from '@/store/workoutSessionsStore';
 import { useDevToolsStore } from '@/store/devToolsStore';
+import { useUserProfileStore } from '@/store/userProfileStore';
 import exercisesData from '@/data/exercises.json';
 import hierarchyData from '@/data/hierarchy.json';
 import { TIME_RANGE_SUBTITLES } from '@/types/analytics';
 import type { TimeRange } from '@/types/analytics';
+import type { ExerciseType } from '@/types/exercise';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const CARD_PADDING = spacing.md * 2;
@@ -29,6 +31,7 @@ interface ExerciseMetadata {
   push_pull: 'push' | 'pull' | null;
   upper_lower: 'upper' | 'lower' | null;
   is_compound: boolean;
+  exercise_type: ExerciseType;
 }
 
 const EXERCISE_METADATA = exercisesData.reduce((acc, ex) => {
@@ -36,6 +39,7 @@ const EXERCISE_METADATA = exercisesData.reduce((acc, ex) => {
     push_pull: ex.push_pull as 'push' | 'pull' | null,
     upper_lower: ex.upper_lower as 'upper' | 'lower' | null,
     is_compound: ex.is_compound ?? false,
+    exercise_type: (ex.exercise_type as ExerciseType) || 'weight',
   };
   return acc;
 }, {} as Record<string, ExerciseMetadata>);
@@ -172,6 +176,7 @@ export const TrainingBalanceCard: React.FC = () => {
   const forceEmptyAnalytics = useDevToolsStore((state) => state.forceEmptyAnalytics);
   const rawWorkouts = useWorkoutSessionsStore((state) => state.workouts);
   const workouts = __DEV__ && forceEmptyAnalytics ? [] : rawWorkouts;
+  const userBodyWeight = useUserProfileStore((state) => state.profile?.weightLbs);
   const [currentPage, setCurrentPage] = useState(0);
   const [timeRange, setTimeRange] = useState<TimeRange>('week');
   const scrollViewRef = useRef<ScrollView>(null);
@@ -181,25 +186,27 @@ export const TrainingBalanceCard: React.FC = () => {
     const volumeBalance: BalanceData = { push: 0, pull: 0, quad: 0, hip: 0, upper: 0, lower: 0, compound: 0, isolated: 0 };
     const setBalance: BalanceData = { push: 0, pull: 0, quad: 0, hip: 0, upper: 0, lower: 0, compound: 0, isolated: 0 };
 
-    // Calculate cutoff date based on time range
+    // Calculate cutoff date based on time range (match useAnalyticsData semantics)
     const now = new Date();
     let cutoff: Date;
-    
+
     switch (timeRange) {
       case 'week':
+        // Last 7 days
         cutoff = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
         break;
       case 'month':
-        cutoff = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+        // Since first of current month
+        cutoff = new Date(now.getFullYear(), now.getMonth(), 1);
         break;
       case 'year':
-        cutoff = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
+        // Since first of current year
+        cutoff = new Date(now.getFullYear(), 0, 1);
         break;
       case 'all':
-        cutoff = new Date(0); // Beginning of time
-        break;
       default:
-        cutoff = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+        cutoff = new Date(0); // All time
+        break;
     }
 
     workouts
@@ -209,18 +216,83 @@ export const TrainingBalanceCard: React.FC = () => {
           const metadata = EXERCISE_METADATA[exercise.name];
           if (!metadata) return;
 
+          const exerciseType = metadata.exercise_type || 'weight';
+
+          // Skip cardio and pure duration exercises from balance stats
+          if (exerciseType === 'cardio' || exerciseType === 'duration') {
+            return;
+          }
+
           // Count completed sets for this exercise
-          const completedSets = exercise.sets.filter(
-            (set: any) => set.completed && (set.weight > 0 || set.reps > 0)
-          );
+          const completedSets = exercise.sets.filter((set: any) => {
+            if (!set.completed) return false;
+            // For weight/assisted/bodyweight/reps_only, ensure we have meaningful reps/weight
+            const reps = set.reps ?? 0;
+            const weight = set.weight ?? 0;
+            const assistanceWeight = set.assistanceWeight ?? 0;
+
+            switch (exerciseType) {
+              case 'weight':
+                return reps > 0 && weight > 0;
+              case 'bodyweight':
+              case 'reps_only':
+                return reps > 0;
+              case 'assisted':
+                return reps > 0 && (weight > 0 || assistanceWeight > 0);
+              default:
+                return false;
+            }
+          });
+
           const setCount = completedSets.length;
           if (setCount === 0) return;
 
-          // Calculate total volume for this exercise
-          const totalVolume = completedSets.reduce(
-            (sum: number, set: any) => sum + (set.weight || 0) * (set.reps || 0),
-            0
-          );
+          // Calculate total volume for this exercise using global analytics semantics
+          let totalVolume = 0;
+
+          completedSets.forEach((set: any) => {
+            const reps = set.reps ?? 0;
+            if (reps <= 0) {
+              return;
+            }
+
+            let setVolume = 0;
+
+            switch (exerciseType) {
+              case 'bodyweight':
+                if (userBodyWeight && userBodyWeight > 0) {
+                  setVolume = userBodyWeight * reps;
+                }
+                break;
+              case 'assisted': {
+                if (!userBodyWeight || userBodyWeight <= 0) {
+                  break;
+                }
+                const assistanceWeight = set.assistanceWeight ?? 0;
+                const effectiveWeight = Math.max(0, userBodyWeight - assistanceWeight);
+                if (effectiveWeight > 0) {
+                  setVolume = effectiveWeight * reps;
+                }
+                break;
+              }
+              case 'reps_only':
+                // Resistance bands: do not contribute to volume-based balance
+                setVolume = 0;
+                break;
+              case 'weight':
+              default: {
+                const weight = set.weight ?? 0;
+                if (weight > 0) {
+                  setVolume = weight * reps;
+                }
+                break;
+              }
+            }
+
+            if (setVolume > 0) {
+              totalVolume += setVolume;
+            }
+          });
 
           // Push/Pull classification
           if (metadata.push_pull === 'push') {

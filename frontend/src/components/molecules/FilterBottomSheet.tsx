@@ -4,6 +4,7 @@
  */
 import React, { useEffect } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/atoms/Button';
 import { Text } from '@/components/atoms/Text';
@@ -41,6 +42,7 @@ export const FilterBottomSheet: React.FC<FilterBottomSheetProps> = ({
   onClose,
   onApply,
 }) => {
+  const insets = useSafeAreaInsets();
   // Local state for buffering filter changes
   const [localFilters, setLocalFilters] = React.useState<ExerciseFilters>(filters);
 
@@ -120,6 +122,7 @@ export const FilterBottomSheet: React.FC<FilterBottomSheetProps> = ({
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
       >
         <View style={styles.filterGroups}>
           <ExerciseFilterGroup
@@ -198,7 +201,7 @@ export const FilterBottomSheet: React.FC<FilterBottomSheetProps> = ({
         </View>
       </ScrollView>
 
-      <View style={styles.footer}>
+      <View style={[styles.footer, { paddingBottom: spacing.sm + insets.bottom }]}>
         <Button
           label="Apply Filters"
           variant="primary"

@@ -925,6 +925,7 @@ const WorkoutSessionScreen: React.FC = () => {
           contentContainerStyle={styles.modalListContent}
           showsVerticalScrollIndicator
           keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
           ListEmptyComponent={(
             <View style={styles.modalEmptyState}>
               <Text variant="body" color="secondary">

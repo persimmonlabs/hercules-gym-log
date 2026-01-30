@@ -4,8 +4,7 @@
  */
 
 import { useDevToolsStore } from '@/store/devToolsStore';
-import { usePlansStore } from '@/store/plansStore';
-import { useProgramsStore } from '@/store/programsStore';
+import type { UserProgram } from '@/types/premadePlan';
 
 // Free tier limits
 export const FREE_LIMITS = {
@@ -17,9 +16,14 @@ export const FREE_LIMITS = {
  * Get the total number of unique workouts across both custom workouts and program workouts.
  * This matches how the "My Workouts" UI displays and counts workouts.
  */
-export const getTotalUniqueWorkoutCount = (): number => {
-  const plans = usePlansStore.getState().plans;
-  const userPrograms = useProgramsStore.getState().userPrograms;
+type PlanSummary = {
+  name: string;
+};
+
+export const getTotalUniqueWorkoutCount = (
+  plans: PlanSummary[],
+  userPrograms: UserProgram[],
+): number => {
   
   const workoutsGroupedByName: Record<string, boolean> = {};
 

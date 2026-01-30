@@ -52,7 +52,7 @@ const TimeRangeChip: React.FC<TimeRangeChipProps> = ({ label, active, onPress })
         style={[styles.chip, active && styles.chipActive]}
         onPress={handlePress}
       >
-        <Text variant="caption" color={active ? 'onAccent' : 'secondary'}>
+        <Text variant="caption" color={active ? 'primary' : 'secondary'}>
           {label}
         </Text>
       </Pressable>
@@ -89,13 +89,13 @@ const styles = StyleSheet.create({
   chip: {
     borderRadius: radius.full,
     borderWidth: 1,
-    borderColor: colors.border.light,
+    borderColor: colors.accent.orangeMuted,
     backgroundColor: colors.surface.card,
     paddingVertical: spacing.xs,
     paddingHorizontal: spacing.sm,
   },
   chipActive: {
-    backgroundColor: colors.accent.primary,
-    borderColor: colors.accent.primary,
+    backgroundColor: colors.accent.orangeMuted,
+    borderColor: colors.accent.orange,
   },
 });

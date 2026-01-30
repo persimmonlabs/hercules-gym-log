@@ -5,6 +5,7 @@ import { triggerHaptic } from '@/utils/haptics';
 import Animated, { Easing, useAnimatedStyle, useSharedValue, withSpring, withTiming, type AnimatedStyle } from 'react-native-reanimated';
 
 import { Text } from '@/components/atoms/Text';
+import { Button } from '@/components/atoms/Button';
 import { TabSwipeContainer } from '@/components/templates/TabSwipeContainer';
 import { colors, radius, shadows, sizing, spacing } from '@/constants/theme';
 import { IconSymbol } from '@/components/ui/icon-symbol';
@@ -14,31 +15,44 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.primary.bg,
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
+  contentContainer: {
+    flexGrow: 1,
+    minHeight: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
     paddingHorizontal: spacing.md,
-    paddingTop: spacing.xl,
-    paddingBottom: spacing.lg,
-    gap: spacing.sm,
+    paddingBottom: spacing.sm,
+    paddingTop: spacing['2xl'],
+    position: 'relative',
   },
-  titleWrapper: {
-    paddingBottom: spacing.xs,
+  heroContainer: {
+    width: '100%',
+    alignItems: 'center',
+    gap: spacing.lg,
+    paddingTop: 64,
+    position: 'relative',
+  },
+  heroTitle: {
+    textAlign: 'center',
+  },
+  heroSubtitle: {
+    textAlign: 'center',
   },
   backButton: {
+    position: 'absolute',
+    top: spacing.xl,
+    right: spacing.md,
     padding: spacing.sm,
     paddingTop: spacing.xs,
     borderRadius: radius.full,
   },
-  titleContainer: {
-    flex: 1,
+  optionsContainer: {
+    width: '100%',
+    alignItems: 'center',
+    gap: spacing.md,
   },
-  contentContainer: {
-    flexGrow: 1,
-    paddingHorizontal: spacing.md,
-    paddingBottom: spacing.sm,
-    gap: spacing.xl,
+  buttonWrapper: {
+    width: '100%',
   },
   dialogContent: {
     gap: spacing.xs,
@@ -194,62 +208,29 @@ export default function AddWorkoutScreen() {
   }, [router, isWorkoutMode]);
 
   return (
-    <TabSwipeContainer>
-      <View style={styles.container}>
-        {/* Header */}
-        <View style={styles.header}>
-          <View style={styles.titleContainer}>
-            <Text variant="heading2" color="primary">
-              {isWorkoutMode ? 'Add Workout' : 'Add Plan'}
-            </Text>
-            <Text variant="body" color="secondary">
-              {isWorkoutMode ? 'How would you like to create your new workout?' : 'How would you like to create your new plan?'}
-            </Text>
+    <TabSwipeContainer contentContainerStyle={styles.contentContainer}>
+      <Pressable onPress={handleBack} style={styles.backButton} hitSlop={8}>
+        <IconSymbol name="arrow-back" size={24} color={colors.text.primary} />
+      </Pressable>
+      <View style={styles.heroContainer}>
+        <Text variant="display1" color="primary" style={styles.heroTitle} fadeIn>
+          {isWorkoutMode ? 'Add Workout' : 'Add Plan'}
+        </Text>
+        <View style={styles.optionsContainer}>
+          <View style={styles.buttonWrapper}>
+            <Button
+              label={isWorkoutMode ? 'Browse Workout Library' : 'Browse Plan Library'}
+              size="lg"
+              onPress={handleBrowseLibrary}
+            />
           </View>
-          <Pressable onPress={handleBack} style={styles.backButton} hitSlop={8}>
-            <IconSymbol name="arrow-back" size={24} color={colors.text.primary} />
-          </Pressable>
-        </View>
-
-        <View style={styles.contentContainer}>
-          <View style={{ gap: spacing.md, marginTop: spacing.md }}>
-            <Animated.View style={browseLiftAnimation.animatedStyle}>
-              <Pressable
-                style={[styles.planCardShell, { minHeight: 60 }]}
-                onPressIn={browseLiftAnimation.onPressIn}
-                onPressOut={browseLiftAnimation.onPressOut}
-                onPress={() => {
-                  browseLiftAnimation.onPressOut();
-                  handleBrowseLibrary();
-                }}
-              >
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md, justifyContent: 'space-between' }}>
-                  <View style={{ flex: 1, gap: spacing.xs }}>
-                    <Text variant="bodySemibold" color="primary">{isWorkoutMode ? 'Browse Workouts' : 'Browse Plans'}</Text>
-                  </View>
-                  <IconSymbol name="chevron-right" size={20} color={colors.text.tertiary} />
-                </View>
-              </Pressable>
-            </Animated.View>
-
-            <Animated.View style={scratchLiftAnimation.animatedStyle}>
-              <Pressable
-                style={[styles.planCardShell, { minHeight: 60 }]}
-                onPressIn={scratchLiftAnimation.onPressIn}
-                onPressOut={scratchLiftAnimation.onPressOut}
-                onPress={() => {
-                  scratchLiftAnimation.onPressOut();
-                  handleCreateCustomPlan();
-                }}
-              >
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md, justifyContent: 'space-between' }}>
-                  <View style={{ flex: 1, gap: spacing.xs }}>
-                    <Text variant="bodySemibold" color="primary">Create from Scratch</Text>
-                  </View>
-                  <IconSymbol name="chevron-right" size={20} color={colors.text.tertiary} />
-                </View>
-              </Pressable>
-            </Animated.View>
+          <View style={styles.buttonWrapper}>
+            <Button
+              label="Create from Scratch"
+              size="lg"
+              variant="light"
+              onPress={handleCreateCustomPlan}
+            />
           </View>
         </View>
       </View>

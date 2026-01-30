@@ -127,6 +127,7 @@ export const NameEditModal: React.FC<NameEditModalProps> = ({
       transparent
       visible={visible}
       onRequestClose={handleCancel}
+      statusBarTranslucent
     >
       <TouchableWithoutFeedback onPress={handleCancel}>
         <View style={styles.overlay}>
@@ -186,7 +187,7 @@ export const NameEditModal: React.FC<NameEditModalProps> = ({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: colors.overlay.scrim,
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: spacing.lg,

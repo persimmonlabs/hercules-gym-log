@@ -38,7 +38,7 @@ export const HorizontalAccentBar: React.FC<HorizontalAccentBarProps> = ({
 const styles = StyleSheet.create({
   bar: {
     height: 3,
-    backgroundColor: colors.accent.orange,
+    backgroundColor: colors.accent.orangeMuted,
     borderRadius: 2,
     alignSelf: 'center',
     marginTop: spacing.xs,

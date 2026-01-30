@@ -265,7 +265,7 @@ export const useAnalyticsData = (options: UseAnalyticsDataOptions = {}) => {
 
         const exerciseType = EXERCISE_TYPE_MAP[exercise.name] || 'weight';
 
-        // Only include weight and assisted exercises
+        // Only include weight and assisted exercises (exclude bodyweight and cardio from distribution)
         if (exerciseType !== 'weight' && exerciseType !== 'assisted') return;
 
         exercise.sets.forEach((set: any) => {
@@ -281,12 +281,11 @@ export const useAnalyticsData = (options: UseAnalyticsDataOptions = {}) => {
             if (weight <= 0) return;
             setVolume = weight * reps;
           } else if (exerciseType === 'assisted') {
-            // Safety check: skip if no body weight stored
+            // Effective weight = body weight - assistance, clamped to avoid negatives
             if (!userBodyWeight) return;
             const assistanceWeight = set.assistanceWeight ?? 0;
-            // Safety check: skip if assistance >= body weight (would be zero or negative)
-            if (assistanceWeight >= userBodyWeight) return;
-            const effectiveWeight = userBodyWeight - assistanceWeight;
+            const effectiveWeight = Math.max(0, userBodyWeight - assistanceWeight);
+            if (effectiveWeight <= 0) return;
             setVolume = effectiveWeight * reps;
           }
 
@@ -350,7 +349,7 @@ export const useAnalyticsData = (options: UseAnalyticsDataOptions = {}) => {
 
         const exerciseType = EXERCISE_TYPE_MAP[exercise.name] || 'weight';
 
-        // Only include weight and assisted exercises
+        // Only include weight and assisted exercises (exclude bodyweight and cardio from distribution)
         if (exerciseType !== 'weight' && exerciseType !== 'assisted') return;
 
         exercise.sets.forEach((set: any) => {
@@ -366,12 +365,11 @@ export const useAnalyticsData = (options: UseAnalyticsDataOptions = {}) => {
             if (weight <= 0) return;
             setVolume = weight * reps;
           } else if (exerciseType === 'assisted') {
-            // Safety check: skip if no body weight stored
+            // Effective weight = body weight - assistance, clamped to avoid negatives
             if (!userBodyWeight) return;
             const assistanceWeight = set.assistanceWeight ?? 0;
-            // Safety check: skip if assistance >= body weight (would be zero or negative)
-            if (assistanceWeight >= userBodyWeight) return;
-            const effectiveWeight = userBodyWeight - assistanceWeight;
+            const effectiveWeight = Math.max(0, userBodyWeight - assistanceWeight);
+            if (effectiveWeight <= 0) return;
             setVolume = effectiveWeight * reps;
           }
 
@@ -574,6 +572,73 @@ export const useAnalyticsData = (options: UseAnalyticsDataOptions = {}) => {
     };
   }, [workouts]);
 
+  // Volume trend data over time - returns date-indexed volume data
+  const volumeTrendData = useMemo((): Record<string, number> => {
+    if (filteredWorkouts.length === 0) return {};
+
+    // Group workouts by date and calculate total volume per day
+    const volumeByDate: Record<string, number> = {};
+
+    filteredWorkouts.forEach((workout) => {
+      const dateKey = workout.date.split('T')[0]; // YYYY-MM-DD
+      
+      workout.exercises.forEach((exercise: any) => {
+        const exerciseType = EXERCISE_TYPE_MAP[exercise.name] || 'weight';
+        
+        // Skip cardio and pure duration exercises
+        if (exerciseType === 'cardio' || exerciseType === 'duration') {
+          return;
+        }
+
+        exercise.sets.forEach((set: any) => {
+          if (!set.completed) return;
+          
+          const reps = set.reps ?? 0;
+          if (reps <= 0) return;
+
+          let setVolume = 0;
+
+          switch (exerciseType) {
+            case 'bodyweight':
+              if (userBodyWeight && userBodyWeight > 0) {
+                setVolume = userBodyWeight * reps;
+              }
+              break;
+            case 'assisted':
+              if (userBodyWeight && userBodyWeight > 0) {
+                const assistance = set.assistanceWeight ?? 0;
+                const effective = Math.max(0, userBodyWeight - assistance);
+                if (effective > 0) {
+                  setVolume = effective * reps;
+                }
+              }
+              break;
+            case 'reps_only':
+              // Bands etc – do not contribute to volume
+              setVolume = 0;
+              break;
+            case 'weight':
+            default:
+              const weight = set.weight ?? 0;
+              if (weight > 0) {
+                setVolume = weight * reps;
+              }
+              break;
+          }
+
+          if (setVolume > 0) {
+            // Convert to user's preferred unit
+            const convertedVolume = convertWeight(setVolume);
+            volumeByDate[dateKey] = (volumeByDate[dateKey] || 0) + convertedVolume;
+          }
+        });
+      });
+    });
+
+    // Return date-indexed volume data (YYYY-MM-DD -> volume)
+    return volumeByDate;
+  }, [filteredWorkouts, userBodyWeight, convertWeight, timeRange]);
+
   // Check if there's any data
   const hasData = workouts.length > 0;
   const hasFilteredData = filteredWorkouts.length > 0;
@@ -590,6 +655,7 @@ export const useAnalyticsData = (options: UseAnalyticsDataOptions = {}) => {
     weeklyVolume,
     streakData,
     cardioStats,
+    volumeTrendData,
 
     // State
     hasData,

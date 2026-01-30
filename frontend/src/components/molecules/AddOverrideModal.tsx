@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import { View, StyleSheet, Pressable, ScrollView } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { triggerHaptic } from '@/utils/haptics';
 
 import { Text } from '@/components/atoms/Text';
@@ -52,6 +53,7 @@ export const AddOverrideModal: React.FC<AddOverrideModalProps> = ({
   onClose,
   editingOverride,
 }) => {
+  const insets = useSafeAreaInsets();
   const { theme } = useTheme();
   const addOverride = useActiveScheduleStore((state) => state.addOverride);
   const removeOverride = useActiveScheduleStore((state) => state.removeOverride);
@@ -243,7 +245,7 @@ export const AddOverrideModal: React.FC<AddOverrideModalProps> = ({
         </View>
       </ScrollView>
 
-      <View style={styles.footer}>
+      <View style={[styles.footer, { paddingBottom: spacing.sm + insets.bottom }]}>
         {isEditing && (
           <Button
             label="Remove Override"

@@ -1,22 +1,18 @@
-import React, { useCallback, useEffect, useMemo, useState, useRef, useLayoutEffect } from 'react';
-import { Pressable, StyleSheet, View, InteractionManager, BackHandler } from 'react-native';
+import React, { useCallback, useEffect, useMemo, useState, useLayoutEffect } from 'react';
+import { Pressable, StyleSheet, View, BackHandler } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useFocusEffect } from '@react-navigation/native';
 import { triggerHaptic } from '@/utils/haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { ActivityIndicator } from 'react-native';
 
 import { Text } from '@/components/atoms/Text';
-import { SurfaceCard } from '@/components/atoms/SurfaceCard';
-import { Button } from '@/components/atoms/Button';
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { PlanSelectedExerciseList } from '@/components/molecules/PlanSelectedExerciseList';
-import { PlanEmptyStateCard } from '@/components/molecules/PlanEmptyStateCard';
-import { PlanNameCard } from '@/components/molecules/PlanNameCard';
+import { WorkoutBuilderCard } from '@/components/molecules/WorkoutBuilderCard';
 import { PremiumLimitModal } from '@/components/molecules/PremiumLimitModal';
 import { usePlanBuilderContext } from '@/providers/PlanBuilderProvider';
 import { colors, radius, spacing, sizing } from '@/constants/theme';
+import type { Exercise } from '@/constants/exercises';
 
 const styles = StyleSheet.create({
   container: {
@@ -25,67 +21,31 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    gap: spacing.sm,
-    paddingTop: spacing.xl,
-    paddingHorizontal: spacing.md,
-    paddingBottom: spacing['2xl'] * 8,
-  },
-  keyboardSpacerActive: {
-    height: spacing['2xl'] * 6,
-  },
-  topSection: {
-    width: '100%',
-    marginBottom: spacing.sm,
     gap: spacing.md,
+    paddingTop: spacing.lg,
+    paddingHorizontal: spacing.md,
+    paddingBottom: spacing['2xl'] * 4,
+  },
+  headerRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     justifyContent: 'space-between',
-    paddingBottom: spacing.sm,
+    gap: spacing.md,
   },
   headerContent: {
-    gap: spacing.sm,
-    alignItems: 'flex-start',
     flex: 1,
-  },
-  titleWrapper: {
-    paddingBottom: spacing.xs,
+    gap: spacing.xs,
   },
   headerTitle: {
     textAlign: 'left',
   },
   headerSubtitle: {
     textAlign: 'left',
-    maxWidth: 320,
   },
-  missingPlanCard: {
-    gap: spacing.md,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border.light,
-    borderRadius: radius.lg,
-    backgroundColor: colors.surface.card,
-    position: 'relative',
-  },
-  nameCardContainer: {
-    marginTop: spacing.sm,
-    marginBottom: spacing.lg,
-  },
-  emptyCard: {
-    marginTop: spacing.md,
-    gap: spacing.md,
-    position: 'relative',
-  },
-  emptyCardContent: {
-    alignItems: 'flex-start',
-    gap: spacing.sm,
-  },
-  emptyTitle: {
-    textAlign: 'left',
-  },
-  emptyBody: {
-    textAlign: 'left',
-  },
-  addButtonContainer: {
-    marginTop: spacing.lg,
+  backButton: {
+    padding: spacing.sm,
+    paddingTop: spacing.xs,
+    borderRadius: radius.full,
   },
   loadingContainer: {
     flex: 1,
@@ -103,15 +63,13 @@ const styles = StyleSheet.create({
  * CreateWorkoutScreen
  * Screen for creating/editing a Workout (collection of exercises).
  * 
- * Note: This was previously called "create-plan" but a Workout is the correct term
- * for a collection of exercises (e.g., "Push Day", "Pull Day").
+ * Uses the new unified WorkoutBuilderCard for an effortless, 
+ * one-screen workout creation experience.
  */
 const CreateWorkoutScreen: React.FC = () => {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const [showLimitModal, setShowLimitModal] = useState(false);
-  const [customLoadingText, setCustomLoadingText] = useState<string | null>(null);
-  const scrollRef = useRef<KeyboardAwareScrollView>(null);
   const { planId, returnTo } = useLocalSearchParams<{ 
     planId?: string; 
     returnTo?: string; 
@@ -125,66 +83,41 @@ const CreateWorkoutScreen: React.FC = () => {
     }
     return null;
   }, [planId]);
+
   const {
     planName,
     setPlanName,
     selectedExercises,
     isSaving,
     isEditing,
-    isEditingPlanMissing,
-    headerTitle,
-    headerSubtitle,
-    saveLabel,
-    selectedListTitle,
-    selectedListSubtitle,
-    isSaveDisabled,
     isLoading,
+    isSaveDisabled,
+    saveLabel,
+    handleAddExercise,
     handleRemoveExercise,
     handleReorderExercises,
     handleSavePlan,
     setEditingPlanId,
     setIsLoading,
     resetSession,
-    resetFilters,
-    setSearchTerm,
   } = usePlanBuilderContext();
 
-  // Track if we're returning from add-exercises
-  const isReturningFromAddExercises = useRef(false);
+  // Dynamic header text
+  const headerTitle = isEditing ? 'Edit Workout' : 'Create Workout';
+  const headerSubtitle = isEditing 
+    ? 'Update your workout template' 
+    : 'Build your custom workout';
 
   useLayoutEffect(() => {
     // Set editing plan ID immediately on mount
     setEditingPlanId(editingPlanId);
+    // Hide loading after mount
+    setIsLoading(false);
 
     return () => {
       resetSession();
     };
-  }, [editingPlanId, resetSession, setEditingPlanId]);
-
-  // Handle returning from add-exercises screen
-  useFocusEffect(
-    useCallback(() => {
-      if (isReturningFromAddExercises.current) {
-        // Wait for navigation animations to complete before hiding loading
-        const task = InteractionManager.runAfterInteractions(() => {
-          setIsLoading(false);
-        });
-        isReturningFromAddExercises.current = false;
-        return () => task.cancel();
-      }
-    }, [setIsLoading])
-  );
-
-  useEffect(() => {
-    router.prefetch('/add-exercises');
-  }, [router]);
-
-  // Reset custom loading text when loading finishes
-  useEffect(() => {
-    if (!isLoading) {
-      setCustomLoadingText(null);
-    }
-  }, [isLoading]);
+  }, [editingPlanId, resetSession, setEditingPlanId, setIsLoading]);
 
   // Decode returnTo if provided
   const decodedReturnTo = useMemo(() => {
@@ -207,14 +140,13 @@ const CreateWorkoutScreen: React.FC = () => {
     }
 
     if (planId) {
-      // If this is a nested program workout (e.g. from Edit Plan screen), just go back
+      // If this is a nested program workout, just go back
       const idStr = Array.isArray(planId) ? planId[0] : planId;
       if (idStr && (idStr.startsWith('program:') || idStr.includes('%3A'))) {
         router.back();
         return;
       }
-
-      // If editing, go explicitly to My Programs (Plans tab)
+      // If editing, go to Plans tab
       router.push('/(tabs)/plans');
     } else {
       // If creating, go back to Add Workout
@@ -236,46 +168,36 @@ const CreateWorkoutScreen: React.FC = () => {
     return () => backHandler.remove();
   }, [handleBackPress]);
 
-  const handleSavePlanPress = useCallback(() => {
+  const handleSavePress = useCallback(() => {
     void (async () => {
       try {
         const result = await handleSavePlan();
 
         if (result === 'success') {
-          // If returnTo is specified, use it for navigation
           if (decodedReturnTo) {
             router.replace(decodedReturnTo);
             return;
           }
-
           handleBackPress();
         }
-        // Note: 'duplicate-name' no longer returned - system auto-renames duplicates
       } catch (error: any) {
         if (error?.message === 'FREE_LIMIT_REACHED') {
           setShowLimitModal(true);
         }
       }
-      // Note: 'duplicate-name' no longer returned - system auto-renames duplicates
     })();
-  }, [handleSavePlan, router, planId, decodedReturnTo]);
+  }, [handleSavePlan, router, decodedReturnTo, handleBackPress]);
 
-  const handleAddExercisesPress = useCallback(() => {
+  // Handle adding exercise from inline search
+  const handleAddExerciseFromSearch = useCallback((exercise: Exercise) => {
+    handleAddExercise(exercise);
+  }, [handleAddExercise]);
+
+  // Handle browse all exercises - navigate to full add-exercises screen
+  const handleBrowseAllExercises = useCallback(() => {
     triggerHaptic('selection');
-    setEditingPlanId(editingPlanId); // Ensure context is synced
-    setCustomLoadingText('Loading exercises...');
-    setIsLoading(true); // Trigger immediate loading feedback
-    isReturningFromAddExercises.current = true; // Mark that we're going to add-exercises
-
-    // Reset filters and search BEFORE navigating so the next screen is clean on mount
-    resetFilters();
-    setSearchTerm('');
-
-    // Navigate immediately - loading state is already set
     router.push('/add-exercises');
-  }, [router, setIsLoading, setEditingPlanId, editingPlanId, resetFilters, setSearchTerm]);
-
-  const hasExercises = selectedExercises.length > 0;
+  }, [router]);
 
   return (
     <>
@@ -289,23 +211,21 @@ const CreateWorkoutScreen: React.FC = () => {
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color={colors.accent.primary} />
             <Text variant="body" color="secondary" style={styles.loadingText}>
-              {customLoadingText || (isEditing ? 'Loading workout...' : 'Building workout...')}
+              {isEditing ? 'Loading workout...' : 'Preparing...'}
             </Text>
           </View>
         ) : (
           <KeyboardAwareScrollView
-            ref={scrollRef}
             contentContainerStyle={styles.scrollContent}
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
             keyboardDismissMode="on-drag"
             enableOnAndroid
-            extraScrollHeight={spacing['2xl'] * 4}
+            extraScrollHeight={spacing['2xl'] * 2}
             keyboardOpeningTime={0}
-            enableAutomaticScroll={false}
           >
             {/* Header */}
-            <View style={styles.topSection}>
+            <View style={styles.headerRow}>
               <View style={styles.headerContent}>
                 <Text variant="heading2" color="primary" style={styles.headerTitle} fadeIn>
                   {headerTitle}
@@ -314,61 +234,31 @@ const CreateWorkoutScreen: React.FC = () => {
                   {headerSubtitle}
                 </Text>
               </View>
-              <Pressable
+            <Pressable
                 accessibilityRole="button"
                 accessibilityLabel="Go Back"
                 onPress={handleBackPress}
-                style={{ padding: spacing.sm, paddingTop: spacing.xs, borderRadius: radius.full }}
+                style={styles.backButton}
               >
                 <IconSymbol name="arrow-back" size={sizing.iconMD} color={colors.text.primary} />
               </Pressable>
             </View>
 
-            {isEditing && isEditingPlanMissing ? (
-              <SurfaceCard tone="neutral" padding="xl" showAccentStripe={false} style={styles.missingPlanCard}>
-                <Text variant="bodySemibold" color="primary">
-                  Plan unavailable
-                </Text>
-                <Text variant="body" color="secondary">
-                  We couldn't find the plan you're trying to edit. Please go back and select another plan.
-                </Text>
-                <Button label="Go Back" variant="secondary" onPress={router.back} />
-              </SurfaceCard>
-            ) : null}
-
-            <View style={styles.nameCardContainer}>
-              <PlanNameCard value={planName} onChange={setPlanName} label="Name" placeholder="e.g. Push Day" />
-            </View>
-
-            {hasExercises ? (
-              <PlanSelectedExerciseList
-                exercises={selectedExercises}
-                onRemoveExercise={handleRemoveExercise}
-                onAddExercises={handleAddExercisesPress}
-                title={selectedListTitle}
-                subtitle={selectedListSubtitle}
-                addLabel="Add Exercises"
-                onReorderExercises={handleReorderExercises}
-              />
-            ) : (
-              <PlanEmptyStateCard
-                title="No exercises yet"
-                buttonLabel="Add Exercises"
-                onPress={handleAddExercisesPress}
-                style={styles.emptyCard}
-              />
-            )}
-
-            <View style={styles.addButtonContainer}>
-              <Button
-                label={saveLabel}
-                variant="primary"
-                size="lg"
-                onPress={handleSavePlanPress}
-                disabled={isSaveDisabled}
-                loading={isSaving}
-              />
-            </View>
+            {/* Unified Workout Builder Card */}
+            <WorkoutBuilderCard
+              workoutName={planName}
+              onWorkoutNameChange={setPlanName}
+              namePlaceholder="e.g. Push Day, Leg Day"
+              exercises={selectedExercises}
+              onAddExercise={handleAddExerciseFromSearch}
+              onRemoveExercise={handleRemoveExercise}
+              onReorderExercises={handleReorderExercises}
+              onSave={handleSavePress}
+              saveLabel={saveLabel}
+              isSaving={isSaving}
+              isSaveDisabled={isSaveDisabled}
+              onBrowseAllExercises={handleBrowseAllExercises}
+            />
           </KeyboardAwareScrollView>
         )}
       </View>

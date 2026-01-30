@@ -124,7 +124,7 @@ export default function ProgramDetailsScreen() {
 
   const handleBack = useCallback(() => {
     triggerHaptic('selection');
-    router.navigate('/(tabs)/browse-programs');
+    router.back();
   }, [router]);
 
   const scrollRef = useRef<ScrollView>(null);

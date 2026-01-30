@@ -1,17 +1,18 @@
 /**
  * WorkoutFilters
- * Collapsible filter section for workout browsing with Equipment, Goal, and Duration filters
+ * Modern collapsible filter section with horizontal scrolling chips
+ * Inspired by industry-leading fitness apps for seamless UX
  */
 import React, { useState } from 'react';
 import { ScrollView, StyleSheet, View, Pressable } from 'react-native';
-import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
+import Animated, { useAnimatedStyle, useSharedValue, withSpring, withTiming, Easing } from 'react-native-reanimated';
 import { triggerHaptic } from '@/utils/haptics';
 
 import { Text } from '@/components/atoms/Text';
 import { QuickFilterChip } from '@/components/atoms/QuickFilterChip';
 import { FilterChip } from '@/components/atoms/FilterChip';
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { colors, spacing, radius } from '@/constants/theme';
+import { colors, spacing, radius, shadows } from '@/constants/theme';
 import { springBouncy } from '@/constants/animations';
 
 export type WorkoutFilterState = {
@@ -72,15 +73,27 @@ const EXPERIENCE_FILTERS = [
 export const WorkoutFilters: React.FC<WorkoutFiltersProps> = ({ filters, onFiltersChange, showDurationFilter = true, showWorkoutTypeFilter = true }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const rotation = useSharedValue(0);
+  const contentHeight = useSharedValue(0);
+  const opacity = useSharedValue(0);
 
   const animatedRotationStyle = useAnimatedStyle(() => ({
     transform: [{ rotate: `${rotation.value}deg` }],
   }));
 
+  const animatedContentStyle = useAnimatedStyle(() => ({
+    opacity: opacity.value,
+  }));
+
   const toggleExpanded = () => {
     triggerHaptic('selection');
-    setIsExpanded(!isExpanded);
-    rotation.value = withSpring(isExpanded ? 0 : 180, springBouncy);
+    const expanding = !isExpanded;
+    setIsExpanded(expanding);
+    
+    rotation.value = withSpring(expanding ? 180 : 0, springBouncy);
+    opacity.value = withTiming(expanding ? 1 : 0, {
+      duration: expanding ? 250 : 200,
+      easing: Easing.out(Easing.cubic),
+    });
   };
 
   const updateFilter = (key: keyof WorkoutFilterState, value: string) => {
@@ -135,80 +148,85 @@ export const WorkoutFilters: React.FC<WorkoutFiltersProps> = ({ filters, onFilte
 
   return (
     <View style={styles.container}>
-      {/* Header with active filter chips */}
+      {/* Compact header with toggle */}
       <Pressable style={styles.header} onPress={toggleExpanded}>
-        <View style={styles.headerTop}>
-          <View style={styles.titleRow}>
-            <Text variant="bodySemibold" color="primary">Filters</Text>
+        <View style={styles.headerContent}>
+          <View style={styles.headerLeft}>
+            <IconSymbol name="filter-list" size={20} color={colors.accent.primary} />
+            <Text variant="bodySemibold" color="primary">Filter</Text>
             {activeFiltersCount > 0 && (
               <View style={styles.badge}>
-                <Text variant="caption" color="onAccent">{activeFiltersCount}</Text>
+                <Text variant="caption" color="onAccent" style={styles.badgeText}>{activeFiltersCount}</Text>
               </View>
             )}
           </View>
-          <View style={styles.expandHint}>
-            <Text variant="caption" color="secondary">
-              {isExpanded ? 'Show less' : 'Show more'}
-            </Text>
-            <Animated.View style={[styles.expandButton, animatedRotationStyle]}>
-              <IconSymbol 
-                name="keyboard-arrow-down" 
-                size={20} 
-                color={colors.text.secondary} 
-              />
-            </Animated.View>
-          </View>
+          <Animated.View style={animatedRotationStyle}>
+            <IconSymbol 
+              name="keyboard-arrow-down" 
+              size={24} 
+              color={colors.text.secondary} 
+            />
+          </Animated.View>
         </View>
-
-        {/* Active filter chips */}
-        {activeFiltersCount > 0 && (
-          <ScrollView 
-            horizontal 
-            showsHorizontalScrollIndicator={false}
-            style={styles.activeFiltersScroll}
-            contentContainerStyle={styles.activeFiltersContent}
-          >
-            {filters.experienceLevel !== 'all' && (
-              <FilterChip
-                label={getFilterLabel('experienceLevel', filters.experienceLevel)}
-                onRemove={() => clearFilter('experienceLevel')}
-              />
-            )}
-            {filters.equipment !== 'all' && (
-              <FilterChip
-                label={getFilterLabel('equipment', filters.equipment)}
-                onRemove={() => clearFilter('equipment')}
-              />
-            )}
-            {filters.goal !== 'all' && (
-              <FilterChip
-                label={getFilterLabel('goal', filters.goal)}
-                onRemove={() => clearFilter('goal')}
-              />
-            )}
-            {showWorkoutTypeFilter && filters.workoutType !== 'all' && (
-              <FilterChip
-                label={getFilterLabel('workoutType', filters.workoutType)}
-                onRemove={() => clearFilter('workoutType')}
-              />
-            )}
-            {showDurationFilter && filters.duration !== 'all' && (
-              <FilterChip
-                label={getFilterLabel('duration', filters.duration)}
-                onRemove={() => clearFilter('duration')}
-              />
-            )}
-          </ScrollView>
-        )}
       </Pressable>
 
-      {/* Expandable filter options */}
+      {/* Active filters horizontal scroll */}
+      {activeFiltersCount > 0 && !isExpanded && (
+        <ScrollView 
+          horizontal 
+          showsHorizontalScrollIndicator={false}
+          style={styles.activeFiltersScroll}
+          contentContainerStyle={styles.activeFiltersContent}
+        >
+          {filters.experienceLevel !== 'all' && (
+            <FilterChip
+              label={getFilterLabel('experienceLevel', filters.experienceLevel)}
+              onRemove={() => clearFilter('experienceLevel')}
+            />
+          )}
+          {filters.equipment !== 'all' && (
+            <FilterChip
+              label={getFilterLabel('equipment', filters.equipment)}
+              onRemove={() => clearFilter('equipment')}
+            />
+          )}
+          {filters.goal !== 'all' && (
+            <FilterChip
+              label={getFilterLabel('goal', filters.goal)}
+              onRemove={() => clearFilter('goal')}
+            />
+          )}
+          {showWorkoutTypeFilter && filters.workoutType !== 'all' && (
+            <FilterChip
+              label={getFilterLabel('workoutType', filters.workoutType)}
+              onRemove={() => clearFilter('workoutType')}
+            />
+          )}
+          {showDurationFilter && filters.duration !== 'all' && (
+            <FilterChip
+              label={getFilterLabel('duration', filters.duration)}
+              onRemove={() => clearFilter('duration')}
+            />
+          )}
+          {activeFiltersCount > 1 && (
+            <Pressable onPress={clearAllFilters} style={styles.clearAllChip}>
+              <Text variant="caption" color="secondary" style={styles.clearAllText}>Clear All</Text>
+            </Pressable>
+          )}
+        </ScrollView>
+      )}
+
+      {/* Expandable filter options with smooth animation */}
       {isExpanded && (
-        <View style={styles.expandedContent}>
-          {/* Experience Level */}
+        <Animated.View style={[styles.expandedContent, animatedContentStyle]}>
+          {/* Experience Level - Horizontal Scroll */}
           <View style={styles.filterSection}>
-            <Text variant="captionMedium" color="primary" style={styles.sectionTitle}>Experience Level:</Text>
-            <View style={styles.chipsContainer}>
+            <Text variant="captionMedium" color="primary" style={styles.sectionTitle}>LEVEL</Text>
+            <ScrollView 
+              horizontal 
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.horizontalChipsContent}
+            >
               {EXPERIENCE_FILTERS.map((filter) => (
                 <QuickFilterChip
                   key={filter.value}
@@ -217,13 +235,17 @@ export const WorkoutFilters: React.FC<WorkoutFiltersProps> = ({ filters, onFilte
                   onPress={() => updateFilter('experienceLevel', filter.value)}
                 />
               ))}
-            </View>
+            </ScrollView>
           </View>
 
-          {/* Equipment */}
+          {/* Equipment - Horizontal Scroll */}
           <View style={styles.filterSection}>
-            <Text variant="captionMedium" color="primary" style={styles.sectionTitle}>Equipment:</Text>
-            <View style={styles.chipsContainer}>
+            <Text variant="captionMedium" color="primary" style={styles.sectionTitle}>EQUIPMENT</Text>
+            <ScrollView 
+              horizontal 
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.horizontalChipsContent}
+            >
               {EQUIPMENT_FILTERS.map((filter) => (
                 <QuickFilterChip
                   key={filter.value}
@@ -232,13 +254,17 @@ export const WorkoutFilters: React.FC<WorkoutFiltersProps> = ({ filters, onFilte
                   onPress={() => updateFilter('equipment', filter.value)}
                 />
               ))}
-            </View>
+            </ScrollView>
           </View>
 
-          {/* Goal */}
+          {/* Goal - Horizontal Scroll */}
           <View style={styles.filterSection}>
-            <Text variant="captionMedium" color="primary" style={styles.sectionTitle}>Goal:</Text>
-            <View style={styles.chipsContainer}>
+            <Text variant="captionMedium" color="primary" style={styles.sectionTitle}>GOAL</Text>
+            <ScrollView 
+              horizontal 
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.horizontalChipsContent}
+            >
               {GOAL_FILTERS.map((filter) => (
                 <QuickFilterChip
                   key={filter.value}
@@ -247,14 +273,18 @@ export const WorkoutFilters: React.FC<WorkoutFiltersProps> = ({ filters, onFilte
                   onPress={() => updateFilter('goal', filter.value)}
                 />
               ))}
-            </View>
+            </ScrollView>
           </View>
 
-          {/* Workout Type */}
+          {/* Workout Type - Horizontal Scroll */}
           {showWorkoutTypeFilter && (
             <View style={styles.filterSection}>
-              <Text variant="captionMedium" color="primary" style={styles.sectionTitle}>Workout Type:</Text>
-              <View style={styles.chipsContainer}>
+              <Text variant="captionMedium" color="primary" style={styles.sectionTitle}>TYPE</Text>
+              <ScrollView 
+                horizontal 
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.horizontalChipsContent}
+              >
                 {WORKOUT_TYPE_FILTERS.map((filter) => (
                   <QuickFilterChip
                     key={filter.value}
@@ -263,15 +293,19 @@ export const WorkoutFilters: React.FC<WorkoutFiltersProps> = ({ filters, onFilte
                     onPress={() => updateFilter('workoutType', filter.value)}
                   />
                 ))}
-              </View>
+              </ScrollView>
             </View>
           )}
 
-          {/* Duration */}
+          {/* Duration - Horizontal Scroll */}
           {showDurationFilter && (
             <View style={styles.filterSection}>
-              <Text variant="captionMedium" color="primary" style={styles.sectionTitle}>Duration:</Text>
-              <View style={styles.chipsContainer}>
+              <Text variant="captionMedium" color="primary" style={styles.sectionTitle}>DURATION</Text>
+              <ScrollView 
+                horizontal 
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.horizontalChipsContent}
+              >
                 {DURATION_FILTERS.map((filter) => (
                   <QuickFilterChip
                     key={filter.value}
@@ -280,21 +314,17 @@ export const WorkoutFilters: React.FC<WorkoutFiltersProps> = ({ filters, onFilte
                     onPress={() => updateFilter('duration', filter.value)}
                   />
                 ))}
-              </View>
+              </ScrollView>
             </View>
           )}
 
           {/* Clear all button */}
           {activeFiltersCount > 0 && (
-            <View style={styles.clearAllContainer}>
-              <QuickFilterChip
-                label="Clear All Filters"
-                active={false}
-                onPress={clearAllFilters}
-              />
-            </View>
+            <Pressable style={styles.clearAllButton} onPress={clearAllFilters}>
+              <Text variant="bodySemibold" color="secondary">Clear All Filters</Text>
+            </Pressable>
           )}
-        </View>
+        </Animated.View>
       )}
     </View>
   );
@@ -303,22 +333,24 @@ export const WorkoutFilters: React.FC<WorkoutFiltersProps> = ({ filters, onFilte
 const styles = StyleSheet.create({
   container: {
     backgroundColor: colors.surface.card,
-    borderRadius: radius.lg,
     marginHorizontal: spacing.md,
     marginBottom: spacing.md,
-    borderWidth: 1,
-    borderColor: colors.border.light,
+    borderRadius: radius.lg,
+    ...shadows.cardSoft,
+    overflow: 'hidden',
   },
   header: {
-    padding: spacing.md,
-    borderRadius: radius.lg,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border.light,
   },
-  headerTop: {
+  headerContent: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  titleRow: {
+  headerLeft: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
@@ -326,46 +358,65 @@ const styles = StyleSheet.create({
   badge: {
     backgroundColor: colors.accent.primary,
     borderRadius: radius.full,
-    paddingHorizontal: spacing.xs,
+    paddingHorizontal: spacing.xs + 2,
     paddingVertical: 2,
-    minWidth: 20,
+    minWidth: 22,
+    height: 22,
     alignItems: 'center',
+    justifyContent: 'center',
   },
-  expandButton: {
-    padding: spacing.sm,
-    borderRadius: radius.sm,
-    backgroundColor: colors.surface.subtle,
-  },
-  expandHint: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
+  badgeText: {
+    fontSize: 11,
+    fontWeight: '700',
   },
   activeFiltersScroll: {
-    marginTop: spacing.sm,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.lg,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border.light,
   },
   activeFiltersContent: {
     gap: spacing.sm,
+    paddingRight: spacing.lg,
+  },
+  clearAllChip: {
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.full,
+    borderWidth: 1,
+    borderColor: colors.border.light,
+    backgroundColor: colors.surface.subtle,
+    justifyContent: 'center',
+  },
+  clearAllText: {
+    fontWeight: '600',
   },
   expandedContent: {
-    paddingHorizontal: spacing.md,
-    paddingBottom: spacing.md,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.lg,
     gap: spacing.lg,
   },
   filterSection: {
     gap: spacing.sm,
   },
   sectionTitle: {
-    marginLeft: spacing.xs,
+    paddingHorizontal: spacing.lg,
+    letterSpacing: 0.8,
+    fontWeight: '700',
+    fontSize: 11,
   },
-  chipsContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+  horizontalChipsContent: {
     gap: spacing.sm,
+    paddingHorizontal: spacing.lg,
   },
-  clearAllContainer: {
-    paddingTop: spacing.sm,
-    borderTopWidth: 1,
-    borderTopColor: colors.border.light,
+  clearAllButton: {
+    marginHorizontal: spacing.lg,
+    marginTop: spacing.xs,
+    paddingVertical: spacing.md,
+    borderRadius: radius.md,
+    backgroundColor: colors.surface.subtle,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.border.light,
   },
 });

@@ -157,5 +157,7 @@ const styles = StyleSheet.create({
     width: spacing.xs,
     borderTopLeftRadius: radius.lg,
     borderBottomLeftRadius: radius.lg,
+    zIndex: 10,
+    elevation: 10,
   },
 });

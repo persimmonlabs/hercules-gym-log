@@ -156,8 +156,6 @@ const styles = StyleSheet.create({
   headerContainer: {
     alignItems: 'center',
     paddingBottom: spacing.xs,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border.medium,
   },
   list: {
     gap: spacing.lg,

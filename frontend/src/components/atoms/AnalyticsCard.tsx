@@ -152,8 +152,6 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     paddingTop: spacing.md,
     paddingBottom: spacing.xs,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border.medium,
   },
   headerText: {
     flex: 1,

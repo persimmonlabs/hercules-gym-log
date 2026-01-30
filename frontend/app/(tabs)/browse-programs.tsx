@@ -138,6 +138,17 @@ function BrowseProgramsScreen() {
         );
         filtered = filtered.filter(w => w?.name && !addedWorkoutNames.has(w.name.trim().toLowerCase()));
 
+        // Sort: free workouts first, then premium workouts
+        filtered.sort((a, b) => {
+          const aIsFree = (a as any).isFree || false;
+          const bIsFree = (b as any).isFree || false;
+          
+          // Free items come first
+          if (aIsFree && !bIsFree) return -1;
+          if (!aIsFree && bIsFree) return 1;
+          return 0;
+        });
+
         return filtered;
       } else {
         let filtered = premadePrograms || [];
@@ -162,6 +173,17 @@ function BrowseProgramsScreen() {
         const addedSourceIds = new Set(safeUserPrograms.map(up => up.sourceId));
         filtered = filtered.filter(p => p?.id && !addedSourceIds.has(p.id));
 
+        // Sort: free plans first, then premium plans
+        filtered.sort((a, b) => {
+          const aIsFree = (a as any).isFree || false;
+          const bIsFree = (b as any).isFree || false;
+          
+          // Free items come first
+          if (aIsFree && !bIsFree) return -1;
+          if (!aIsFree && bIsFree) return 1;
+          return 0;
+        });
+
         return filtered;
       }
     } catch (error) {
@@ -172,7 +194,7 @@ function BrowseProgramsScreen() {
 
   const handleBack = useCallback(() => {
     triggerHaptic('selection');
-    router.replace('/(tabs)/plans');
+    router.back();
   }, [router]);
 
   // Handle Android hardware back button
@@ -217,10 +239,10 @@ function BrowseProgramsScreen() {
 
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom + sizing.tabBarHeight }]}>
+    <View style={[styles.container, { paddingTop: insets.top }]}>
       <FlatList
         data={filteredItems as any}
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={[styles.listContent, { paddingBottom: insets.bottom + sizing.tabBarHeight + spacing.md }]}
         keyExtractor={(item, index) => item?.id || `item-${index}`}
         ListHeaderComponent={
           <>

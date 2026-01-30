@@ -130,10 +130,7 @@ export default function WorkoutPreviewScreen() {
 
   const handleBack = useCallback(() => {
     triggerHaptic('selection');
-    router.navigate({
-      pathname: '/(tabs)/browse-programs',
-      params: { mode: 'workout' }
-    });
+    router.back();
   }, [router]);
 
   // Reset scroll position when screen gains focus

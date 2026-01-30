@@ -106,6 +106,7 @@ export const SheetModal: React.FC<SheetModalProps> = ({
             visible={isModalVisible}
             animationType="none"
             onRequestClose={onClose}
+            statusBarTranslucent
         >
             <GestureHandlerRootView style={{ flex: 1 }}>
                 <View style={styles.overlay}>
@@ -117,7 +118,7 @@ export const SheetModal: React.FC<SheetModalProps> = ({
                     <Animated.View
                         style={[
                             styles.sheet,
-                            { height: height as any, paddingBottom: insets.bottom },
+                            { height: height as any },
                             sheetAnimatedStyle,
                         ]}
                     >
@@ -150,7 +151,7 @@ const styles = StyleSheet.create({
     overlay: {
         flex: 1,
         justifyContent: 'flex-end',
-        // zIndex not needed inside Modal
+        backgroundColor: colors.overlay.scrim,
     },
     backdrop: {
         ...StyleSheet.absoluteFillObject,

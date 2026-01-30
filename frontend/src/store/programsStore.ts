@@ -275,7 +275,10 @@ export const useProgramsStore = create<ProgramsState>((set, get) => ({
 
     // Check free user limits
     const currentPlanCount = get().userPrograms.length;
-    const currentWorkoutCount = getTotalUniqueWorkoutCount();
+    const currentWorkoutCount = getTotalUniqueWorkoutCount(
+      usePlansStore.getState().plans,
+      get().userPrograms,
+    );
     const programWorkoutCount = premade.workouts.filter(w => w.exercises.length > 0).length;
 
     console.log('[programsStore] Program limit check:', {

@@ -6,14 +6,11 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 
 import { Text } from '@/components/atoms/Text';
-import { SurfaceCard } from '@/components/atoms/SurfaceCard';
-import { Button } from '@/components/atoms/Button';
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { PlanNameCard } from '@/components/molecules/PlanNameCard';
-import { PlanEmptyStateCard } from '@/components/molecules/PlanEmptyStateCard';
+import { PlanBuilderCard } from '@/components/molecules/PlanBuilderCard';
 import { PremiumLimitModal } from '@/components/molecules/PremiumLimitModal';
 import { colors, radius, spacing, sizing } from '@/constants/theme';
-import { usePlansStore } from '@/store/plansStore';
+import { usePlansStore, type Plan } from '@/store/plansStore';
 import { useProgramsStore } from '@/store/programsStore';
 import { useProgramBuilderContext } from '@/providers/ProgramBuilderProvider';
 import type { UserProgram, ProgramWorkout } from '@/types/premadePlan';
@@ -26,68 +23,31 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    gap: spacing.sm,
-    paddingTop: spacing.xl,
-    paddingHorizontal: spacing.md,
-    paddingBottom: spacing['2xl'] * 8,
-  },
-  topSection: {
-    width: '100%',
-    marginBottom: spacing.sm,
     gap: spacing.md,
+    paddingTop: spacing.lg,
+    paddingHorizontal: spacing.md,
+    paddingBottom: spacing['2xl'] * 4,
+  },
+  headerRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     justifyContent: 'space-between',
+    gap: spacing.md,
   },
   headerContent: {
-    gap: spacing.sm,
-    alignItems: 'flex-start',
     flex: 1,
+    gap: spacing.xs,
   },
   headerTitle: {
     textAlign: 'left',
   },
   headerSubtitle: {
     textAlign: 'left',
-    maxWidth: 320,
   },
-  nameCardContainer: {
-    marginTop: spacing.sm,
-    marginBottom: spacing.lg,
-  },
-  emptyCard: {
-    marginTop: spacing.md,
-    gap: spacing.md,
-    position: 'relative',
-  },
-  noWorkoutsCard: {
-    gap: spacing.md,
-    alignItems: 'center',
-  },
-  addButtonContainer: {
-    marginTop: spacing.lg,
-  },
-  workoutsList: {
-    gap: spacing.md,
-  },
-  workoutsHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: spacing.sm,
-  },
-  workoutCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: spacing.md,
-  },
-  workoutInfo: {
-    flex: 1,
-    gap: spacing.xs,
-  },
-  removeButton: {
+  backButton: {
     padding: spacing.sm,
+    paddingTop: spacing.xs,
+    borderRadius: radius.full,
   },
 });
 
@@ -95,12 +55,12 @@ const styles = StyleSheet.create({
  * CreatePlanScreen (file: create-program.tsx)
  * Screen for creating a Plan (collection of workouts).
  * 
+ * Uses the new unified PlanBuilderCard for an effortless,
+ * one-screen plan creation experience.
+ * 
  * TERMINOLOGY:
  * - Plan: A collection of workouts (e.g., "PPL", "Bro Split")
  * - Workout: A collection of exercises (e.g., "Push Day", "Pull Day")
- * 
- * Note: The file is named "create-program" for routing but creates Plans.
- * "Program" and "Plan" are used interchangeably in this codebase.
  */
 const CreatePlanScreen: React.FC = () => {
   const router = useRouter();
@@ -111,7 +71,8 @@ const CreatePlanScreen: React.FC = () => {
   const { 
     programName, 
     setProgramName, 
-    selectedWorkouts, 
+    selectedWorkouts,
+    addWorkout,
     removeWorkout,
     resetBuilder 
   } = useProgramBuilderContext();
@@ -126,9 +87,6 @@ const CreatePlanScreen: React.FC = () => {
     };
   }, [resetBuilder]);
 
-  const hasWorkouts = selectedWorkouts.length > 0;
-  const hasUserWorkouts = plans.length > 0;
-  
   // Check for duplicate program name
   const isDuplicateName = userPrograms.some(
     p => p.name.toLowerCase().trim() === programName.toLowerCase().trim()
@@ -138,10 +96,7 @@ const CreatePlanScreen: React.FC = () => {
 
   const handleBackPress = useCallback(() => {
     triggerHaptic('selection');
-    router.replace({
-      pathname: '/(tabs)/add-workout',
-      params: { mode: 'program' }
-    });
+    router.back();
   }, [router]);
 
   // Handle Android hardware back button
@@ -155,15 +110,18 @@ const CreatePlanScreen: React.FC = () => {
     return () => backHandler.remove();
   }, [handleBackPress]);
 
-  const handleAddWorkoutsPress = useCallback(() => {
-    triggerHaptic('selection');
-    router.push('/add-workouts-to-program');
-  }, [router]);
+  const handleAddWorkout = useCallback((workout: Plan) => {
+    addWorkout(workout);
+  }, [addWorkout]);
 
   const handleRemoveWorkout = useCallback((workoutId: string) => {
-    triggerHaptic('selection');
     removeWorkout(workoutId);
   }, [removeWorkout]);
+
+  const handleReorderWorkouts = useCallback((fromIndex: number, toIndex: number) => {
+    // Reordering not currently supported in program builder context
+    // This is a placeholder for future implementation
+  }, []);
 
   const handleSaveProgram = useCallback(async () => {
     if (isSaveDisabled) return;
@@ -236,58 +194,6 @@ const CreatePlanScreen: React.FC = () => {
     });
   }, [router]);
 
-  // If user has no workouts, show a message
-  if (!hasUserWorkouts) {
-    return (
-      <>
-        <PremiumLimitModal
-          visible={showLimitModal}
-          onClose={() => setShowLimitModal(false)}
-          limitType="plan"
-        />
-        <View style={[styles.container, { paddingTop: insets.top }]}>
-        <KeyboardAwareScrollView
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
-        >
-          <View style={styles.topSection}>
-            <View style={styles.headerContent}>
-              <Text variant="heading2" color="primary" style={styles.headerTitle}>
-                Create Plan
-              </Text>
-              <Text variant="body" color="secondary" style={styles.headerSubtitle}>
-                Build a custom training plan
-              </Text>
-            </View>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Go Back"
-              onPress={handleBackPress}
-              style={{ padding: spacing.sm, paddingTop: spacing.xs, borderRadius: radius.full }}
-            >
-              <IconSymbol name="arrow-back" size={sizing.iconMD} color={colors.text.primary} />
-            </Pressable>
-          </View>
-
-          <SurfaceCard tone="neutral" padding="xl" showAccentStripe={false} style={styles.noWorkoutsCard}>
-            <IconSymbol name="fitness-center" size={48} color={colors.text.tertiary} />
-            <Text variant="bodySemibold" color="primary">No Workouts Yet</Text>
-            <Text variant="body" color="secondary" style={{ textAlign: 'center' }}>
-              You need to create some workouts before you can build a plan. Plans are collections of workouts.
-            </Text>
-            <Button 
-              label="Create a Workout First" 
-              variant="primary" 
-              onPress={handleGoToCreateWorkout} 
-            />
-          </SurfaceCard>
-        </KeyboardAwareScrollView>
-      </View>
-      </>
-    );
-  }
-
   return (
     <>
       <PremiumLimitModal
@@ -296,106 +202,54 @@ const CreatePlanScreen: React.FC = () => {
         limitType="plan"
       />
       <View style={[styles.container, { paddingTop: insets.top }]}>
-      <KeyboardAwareScrollView
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
-        keyboardDismissMode="on-drag"
-        enableOnAndroid
-        extraScrollHeight={spacing['2xl'] * 4}
-        keyboardOpeningTime={0}
-        enableAutomaticScroll={false}
-      >
-        <View style={styles.topSection}>
-          <View style={styles.headerContent}>
-            <Text variant="heading2" color="primary" style={styles.headerTitle} fadeIn>
-              Create Plan
-            </Text>
-            <Text variant="body" color="secondary" style={styles.headerSubtitle} fadeIn>
-              Build a custom training plan
-            </Text>
-          </View>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Go Back"
-            onPress={handleBackPress}
-            style={{ padding: spacing.sm, paddingTop: spacing.xs, borderRadius: radius.full }}
-          >
-            <IconSymbol name="arrow-back" size={sizing.iconMD} color={colors.text.primary} />
-          </Pressable>
-        </View>
-
-        <View style={styles.nameCardContainer}>
-          <PlanNameCard 
-            value={programName} 
-            onChange={setProgramName} 
-            label="Plan Name" 
-            placeholder="e.g. Push Pull Legs" 
-          />
-        </View>
-
-        {hasWorkouts ? (
-          <View style={styles.workoutsList}>
-            <View style={styles.workoutsHeader}>
-              <View>
-                <Text variant="bodySemibold" color="primary">
-                  {selectedWorkouts.length} {selectedWorkouts.length === 1 ? 'Workout' : 'Workouts'}
-                </Text>
-              </View>
-              <Button 
-                label="Add more" 
-                variant="ghost" 
-                size="sm" 
-                onPress={handleAddWorkoutsPress} 
-              />
+        <KeyboardAwareScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+          enableOnAndroid
+          extraScrollHeight={spacing['2xl'] * 2}
+          keyboardOpeningTime={0}
+        >
+          {/* Header */}
+          <View style={styles.headerRow}>
+            <View style={styles.headerContent}>
+              <Text variant="heading2" color="primary" style={styles.headerTitle} fadeIn>
+                Create Plan
+              </Text>
+              <Text variant="body" color="secondary" style={styles.headerSubtitle} fadeIn>
+                Build a custom training plan
+              </Text>
             </View>
-            
-            {selectedWorkouts.map((workout) => (
-              <SurfaceCard 
-                key={workout.id} 
-                tone="neutral" 
-                padding="md" 
-                showAccentStripe={false}
-              >
-                <View style={styles.workoutCard}>
-                  <View style={styles.workoutInfo}>
-                    <Text variant="bodySemibold" color="primary">{workout.name}</Text>
-                    <Text variant="caption" color="secondary">
-                      {workout.exercises.length} {workout.exercises.length === 1 ? 'exercise' : 'exercises'}
-                    </Text>
-                  </View>
-                  <Pressable 
-                    onPress={() => handleRemoveWorkout(workout.id)}
-                    style={styles.removeButton}
-                    hitSlop={8}
-                  >
-                    <IconSymbol name="close" size={20} color={colors.text.tertiary} />
-                  </Pressable>
-                </View>
-              </SurfaceCard>
-            ))}
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Go Back"
+              onPress={handleBackPress}
+              style={styles.backButton}
+            >
+              <IconSymbol name="arrow-back" size={sizing.iconMD} color={colors.text.primary} />
+            </Pressable>
           </View>
-        ) : (
-          <PlanEmptyStateCard
-            title="No workouts added"
-            buttonLabel="Add workouts"
-            onPress={handleAddWorkoutsPress}
-            style={styles.emptyCard}
-          />
-        )}
 
-        <View style={styles.addButtonContainer}>
-          <Button
-            label="Save Plan"
-            variant="primary"
-            size="lg"
-            onPress={handleSaveProgram}
-            disabled={isSaveDisabled}
-            loading={isSaving}
+          {/* Unified Plan Builder Card */}
+          <PlanBuilderCard
+            planName={programName}
+            onPlanNameChange={setProgramName}
+            namePlaceholder="e.g. Push Pull Legs, Full Body Split"
+            isNameDuplicate={isDuplicateName && programName.trim().length > 0}
+            availableWorkouts={plans}
+            selectedWorkouts={selectedWorkouts}
+            onAddWorkout={handleAddWorkout}
+            onRemoveWorkout={handleRemoveWorkout}
+            onReorderWorkouts={handleReorderWorkouts}
+            onSave={handleSaveProgram}
+            saveLabel="Save Plan"
+            isSaving={isSaving}
+            isSaveDisabled={isSaveDisabled}
+            onCreateWorkout={handleGoToCreateWorkout}
           />
-        </View>
-      </KeyboardAwareScrollView>
-    </View>
+        </KeyboardAwareScrollView>
+      </View>
     </>
   );
 };

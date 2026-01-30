@@ -16,6 +16,7 @@ import { create } from 'zustand';
 
 import { exercises, type Exercise } from '@/constants/exercises';
 import { canAddWorkout, getTotalUniqueWorkoutCount } from '@/utils/premiumLimits';
+import { useProgramsStore } from '@/store/programsStore';
 import { useWorkoutSessionsStore } from '@/store/workoutSessionsStore';
 import { supabaseClient } from '@/lib/supabaseClient';
 import {
@@ -70,7 +71,10 @@ export const usePlansStore = create<PlansState>((set, get) => ({
       if (!isEditing) {
         // Count total unique workouts across both custom and program workouts
         // This matches what the user sees in "My Workouts"
-        const currentWorkoutCount = getTotalUniqueWorkoutCount();
+        const currentWorkoutCount = getTotalUniqueWorkoutCount(
+          get().plans,
+          useProgramsStore.getState().userPrograms,
+        );
         console.log('[plansStore] Workout limit check:', { 
           currentWorkoutCount, 
           customWorkouts: get().plans.length,
