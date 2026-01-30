@@ -31,9 +31,13 @@ const formatDuration = (totalSeconds: number): string => {
   const minutes = Math.floor((totalSeconds % 3600) / 60);
 
   if (hours > 0) {
-    return `${hours} hr ${minutes} min`;
+    // Use colon format for hours:minutes when hours are present
+    if (minutes < 10) {
+      return `${hours}:0${minutes}`;
+    }
+    return `${hours}:${minutes}`;
   }
-  return `${minutes} min`;
+  return `${minutes}m`;
 };
 
 const formatCompactNumber = (value: number): string => {
@@ -467,7 +471,7 @@ const StatsScreen: React.FC = () => {
     const entries = Object.entries(volumes)
       .filter(([, vol]) => vol > 0)
       .sort((a, b) => b[1] - a[1])
-      .slice(0, 3);
+      .slice(0, 5);
 
     return entries.map(([name, volume]) => ({ name, volume }));
   }, [volumeFilteredWorkouts, convertWeight, userBodyWeight]);
@@ -610,7 +614,7 @@ const StatsScreen: React.FC = () => {
                 </Text>
               </View>
               <Text variant="caption" color="secondary">
-                Cardio Time
+                Cardio Time{Math.floor(totalCardioTime / 3600) > 0 ? ' (hr:min)' : ''}
               </Text>
             </View>
 
@@ -676,11 +680,14 @@ const StatsScreen: React.FC = () => {
       <TrainingBalanceCard />
 
       <AnalyticsCard
-        title="Top Exercises"
+        title="Top Exercises (Volume)"
         showAccentStripe={false}
         titleCentered={true}
         showHorizontalAccentBar={false}
         showChevron={false}
+        headerRight={
+          <TimeRangeSelector value={volumeTimeRange} onChange={setVolumeTimeRange} />
+        }
       >
         {topExercisesByVolume.length === 0 ? (
           <View style={cardioStyles.emptyState}>
@@ -689,7 +696,7 @@ const StatsScreen: React.FC = () => {
             </Text>
           </View>
         ) : (
-          <View style={{ gap: spacing.sm }}>
+          <View style={{ gap: spacing.sm, paddingTop: spacing.md }}>
             {topExercisesByVolume.map((entry, index) => (
               <View
                 key={entry.name}
@@ -698,9 +705,10 @@ const StatsScreen: React.FC = () => {
                   justifyContent: 'space-between',
                   alignItems: 'center',
                   paddingVertical: spacing.xs,
+                  minHeight: 32, // Ensure consistent height for all items
                 }}
               >
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, flex: 1, marginRight: spacing.md }}>
                   <View
                     style={{
                       width: 28,
@@ -715,13 +723,15 @@ const StatsScreen: React.FC = () => {
                       {index + 1}
                     </Text>
                   </View>
-                  <Text variant="body" color="primary">
+                  <Text variant="body" color="primary" style={{ flex: 1 }} numberOfLines={2}>
                     {entry.name}
                   </Text>
                 </View>
-                <Text variant="bodySemibold" color="primary">
-                  {formatCompactNumber(entry.volume)} {weightUnit}
-                </Text>
+                <View style={{ minWidth: 80, alignItems: 'flex-end' }}>
+                  <Text variant="bodySemibold" color="primary">
+                    {formatCompactNumber(entry.volume)} {weightUnit}
+                  </Text>
+                </View>
               </View>
             ))}
           </View>

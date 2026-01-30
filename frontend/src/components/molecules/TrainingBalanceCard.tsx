@@ -356,8 +356,8 @@ export const TrainingBalanceCard: React.FC = () => {
   }, [currentPage]);
 
   const pages = [
-    { key: 'sets', label: 'Sets', data: setData },
     { key: 'volume', label: 'Volume', data: volumeData },
+    { key: 'sets', label: 'Sets', data: setData },
   ];
 
   return (
@@ -365,7 +365,7 @@ export const TrainingBalanceCard: React.FC = () => {
       <View style={styles.container}>
         <View style={[styles.header, styles.headerCentered]}>
           <Text variant="heading3" color="primary">
-            {hasData ? `Training Balance by ${currentPage === 0 ? 'Sets' : 'Volume'}` : 'Training Balance'}
+            {hasData ? `Training Balance by ${currentPage === 0 ? 'Volume' : 'Sets'}` : 'Training Balance'}
           </Text>
         </View>
 
@@ -424,8 +424,6 @@ const styles = StyleSheet.create({
   header: {
     paddingTop: spacing.sm,
     paddingBottom: spacing.xs,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border.light,
   },
   headerCentered: {
     alignItems: 'center',

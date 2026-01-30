@@ -13,10 +13,8 @@ import { TabSwipeContainer } from '@/components/templates/TabSwipeContainer';
 import { Button } from '@/components/atoms/Button';
 import { MyScheduleCard } from '@/components/molecules/MyScheduleCard';
 import { AddOverrideModal } from '@/components/molecules/AddOverrideModal';
-import { WorkoutCarousel } from '@/components/molecules/WorkoutCarousel';
-import { ViewAllWorkoutsModal } from '@/components/molecules/ViewAllWorkoutsModal';
-import { ProgramCarousel } from '@/components/molecules/ProgramCarousel';
-import { ViewAllProgramsModal } from '@/components/molecules/ViewAllProgramsModal';
+import { WorkoutSubcardList } from '@/components/molecules/WorkoutSubcardList';
+import { ProgramSubcardList } from '@/components/molecules/ProgramSubcardList';
 import { colors, radius, shadows, sizing, spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/useTheme';
 import { usePlansStore, type Plan, type PlansState } from '@/store/plansStore';
@@ -170,22 +168,11 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.sm,
     gap: spacing['2xl'],
   },
-  outerCardContent: {
-    gap: spacing.md,
-  },
   sectionHeader: {
     width: '100%',
     gap: spacing.xs,
-    paddingBottom: spacing.sm,
-  },
-  sectionHeaderWithAction: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  viewAllText: {
-    fontSize: 14,
-    marginRight: spacing.xs,
+    paddingBottom: spacing.xs,
+    marginBottom: spacing.md,
   },
   scheduleCardContent: {
     gap: spacing.lg,
@@ -365,8 +352,6 @@ const PlansScreen: React.FC = () => {
   const [isDeleteDialogVisible, setIsDeleteDialogVisible] = useState<boolean>(false);
   const [itemToDelete, setItemToDelete] = useState<any>(null);
   const [isOverrideModalVisible, setIsOverrideModalVisible] = useState<boolean>(false);
-  const [isViewAllWorkoutsVisible, setIsViewAllWorkoutsVisible] = useState<boolean>(false);
-  const [isViewAllProgramsVisible, setIsViewAllProgramsVisible] = useState<boolean>(false);
   const setActiveRule = useActiveScheduleStore((state: any) => state.setActiveRule);
   const activeScheduleRule = useActiveScheduleStore((state: any) => state.state.activeRule);
   const { setEditingPlanId } = usePlanBuilderContext();
@@ -378,12 +363,22 @@ const PlansScreen: React.FC = () => {
 
   const handleAddPlanPress = useCallback(() => {
     triggerHaptic('selection');
-    router.push('/(tabs)/add-workout?mode=plan');
+    router.push('/(tabs)/browse-programs');
+  }, [router]);
+
+  const handleCreatePlanPress = useCallback(() => {
+    triggerHaptic('selection');
+    router.push('/(tabs)/create-program');
   }, [router]);
 
   const handleAddWorkoutPress = useCallback(() => {
     triggerHaptic('selection');
-    router.push('/(tabs)/add-workout?mode=workout');
+    router.push('/(tabs)/browse-programs?mode=workout');
+  }, [router]);
+
+  const handleCreateWorkoutPress = useCallback(() => {
+    triggerHaptic('selection');
+    router.push('/(tabs)/create-workout');
   }, [router]);
 
 
@@ -675,79 +670,47 @@ const PlansScreen: React.FC = () => {
       />
 
       {/* My Workouts Section with Carousel */}
-      <View style={{ marginTop: -spacing.lg }}>
-        <SurfaceCard tone="neutral" padding="lg" showAccentStripe={true}>
-          <View style={{ gap: spacing.md }}>
-            <View style={[styles.sectionHeader, styles.sectionHeaderWithAction]}>
-              <Text variant="heading3" color="primary">
-                My Workouts
-              </Text>
-              {myWorkouts.length > 0 && (
-                <Pressable
-                  onPress={() => {
-                    triggerHaptic('selection');
-                    setIsViewAllWorkoutsVisible(true);
-                  }}
-                  hitSlop={8}
-                >
-                  <Text variant="body" color="secondary" style={styles.viewAllText}>
-                    View All
-                  </Text>
-                </Pressable>
-              )}
-            </View>
-
-            <View style={{ marginLeft: -spacing.lg, marginRight: 0, overflow: 'hidden' }}>
-              <WorkoutCarousel
-                workouts={myWorkouts}
-                onWorkoutPress={(workout) => handlePlanPress(workout.uniqueId)}
-                onAddWorkoutPress={handleAddWorkoutPress}
-                selectedWorkoutId={expandedPlanId}
-                onStartWorkout={handleStartWorkoutItem}
-                onEditWorkout={handleEditWorkoutItem}
-                onDeleteWorkout={handleDeleteWorkoutItem}
-                onCloseExpanded={() => setExpandedPlanId(null)}
-              />
-            </View>
+      <View style={{ marginTop: -spacing.xs }}>
+        <SurfaceCard tone="card" padding="xl" showAccentStripe={true} style={{ borderWidth: 0 }}>
+          <View style={styles.sectionHeader}>
+            <Text variant="heading3" color="primary">
+              My Workouts
+            </Text>
           </View>
+
+          <WorkoutSubcardList
+              workouts={myWorkouts}
+              onWorkoutPress={(workout) => handlePlanPress(workout.uniqueId)}
+              onAddWorkoutPress={handleAddWorkoutPress}
+              onCreateWorkoutPress={handleCreateWorkoutPress}
+              selectedWorkoutId={expandedPlanId}
+              onStartWorkout={handleStartWorkoutItem}
+              onEditWorkout={handleEditWorkoutItem}
+              onDeleteWorkout={handleDeleteWorkoutItem}
+              onCloseExpanded={() => setExpandedPlanId(null)}
+            />
         </SurfaceCard>
       </View>
 
       {/* My Plans Section with Carousel */}
-      <View>
-        <SurfaceCard tone="neutral" padding="lg" showAccentStripe={true}>
-          <View style={{ gap: spacing.md }}>
-            <View style={[styles.sectionHeader, styles.sectionHeaderWithAction]}>
-              <Text variant="heading3" color="primary">
-                My Plans
-              </Text>
-              {myPlans.length > 0 && (
-                <Pressable
-                  onPress={() => {
-                    triggerHaptic('selection');
-                    setIsViewAllProgramsVisible(true);
-                  }}
-                  hitSlop={8}
-                >
-                  <Text variant="body" color="secondary" style={styles.viewAllText}>
-                    View All
-                  </Text>
-                </Pressable>
-              )}
-            </View>
-
-            <View style={{ marginLeft: -spacing.lg, marginRight: 0, overflow: 'hidden' }}>
-              <ProgramCarousel
-                programs={myPlans}
-                onProgramPress={(program) => handleProgramPress(program)}
-                onAddProgramPress={handleAddPlanPress}
-                selectedProgramId={expandedPlanId}
-                onEditProgram={handleEditProgram}
-                onDeleteProgram={handleDeleteProgram}
-                onCloseExpanded={() => setExpandedPlanId(null)}
-              />
-            </View>
+      <View style={{ marginTop: -spacing.xs }}>
+        <SurfaceCard tone="card" padding="xl" showAccentStripe={true} style={{ borderWidth: 0 }}>
+          <View style={styles.sectionHeader}>
+            <Text variant="heading3" color="primary">
+              My Plans
+            </Text>
           </View>
+
+          <ProgramSubcardList
+              programs={myPlans}
+              onProgramPress={(program) => handleProgramPress(program)}
+              onAddProgramPress={handleAddPlanPress}
+              onCreatePlanPress={handleCreatePlanPress}
+              selectedProgramId={expandedPlanId}
+              onEditProgram={handleEditProgram}
+              onDeleteProgram={handleDeleteProgram}
+              onCloseExpanded={() => setExpandedPlanId(null)}
+            />
         </SurfaceCard>
       </View>
 
@@ -768,26 +731,6 @@ const PlansScreen: React.FC = () => {
         onClose={() => setIsOverrideModalVisible(false)}
       />
 
-      <ViewAllWorkoutsModal
-        visible={isViewAllWorkoutsVisible}
-        workouts={myWorkouts}
-        onClose={() => setIsViewAllWorkoutsVisible(false)}
-        onWorkoutPress={(workout) => handlePlanPress(workout.uniqueId)}
-        onStartWorkout={handleStartWorkoutItem}
-        onEditWorkout={handleEditWorkoutItem}
-        onDeleteWorkout={handleDeleteWorkoutItem}
-        onAddWorkout={handleAddWorkoutPress}
-      />
-
-      <ViewAllProgramsModal
-        visible={isViewAllProgramsVisible}
-        programs={myPlans}
-        onClose={() => setIsViewAllProgramsVisible(false)}
-        onProgramPress={(program) => handleProgramPress(program)}
-        onEditProgram={handleEditProgram}
-        onDeleteProgram={handleDeleteProgram}
-        onAddProgram={handleAddPlanPress}
-      />
 
       <Modal
         transparent

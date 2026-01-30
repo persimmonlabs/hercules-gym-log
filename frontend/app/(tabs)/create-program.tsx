@@ -96,7 +96,7 @@ const CreatePlanScreen: React.FC = () => {
 
   const handleBackPress = useCallback(() => {
     triggerHaptic('selection');
-    router.back();
+    router.push('/(tabs)/plans');
   }, [router]);
 
   // Handle Android hardware back button
@@ -188,10 +188,7 @@ const CreatePlanScreen: React.FC = () => {
 
   const handleGoToCreateWorkout = useCallback(() => {
     triggerHaptic('selection');
-    router.replace({
-      pathname: '/(tabs)/add-workout',
-      params: { mode: 'workout' }
-    });
+    router.push('/(tabs)/create-workout');
   }, [router]);
 
   return (

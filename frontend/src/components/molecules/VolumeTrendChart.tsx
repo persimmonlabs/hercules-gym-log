@@ -494,7 +494,7 @@ export const VolumeTrendChart: React.FC<VolumeTrendChartProps> = ({ timeRange = 
           day: 'numeric',
           year: 'numeric',
         });
-        return { rangeLabel: `${startStr} - ${endStr}`, rangeDescriptor: descriptor };
+        return { rangeLabel: `${startStr}   -   ${endStr}`, rangeDescriptor: descriptor };
       }
       default:
         return { rangeLabel: null, rangeDescriptor: null };

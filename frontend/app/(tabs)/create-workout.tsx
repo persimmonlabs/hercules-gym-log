@@ -149,11 +149,8 @@ const CreateWorkoutScreen: React.FC = () => {
       // If editing, go to Plans tab
       router.push('/(tabs)/plans');
     } else {
-      // If creating, go back to Add Workout
-      router.replace({
-        pathname: '/(tabs)/add-workout',
-        params: { mode: 'workout' }
-      });
+      // If creating, go to Programs tab
+      router.push('/(tabs)/plans');
     }
   }, [router, planId, decodedReturnTo]);
 

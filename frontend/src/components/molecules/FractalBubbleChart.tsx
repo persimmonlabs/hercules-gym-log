@@ -263,8 +263,6 @@ const styles = StyleSheet.create({
   container: { gap: spacing.md },
   header: {
     paddingBottom: spacing.xs,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border.light,
     alignItems: 'center',
   },
   headerTitle: {

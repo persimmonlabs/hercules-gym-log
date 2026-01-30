@@ -258,8 +258,9 @@ export const MyScheduleCard: React.FC<MyScheduleCardProps> = ({
                 label="Add Override"
                 variant="secondary"
                 size="md"
+                textColor={colors.accent.orange}
+                style={[styles.secondaryButton, { ...shadows.sm }]}
                 onPress={onAddOverridePress}
-                style={styles.secondaryButton}
               />
             </View>
           ) : (

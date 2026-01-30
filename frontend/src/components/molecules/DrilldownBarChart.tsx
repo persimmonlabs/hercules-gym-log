@@ -369,8 +369,6 @@ const styles = StyleSheet.create({
   header: {
     alignItems: 'center',
     paddingBottom: spacing.xs,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border.light,
   },
   breadcrumbContainer: {
     flexDirection: 'row',
