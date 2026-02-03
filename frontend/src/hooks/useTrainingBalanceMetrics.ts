@@ -1,26 +1,39 @@
 /**
- * TrainingBalanceCard
- * Shows push/pull and other muscle balance metrics
- * Consolidated view with both volume and sets data in one card
+ * useTrainingBalanceMetrics
+ * Shared analytics logic for balance ratios so multiple components can reuse it.
  */
 
-import React, { useMemo, useState } from 'react';
-import { View, StyleSheet } from 'react-native';
+import { useMemo } from 'react';
 
-import { Text } from '@/components/atoms/Text';
-import { SurfaceCard } from '@/components/atoms/SurfaceCard';
-import { TimeRangeSelector } from '@/components/atoms/TimeRangeSelector';
-import { colors, spacing, radius } from '@/constants/theme';
 import { useWorkoutSessionsStore } from '@/store/workoutSessionsStore';
 import { useDevToolsStore } from '@/store/devToolsStore';
 import { useUserProfileStore } from '@/store/userProfileStore';
 import exercisesData from '@/data/exercises.json';
 import hierarchyData from '@/data/hierarchy.json';
-import { TIME_RANGE_SUBTITLES } from '@/types/analytics';
 import type { TimeRange } from '@/types/analytics';
 import type { ExerciseType } from '@/types/exercise';
 
-const EMPTY_MIN_HEIGHT = 240;
+export interface BalanceData {
+  push: number;
+  pull: number;
+  quad: number;
+  hip: number;
+  upper: number;
+  lower: number;
+  compound: number;
+  isolated: number;
+}
+
+const EMPTY_BALANCE: BalanceData = {
+  push: 0,
+  pull: 0,
+  quad: 0,
+  hip: 0,
+  upper: 0,
+  lower: 0,
+  compound: 0,
+  isolated: 0,
+};
 
 interface ExerciseMetadata {
   push_pull: 'push' | 'pull' | null;
@@ -35,7 +48,7 @@ const EXERCISE_METADATA = exercisesData.reduce((acc, ex) => {
     upper_lower: ex.upper_lower as 'upper' | 'lower' | null,
     is_compound: ex.is_compound ?? false,
     exercise_type: (ex.exercise_type as ExerciseType) || 'weight',
-  };
+  } satisfies ExerciseMetadata;
   return acc;
 }, {} as Record<string, ExerciseMetadata>);
 
@@ -73,137 +86,40 @@ const buildLeafToL1 = (): Record<string, string> => {
 
 const LEAF_TO_L1 = buildLeafToL1();
 
-interface BalanceBarProps {
-  label: string;
-  leftValue: number;
-  rightValue: number;
-}
-
-const BalanceBar: React.FC<BalanceBarProps> = ({
-  label,
-  leftValue,
-  rightValue,
-}) => {
-  const total = leftValue + rightValue;
-  const leftPercent = total > 0 ? (leftValue / total) * 100 : 50;
-  const rightPercent = total > 0 ? (rightValue / total) * 100 : 50;
-  
-  // Determine colors based on which side is higher
-  const isBalanced = Math.abs(leftPercent - rightPercent) < 1;
-  const leftIsHigher = leftPercent > rightPercent;
-  
-  const leftBarColor = isBalanced 
-    ? colors.accent.orange 
-    : leftIsHigher 
-      ? colors.accent.orange 
-      : 'rgba(255, 107, 74, 0.4)';
-  
-  const rightBarColor = isBalanced 
-    ? colors.accent.orange 
-    : !leftIsHigher 
-      ? colors.accent.orange 
-      : 'rgba(255, 107, 74, 0.4)';
-
-  return (
-    <View style={styles.balanceItem}>
-      <View style={styles.balanceHeader}>
-        <Text variant="labelMedium" color="primary">{label}</Text>
-      </View>
-
-      <View style={styles.barContainer}>
-        <View style={[styles.barSegment, { flex: leftPercent, backgroundColor: leftBarColor }]}>
-          <Text variant="captionSmall" color="primary" style={styles.barText}>
-            {Math.round(leftPercent)}%
-          </Text>
-        </View>
-        {isBalanced && <View style={styles.divider} />}
-        <View style={[styles.barSegment, { flex: rightPercent, backgroundColor: rightBarColor }]}>
-          <Text variant="captionSmall" color="primary" style={styles.barText}>
-            {Math.round(rightPercent)}%
-          </Text>
-        </View>
-      </View>
-    </View>
-  );
-};
-
-interface BalanceData {
-  push: number;
-  pull: number;
-  quad: number;
-  hip: number;
-  upper: number;
-  lower: number;
-  compound: number;
-  isolated: number;
-}
-
-interface BalanceSectionProps {
-  title: string;
-  data: BalanceData;
-}
-
-const BalanceSection: React.FC<BalanceSectionProps> = ({ title, data }) => {
-  return (
-    <View style={styles.section}>
-      <Text variant="labelMedium" color="secondary" style={styles.sectionTitle}>
-        {title}
-      </Text>
-      <View style={styles.sectionContent}>
-        <BalanceBar
-          label="Push / Pull"
-          leftValue={data.push}
-          rightValue={data.pull}
-        />
-
-        <BalanceBar
-          label="Upper / Lower"
-          leftValue={data.upper}
-          rightValue={data.lower}
-        />
-
-        <BalanceBar
-          label="Compound / Isolated"
-          leftValue={data.compound}
-          rightValue={data.isolated}
-        />
-      </View>
-    </View>
-  );
-};
-
-export const TrainingBalanceCard: React.FC = () => {
+export const useTrainingBalanceMetrics = (timeRange: TimeRange) => {
   const forceEmptyAnalytics = useDevToolsStore((state) => state.forceEmptyAnalytics);
   const rawWorkouts = useWorkoutSessionsStore((state) => state.workouts);
   const workouts = __DEV__ && forceEmptyAnalytics ? [] : rawWorkouts;
   const userBodyWeight = useUserProfileStore((state) => state.profile?.weightLbs);
-  const [timeRange, setTimeRange] = useState<TimeRange>('week');
 
-  // Calculate balance data for both volume and sets
-  const { volumeData, setData, hasData } = useMemo(() => {
-    const volumeBalance: BalanceData = { push: 0, pull: 0, quad: 0, hip: 0, upper: 0, lower: 0, compound: 0, isolated: 0 };
-    const setBalance: BalanceData = { push: 0, pull: 0, quad: 0, hip: 0, upper: 0, lower: 0, compound: 0, isolated: 0 };
+  return useMemo(() => {
+    if (!workouts.length) {
+      return {
+        volumeData: { ...EMPTY_BALANCE },
+        setData: { ...EMPTY_BALANCE },
+        hasData: false,
+      };
+    }
 
-    // Calculate cutoff date based on time range (match useAnalyticsData semantics)
+    const volumeBalance: BalanceData = { ...EMPTY_BALANCE };
+    const setBalance: BalanceData = { ...EMPTY_BALANCE };
+
     const now = new Date();
     let cutoff: Date;
 
     switch (timeRange) {
       case 'week':
-        // Last 7 days
         cutoff = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
         break;
       case 'month':
-        // Since first of current month
         cutoff = new Date(now.getFullYear(), now.getMonth(), 1);
         break;
       case 'year':
-        // Since first of current year
         cutoff = new Date(now.getFullYear(), 0, 1);
         break;
       case 'all':
       default:
-        cutoff = new Date(0); // All time
+        cutoff = new Date(0);
         break;
     }
 
@@ -215,16 +131,12 @@ export const TrainingBalanceCard: React.FC = () => {
           if (!metadata) return;
 
           const exerciseType = metadata.exercise_type || 'weight';
-
-          // Skip cardio and pure duration exercises from balance stats
           if (exerciseType === 'cardio' || exerciseType === 'duration') {
             return;
           }
 
-          // Count completed sets for this exercise
           const completedSets = exercise.sets.filter((set: any) => {
             if (!set.completed) return false;
-            // For weight/assisted/bodyweight/reps_only, ensure we have meaningful reps/weight
             const reps = set.reps ?? 0;
             const weight = set.weight ?? 0;
             const assistanceWeight = set.assistanceWeight ?? 0;
@@ -245,9 +157,7 @@ export const TrainingBalanceCard: React.FC = () => {
           const setCount = completedSets.length;
           if (setCount === 0) return;
 
-          // Calculate total volume for this exercise using global analytics semantics
           let totalVolume = 0;
-
           completedSets.forEach((set: any) => {
             const reps = set.reps ?? 0;
             if (reps <= 0) {
@@ -255,7 +165,6 @@ export const TrainingBalanceCard: React.FC = () => {
             }
 
             let setVolume = 0;
-
             switch (exerciseType) {
               case 'bodyweight':
                 if (userBodyWeight && userBodyWeight > 0) {
@@ -274,7 +183,6 @@ export const TrainingBalanceCard: React.FC = () => {
                 break;
               }
               case 'reps_only':
-                // Resistance bands: do not contribute to volume-based balance
                 setVolume = 0;
                 break;
               case 'weight':
@@ -292,7 +200,6 @@ export const TrainingBalanceCard: React.FC = () => {
             }
           });
 
-          // Push/Pull classification
           if (metadata.push_pull === 'push') {
             setBalance.push += setCount;
             volumeBalance.push += totalVolume;
@@ -301,15 +208,12 @@ export const TrainingBalanceCard: React.FC = () => {
             volumeBalance.pull += totalVolume;
           }
 
-          // Upper/Lower classification (volume-based: distribute by muscle weights)
-          // Sets still use exercise-level classification
           if (metadata.upper_lower === 'upper') {
             setBalance.upper += setCount;
           } else if (metadata.upper_lower === 'lower') {
             setBalance.lower += setCount;
           }
 
-          // Volume: distribute based on individual muscle contributions
           const muscleWeights = EXERCISE_MUSCLES[exercise.name];
           if (muscleWeights && totalVolume > 0) {
             Object.entries(muscleWeights).forEach(([muscle, weight]) => {
@@ -323,7 +227,6 @@ export const TrainingBalanceCard: React.FC = () => {
             });
           }
 
-          // Compound/Isolated classification
           if (metadata.is_compound) {
             setBalance.compound += setCount;
             volumeBalance.compound += totalVolume;
@@ -343,99 +246,4 @@ export const TrainingBalanceCard: React.FC = () => {
       hasData: hasVolumeData || hasSetData,
     };
   }, [workouts, timeRange, userBodyWeight]);
-
-  return (
-    <SurfaceCard tone="neutral" padding="md" showAccentStripe={false}>
-      <View style={styles.container}>
-        <View style={[styles.header, styles.headerCentered]}>
-          <Text variant="heading3" color="primary">
-            Training Balance
-          </Text>
-        </View>
-
-        <View style={styles.timeRangeContainer}>
-          <TimeRangeSelector value={timeRange} onChange={setTimeRange} />
-        </View>
-
-        {!hasData ? (
-          <View style={styles.emptyState}>
-            <Text variant="body" color="secondary" style={styles.emptyText}>
-              {`No workout data for ${TIME_RANGE_SUBTITLES[timeRange].toLowerCase()}.`}
-            </Text>
-          </View>
-        ) : (
-          <View style={styles.sectionsContainer}>
-            <BalanceSection title="By Volume" data={volumeData} />
-            <BalanceSection title="By Sets" data={setData} />
-          </View>
-        )}
-      </View>
-    </SurfaceCard>
-  );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    gap: spacing.md,
-    paddingHorizontal: spacing.lg,
-  },
-  header: {
-    paddingTop: spacing.sm,
-    paddingBottom: spacing.xs,
-  },
-  headerCentered: {
-    alignItems: 'center',
-  },
-  timeRangeContainer: {
-    alignItems: 'center',
-    marginBottom: spacing.xl,
-  },
-  sectionsContainer: {
-    gap: spacing.xl,
-  },
-  section: {
-    gap: spacing.md,
-  },
-  sectionTitle: {
-    textAlign: 'center',
-    paddingBottom: spacing.sm,
-  },
-  sectionContent: {
-    gap: spacing.lg,
-  },
-  balanceItem: {
-    gap: spacing.sm,
-  },
-  balanceHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  barContainer: {
-    flexDirection: 'row',
-    height: 28,
-    borderRadius: radius.sm,
-    overflow: 'hidden',
-  },
-  barSegment: {
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  divider: {
-    width: 2,
-    backgroundColor: colors.primary.bg,
-  },
-  barText: {
-    color: colors.text.onAccent,
-    fontWeight: '600',
-  },
-  emptyState: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: spacing.md,
-    minHeight: EMPTY_MIN_HEIGHT,
-  },
-  emptyText: {
-    textAlign: 'center',
-  },
-});

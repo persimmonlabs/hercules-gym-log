@@ -12,7 +12,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { View, StyleSheet, Dimensions } from 'react-native';
-import { VictoryChart, VictoryLine, VictoryAxis, VictoryTheme, VictoryScatter, VictoryLabel } from 'victory-native';
+import { VictoryChart, VictoryLine, VictoryAxis, VictoryTheme, VictoryScatter, VictoryLabel, VictoryArea } from 'victory-native';
 
 import { Text } from '@/components/atoms/Text';
 import { ChartWrapper } from '@/components/atoms/ChartWrapper';
@@ -993,6 +993,17 @@ export const VolumeTrendChart: React.FC<VolumeTrendChartProps> = ({ timeRange = 
               y: [0, targetMax],
             }}
           >
+            {/* Muted orange area fill under the line */}
+            <VictoryArea
+              data={chartData.filter(d => d.hasData)}
+              style={{
+                data: {
+                  fill: 'rgba(255, 107, 74, 0.15)',
+                },
+              }}
+              interpolation="monotoneX"
+            />
+
             {/* X-axis */}
             <VictoryAxis
               tickValues={xTickValues}

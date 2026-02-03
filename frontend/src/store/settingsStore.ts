@@ -28,6 +28,10 @@ interface SettingsState {
   themePreference: ThemePreference;
   /** Whether user has Hercules Pro access */
   isPro: boolean;
+  /** Weekly cardio time goal in seconds (null = no goal set) */
+  weeklyCardioTimeGoal: number | null;
+  /** Weekly cardio distance goal in miles (null = no goal set) */
+  weeklyCardioDistanceGoal: number | null;
   /** Set the legacy unit system preference (updates all granular units) */
   setUnitSystem: (system: UnitSystem) => void;
   /** Set theme preference */
@@ -40,6 +44,10 @@ interface SettingsState {
   setSizeUnit: (unit: SizeUnit) => void;
   /** Set Pro status */
   setPro: (isPro: boolean) => void;
+  /** Set weekly cardio time goal (in seconds) */
+  setWeeklyCardioTimeGoal: (seconds: number | null) => void;
+  /** Set weekly cardio distance goal (in miles) */
+  setWeeklyCardioDistanceGoal: (miles: number | null) => void;
   /** Whether haptics are enabled globally */
   hapticsEnabled: boolean;
   /** Set haptics enabled status */
@@ -101,6 +109,8 @@ export const useSettingsStore = create<SettingsState>()(
       sizeUnit: 'in',
       themePreference: 'light',
       isPro: false,
+      weeklyCardioTimeGoal: null,
+      weeklyCardioDistanceGoal: null,
 
       setUnitSystem: (system: UnitSystem) => {
         // Update all granular units when legacy system is changed
@@ -172,6 +182,30 @@ export const useSettingsStore = create<SettingsState>()(
         }
       },
 
+      setWeeklyCardioTimeGoal: async (seconds: number | null) => {
+        set({ weeklyCardioTimeGoal: seconds });
+        try {
+          const { data: { user } } = await supabaseClient.auth.getUser();
+          if (user) {
+            await supabaseClient.from('profiles').update({ weekly_cardio_time_goal: seconds }).eq('id', user.id);
+          }
+        } catch (error) {
+          console.warn('Failed to sync weekly cardio time goal to Supabase', error);
+        }
+      },
+
+      setWeeklyCardioDistanceGoal: async (miles: number | null) => {
+        set({ weeklyCardioDistanceGoal: miles });
+        try {
+          const { data: { user } } = await supabaseClient.auth.getUser();
+          if (user) {
+            await supabaseClient.from('profiles').update({ weekly_cardio_distance_goal: miles }).eq('id', user.id);
+          }
+        } catch (error) {
+          console.warn('Failed to sync weekly cardio distance goal to Supabase', error);
+        }
+      },
+
       hapticsEnabled: true,
 
       setHapticsEnabled: async (enabled: boolean) => {
@@ -195,7 +229,7 @@ export const useSettingsStore = create<SettingsState>()(
           if (user) {
             const { data, error } = await supabaseClient
               .from('profiles')
-              .select('unit_system, weight_unit, distance_unit, size_unit, theme_preference, is_pro')
+              .select('unit_system, weight_unit, distance_unit, size_unit, theme_preference, is_pro, weekly_cardio_time_goal, weekly_cardio_distance_goal')
               .eq('id', user.id)
               .single();
 
@@ -208,6 +242,8 @@ export const useSettingsStore = create<SettingsState>()(
                 sizeUnit: (data.size_unit as SizeUnit) || get().sizeUnit,
                 themePreference: (data.theme_preference as ThemePreference) || get().themePreference,
                 isPro: (data.is_pro as boolean) ?? get().isPro,
+                weeklyCardioTimeGoal: (data.weekly_cardio_time_goal as number | null) ?? get().weeklyCardioTimeGoal,
+                weeklyCardioDistanceGoal: (data.weekly_cardio_distance_goal as number | null) ?? get().weeklyCardioDistanceGoal,
                 // hapticsEnabled: (data.haptics_enabled as boolean) ?? get().hapticsEnabled,
               });
             }
@@ -379,6 +415,8 @@ export const useSettingsStore = create<SettingsState>()(
         themePreference: state.themePreference,
         isPro: state.isPro,
         hapticsEnabled: state.hapticsEnabled,
+        weeklyCardioTimeGoal: state.weeklyCardioTimeGoal,
+        weeklyCardioDistanceGoal: state.weeklyCardioDistanceGoal,
       }),
     }
   )

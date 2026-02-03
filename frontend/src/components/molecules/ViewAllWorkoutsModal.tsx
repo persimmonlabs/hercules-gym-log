@@ -96,8 +96,13 @@ export const ViewAllWorkoutsModal: React.FC<ViewAllWorkoutsModalProps> = ({
                           </Text>
                           {workout.programNames && workout.programNames.length > 0 ? (
                             <View style={styles.metaStack}>
-                              <Text variant="caption" color="secondary" style={styles.programName} numberOfLines={1}>
-                                {workout.programNames[0]}
+                              <Text
+                                variant="caption"
+                                color="secondary"
+                                style={styles.programName}
+                                numberOfLines={1}
+                              >
+                                {workout.programNames.join(', ')}
                               </Text>
                               <Text variant="caption" color="secondary" style={styles.metaText}>
                                 {workout.exercises.length} {workout.exercises.length === 1 ? 'exercise' : 'exercises'}

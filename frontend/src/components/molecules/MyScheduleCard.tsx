@@ -95,7 +95,7 @@ export const MyScheduleCard: React.FC<MyScheduleCardProps> = ({
           return (
             <View
               key={visualIndex}
-              style={[styles.scheduleRow, { backgroundColor: theme.surface.elevated }]}
+              style={[styles.scheduleRow, { backgroundColor: theme.surface.elevated, borderColor: 'rgba(0, 0, 0, 0.06)' }]}
             >
               <Text
                 variant="bodySemibold"
@@ -157,7 +157,7 @@ export const MyScheduleCard: React.FC<MyScheduleCardProps> = ({
           return (
             <View
               key={key}
-              style={[styles.scheduleRow, { backgroundColor: theme.surface.elevated }]}
+              style={[styles.scheduleRow, { backgroundColor: theme.surface.elevated, borderColor: 'rgba(0, 0, 0, 0.06)' }]}
             >
               <Text variant="bodySemibold" color={isCurrentDay ? 'orange' : 'primary'} style={styles.dayLabel}>
                 {label}
@@ -195,7 +195,7 @@ export const MyScheduleCard: React.FC<MyScheduleCardProps> = ({
           return (
             <View
               key={visualIndex}
-              style={[styles.scheduleRow, { backgroundColor: theme.surface.elevated }]}
+              style={[styles.scheduleRow, { backgroundColor: theme.surface.elevated, borderColor: 'rgba(0, 0, 0, 0.06)' }]}
             >
               <Text
                 variant="bodySemibold"
@@ -292,15 +292,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   scheduleList: {
-    gap: spacing.sm,
+    gap: spacing.md,
   },
   scheduleRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
     borderRadius: radius.lg,
+    borderWidth: 0.75,
   },
   dayLabel: {
     minWidth: 90,

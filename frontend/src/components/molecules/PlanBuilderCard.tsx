@@ -50,6 +50,7 @@ interface PlanBuilderCardProps {
 
   // Optional callbacks
   onCreateWorkout?: () => void;
+  enableRowAnimations?: boolean;
 }
 
 export const PlanBuilderCard: React.FC<PlanBuilderCardProps> = ({
@@ -70,6 +71,7 @@ export const PlanBuilderCard: React.FC<PlanBuilderCardProps> = ({
   isSaveDisabled = false,
 
   onCreateWorkout,
+  enableRowAnimations = true,
 }) => {
   const nameFocusProgress = useSharedValue(0);
   const [showWorkoutPicker, setShowWorkoutPicker] = useState(false);
@@ -82,6 +84,7 @@ export const PlanBuilderCard: React.FC<PlanBuilderCardProps> = ({
     const selectedIds = new Set(selectedWorkouts.map(w => w.id));
     return availableWorkouts.filter(w => !selectedIds.has(w.id));
   }, [availableWorkouts, selectedWorkouts]);
+  const hasUnselectedWorkouts = unselectedWorkouts.length > 0;
 
   // Progress state
   const progressState = useMemo(() => {
@@ -121,7 +124,6 @@ export const PlanBuilderCard: React.FC<PlanBuilderCardProps> = ({
   const handleAddWorkout = useCallback((workout: Plan) => {
     triggerHaptic('light');
     onAddWorkout(workout);
-    setShowWorkoutPicker(false);
   }, [onAddWorkout]);
 
   const handleRemoveWorkout = useCallback((workoutId: string) => {
@@ -156,15 +158,10 @@ export const PlanBuilderCard: React.FC<PlanBuilderCardProps> = ({
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text variant="bodySemibold" color="primary">
-              Plan Name
+              Name
             </Text>
           </View>
           <Animated.View style={[styles.nameInputContainer, animatedNameBorderStyle]}>
-            <IconSymbol
-              name="calendar-today"
-              size={sizing.iconSM}
-              color={colors.text.tertiary}
-            />
             <TextInput
               value={planName}
               onChangeText={onPlanNameChange}
@@ -193,42 +190,65 @@ export const PlanBuilderCard: React.FC<PlanBuilderCardProps> = ({
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text variant="bodySemibold" color="primary">
-              Add Workouts
+              Workouts
             </Text>
-            <Text variant="caption" color="secondary">
-              Select from your workouts
-            </Text>
+            {hasWorkouts && (
+              <View style={styles.countBadge}>
+                <Text variant="caption" color="primary" style={styles.countText}>
+                  {selectedWorkouts.length}
+                </Text>
+              </View>
+            )}
           </View>
+          {hasWorkouts && (
+            <View style={styles.workoutList}>
+              {selectedWorkouts.map((workout, index) => (
+                <SelectedWorkoutRow
+                  key={workout.id}
+                  workout={workout}
+                  index={index}
+                  totalCount={selectedWorkouts.length}
+                  onRemove={handleRemoveWorkout}
+                  onMoveUp={onReorderWorkouts ? handleMoveUp : undefined}
+                  onMoveDown={onReorderWorkouts ? handleMoveDown : undefined}
+                  enableRowAnimations={enableRowAnimations}
+                />
+              ))}
+            </View>
+          )}
+          {onReorderWorkouts && selectedWorkouts.length > 1 && (
+            <Text variant="caption" color="secondary" style={styles.reorderHint}>
+              Tap arrows to reorder
+            </Text>
+          )}
 
           {hasAvailableWorkouts ? (
-            <>
-              <Pressable
-                style={styles.workoutPickerButton}
-                onPress={() => setShowWorkoutPicker(!showWorkoutPicker)}
-              >
-                <IconSymbol
-                  name="add-circle-outline"
-                  size={sizing.iconSM}
-                  color={colors.accent.orange}
-                />
-                <Text variant="body" style={styles.pickerButtonText}>
-                  {showWorkoutPicker ? 'Hide workouts' : 'Choose workouts to add'}
-                </Text>
-                <IconSymbol
-                  name={showWorkoutPicker ? 'keyboard-arrow-up' : 'keyboard-arrow-down'}
-                  size={sizing.iconSM}
-                  color={colors.text.tertiary}
-                />
-              </Pressable>
-
-              {showWorkoutPicker && (
-                <Animated.View
-                  entering={FadeIn.duration(150)}
-                  exiting={FadeOut.duration(100)}
-                  style={styles.workoutPickerList}
+            hasUnselectedWorkouts ? (
+              <>
+                <Pressable
+                  onPress={() => setShowWorkoutPicker(!showWorkoutPicker)}
+                  style={({ pressed }) => [
+                    styles.workoutPickerButton,
+                    pressed && styles.workoutPickerButtonPressed,
+                  ]}
                 >
-                  {unselectedWorkouts.length > 0 ? (
-                    unselectedWorkouts.map((workout) => (
+                  <IconSymbol
+                    name={showWorkoutPicker ? 'remove' : 'add'}
+                    size={sizing.iconMD}
+                    color={colors.accent.orange}
+                  />
+                  <Text variant="body" style={styles.pickerButtonText}>
+                    {showWorkoutPicker ? 'Hide workouts' : 'Add Workouts'}
+                  </Text>
+                </Pressable>
+
+                {showWorkoutPicker && (
+                  <Animated.View
+                    entering={FadeIn.duration(150)}
+                    exiting={FadeOut.duration(100)}
+                    style={styles.workoutPickerList}
+                  >
+                    {unselectedWorkouts.map((workout) => (
                       <Pressable
                         key={workout.id}
                         style={({ pressed }) => [
@@ -253,15 +273,15 @@ export const PlanBuilderCard: React.FC<PlanBuilderCardProps> = ({
                           />
                         </View>
                       </Pressable>
-                    ))
-                  ) : (
-                    <Text variant="body" color="secondary" style={styles.allAddedText}>
-                      All workouts have been added
-                    </Text>
-                  )}
-                </Animated.View>
-              )}
-            </>
+                    ))}
+                  </Animated.View>
+                )}
+              </>
+            ) : (
+              <Text variant="body" color="secondary" style={styles.allAddedText}>
+                All workouts have been added
+              </Text>
+            )
           ) : (
             <View style={styles.noWorkoutsContainer}>
               <IconSymbol
@@ -283,62 +303,6 @@ export const PlanBuilderCard: React.FC<PlanBuilderCardProps> = ({
             </View>
           )}
         </View>
-
-        {/* Section 3: Selected Workouts List */}
-        {hasWorkouts && (
-          <>
-            <View style={styles.divider} />
-            <View style={styles.section}>
-              <View style={styles.sectionHeader}>
-                <View style={styles.workoutCountBadge}>
-                  <Text variant="bodySemibold" color="primary">
-                    Your Workouts
-                  </Text>
-                  <View style={styles.countBadge}>
-                    <Text variant="caption" color="primary" style={styles.countText}>
-                      {selectedWorkouts.length}
-                    </Text>
-                  </View>
-                </View>
-                {onReorderWorkouts && selectedWorkouts.length > 1 && (
-                  <Text variant="caption" color="secondary">
-                    Tap arrows to reorder
-                  </Text>
-                )}
-              </View>
-              <View style={styles.workoutList}>
-                {selectedWorkouts.map((workout, index) => (
-                  <SelectedWorkoutRow
-                    key={workout.id}
-                    workout={workout}
-                    index={index}
-                    totalCount={selectedWorkouts.length}
-                    onRemove={handleRemoveWorkout}
-                    onMoveUp={onReorderWorkouts ? handleMoveUp : undefined}
-                    onMoveDown={onReorderWorkouts ? handleMoveDown : undefined}
-                  />
-                ))}
-              </View>
-            </View>
-          </>
-        )}
-
-        {/* Empty State */}
-        {!hasWorkouts && hasAvailableWorkouts && (
-          <Animated.View
-            entering={FadeIn.duration(200)}
-            style={styles.emptyState}
-          >
-            <IconSymbol
-              name="calendar-today"
-              size={32}
-              color={colors.text.muted}
-            />
-            <Text variant="body" color="tertiary" style={styles.emptyStateText}>
-              Select workouts above to build your plan
-            </Text>
-          </Animated.View>
-        )}
 
         {/* Divider */}
         <View style={styles.divider} />
@@ -381,6 +345,7 @@ interface SelectedWorkoutRowProps {
   onRemove: (workoutId: string) => void;
   onMoveUp?: (index: number) => void;
   onMoveDown?: (index: number) => void;
+  enableRowAnimations?: boolean;
 }
 
 const SelectedWorkoutRow: React.FC<SelectedWorkoutRowProps> = ({
@@ -390,73 +355,77 @@ const SelectedWorkoutRow: React.FC<SelectedWorkoutRowProps> = ({
   onRemove,
   onMoveUp,
   onMoveDown,
+  enableRowAnimations = true,
 }) => {
   const isFirst = index === 0;
   const isLast = index === totalCount - 1;
-  const showReorderControls = onMoveUp && onMoveDown && totalCount > 1;
+  const hasReorderHandlers = Boolean(onMoveUp && onMoveDown);
+  const canReorder = hasReorderHandlers && totalCount > 1;
+
+  const RowWrapper = enableRowAnimations ? Animated.View : View;
 
   return (
-    <Animated.View
-      layout={Layout.springify().damping(20).stiffness(200)}
-      entering={FadeIn.duration(200)}
-      exiting={FadeOut.duration(150)}
+    <RowWrapper
+      {...(enableRowAnimations ? {
+        layout: Layout.springify().damping(20).stiffness(200),
+        entering: FadeIn.duration(200),
+        exiting: FadeOut.duration(150),
+      } : {})}
       style={styles.selectedWorkoutRow}
     >
-      <View style={styles.workoutRowIndex}>
-        <Text variant="caption" color="secondary" style={styles.indexText}>
-          {index + 1}
-        </Text>
-      </View>
-      <View style={styles.workoutRowInfo}>
+      {/* Reorder controls on the left when enabled; otherwise no spacer */}
+      {canReorder && (
+        <View style={styles.reorderArea}>
+          <Pressable
+            onPress={() => onMoveUp?.(index)}
+            disabled={isFirst}
+            style={styles.reorderButton}
+            hitSlop={4}
+          >
+            <IconSymbol
+              name="keyboard-arrow-up"
+              size={20}
+              color={isFirst ? colors.text.muted : colors.text.secondary}
+            />
+          </Pressable>
+          <Pressable
+            onPress={() => onMoveDown?.(index)}
+            disabled={isLast}
+            style={styles.reorderButton}
+            hitSlop={4}
+          >
+            <IconSymbol
+              name="keyboard-arrow-down"
+              size={20}
+              color={isLast ? colors.text.muted : colors.text.secondary}
+            />
+          </Pressable>
+        </View>
+      )}
+
+      {/* Workout name + metadata in the middle */}
+      <View style={styles.textContainer}>
         <Text variant="body" color="primary" numberOfLines={1}>
           {workout.name}
         </Text>
-        <Text variant="captionSmall" color="tertiary">
+        <Text variant="caption" color="secondary">
           {workout.exercises.length} exercise{workout.exercises.length !== 1 ? 's' : ''}
         </Text>
       </View>
-      <View style={styles.workoutRowActions}>
-        {showReorderControls && (
-          <View style={styles.reorderControls}>
-            <Pressable
-              onPress={() => onMoveUp?.(index)}
-              disabled={isFirst}
-              style={[styles.reorderButton, isFirst && styles.reorderButtonDisabled]}
-              hitSlop={6}
-            >
-              <IconSymbol
-                name="keyboard-arrow-up"
-                size={18}
-                color={isFirst ? colors.text.muted : colors.text.secondary}
-              />
-            </Pressable>
-            <Pressable
-              onPress={() => onMoveDown?.(index)}
-              disabled={isLast}
-              style={[styles.reorderButton, isLast && styles.reorderButtonDisabled]}
-              hitSlop={6}
-            >
-              <IconSymbol
-                name="keyboard-arrow-down"
-                size={18}
-                color={isLast ? colors.text.muted : colors.text.secondary}
-              />
-            </Pressable>
-          </View>
-        )}
-        <Pressable
-          onPress={() => onRemove(workout.id)}
-          style={styles.removeButton}
-          hitSlop={8}
-        >
-          <IconSymbol
-            name="close"
-            size={16}
-            color={colors.accent.orange}
-          />
-        </Pressable>
-      </View>
-    </Animated.View>
+
+      {/* X/remove button on the right, matching CompactExerciseRow */}
+      <Pressable
+        onPress={() => onRemove(workout.id)}
+        style={styles.removeButton}
+        hitSlop={12}
+      >
+        <IconSymbol
+          name="close"
+          size={18}
+          color={colors.text.tertiary}
+        />
+      </Pressable>
+    </RowWrapper>
   );
 };
 
@@ -500,17 +469,26 @@ const styles = StyleSheet.create({
   workoutPickerButton: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     gap: spacing.sm,
     paddingVertical: spacing.md,
-    paddingHorizontal: spacing.md,
-    backgroundColor: colors.surface.card,
+    paddingHorizontal: spacing.lg,
+    backgroundColor: colors.accent.orangeMuted,
     borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: colors.border.light,
+    borderColor: colors.accent.orange,
+    borderStyle: 'dashed',
+  },
+  workoutPickerButtonPressed: {
+    opacity: 0.8,
   },
   pickerButtonText: {
     flex: 1,
-    color: colors.accent.orange,
+    textAlign: 'center',
+  },
+  reorderHint: {
+    marginTop: spacing.xs,
+    textAlign: 'left',
   },
   workoutPickerList: {
     gap: spacing.xs,
@@ -520,12 +498,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: spacing.sm,
+    paddingVertical: spacing.md,
     paddingHorizontal: spacing.md,
     backgroundColor: colors.surface.card,
     borderRadius: radius.md,
     borderWidth: 1,
     borderColor: colors.border.light,
+    minHeight: 56,
   },
   workoutOptionPressed: {
     backgroundColor: colors.accent.orangeMuted,
@@ -600,63 +579,42 @@ const styles = StyleSheet.create({
   progressDotReady: {
     backgroundColor: colors.accent.success,
   },
-  // Selected Workout Row styles
+  // Selected Workout Row styles (match CompactExerciseRow layout)
   selectedWorkoutRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: spacing.sm,
+    paddingVertical: spacing.md,
     paddingHorizontal: spacing.md,
     backgroundColor: colors.surface.card,
     borderRadius: radius.md,
     borderWidth: 1,
     borderColor: colors.border.light,
+    minHeight: 56,
     gap: spacing.sm,
   },
-  workoutRowIndex: {
-    width: 24,
-    height: 24,
-    borderRadius: radius.sm,
-    backgroundColor: colors.accent.orangeMuted,
+  reorderArea: {
+    flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  indexText: {
-    fontWeight: '600',
-  },
-  workoutRowInfo: {
-    flex: 1,
-    gap: 2,
-  },
-  workoutRowActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-  },
-  reorderControls: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderRadius: radius.sm,
-    borderWidth: 1,
-    borderColor: colors.border.light,
-    overflow: 'hidden',
+    width: 32,
   },
   reorderButton: {
-    width: 28,
-    height: 28,
+    padding: 2,
+  },
+  indexBadge: {
+    width: 32,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  reorderButtonDisabled: {
-    opacity: 0.4,
+  textContainer: {
+    flex: 1,
+    gap: spacing.xs,
+    flexShrink: 1,
   },
   removeButton: {
-    width: 28,
-    height: 28,
-    borderRadius: radius.full,
-    borderWidth: 1,
-    borderColor: colors.accent.orange,
+    width: 32,
+    height: 32,
     alignItems: 'center',
     justifyContent: 'center',
-    marginLeft: spacing.xs,
   },
 });

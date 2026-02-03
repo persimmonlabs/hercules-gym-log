@@ -68,6 +68,7 @@ export const usePlanBuilderState = (editingPlanId: string | null): PlanBuilderSt
   const [filters, setFilters] = useState<ExerciseFilters>(() => createDefaultExerciseFilters());
   const [isLoading, setIsLoadingState] = useState<boolean>(true); // Start with loading true to prevent flash
   const hasInitializedFromPlan = useRef<boolean>(false);
+  const previousEditingPlanId = useRef<string | null>(null);
   const loadingStartTime = useRef<number>(Date.now());
   const pendingLoadingChange = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -103,7 +104,17 @@ export const usePlanBuilderState = (editingPlanId: string | null): PlanBuilderSt
   }, []);
 
   useLayoutEffect(() => {
+    const editingChanged = previousEditingPlanId.current !== editingPlanId;
+    previousEditingPlanId.current = editingPlanId;
     hasInitializedFromPlan.current = false;
+
+    if (editingPlanId && editingChanged) {
+      setPlanName('');
+      setSelectedExercises([]);
+      setSearchTerm('');
+      setFilters(createDefaultExerciseFilters());
+    }
+
     // Always start with loading true when editingPlanId changes
     // This ensures loading state is active immediately when entering edit mode
     if (editingPlanId) {

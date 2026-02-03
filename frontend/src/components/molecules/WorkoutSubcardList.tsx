@@ -8,11 +8,15 @@ import { IconSymbol } from '@/components/ui/icon-symbol';
 import { colors, radius, spacing, shadows, sizing } from '@/constants/theme';
 
 interface Workout {
-  uniqueId: string;
+  id: string;
   name: string;
   exercises: any[];
-  subtitle?: string;
+  type?: 'custom' | 'program';
   programNames?: string[];
+  programIds?: string[];
+  programId?: string;
+  uniqueId?: string;
+  subtitle?: string;
 }
 
 interface WorkoutSubcardListProps {
@@ -20,14 +24,17 @@ interface WorkoutSubcardListProps {
   onWorkoutPress: (workout: Workout) => void;
   onAddWorkoutPress: () => void;
   onCreateWorkoutPress: () => void;
-  selectedWorkoutId?: string | null;
+  selectedWorkoutId: string | null;
   onStartWorkout?: (workout: Workout) => void;
   onEditWorkout?: (workout: Workout) => void;
   onDeleteWorkout?: (workout: Workout) => void;
   onCloseExpanded?: () => void;
+  maxVisible?: number;
+  showAll?: boolean;
+  onToggleShowAll?: () => void;
 }
 
-export const WorkoutSubcardList: React.FC<WorkoutSubcardListProps> = ({
+const WorkoutSubcardList: React.FC<WorkoutSubcardListProps> = ({
   workouts,
   onWorkoutPress,
   onAddWorkoutPress,
@@ -37,129 +44,153 @@ export const WorkoutSubcardList: React.FC<WorkoutSubcardListProps> = ({
   onEditWorkout,
   onDeleteWorkout,
   onCloseExpanded,
+  maxVisible = 3,
+  showAll = false,
+  onToggleShowAll,
 }) => {
+  const displayWorkouts = showAll ? workouts : workouts.slice(0, maxVisible);
+  const hasMore = workouts.length > maxVisible;
+
+  const handleWorkoutPress = useCallback((workout: Workout) => {
+    triggerHaptic('selection');
+    onWorkoutPress(workout);
+  }, [onWorkoutPress]);
+
   return (
     <View style={styles.container}>
-      <View style={styles.recentWorkoutsList}>
-        {workouts.length === 0 ? (
-          <SurfaceCard
-            tone="neutral"
-            padding="md"
-            showAccentStripe={false}
-            style={styles.emptyCard}
+      {/* Card Header with Expand/Collapse Button */}
+      <View style={styles.cardHeader}>
+        <View style={styles.headerLeft}>
+          <Text variant="heading3" color="primary">
+            My Workouts
+          </Text>
+        </View>
+        {hasMore && onToggleShowAll && (
+          <Pressable
+            style={styles.expandCollapseButton}
+            onPress={() => {
+              triggerHaptic('selection');
+              onToggleShowAll();
+            }}
           >
-            <View style={styles.emptyContent}>
-              <Text variant="bodySemibold" color="primary" style={styles.emptyTitle}>
-                No workouts yet
-              </Text>
-              <Text variant="body" color="secondary" style={styles.emptySubtext}>
-                Add a workout to see it here.
-              </Text>
-            </View>
-          </SurfaceCard>
-        ) : (
-          workouts.map((workout) => {
-            const isSelected = selectedWorkoutId === workout.uniqueId;
-            return (
-              <Pressable
-                key={workout.uniqueId}
-                style={styles.pressableStretch}
-                onPress={() => {
-                  triggerHaptic('selection');
-                  onWorkoutPress(workout);
-                }}
-              >
-                <SurfaceCard
-                  tone="neutral"
-                  padding="md"
-                  showAccentStripe={false}
-                  style={styles.inlineCard}
-                >
-                  {!isSelected ? (
-                    <>
-                      <View style={styles.recentCardHeader}>
-                        <Text variant="bodySemibold" color="primary">
-                          {workout.name}
-                        </Text>
-                      </View>
-                      <View style={styles.exerciseInfoRow}>
-                        {workout.programNames && workout.programNames.length > 0 && (
-                          <>
-                            <Text variant="body" color="secondary" style={styles.planName}>
-                              {workout.programNames[0]}
-                            </Text>
-                            <Text variant="body" color="secondary" style={styles.dotSeparator}>
-                              •
-                            </Text>
-                          </>
-                        )}
-                        <Text variant="body" color="secondary" style={styles.exerciseCount}>
-                          {workout.exercises.length} {workout.exercises.length === 1 ? 'exercise' : 'exercises'}
-                        </Text>
-                      </View>
-                    </>
-                  ) : (
-                    <View style={styles.expandedActionsContainer}>
-                      {onStartWorkout && (
-                        <Pressable
-                          style={styles.largeActionButton}
-                          onPress={(e) => {
-                            e.stopPropagation();
-                            triggerHaptic('selection');
-                            onStartWorkout(workout);
-                          }}
-                        >
-                          <IconSymbol name="play-arrow" size={sizing.iconMD} color={colors.accent.primary} />
-                          <Text variant="caption" color="primary">Start</Text>
-                        </Pressable>
-                      )}
-                      {onEditWorkout && (
-                        <Pressable
-                          style={styles.largeActionButton}
-                          onPress={(e) => {
-                            e.stopPropagation();
-                            triggerHaptic('selection');
-                            onEditWorkout(workout);
-                          }}
-                        >
-                          <IconSymbol name="edit" size={sizing.iconMD} color={colors.accent.primary} />
-                          <Text variant="caption" color="primary">Edit</Text>
-                        </Pressable>
-                      )}
-                      {onDeleteWorkout && (
-                        <Pressable
-                          style={styles.largeActionButton}
-                          onPress={(e) => {
-                            e.stopPropagation();
-                            triggerHaptic('selection');
-                            onDeleteWorkout(workout);
-                          }}
-                        >
-                          <IconSymbol name="delete" size={sizing.iconMD} color={colors.accent.warning} />
-                          <Text variant="caption" color="primary">Delete</Text>
-                        </Pressable>
-                      )}
-                      {onCloseExpanded && (
-                        <Pressable
-                          style={styles.largeActionButton}
-                          onPress={(e) => {
-                            e.stopPropagation();
-                            triggerHaptic('selection');
-                            onCloseExpanded();
-                          }}
-                        >
-                          <IconSymbol name="close" size={sizing.iconMD} color={colors.text.secondary} />
-                          <Text variant="caption" color="primary">Close</Text>
-                        </Pressable>
-                      )}
-                    </View>
-                  )}
-                </SurfaceCard>
-              </Pressable>
-            );
-          })
+            <Text variant="caption" color="primary" style={styles.expandCollapseText}>
+              {showAll ? 'Collapse' : 'Expand'}
+            </Text>
+          </Pressable>
         )}
       </View>
+
+      {/* Workout List */}
+      {displayWorkouts.map((workout) => {
+        const workoutSelectionKey = workout.uniqueId || workout.id;
+        const isExpanded = selectedWorkoutId === workoutSelectionKey;
+
+        return (
+          <Pressable
+            key={workoutSelectionKey}
+            style={styles.pressableStretch}
+            onPress={() => handleWorkoutPress(workout)}
+          >
+            <SurfaceCard
+              tone="neutral"
+              padding="md"
+              showAccentStripe={false}
+              style={[styles.inlineCard, isExpanded && styles.expandedCard]}
+            >
+            {isExpanded ? (
+              <View style={styles.expandedActionsContainer}>
+                {onStartWorkout && (
+                  <Pressable
+                    style={styles.largeActionButton}
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      triggerHaptic('selection');
+                      onStartWorkout(workout);
+                    }}
+                  >
+                    <View style={styles.iconCircle}>
+                      <IconSymbol name="play-arrow" size={sizing.iconMD} color={colors.accent.orange} />
+                    </View>
+                    <Text variant="caption" color="primary">Start</Text>
+                  </Pressable>
+                )}
+                {onEditWorkout && (
+                  <Pressable
+                    style={styles.largeActionButton}
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      triggerHaptic('selection');
+                      onEditWorkout(workout);
+                    }}
+                  >
+                    <View style={styles.iconCircle}>
+                      <IconSymbol name="edit" size={sizing.iconMD} color={colors.accent.orange} />
+                    </View>
+                    <Text variant="caption" color="primary">Edit</Text>
+                  </Pressable>
+                )}
+                {onDeleteWorkout && (
+                  <Pressable
+                    style={styles.largeActionButton}
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      triggerHaptic('selection');
+                      onDeleteWorkout(workout);
+                    }}
+                  >
+                    <View style={styles.iconCircle}>
+                      <IconSymbol name="delete" size={sizing.iconMD} color={colors.accent.orange} />
+                    </View>
+                    <Text variant="caption" color="primary">Delete</Text>
+                  </Pressable>
+                )}
+                {onCloseExpanded && (
+                  <Pressable
+                    style={styles.largeActionButton}
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      triggerHaptic('selection');
+                      onCloseExpanded();
+                    }}
+                  >
+                    <View style={styles.iconCircle}>
+                      <IconSymbol name="close" size={sizing.iconMD} color={colors.accent.orange} />
+                    </View>
+                    <Text variant="caption" color="primary">Close</Text>
+                  </Pressable>
+                )}
+              </View>
+            ) : (
+              <>
+                <View style={styles.recentCardHeader}>
+                  <Text variant="bodySemibold" color="primary">
+                    {workout.name}
+                  </Text>
+                </View>
+                <View style={styles.exerciseInfoRow}>
+                  {workout.programNames && workout.programNames.length > 0 && (
+                    <>
+                      <Text
+                        variant="body"
+                        color="secondary"
+                        style={styles.planName}
+                        numberOfLines={1}
+                      >
+                        {workout.programNames.join(', ')}
+                      </Text>
+                      <Text variant="body" color="secondary" style={styles.dotSeparator}>•</Text>
+                    </>
+                  )}
+                  <Text variant="body" color="secondary" style={styles.exerciseCount}>
+                    {workout.exercises.length} {workout.exercises.length === 1 ? 'exercise' : 'exercises'}
+                  </Text>
+                </View>
+              </>
+            )}
+          </SurfaceCard>
+        </Pressable>
+      );
+      })}
 
       {/* Buttons Row */}
       <View style={styles.buttonsContainer}>
@@ -218,30 +249,40 @@ const styles = StyleSheet.create({
     elevation: 0,
     paddingLeft: spacing.lg,
   },
+  expandedCard: {
+    paddingHorizontal: spacing.lg,
+  },
   pressableStretch: {
     width: '100%',
   },
-  expandedActions: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-    marginTop: spacing.sm,
-  },
   expandedActionsContainer: {
+    width: '100%',
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: spacing.xs,
-    gap: spacing.sm,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    columnGap: spacing.sm,
   },
   largeActionButton: {
+    width: 60,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 2,
-    paddingVertical: spacing.xs,
-    paddingHorizontal: spacing.sm,
+    gap: spacing.xs,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.xs,
     borderRadius: radius.sm,
-    minWidth: 60,
-    flex: 1,
+    flexShrink: 0,
+  },
+  iconCircle: {
+    width: 48,
+    height: 48,
+    borderRadius: radius.full,
+    backgroundColor: colors.surface.card,
+    borderWidth: 1,
+    borderColor: colors.accent.orange,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   actionButton: {
     alignItems: 'center',
@@ -263,34 +304,29 @@ const styles = StyleSheet.create({
   exerciseCount: {
     flexShrink: 0,
   },
-  emptyCard: {
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border.light,
-    borderRadius: radius.lg,
-    backgroundColor: colors.surface.card,
-    shadowColor: 'transparent',
-    shadowOpacity: 0,
-    shadowRadius: 0,
-    shadowOffset: { width: 0, height: 0 },
-    elevation: 0,
-    paddingLeft: spacing.lg,
+  wideButton: {
+    alignSelf: 'center',
+    width: '100%',
   },
-  emptyContent: {
-    alignItems: 'flex-start',
-    justifyContent: 'center',
-    paddingVertical: spacing.sm,
+  cardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.md,
   },
-  emptyTitle: {
-    marginBottom: spacing.xs,
+  headerLeft: {
+    flex: 1,
   },
-  emptySubtext: {
-    textAlign: 'left',
+  expandCollapseButton: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+  },
+  expandCollapseText: {
+    fontWeight: '400',
   },
   buttonsContainer: {
     gap: spacing.sm,
   },
-  wideButton: {
-    alignSelf: 'center',
-    width: '103%',
-  },
 });
+
+export default WorkoutSubcardList;

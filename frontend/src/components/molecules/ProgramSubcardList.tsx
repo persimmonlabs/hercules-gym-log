@@ -22,6 +22,9 @@ interface ProgramSubcardListProps {
   onEditProgram?: (program: Program) => void;
   onDeleteProgram?: (program: Program) => void;
   onCloseExpanded?: () => void;
+  showAll?: boolean;
+  onToggleShowAll?: () => void;
+  maxVisible?: number;
 }
 
 export const ProgramSubcardList: React.FC<ProgramSubcardListProps> = ({
@@ -33,14 +36,42 @@ export const ProgramSubcardList: React.FC<ProgramSubcardListProps> = ({
   onEditProgram,
   onDeleteProgram,
   onCloseExpanded,
+  showAll = false,
+  onToggleShowAll,
+  maxVisible = 3,
 }) => {
   const getProgramSummary = (program: Program) => {
     const workoutCount = program.workouts.filter(w => w.exercises && w.exercises.length > 0).length;
     return `${workoutCount} ${workoutCount === 1 ? 'workout' : 'workouts'}`;
   };
 
+  const visiblePrograms = showAll ? programs : programs.slice(0, maxVisible);
+  const hasMoreItems = programs.length > maxVisible;
+
   return (
     <View style={styles.container}>
+      {/* Card Header with Expand/Collapse Button */}
+      <View style={styles.cardHeader}>
+        <View style={styles.headerLeft}>
+          <Text variant="heading3" color="primary">
+            My Plans
+          </Text>
+        </View>
+        {hasMoreItems && onToggleShowAll && (
+          <Pressable
+            style={styles.expandCollapseButton}
+            onPress={() => {
+              triggerHaptic('selection');
+              onToggleShowAll();
+            }}
+          >
+            <Text variant="caption" color="primary" style={styles.expandCollapseText}>
+              {showAll ? 'Collapse' : 'Expand'}
+            </Text>
+          </Pressable>
+        )}
+      </View>
+
       <View style={styles.recentWorkoutsList}>
         {programs.length === 0 ? (
           <SurfaceCard
@@ -59,7 +90,7 @@ export const ProgramSubcardList: React.FC<ProgramSubcardListProps> = ({
             </View>
           </SurfaceCard>
         ) : (
-          programs.map((program) => {
+          visiblePrograms.map((program) => {
             const isSelected = selectedProgramId === program.id;
             return (
               <Pressable
@@ -74,7 +105,7 @@ export const ProgramSubcardList: React.FC<ProgramSubcardListProps> = ({
                   tone="neutral"
                   padding="md"
                   showAccentStripe={false}
-                  style={styles.inlineCard}
+                  style={[styles.inlineCard, isSelected && styles.expandedCard]}
                 >
                   {!isSelected ? (
                     <>
@@ -98,7 +129,9 @@ export const ProgramSubcardList: React.FC<ProgramSubcardListProps> = ({
                             onEditProgram(program);
                           }}
                         >
-                          <IconSymbol name="edit" size={sizing.iconMD} color={colors.accent.primary} />
+                          <View style={styles.iconCircle}>
+                            <IconSymbol name="edit" size={sizing.iconMD} color={colors.accent.orange} />
+                          </View>
                           <Text variant="caption" color="primary">Edit</Text>
                         </Pressable>
                       )}
@@ -111,7 +144,9 @@ export const ProgramSubcardList: React.FC<ProgramSubcardListProps> = ({
                             onDeleteProgram(program);
                           }}
                         >
-                          <IconSymbol name="delete" size={sizing.iconMD} color={colors.accent.warning} />
+                          <View style={styles.iconCircle}>
+                            <IconSymbol name="delete" size={sizing.iconMD} color={colors.accent.orange} />
+                          </View>
                           <Text variant="caption" color="primary">Delete</Text>
                         </Pressable>
                       )}
@@ -124,7 +159,9 @@ export const ProgramSubcardList: React.FC<ProgramSubcardListProps> = ({
                             onCloseExpanded();
                           }}
                         >
-                          <IconSymbol name="close" size={sizing.iconMD} color={colors.text.secondary} />
+                          <View style={styles.iconCircle}>
+                            <IconSymbol name="close" size={sizing.iconMD} color={colors.accent.orange} />
+                          </View>
                           <Text variant="caption" color="primary">Close</Text>
                         </Pressable>
                       )}
@@ -135,32 +172,37 @@ export const ProgramSubcardList: React.FC<ProgramSubcardListProps> = ({
             );
           })
         )}
+
+        {/* Show More/Less Button - REMOVED */}
       </View>
 
-      {/* Add Plan Button */}
-      <Button
-        label="Add Plan"
-        variant="primary"
-        size="md"
-        style={styles.wideButton}
-        onPress={() => {
-          triggerHaptic('selection');
-          onAddProgramPress();
-        }}
-      />
+      {/* Buttons Row */}
+      <View style={styles.buttonsContainer}>
+        {/* Add Plan Button */}
+        <Button
+          label="Add Plan"
+          variant="primary"
+          size="md"
+          style={styles.wideButton}
+          onPress={() => {
+            triggerHaptic('selection');
+            onAddProgramPress();
+          }}
+        />
 
-      {/* Create Plan Button */}
-      <Button
-        label="Create Plan"
-        variant="secondary"
-        size="md"
-        textColor={colors.accent.orange}
-        style={[styles.wideButton, { ...shadows.sm }]}
-        onPress={() => {
-          triggerHaptic('selection');
-          onCreatePlanPress();
-        }}
-      />
+        {/* Create Plan Button */}
+        <Button
+          label="Create Plan"
+          variant="secondary"
+          size="md"
+          textColor={colors.accent.orange}
+          style={[styles.wideButton, { ...shadows.sm }]}
+          onPress={() => {
+            triggerHaptic('selection');
+            onCreatePlanPress();
+          }}
+        />
+      </View>
     </View>
   );
 };
@@ -191,6 +233,10 @@ const styles = StyleSheet.create({
     elevation: 0,
     paddingLeft: spacing.lg,
   },
+  expandedCard: {
+    paddingLeft: 0,
+    paddingHorizontal: spacing.lg,
+  },
   pressableStretch: {
     width: '100%',
   },
@@ -205,16 +251,27 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: spacing.xs,
     gap: spacing.md,
+    paddingLeft: spacing.lg,
   },
   largeActionButton: {
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 2,
-    paddingVertical: spacing.xs,
+    gap: spacing.xs,
+    paddingVertical: spacing.sm,
     paddingHorizontal: spacing.sm,
     borderRadius: radius.sm,
     minWidth: 60,
     flex: 1,
+  },
+  iconCircle: {
+    width: 48,
+    height: 48,
+    borderRadius: radius.full,
+    backgroundColor: colors.surface.card,
+    borderWidth: 1,
+    borderColor: colors.accent.orange,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   actionButton: {
     alignItems: 'center',
@@ -246,10 +303,26 @@ const styles = StyleSheet.create({
     textAlign: 'left',
   },
   buttonsContainer: {
-    gap: 0,
+    gap: spacing.sm,
   },
   wideButton: {
     alignSelf: 'center',
-    width: '103%',
+    width: '100%',
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.md,
+  },
+  headerLeft: {
+    flex: 1,
+  },
+  expandCollapseButton: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+  },
+  expandCollapseText: {
+    fontWeight: '400',
   },
 });

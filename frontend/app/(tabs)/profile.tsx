@@ -2,7 +2,6 @@ import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react'
 import { StyleSheet, View, ScrollView, BackHandler, Pressable } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { useScrollToTop } from '@react-navigation/native';
-import { VictoryPie } from 'victory-native';
 
 import { ScreenHeader } from '@/components/molecules/ScreenHeader';
 import { Text } from '@/components/atoms/Text';
@@ -12,9 +11,13 @@ import { AnalyticsCard } from '@/components/atoms/AnalyticsCard';
 import { SimpleDistributionChart } from '@/components/molecules/SimpleDistributionChart';
 import { SimpleVolumeChart } from '@/components/molecules/SimpleVolumeChart';
 import { VolumeTrendChart } from '@/components/molecules/VolumeTrendChart';
-import { TrainingBalanceCard } from '@/components/molecules/TrainingBalanceCard';
+import { BalanceScoreCard } from '@/components/molecules/BalanceScoreCard';
+import { WeeklyCardioGoalCard } from '@/components/molecules/WeeklyCardioGoalCard';
+import { DistanceByActivityCard } from '@/components/molecules/DistanceByActivityCard';
+import { InsightCard } from '@/components/molecules/InsightCard';
 import { TimeRangeSelector } from '@/components/atoms/TimeRangeSelector';
 import { useAnalyticsData } from '@/hooks/useAnalyticsData';
+import { useInsightsData } from '@/hooks/useInsightsData';
 import { spacing, colors, radius } from '@/constants/theme';
 import { useTheme } from '@/hooks/useTheme';
 import { TIME_RANGE_SUBTITLES, TimeRange } from '@/types/analytics';
@@ -73,11 +76,14 @@ interface CardioStatsContentProps {
 const CardioStatsContent: React.FC<CardioStatsContentProps> = ({ stats, timeRange }) => {
   // Subscribe to distanceUnit to trigger re-renders when units change
   const distanceUnitPref = useSettingsStore((state) => state.distanceUnit);
-  const { formatDistanceForExercise } = useSettingsStore();
+  const { convertDistance, getDistanceUnitShort } = useSettingsStore();
   const { totalDuration, totalDistanceByType } = stats;
 
+  // Calculate total distance across all activity types
+  const totalDistance = Object.values(totalDistanceByType).reduce((sum, dist) => sum + (dist || 0), 0);
+
   // Check if there's any cardio data
-  const hasData = totalDuration > 0 || Object.keys(totalDistanceByType).length > 0;
+  const hasData = totalDuration > 0 || totalDistance > 0;
 
   if (!hasData) {
     return (
@@ -89,10 +95,12 @@ const CardioStatsContent: React.FC<CardioStatsContentProps> = ({ stats, timeRang
     );
   }
 
-  const distanceEntries = Object.entries(totalDistanceByType).filter(([, dist]) => dist > 0);
+  const distanceUnitShort = getDistanceUnitShort();
+  const displayDistance = convertDistance(totalDistance);
 
   return (
     <View style={{ gap: spacing.lg }}>
+      {/* Total Time */}
       <View style={{ alignItems: 'center' }}>
         <Text variant="heading2" color="primary">
           {formatDuration(totalDuration)}
@@ -102,30 +110,15 @@ const CardioStatsContent: React.FC<CardioStatsContentProps> = ({ stats, timeRang
         </Text>
       </View>
 
-      {distanceEntries.length > 0 && (
-        <View style={{ gap: spacing.sm }}>
-          <Text variant="bodySemibold" color="secondary">
-            Distance by Activity
+      {/* Total Distance */}
+      {totalDistance > 0 && (
+        <View style={{ alignItems: 'center' }}>
+          <Text variant="heading2" color="primary">
+            {displayDistance.toFixed(1)} {distanceUnitShort}
           </Text>
-          {distanceEntries.map(([exerciseName, distance]) => {
-            const exerciseEntry = exerciseCatalog.find(e => e.name === exerciseName);
-            const distanceUnit = exerciseEntry?.distanceUnit;
-            return (
-              <View key={exerciseName} style={{
-                flexDirection: 'row',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                paddingVertical: spacing.xs
-              }}>
-                <Text variant="body" color="primary" style={{ flex: 1 }}>
-                  {exerciseName}
-                </Text>
-                <Text variant="bodySemibold" color="primary">
-                  {formatDistanceForExercise(distance, distanceUnit)}
-                </Text>
-              </View>
-            );
-          })}
+          <Text variant="caption" color="secondary">
+            Total Distance
+          </Text>
         </View>
       )}
     </View>
@@ -161,7 +154,7 @@ const summaryStyles = StyleSheet.create({
     textAlign: 'center',
   },
   valueBadge: {
-    backgroundColor: colors.accent.orange,
+    backgroundColor: colors.surface.card,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.xs,
     borderRadius: radius.md,
@@ -199,7 +192,7 @@ const streakStyles = StyleSheet.create({
 });
 
 
-type PerformanceTab = 'general' | 'weights' | 'cardio';
+type PerformanceTab = 'general' | 'weights' | 'cardio' | 'insights';
 
 interface TabPillProps {
   label: string;
@@ -211,20 +204,18 @@ const TabPill: React.FC<TabPillProps> = ({ label, isActive, onPress }) => {
   const { theme } = useTheme();
 
   const baseStyle = {
-    paddingHorizontal: spacing.lg,
+    flex: 1,
+    flexBasis: 0,
+    paddingHorizontal: spacing.xs,
     paddingVertical: spacing.xxs,
     borderRadius: 999,
     borderWidth: 1,
     borderColor: theme.accent.orangeMuted,
     backgroundColor: theme.primary.bg,
-    minWidth: 90,
   } as const;
 
-  // Add small margins for perfect card edge alignment
   const containerStyle = {
     ...baseStyle,
-    ...(label === 'General' && { marginLeft: spacing.xs }),
-    ...(label === 'Cardio' && { marginRight: spacing.xs }),
   };
 
   const activeStyle = isActive
@@ -282,11 +273,12 @@ const StatsScreen: React.FC = () => {
     },
     tabsRow: {
       flexDirection: 'row',
-      justifyContent: 'space-between',
+      justifyContent: 'flex-start',
       alignItems: 'center',
       marginTop: -spacing.lg,
       marginBottom: spacing.sm,
       paddingHorizontal: 0,
+      gap: spacing.xs,
     },
     tabPill: {
       paddingHorizontal: spacing.lg,
@@ -339,7 +331,10 @@ const StatsScreen: React.FC = () => {
 
   const { hasFilteredData: hasVolumeData, filteredWorkouts: volumeFilteredWorkouts } = useAnalyticsData({ timeRange: volumeTimeRange });
   const weightUnit = useSettingsStore((state) => state.weightUnit);
-  const { cardioStats, filteredWorkouts: cardioFilteredWorkouts } = useAnalyticsData({ timeRange: cardioTimeRange });
+  const { cardioStats } = useAnalyticsData({ timeRange: cardioTimeRange });
+
+  // Insights data for the Insights tab
+  const { groupedInsights, orderedTypes } = useInsightsData();
 
   const handleDistributionPress = () => {
     router.push('/(tabs)/distribution-analytics');
@@ -476,166 +471,96 @@ const StatsScreen: React.FC = () => {
     return entries.map(([name, volume]) => ({ name, volume }));
   }, [volumeFilteredWorkouts, convertWeight, userBodyWeight]);
 
-  const outdoorCardioSummary = useMemo(() => {
-    const activities: {
-      name: string;
-      count: number;
-      totalDuration: number;
-      totalDistance: number;
-      distanceUnit?: 'miles' | 'meters' | 'floors';
-    }[] = [];
-    const byName: Record<string, (typeof activities)[number]> = {};
+  const renderGeneralTab = () => {
+    const cardioDurationHasHours = Math.floor(totalCardioTime / 3600) > 0;
+    const cardioDurationMinutes = Math.floor((totalCardioTime % 3600) / 60);
+    const cardioSummaryValue = cardioDurationHasHours
+      ? formatDuration(totalCardioTime)
+      : cardioDurationMinutes.toString();
+    const cardioSummaryLabelSuffix = cardioDurationHasHours ? ' (hr:min)' : ' (min)';
 
-    let outdoorDuration = 0;
-    let indoorDuration = 0;
-    let outdoorDistance = 0;
-    let indoorDistance = 0;
+    return (
+      <>
+        <View>
+          <PersonalRecordsSection />
+        </View>
 
-    cardioFilteredWorkouts.forEach((workout) => {
-      workout.exercises.forEach((exercise: any) => {
-        const exerciseEntry = exerciseCatalog.find((e) => e.name === exercise.name);
-        if (!exerciseEntry || exerciseEntry.exerciseType !== 'cardio') return;
-
-        const isOutdoor = Boolean(
-          exerciseEntry.supportsGpsTracking ||
-          exerciseEntry.distanceUnit === 'miles' ||
-          exerciseEntry.distanceUnit === 'meters',
-        );
-
-        let hasCompletedSetForThisExercise = false;
-        let exerciseDuration = 0;
-        let exerciseDistance = 0;
-
-        exercise.sets.forEach((set: any) => {
-          if (!set.completed) return;
-          const duration = set.duration || 0;
-          const distance = set.distance || 0;
-
-          if (duration > 0 || distance > 0) {
-            hasCompletedSetForThisExercise = true;
+        <AnalyticsCard
+          title="Summary"
+          showAccentStripe={false}
+          titleCentered={true}
+          showHorizontalAccentBar={false}
+          showChevron={false}
+          headerRight={
+            <TimeRangeSelector value={generalTimeRange} onChange={setGeneralTimeRange} />
           }
+        >
+          {!hasAnyWorkoutData ? (
+            <View style={cardioStyles.emptyState}>
+              <Text variant="body" color="secondary" style={cardioStyles.emptyText}>
+                No workouts yet – start your first session to see stats here.
+              </Text>
+            </View>
+          ) : !hasGeneralFilteredData ? (
+            <View style={cardioStyles.emptyState}>
+              <Text variant="body" color="secondary" style={cardioStyles.emptyText}>
+                {`No workout data for ${TIME_RANGE_SUBTITLES[generalTimeRange].toLowerCase()}.`}
+              </Text>
+            </View>
+          ) : (
+            <View style={summaryStyles.grid}>
+              <View style={summaryStyles.tile}>
+                <View style={summaryStyles.valueBadge}>
+                  <Text variant="heading3" color="primary">
+                    {totalWorkoutSessions}
+                  </Text>
+                </View>
+                <Text variant="caption" color="secondary">
+                  Workout Sessions
+                </Text>
+              </View>
 
-          if (isOutdoor) {
-            outdoorDuration += duration;
-            outdoorDistance += distance;
-          } else {
-            indoorDuration += duration;
-            indoorDistance += distance;
-          }
+              <View style={summaryStyles.tile}>
+                <View style={summaryStyles.valueBadge}>
+                  <Text variant="heading3" color="primary">
+                    {formatCompactNumber(totalVolume)}
+                  </Text>
+                </View>
+                <Text variant="caption" color="secondary">
+                  {`Total Volume (${weightUnit})`}
+                </Text>
+              </View>
 
-          exerciseDuration += duration;
-          exerciseDistance += distance;
-        });
+              <View style={summaryStyles.tile}>
+                <View style={summaryStyles.valueBadge}>
+                  <Text variant="heading3" color="primary">
+                    {cardioSummaryValue}
+                  </Text>
+                </View>
+                <Text variant="caption" color="secondary">
+                  Cardio Time{cardioSummaryLabelSuffix}
+                </Text>
+              </View>
 
-        if (!hasCompletedSetForThisExercise) return;
+              <View style={summaryStyles.tile}>
+                <View style={summaryStyles.valueBadge}>
+                  <Text variant="heading3" color="primary">
+                    {totalCardioDistance.toFixed(1)}
+                  </Text>
+                </View>
+                <Text variant="caption" color="secondary">
+                  {`Cardio Distance (${distanceUnitShort})`}
+                </Text>
+              </View>
+            </View>
+          )}
+        </AnalyticsCard>
+      </>
+    );
+  };
 
-        const key = exercise.name;
-        if (!byName[key]) {
-          byName[key] = {
-            name: exercise.name,
-            count: 0,
-            totalDuration: 0,
-            totalDistance: 0,
-            distanceUnit: exerciseEntry.distanceUnit,
-          };
-          activities.push(byName[key]);
-        }
-
-        byName[key].count += 1;
-        byName[key].totalDuration += exerciseDuration;
-        byName[key].totalDistance += exerciseDistance;
-      });
-    });
-
-    activities.sort((a, b) => b.totalDistance - a.totalDistance);
-
-    return {
-      outdoorDuration,
-      indoorDuration,
-      outdoorDistance,
-      indoorDistance,
-      activities,
-      hasAnyCardio: outdoorDuration + indoorDuration > 0 || outdoorDistance + indoorDistance > 0,
-    };
-  }, [cardioFilteredWorkouts]);
-
-  const renderGeneralTab = () => (
+  const renderWeightsTab = () => (
     <>
-      <AnalyticsCard
-        title="Summary"
-        showAccentStripe={false}
-        titleCentered={true}
-        showHorizontalAccentBar={false}
-        showChevron={false}
-        headerRight={
-          <TimeRangeSelector value={generalTimeRange} onChange={setGeneralTimeRange} />
-        }
-      >
-        {!hasAnyWorkoutData ? (
-          <View style={cardioStyles.emptyState}>
-            <Text variant="body" color="secondary" style={cardioStyles.emptyText}>
-              No workouts yet – start your first session to see stats here.
-            </Text>
-          </View>
-        ) : !hasGeneralFilteredData ? (
-          <View style={cardioStyles.emptyState}>
-            <Text variant="body" color="secondary" style={cardioStyles.emptyText}>
-              {`No workout data for ${TIME_RANGE_SUBTITLES[generalTimeRange].toLowerCase()}.`}
-            </Text>
-          </View>
-        ) : (
-          <View style={summaryStyles.grid}>
-            <View style={summaryStyles.tile}>
-              <View style={summaryStyles.valueBadge}>
-                <Text variant="heading3" color="onAccent">
-                  {totalWorkoutSessions}
-                </Text>
-              </View>
-              <Text variant="caption" color="secondary">
-                Workout Sessions
-              </Text>
-            </View>
-
-            <View style={summaryStyles.tile}>
-              <View style={summaryStyles.valueBadge}>
-                <Text variant="heading3" color="onAccent">
-                  {formatCompactNumber(totalVolume)}
-                </Text>
-              </View>
-              <Text variant="caption" color="secondary">
-                {`Total Volume (${weightUnit})`}
-              </Text>
-            </View>
-
-            <View style={summaryStyles.tile}>
-              <View style={summaryStyles.valueBadge}>
-                <Text variant="heading3" color="onAccent">
-                  {formatDuration(totalCardioTime)}
-                </Text>
-              </View>
-              <Text variant="caption" color="secondary">
-                Cardio Time{Math.floor(totalCardioTime / 3600) > 0 ? ' (hr:min)' : ''}
-              </Text>
-            </View>
-
-            <View style={summaryStyles.tile}>
-              <View style={summaryStyles.valueBadge}>
-                <Text variant="heading3" color="onAccent">
-                  {totalCardioDistance.toFixed(1)}
-                </Text>
-              </View>
-              <Text variant="caption" color="secondary">
-                {`Cardio Distance (${distanceUnitShort})`}
-              </Text>
-            </View>
-          </View>
-        )}
-      </AnalyticsCard>
-
-      <View>
-        <PersonalRecordsSection />
-      </View>
-
       <AnalyticsCard
         title="Volume Trend"
         showAccentStripe={false}
@@ -647,20 +572,6 @@ const StatsScreen: React.FC = () => {
         }
       >
         <VolumeTrendChart timeRange={volumeTrendTimeRange} />
-      </AnalyticsCard>
-    </>
-  );
-
-  const renderWeightsTab = () => (
-    <>
-      <AnalyticsCard
-        title="Volume Distribution"
-        onPress={handleDistributionPress}
-        showAccentStripe={false}
-        titleCentered={true}
-        showHorizontalAccentBar={false}
-      >
-        <SimpleDistributionChart />
       </AnalyticsCard>
 
       <AnalyticsCard
@@ -677,7 +588,7 @@ const StatsScreen: React.FC = () => {
         <SimpleVolumeChart timeRange={volumeTimeRange} />
       </AnalyticsCard>
 
-      <TrainingBalanceCard />
+      <BalanceScoreCard />
 
       <AnalyticsCard
         title="Top Exercises (Volume)"
@@ -705,10 +616,18 @@ const StatsScreen: React.FC = () => {
                   justifyContent: 'space-between',
                   alignItems: 'center',
                   paddingVertical: spacing.xs,
-                  minHeight: 32, // Ensure consistent height for all items
+                  minHeight: 32,
                 }}
               >
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, flex: 1, marginRight: spacing.md }}>
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: spacing.sm,
+                    flex: 1,
+                    marginRight: spacing.md,
+                  }}
+                >
                   <View
                     style={{
                       width: 28,
@@ -739,148 +658,112 @@ const StatsScreen: React.FC = () => {
       </AnalyticsCard>
     </>
   );
-
   const renderCardioTab = () => (
     <>
+      {/* Weekly Cardio Goal Card - Swipeable Time/Distance */}
+      <WeeklyCardioGoalCard />
+
+      {/* Distance by Activity Card */}
+      <DistanceByActivityCard />
+
+      {/* Cardio Summary Card - Total Time and Total Distance only */}
       <AnalyticsCard
         title="Cardio Summary"
         showAccentStripe={false}
         titleCentered={true}
         showHorizontalAccentBar={false}
+        showChevron={false}
         headerRight={
           <TimeRangeSelector value={cardioTimeRange} onChange={setCardioTimeRange} />
         }
       >
         <CardioStatsContent stats={cardioStats} timeRange={cardioTimeRange} />
       </AnalyticsCard>
+    </>
+  );
 
+  const renderInsightsTab = () => (
+    <>
+      {/* Insight Cards - one per category, sorted by priority */}
+      {orderedTypes.length > 0 ? (
+        <View style={{ gap: spacing.sm }}>
+          {orderedTypes.map((type) => (
+            <InsightCard key={type} insights={groupedInsights[type]} />
+          ))}
+        </View>
+      ) : (
+        /* Positive empty state when no insights triggered */
+        <View
+          style={{
+            backgroundColor: theme.surface.card,
+            borderRadius: radius.md,
+            padding: spacing.lg,
+            alignItems: 'center',
+            gap: spacing.sm,
+          }}
+        >
+          <Text style={{ fontSize: 32 }}>✨</Text>
+          <Text variant="heading3" color="primary" style={{ textAlign: 'center' }}>
+            Looking Good!
+          </Text>
+          <Text variant="body" color="secondary" style={{ textAlign: 'center' }}>
+            Your training is well-balanced this week. Keep it up!
+          </Text>
+        </View>
+      )}
+
+      {/* Deep Dive section */}
       <AnalyticsCard
-        title="Outdoor Activities"
+        title="Deep Dive"
         showAccentStripe={false}
         titleCentered={true}
         showHorizontalAccentBar={false}
         showChevron={false}
       >
-        {!outdoorCardioSummary.hasAnyCardio ? (
-          <View style={cardioStyles.emptyState}>
-            <Text variant="body" color="secondary" style={cardioStyles.emptyText}>
-              No cardio logged for this time range.
-            </Text>
-          </View>
-        ) : (
-          <View style={{ gap: spacing.lg }}>
-            {/* Donut: Outdoor vs Indoor time */}
-            <View
+        <View style={{ gap: spacing.md }}>
+          <Text variant="body" color="secondary" style={{ textAlign: 'center' }}>
+            Explore more advanced analytics views for your training.
+          </Text>
+          <View style={{ gap: spacing.sm }}>
+            <Pressable
+              onPress={handleVolumePress}
               style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                gap: spacing.lg,
+                paddingVertical: spacing.sm,
+                paddingHorizontal: spacing.md,
+                borderRadius: radius.md,
+                borderWidth: 1,
+                borderColor: colors.accent.orangeMuted,
+                backgroundColor: colors.surface.card,
               }}
             >
-              <View style={{ flex: 1, alignItems: 'center' }}>
-                <VictoryPie
-                  data={[
-                    { x: 'Outdoor', y: outdoorCardioSummary.outdoorDuration || 0.0001 },
-                    { x: 'Indoor', y: outdoorCardioSummary.indoorDuration || 0.0001 },
-                  ]}
-                  innerRadius={42}
-                  padAngle={2}
-                  width={180}
-                  height={180}
-                  colorScale={[colors.accent.orange, colors.accent.orangeMuted]}
-                  labels={() => ''}
-                  startAngle={0}
-                  endAngle={360}
-                  style={{
-                    data: {
-                      stroke: colors.primary.bg,
-                      strokeWidth: 2,
-                    },
-                  }}
-                />
-                <View style={{ position: 'absolute', alignItems: 'center' }}>
-                  <Text variant="caption" color="secondary">
-                    Outdoor Share
-                  </Text>
-                  <Text variant="heading3" color="primary">
-                    {(() => {
-                      const total = outdoorCardioSummary.outdoorDuration + outdoorCardioSummary.indoorDuration;
-                      if (!total) return '0%';
-                      const pct = Math.round((outdoorCardioSummary.outdoorDuration / total) * 100);
-                      return `${pct}%`;
-                    })()}
-                  </Text>
-                </View>
-              </View>
+              <Text variant="bodySemibold" color="primary" style={{ textAlign: 'center' }}>
+                Volume Totals Breakdown
+              </Text>
+              <Text variant="caption" color="secondary" style={{ textAlign: 'center' }}>
+                Drill into weekly and body-region volume.
+              </Text>
+            </Pressable>
 
-              <View style={{ flex: 1, gap: spacing.md }}>
-                <View style={{ alignItems: 'center' }}>
-                  <Text variant="caption" color="secondary">
-                    Outdoor Time
-                  </Text>
-                  <Text variant="heading3" color="primary">
-                    {formatDuration(outdoorCardioSummary.outdoorDuration)}
-                  </Text>
-                </View>
-                <View style={{ alignItems: 'center' }}>
-                  <Text variant="caption" color="secondary">
-                    Indoor Time
-                  </Text>
-                  <Text variant="heading3" color="primary">
-                    {formatDuration(outdoorCardioSummary.indoorDuration)}
-                  </Text>
-                </View>
-              </View>
-            </View>
-
-            {/* Top outdoor activities as colorful chips */}
-            {outdoorCardioSummary.activities.length > 0 && (
-              <View style={{ gap: spacing.sm }}>
-                <Text variant="bodySemibold" color="secondary">
-                  Top Outdoor Activities
-                </Text>
-                <View
-                  style={{
-                    flexDirection: 'row',
-                    flexWrap: 'wrap',
-                    gap: spacing.sm,
-                  }}
-                >
-                  {outdoorCardioSummary.activities.slice(0, 3).map((activity, index) => {
-                    const exerciseEntry = exerciseCatalog.find((e) => e.name === activity.name);
-                    const distanceUnit = exerciseEntry?.distanceUnit;
-                    const { formatDistanceForExercise } = useSettingsStore.getState();
-                    const shadeOpacity = 0.2 + 0.15 * index;
-
-                    return (
-                      <View
-                        key={activity.name}
-                        style={{
-                          paddingHorizontal: spacing.md,
-                          paddingVertical: spacing.xs,
-                          borderRadius: 999,
-                          backgroundColor: `rgba(255, 107, 74, ${shadeOpacity})`,
-                          borderWidth: 1,
-                          borderColor: colors.accent.orange,
-                        }}
-                      >
-                        <Text variant="captionSmall" color="primary">
-                          {activity.name}
-                        </Text>
-                        <Text variant="captionSmall" color="secondary">
-                          {formatDistanceForExercise(activity.totalDistance, distanceUnit, 1)} ·{' '}
-                          {formatDuration(activity.totalDuration)} · {activity.count} session
-                          {activity.count === 1 ? '' : 's'}
-                        </Text>
-                      </View>
-                    );
-                  })}
-                </View>
-              </View>
-            )}
+            <Pressable
+              onPress={handleDistributionPress}
+              style={{
+                paddingVertical: spacing.sm,
+                paddingHorizontal: spacing.md,
+                borderRadius: radius.md,
+                borderWidth: 1,
+                borderColor: colors.accent.orangeMuted,
+                backgroundColor: colors.surface.card,
+              }}
+            >
+              <Text variant="bodySemibold" color="primary" style={{ textAlign: 'center' }}>
+                Volume Distribution Map
+              </Text>
+              <Text variant="caption" color="secondary" style={{ textAlign: 'center' }}>
+                Visualize how work is spread across muscle groups.
+              </Text>
+            </Pressable>
           </View>
-        )}
+        </View>
       </AnalyticsCard>
     </>
   );
@@ -893,6 +776,8 @@ const StatsScreen: React.FC = () => {
         return renderWeightsTab();
       case 'cardio':
         return renderCardioTab();
+      case 'insights':
+        return renderInsightsTab();
       default:
         return null;
     }
@@ -908,12 +793,12 @@ const StatsScreen: React.FC = () => {
       {/* Top-level Performance tabs */}
       <View style={styles.tabsRow}>
         <TabPill
-          label="General"
+          label="Overview"
           isActive={activeTab === 'general'}
           onPress={() => setActiveTab('general')}
         />
         <TabPill
-          label="Weights"
+          label="Strength"
           isActive={activeTab === 'weights'}
           onPress={() => setActiveTab('weights')}
         />
@@ -921,6 +806,11 @@ const StatsScreen: React.FC = () => {
           label="Cardio"
           isActive={activeTab === 'cardio'}
           onPress={() => setActiveTab('cardio')}
+        />
+        <TabPill
+          label="Insights"
+          isActive={activeTab === 'insights'}
+          onPress={() => setActiveTab('insights')}
         />
       </View>
 

@@ -13,7 +13,7 @@ import { TabSwipeContainer } from '@/components/templates/TabSwipeContainer';
 import { Button } from '@/components/atoms/Button';
 import { MyScheduleCard } from '@/components/molecules/MyScheduleCard';
 import { AddOverrideModal } from '@/components/molecules/AddOverrideModal';
-import { WorkoutSubcardList } from '@/components/molecules/WorkoutSubcardList';
+import WorkoutSubcardList from '@/components/molecules/WorkoutSubcardList';
 import { ProgramSubcardList } from '@/components/molecules/ProgramSubcardList';
 import { colors, radius, shadows, sizing, spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/useTheme';
@@ -352,6 +352,8 @@ const PlansScreen: React.FC = () => {
   const [isDeleteDialogVisible, setIsDeleteDialogVisible] = useState<boolean>(false);
   const [itemToDelete, setItemToDelete] = useState<any>(null);
   const [isOverrideModalVisible, setIsOverrideModalVisible] = useState<boolean>(false);
+  const [showAllWorkouts, setShowAllWorkouts] = useState<boolean>(false);
+  const [showAllPlans, setShowAllPlans] = useState<boolean>(false);
   const setActiveRule = useActiveScheduleStore((state: any) => state.setActiveRule);
   const activeScheduleRule = useActiveScheduleStore((state: any) => state.state.activeRule);
   const { setEditingPlanId } = usePlanBuilderContext();
@@ -672,15 +674,9 @@ const PlansScreen: React.FC = () => {
       {/* My Workouts Section with Carousel */}
       <View style={{ marginTop: -spacing.xs }}>
         <SurfaceCard tone="card" padding="xl" showAccentStripe={true} style={{ borderWidth: 0 }}>
-          <View style={styles.sectionHeader}>
-            <Text variant="heading3" color="primary">
-              My Workouts
-            </Text>
-          </View>
-
           <WorkoutSubcardList
               workouts={myWorkouts}
-              onWorkoutPress={(workout) => handlePlanPress(workout.uniqueId)}
+              onWorkoutPress={(workout) => handlePlanPress(workout.uniqueId || workout.id)}
               onAddWorkoutPress={handleAddWorkoutPress}
               onCreateWorkoutPress={handleCreateWorkoutPress}
               selectedWorkoutId={expandedPlanId}
@@ -688,6 +684,8 @@ const PlansScreen: React.FC = () => {
               onEditWorkout={handleEditWorkoutItem}
               onDeleteWorkout={handleDeleteWorkoutItem}
               onCloseExpanded={() => setExpandedPlanId(null)}
+              showAll={showAllWorkouts}
+              onToggleShowAll={() => setShowAllWorkouts(!showAllWorkouts)}
             />
         </SurfaceCard>
       </View>
@@ -695,12 +693,6 @@ const PlansScreen: React.FC = () => {
       {/* My Plans Section with Carousel */}
       <View style={{ marginTop: -spacing.xs }}>
         <SurfaceCard tone="card" padding="xl" showAccentStripe={true} style={{ borderWidth: 0 }}>
-          <View style={styles.sectionHeader}>
-            <Text variant="heading3" color="primary">
-              My Plans
-            </Text>
-          </View>
-
           <ProgramSubcardList
               programs={myPlans}
               onProgramPress={(program) => handleProgramPress(program)}
@@ -710,6 +702,8 @@ const PlansScreen: React.FC = () => {
               onEditProgram={handleEditProgram}
               onDeleteProgram={handleDeleteProgram}
               onCloseExpanded={() => setExpandedPlanId(null)}
+              showAll={showAllPlans}
+              onToggleShowAll={() => setShowAllPlans(!showAllPlans)}
             />
         </SurfaceCard>
       </View>
@@ -736,6 +730,7 @@ const PlansScreen: React.FC = () => {
         transparent
         visible={isDeleteDialogVisible}
         onRequestClose={handleDismissDeleteDialog}
+        animationType="fade"
       >
         <Pressable style={styles.dialogOverlay} onPress={handleDismissDeleteDialog}>
           <Pressable

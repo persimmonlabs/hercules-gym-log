@@ -418,6 +418,20 @@ const ScheduleSetupScreen: React.FC = () => {
     setPickerContext(null);
   }, [pickerContext, draftRule]);
 
+  const pickerTitle = useMemo(() => {
+    if (pickerContext?.type === 'weekly') {
+      const dayKey = pickerContext.index as WeekdayKey;
+      const dayLabel = WEEKDAYS.find((day) => day.key === dayKey)?.label;
+      if (dayLabel) {
+        return `Select Workout - ${dayLabel}`;
+      }
+    } else if (pickerContext?.type === 'rotating') {
+      const dayIndex = (pickerContext.index as number) ?? 0;
+      return `Select Workout - Day ${dayIndex + 1}`;
+    }
+    return 'Select Workout';
+  }, [pickerContext]);
+
   const addCycleDay = useCallback(() => {
     if (draftRule?.type !== 'rotating') return;
     triggerHaptic('selection');
@@ -871,7 +885,7 @@ const ScheduleSetupScreen: React.FC = () => {
         <View style={[styles.pickerPopup, { backgroundColor: theme.surface.card }]}>
           <View style={styles.pickerHeader}>
             <Text variant="heading3" color="primary">
-              Select Workout
+              {pickerTitle}
             </Text>
             <Pressable onPress={() => setPickerVisible(false)}>
               <IconSymbol name="close" size={24} color={theme.text.primary} />

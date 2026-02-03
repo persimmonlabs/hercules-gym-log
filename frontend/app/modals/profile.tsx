@@ -305,16 +305,12 @@ const ProfileModal: React.FC = () => {
           <View style={[styles.settingsGroup, { backgroundColor: theme.surface.card }]}>
             {!isPremiumLoading && !isPremium ? (
               <SettingsItem
-                icon="star"
                 title="Go Premium"
                 subtitle="Unlock advanced analytics and unlimited workouts"
                 onPress={() => router.push('/premium' as any)}
               />
             ) : isPremiumLoading ? (
               <View style={styles.settingsItem}>
-                <View style={styles.settingsItemIcon}>
-                  <IconSymbol name="star" color={theme.accent.orange} size={22} />
-                </View>
                 <View style={styles.settingsItemContent}>
                   <Text variant="bodySemibold" color="primary" style={{ fontSize: 15 }}>
                     Loading Premium Status
@@ -326,7 +322,6 @@ const ProfileModal: React.FC = () => {
               </View>
             ) : (
               <SettingsItem
-                icon="credit-card"
                 title="Manage Subscription"
                 subtitle="View billing history and manage your premium plan"
                 onPress={() => router.push('/manage-subscription' as any)}
@@ -345,14 +340,12 @@ const ProfileModal: React.FC = () => {
 
           <View style={[styles.settingsGroup, { backgroundColor: theme.surface.card }]}>
             <SettingsItem
-              icon="person"
               title="Name"
               subtitle={getUserDisplayName()}
               onPress={handleNameEdit}
               showDivider
             />
             <SettingsItem
-              icon="notifications"
               title="Notifications"
               subtitle={notificationsEnabled ? `${configs.length} reminder${configs.length !== 1 ? 's' : ''} active` : 'Set workout reminders'}
               onPress={() => {
@@ -362,7 +355,6 @@ const ProfileModal: React.FC = () => {
               showDivider
             />
             <SettingsItem
-              icon="straighten"
               title="Units of Measurement"
               subtitle={`${weightUnit === 'kg' ? 'kg' : 'lbs'} • ${distanceUnit === 'km' ? 'km' : 'mi'} • ${sizeUnit === 'cm' ? 'cm' : 'in'}`}
               onPress={() => {
@@ -372,7 +364,6 @@ const ProfileModal: React.FC = () => {
               showDivider
             />
             <ToggleSettingsItem
-              icon="vibration"
               title="Haptic Feedback"
               subtitle={hapticsEnabled ? "Enabled" : "Disabled"}
               value={hapticsEnabled}
@@ -394,21 +385,18 @@ const ProfileModal: React.FC = () => {
 
           <View style={[styles.settingsGroup, { backgroundColor: theme.surface.card }]}>
             <SettingsItem
-              icon="feedback"
               title="Send Feedback"
               subtitle="Help us improve the app"
               onPress={() => handlePreferencePress('Send Feedback')}
               showDivider
             />
             <SettingsItem
-              icon="question-mark-circle"
               title="FAQ"
               subtitle="Frequently asked questions"
               onPress={() => handlePreferencePress('FAQ')}
               showDivider
             />
             <SettingsItem
-              icon="info"
               title="About"
               subtitle="App version and legal information"
               onPress={() => handlePreferencePress('About')}
@@ -435,8 +423,7 @@ const ProfileModal: React.FC = () => {
                 }}
               >
                 <View style={styles.devToggleInfo}>
-                  <IconSymbol name="star" size={22} color={theme.accent.orange} />
-                  <View style={{ marginLeft: spacing.md, flex: 1 }}>
+                  <View style={{ flex: 1 }}>
                     <Text variant="bodySemibold" color="primary">Premium Status</Text>
                     <Text variant="caption" color="secondary" style={{ fontSize: 13 }}>
                       {premiumOverride === 'premium' ? 'Premium' : 'Free'}
@@ -466,14 +453,12 @@ const ProfileModal: React.FC = () => {
 
           <View style={[styles.settingsGroup, { backgroundColor: theme.surface.card }]}>
             <SettingsItem
-              icon="logout"
               title="Sign Out"
               subtitle="Sign out of your account"
               onPress={handleSignOut}
               showDivider
             />
             <SettingsItem
-              icon="trash"
               title="Delete Account"
               subtitle="Permanently delete your account and data"
               onPress={handleDeleteAccount}
@@ -534,14 +519,13 @@ const ProfileModal: React.FC = () => {
 };
 
 interface SettingsItemProps {
-  icon: string;
   title: string;
   subtitle: string;
   onPress: () => void;
   showDivider?: boolean;
 }
 
-const SettingsItem: React.FC<SettingsItemProps> = ({ icon, title, subtitle, onPress, showDivider }) => {
+const SettingsItem: React.FC<SettingsItemProps> = ({ title, subtitle, onPress, showDivider }) => {
   const { theme } = useTheme();
 
   return (
@@ -558,13 +542,6 @@ const SettingsItem: React.FC<SettingsItemProps> = ({ icon, title, subtitle, onPr
           { backgroundColor: pressed ? theme.surface.elevated : 'transparent' }
         ]}
       >
-        <View style={styles.settingsItemIcon}>
-          <IconSymbol
-            name={icon}
-            color={theme.accent.orange}
-            size={22}
-          />
-        </View>
         <View style={styles.settingsItemContent}>
           <Text variant="bodySemibold" color="primary" style={{ fontSize: 15 }}>
             {title}
@@ -695,15 +672,8 @@ const styles = StyleSheet.create({
   },
   settingsItemDivider: {
     height: 0.5,
-    marginLeft: spacing.lg + spacing.xl + spacing.md,
+    marginLeft: spacing.lg,
     opacity: 0.5,
-  },
-  settingsItemIcon: {
-    width: 32,
-    height: 32,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: spacing.md,
   },
   settingsItemContent: {
     flex: 1,
@@ -758,7 +728,6 @@ const styles = StyleSheet.create({
 });
 
 interface ToggleSettingsItemProps {
-  icon: string;
   title: string;
   subtitle: string;
   value: boolean;
@@ -767,7 +736,6 @@ interface ToggleSettingsItemProps {
 }
 
 const ToggleSettingsItem: React.FC<ToggleSettingsItemProps> = ({
-  icon,
   title,
   subtitle,
   value,
@@ -779,13 +747,6 @@ const ToggleSettingsItem: React.FC<ToggleSettingsItemProps> = ({
   return (
     <>
       <View style={styles.settingsItem}>
-        <View style={styles.settingsItemIcon}>
-          <IconSymbol
-            name={icon}
-            color={theme.accent.orange}
-            size={22}
-          />
-        </View>
         <View style={styles.settingsItemContent}>
           <Text variant="bodySemibold" color="primary" style={{ fontSize: 15 }}>
             {title}

@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo } from 'react';
-import { Alert, Pressable, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, StyleSheet, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { triggerHaptic } from '@/utils/haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -111,6 +111,7 @@ const CreatePlanScreen: React.FC = () => {
     handleSavePlan,
     setEditingPlanId,
     resetSession,
+    isLoading,
   } = usePlanBuilderContext();
 
   useEffect(() => {
@@ -159,6 +160,17 @@ const CreatePlanScreen: React.FC = () => {
   }, [router]);
 
   const hasExercises = selectedExercises.length > 0;
+
+  if (isLoading) {
+    return (
+      <View style={[styles.container, { paddingTop: insets.top, justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="large" color={colors.accent.orange} />
+        <Text variant="body" color="secondary" style={{ marginTop: spacing.md }}>
+          Loading plan...
+        </Text>
+      </View>
+    );
+  }
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>

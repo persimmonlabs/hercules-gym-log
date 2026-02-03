@@ -70,6 +70,7 @@ const CreateWorkoutScreen: React.FC = () => {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const [showLimitModal, setShowLimitModal] = useState(false);
+  const [hasSaved, setHasSaved] = useState(false);
   const { planId, returnTo } = useLocalSearchParams<{ 
     planId?: string; 
     returnTo?: string; 
@@ -113,9 +114,13 @@ const CreateWorkoutScreen: React.FC = () => {
     setEditingPlanId(editingPlanId);
     // Hide loading after mount
     setIsLoading(false);
+    // Fresh session flag on mount
+    setHasSaved(false);
 
     return () => {
+      // Always fully reset builder state when this screen unmounts
       resetSession();
+      setHasSaved(false);
     };
   }, [editingPlanId, resetSession, setEditingPlanId, setIsLoading]);
 
@@ -132,6 +137,11 @@ const CreateWorkoutScreen: React.FC = () => {
 
   const handleBackPress = useCallback(() => {
     triggerHaptic('selection');
+
+    // If this is a new (unsaved) workout, clear any stale builder state
+    if (!isEditing && !hasSaved) {
+      resetSession();
+    }
 
     // If returnTo is specified, use it for navigation
     if (decodedReturnTo) {
@@ -171,6 +181,7 @@ const CreateWorkoutScreen: React.FC = () => {
         const result = await handleSavePlan();
 
         if (result === 'success') {
+          setHasSaved(true);
           if (decodedReturnTo) {
             router.replace(decodedReturnTo);
             return;

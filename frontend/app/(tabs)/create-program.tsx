@@ -80,8 +80,10 @@ const CreatePlanScreen: React.FC = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [showLimitModal, setShowLimitModal] = useState(false);
 
-  // Reset builder when component unmounts
+  // Always start with a fresh builder session and clean up on unmount
   useEffect(() => {
+    resetBuilder();
+
     return () => {
       resetBuilder();
     };
@@ -117,11 +119,6 @@ const CreatePlanScreen: React.FC = () => {
   const handleRemoveWorkout = useCallback((workoutId: string) => {
     removeWorkout(workoutId);
   }, [removeWorkout]);
-
-  const handleReorderWorkouts = useCallback((fromIndex: number, toIndex: number) => {
-    // Reordering not currently supported in program builder context
-    // This is a placeholder for future implementation
-  }, []);
 
   const handleSaveProgram = useCallback(async () => {
     if (isSaveDisabled) return;
@@ -238,7 +235,6 @@ const CreatePlanScreen: React.FC = () => {
             selectedWorkouts={selectedWorkouts}
             onAddWorkout={handleAddWorkout}
             onRemoveWorkout={handleRemoveWorkout}
-            onReorderWorkouts={handleReorderWorkouts}
             onSave={handleSaveProgram}
             saveLabel="Save Plan"
             isSaving={isSaving}

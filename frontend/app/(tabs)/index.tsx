@@ -1177,11 +1177,41 @@ const DashboardScreen: React.FC = () => {
                           </View>
                         </SurfaceCard>
                       ) : (
-                        <>
-                          <Text variant="body" color="secondary">
-                            Assign workouts to your schedule to see them here.
-                          </Text>
-                        </>
+                        <SurfaceCard
+                          tone="neutral"
+                          padding="lg"
+                          showAccentStripe={false}
+                          style={styles.inlineCard}
+                        >
+                          <View style={styles.quickLinkRow}>
+                            <View style={styles.quickLinkInfo}>
+                              <Text variant="bodySemibold" color="primary">
+                                No workout scheduled
+                              </Text>
+                              <Text variant="body" color="secondary">
+                                Assign workouts to your schedule to see them here.
+                              </Text>
+                            </View>
+                            <Pressable
+                              style={styles.planStartButton}
+                              onPress={handleCreatePlanPress}
+                              accessibilityRole="button"
+                              accessibilityLabel="Go to Programs"
+                            >
+                              <View style={styles.quickLinkButton}>
+                                <LinearGradient
+                                  colors={[theme.accent.gradientStart, theme.accent.gradientEnd]}
+                                  start={{ x: 0, y: 0 }}
+                                  end={{ x: 1, y: 1 }}
+                                  style={styles.planStartButtonGradient}
+                                />
+                                <Text variant="bodySemibold" color="onAccent">
+                                  →
+                                </Text>
+                              </View>
+                            </Pressable>
+                          </View>
+                        </SurfaceCard>
                       )}
                     </View>
                   </View>
