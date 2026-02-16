@@ -438,9 +438,9 @@
     "exercise_type": "weight",
     "distance_unit": null,
     "muscles": {
-      "Quads": 0.415,
-      "Glutes": 0.26,
-      "Hamstrings": 0.21,
+      "Quads": 0.4056,
+      "Glutes": 0.2541,
+      "Hamstrings": 0.2053,
       "Calves - Medial Head": 0.015,
       "Calves - Lateral Head": 0.015,
       "Soleus": 0.01,
@@ -451,7 +451,8 @@
       "Obliques": 0.01,
       "Lower Back": 0.005,
       "Flexors": 0.005,
-      "Extensors": 0.005
+      "Extensors": 0.005,
+      "Hip Flexors": 0.02
     },
     "equipment": [
       "Machine"
@@ -468,7 +469,7 @@
     "exercise_type": "weight",
     "distance_unit": null,
     "muscles": {
-      "Quads": 0.9,
+      "Quads": 0.87,
       "Obliques": 0.03,
       "Lower Abs": 0.025,
       "Upper Abs": 0.02,
@@ -477,7 +478,8 @@
       "Flexors": 0.005,
       "Extensors": 0.005,
       "Upper Back": 0.003,
-      "Mid Back": 0.002
+      "Mid Back": 0.002,
+      "Hip Flexors": 0.03
     },
     "equipment": [
       "Machine"
@@ -494,7 +496,7 @@
     "exercise_type": "weight",
     "distance_unit": null,
     "muscles": {
-      "Hamstrings": 0.86,
+      "Hamstrings": 0.85,
       "Calves - Medial Head": 0.03,
       "Calves - Lateral Head": 0.025,
       "Soleus": 0.015,
@@ -504,7 +506,8 @@
       "Upper Back": 0.005,
       "Flexors": 0.01,
       "Extensors": 0.01,
-      "Upper Abs": 0.01
+      "Upper Abs": 0.01,
+      "Hip Flexors": 0.01
     },
     "equipment": [
       "Machine"
@@ -574,8 +577,8 @@
     "exercise_type": "weight",
     "distance_unit": null,
     "muscles": {
-      "Quads": 0.365,
-      "Glutes": 0.195,
+      "Quads": 0.352,
+      "Glutes": 0.188,
       "Hamstrings": 0.18,
       "Lower Back": 0.08,
       "Mid Back": 0.035,
@@ -592,7 +595,8 @@
       "Adductors": 0.005,
       "Upper Abs": 0.005,
       "Lower Abs": 0.005,
-      "Obliques": 0.005
+      "Obliques": 0.005,
+      "Hip Flexors": 0.02
     },
     "equipment": [
       "Barbell",
@@ -746,15 +750,16 @@
     "exercise_type": "weight",
     "distance_unit": null,
     "muscles": {
-      "Calves - Medial Head": 0.45,
-      "Calves - Lateral Head": 0.4,
+      "Calves - Medial Head": 0.4447,
+      "Calves - Lateral Head": 0.3953,
       "Soleus": 0.1,
       "Lower Back": 0.01,
       "Upper Abs": 0.01,
       "Lower Abs": 0.01,
       "Obliques": 0.01,
       "Flexors": 0.005,
-      "Extensors": 0.005
+      "Extensors": 0.005,
+      "Hip Flexors": 0.01
     },
     "equipment": [
       "Machine"
@@ -771,7 +776,7 @@
     "exercise_type": "weight",
     "distance_unit": null,
     "muscles": {
-      "Hamstrings": 0.86,
+      "Hamstrings": 0.85,
       "Calves - Medial Head": 0.03,
       "Calves - Lateral Head": 0.025,
       "Soleus": 0.015,
@@ -781,7 +786,8 @@
       "Upper Back": 0.005,
       "Flexors": 0.01,
       "Extensors": 0.01,
-      "Upper Abs": 0.01
+      "Upper Abs": 0.01,
+      "Hip Flexors": 0.01
     },
     "equipment": [
       "Machine"
@@ -1028,9 +1034,9 @@
     "exercise_type": "weight",
     "distance_unit": null,
     "muscles": {
-      "Quads": 0.25,
-      "Glutes": 0.17,
-      "Hamstrings": 0.15,
+      "Quads": 0.2456,
+      "Glutes": 0.167,
+      "Hamstrings": 0.1474,
       "Lower Back": 0.06,
       "Upper Back": 0.04,
       "Mid Back": 0.035,
@@ -1052,7 +1058,8 @@
       "Extensors": 0.01,
       "Lateral Delts": 0.005,
       "Rear Delts": 0.005,
-      "Triceps - Long Head": 0.005
+      "Triceps - Long Head": 0.005,
+      "Hip Flexors": 0.01
     },
     "equipment": [
       "Barbell"
@@ -1069,8 +1076,8 @@
     "exercise_type": "weight",
     "distance_unit": null,
     "muscles": {
-      "Quads": 0.18,
-      "Glutes": 0.13,
+      "Quads": 0.1742,
+      "Glutes": 0.1258,
       "Hamstrings": 0.1,
       "Front Delts": 0.1,
       "Lower Back": 0.065,
@@ -1096,7 +1103,8 @@
       "Extensors": 0.001,
       "Adductors": 0.001,
       "Abductors": 0.001,
-      "Lower Abs": 0.001
+      "Lower Abs": 0.001,
+      "Hip Flexors": 0.01
     },
     "equipment": [
       "Barbell"
@@ -1246,8 +1254,8 @@
     "exercise_type": "weight",
     "distance_unit": null,
     "muscles": {
-      "Glutes": 0.545,
-      "Hamstrings": 0.25,
+      "Glutes": 0.5313,
+      "Hamstrings": 0.2437,
       "Quads": 0.07,
       "Lower Back": 0.025,
       "Flexors": 0.025,
@@ -1258,7 +1266,8 @@
       "Obliques": 0.015,
       "Mid Back": 0.008,
       "Adductors": 0.001,
-      "Extensors": 0.001
+      "Extensors": 0.001,
+      "Hip Flexors": 0.02
     },
     "equipment": [
       "Barbell",
@@ -1310,7 +1319,7 @@
     "exercise_type": "weight",
     "distance_unit": null,
     "muscles": {
-      "Quads": 0.32,
+      "Quads": 0.3202,
       "Glutes": 0.23,
       "Hamstrings": 0.18,
       "Lower Back": 0.0554,
@@ -1343,8 +1352,8 @@
     "exercise_type": "weight",
     "distance_unit": null,
     "muscles": {
-      "Glutes": 0.55,
-      "Hamstrings": 0.2,
+      "Glutes": 0.5353,
+      "Hamstrings": 0.1947,
       "Quads": 0.1,
       "Lower Back": 0.035,
       "Upper Back": 0.03,
@@ -1354,7 +1363,8 @@
       "Lower Abs": 0.015,
       "Obliques": 0.015,
       "Flexors": 0.009,
-      "Adductors": 0.001
+      "Adductors": 0.001,
+      "Hip Flexors": 0.02
     },
     "equipment": [
       "Barbell",
@@ -1581,8 +1591,8 @@
     "exercise_type": "weight",
     "distance_unit": null,
     "muscles": {
-      "Quads": 0.24,
-      "Glutes": 0.195,
+      "Quads": 0.2345,
+      "Glutes": 0.1905,
       "Hamstrings": 0.14,
       "Lower Back": 0.09,
       "Front Delts": 0.045,
@@ -1603,7 +1613,8 @@
       "Triceps - Medial Head": 0.005,
       "Biceps - Long Head": 0.005,
       "Calves - Lateral Head": 0.005,
-      "Soleus": 0.005
+      "Soleus": 0.005,
+      "Hip Flexors": 0.01
     },
     "equipment": [
       "Barbell"
@@ -2279,7 +2290,7 @@
     "exercise_type": "weight",
     "distance_unit": null,
     "muscles": {
-      "Mid Chest": 0.19,
+      "Mid Chest": 0.1901,
       "Lower Chest": 0.15,
       "Triceps - Long Head": 0.15,
       "Triceps - Lateral Head": 0.13,
@@ -2311,7 +2322,7 @@
     "exercise_type": "weight",
     "distance_unit": null,
     "muscles": {
-      "Mid Chest": 0.2,
+      "Mid Chest": 0.2002,
       "Lower Chest": 0.15,
       "Triceps - Long Head": 0.15,
       "Triceps - Lateral Head": 0.13,
@@ -2378,7 +2389,7 @@
     "exercise_type": "weight",
     "distance_unit": null,
     "muscles": {
-      "Obliques": 0.4365,
+      "Obliques": 0.4364,
       "Upper Abs": 0.3395,
       "Lower Abs": 0.1746,
       "Lower Back": 0.0097,
@@ -3004,8 +3015,8 @@
     "exercise_type": "weight",
     "distance_unit": null,
     "muscles": {
-      "Quads": 0.44,
-      "Glutes": 0.25,
+      "Quads": 0.4272,
+      "Glutes": 0.2428,
       "Hamstrings": 0.15,
       "Adductors": 0.05,
       "Lower Back": 0.03,
@@ -3015,7 +3026,8 @@
       "Calves - Lateral Head": 0.01,
       "Soleus": 0.01,
       "Lower Abs": 0.009,
-      "Obliques": 0.001
+      "Obliques": 0.001,
+      "Hip Flexors": 0.02
     },
     "equipment": [
       "Machine"
@@ -3267,7 +3279,7 @@
     "exercise_type": "weight",
     "distance_unit": null,
     "muscles": {
-      "Quads": 0.3465,
+      "Quads": 0.3464,
       "Glutes": 0.198,
       "Hamstrings": 0.099,
       "Lower Back": 0.0792,
@@ -3462,7 +3474,7 @@
     "exercise_type": "weight",
     "distance_unit": null,
     "muscles": {
-      "Front Delts": 0.18,
+      "Front Delts": 0.1797,
       "Upper Chest": 0.12,
       "Triceps - Long Head": 0.1131,
       "Triceps - Lateral Head": 0.1131,
@@ -3844,7 +3856,7 @@
     "exercise_type": "weight",
     "distance_unit": null,
     "muscles": {
-      "Front Delts": 0.3,
+      "Front Delts": 0.3002,
       "Lateral Delts": 0.15,
       "Upper Chest": 0.15,
       "Triceps - Long Head": 0.1058,
@@ -4378,15 +4390,16 @@
     "exercise_type": "weight",
     "distance_unit": null,
     "muscles": {
-      "Calves - Medial Head": 0.45,
-      "Calves - Lateral Head": 0.4,
+      "Calves - Medial Head": 0.4447,
+      "Calves - Lateral Head": 0.3953,
       "Soleus": 0.1,
       "Lower Back": 0.01,
       "Upper Abs": 0.01,
       "Lower Abs": 0.01,
       "Obliques": 0.01,
       "Flexors": 0.005,
-      "Extensors": 0.005
+      "Extensors": 0.005,
+      "Hip Flexors": 0.01
     },
     "equipment": [
       "Machine"
@@ -4657,7 +4670,7 @@
     "exercise_type": "bodyweight",
     "distance_unit": null,
     "muscles": {
-      "Upper Abs": 0.485,
+      "Upper Abs": 0.4849,
       "Lower Abs": 0.388,
       "Obliques": 0.0922,
       "Lower Back": 0.0049,
@@ -4856,7 +4869,7 @@
     "exercise_type": "assisted",
     "distance_unit": null,
     "muscles": {
-      "Lats": 0.36,
+      "Lats": 0.3604,
       "Mid Back": 0.1036,
       "Biceps - Long Head": 0.0936,
       "Biceps - Short Head": 0.0736,
@@ -5054,9 +5067,10 @@
     "exercise_type": "duration",
     "distance_unit": null,
     "muscles": {
-      "Upper Abs": 0.4,
-      "Lower Abs": 0.4,
-      "Obliques": 0.2
+      "Upper Abs": 0.39,
+      "Lower Abs": 0.39,
+      "Obliques": 0.2,
+      "Hip Flexors": 0.02
     },
     "equipment": [
       "Bodyweight"
@@ -5073,9 +5087,10 @@
     "exercise_type": "duration",
     "distance_unit": null,
     "muscles": {
-      "Obliques": 0.8,
+      "Obliques": 0.78,
       "Upper Abs": 0.1,
-      "Lower Abs": 0.1
+      "Lower Abs": 0.1,
+      "Hip Flexors": 0.02
     },
     "equipment": [
       "Bodyweight"
@@ -6047,7 +6062,7 @@
     "exercise_type": "weight",
     "distance_unit": null,
     "muscles": {
-      "Front Delts": 0.3,
+      "Front Delts": 0.3002,
       "Lateral Delts": 0.15,
       "Upper Chest": 0.15,
       "Triceps - Long Head": 0.1058,
