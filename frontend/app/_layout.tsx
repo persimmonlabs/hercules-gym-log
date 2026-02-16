@@ -3,15 +3,13 @@ import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native
 import { Stack, useSegments, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as NavigationBar from 'expo-navigation-bar';
-import { Platform, StyleSheet, ActivityIndicator } from 'react-native';
+import { Platform, StyleSheet, ActivityIndicator, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { MaterialIcons } from '@expo/vector-icons';
 import * as Font from 'expo-font';
 import 'react-native-reanimated';
-import { View } from 'react-native';
 
-import { colors, darkColors, sizing } from '@/constants/theme';
-import { useColorScheme } from '@/hooks/useColorScheme';
+import { colors, darkColors } from '@/constants/theme';
 import { useTheme } from '@/hooks/useTheme';
 import { AuthProvider, useAuth } from '@/providers/AuthProvider';
 import { PlanBuilderProvider } from '@/providers/PlanBuilderProvider';
@@ -20,6 +18,7 @@ import { useUserProfileStore } from '@/store/userProfileStore';
 import { useActiveScheduleStore } from '@/store/activeScheduleStore';
 import { useCustomExerciseStore } from '@/store/customExerciseStore';
 import { useSettingsStore } from '@/store/settingsStore';
+import { useAuthStore } from '@/store/authStore';
 
 import './add-exercises';
 
@@ -31,25 +30,44 @@ export const unstable_settings = {
 const useProtectedRoute = (session: any, isLoading: boolean) => {
   const segments = useSegments();
   const router = useRouter();
+  const profile = useUserProfileStore((state) => state.profile);
+  const profileLoading = useUserProfileStore((state) => state.isLoading);
+  const justSignedUp = useAuthStore((state) => state.justSignedUp);
+  const setJustSignedUp = useAuthStore((state) => state.setJustSignedUp);
 
   useEffect(() => {
     if (isLoading) return;
 
     const inAuthGroup = (segments[0] as string) === 'auth';
+    const inOnboarding = (segments[0] as string) === 'onboarding';
 
     if (!session && !inAuthGroup) {
       // Redirect to the sign-in page.
       router.replace('/auth/login' as any);
     } else if (session && inAuthGroup) {
       // Redirect away from the sign-in page.
-      router.replace('/(tabs)' as any);
+      if (justSignedUp) {
+        setJustSignedUp(false);
+        router.replace('/onboarding' as any);
+      } else {
+        router.replace('/(tabs)' as any);
+      }
+    } else if (session && !inOnboarding && !inAuthGroup && !profileLoading && profile) {
+      // Check if user just signed up (force onboarding even if they previously completed it)
+      if (justSignedUp) {
+        setJustSignedUp(false); // Clear the flag
+        router.replace('/onboarding' as any);
+      } else if (profile.onboardingCompleted === false) {
+        // New user who hasn't completed onboarding
+        router.replace('/onboarding' as any);
+      }
     }
-  }, [session, segments, isLoading]);
+  }, [session, segments, isLoading, profile, profileLoading, justSignedUp, setJustSignedUp]);
 };
 
 const RootLayout: React.FC = () => {
   const [fontsLoaded, setFontsLoaded] = useState(false);
-  const { colorScheme, isDarkMode, theme } = useTheme();
+  const { isDarkMode, theme } = useTheme();
 
   // Preload MaterialIcons font to prevent icon lag on first render
   useEffect(() => {
@@ -176,11 +194,25 @@ const RootLayoutNav = ({
     }
   }, [user?.id, fetchProfile, hydrateActiveSchedule, hydrateCustomExercises, syncFromSupabase]);
 
+  const profile = useUserProfileStore((state) => state.profile);
+  const profileLoading = useUserProfileStore((state) => state.isLoading);
+  const justSignedUp = useAuthStore((state) => state.justSignedUp);
+
   useProtectedRoute(session, isLoading);
 
   const inAuthGroup = segments[0] === 'auth';
+  const inOnboarding = segments[0] === 'onboarding';
 
-  if (isLoading || !fontsLoaded || (!session && !inAuthGroup)) {
+  // Block rendering if:
+  // 1. Auth is loading or fonts not loaded
+  // 2. No session and not on auth/onboarding screens
+  // 3. User needs onboarding but hasn't been redirected yet (prevents dashboard flash)
+  const needsOnboarding = session && !inOnboarding && !inAuthGroup && (
+    justSignedUp ||
+    (!profileLoading && profile && profile.onboardingCompleted === false)
+  );
+
+  if (isLoading || !fontsLoaded || (!session && !inAuthGroup && !inOnboarding) || needsOnboarding) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: theme.primary.bg }}>
         <ActivityIndicator size="large" color={theme.accent.primary} />
@@ -201,6 +233,7 @@ const RootLayoutNav = ({
         >
           <Stack.Screen name="(tabs)" options={{ headerShown: false, animation: 'none' }} />
           <Stack.Screen name="auth" options={{ headerShown: false, animation: 'fade' }} />
+          <Stack.Screen name="onboarding" options={{ headerShown: false, animation: 'fade' }} />
           <Stack.Screen
             name="plan-detail"
             options={{

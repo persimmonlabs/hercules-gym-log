@@ -15,6 +15,7 @@ import { View, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import { Text } from '@/components/atoms/Text';
+import { SurfaceCard } from '@/components/atoms/SurfaceCard';
 import { colors, spacing, radius, shadows } from '@/constants/theme';
 
 interface PremiumLockProps {
@@ -38,32 +39,34 @@ export const PremiumLock: React.FC<PremiumLockProps> = ({
 
   // When locked, show clean lock card instead of blurred content
   return (
-    <View style={styles.lockedCard}>
-      <View style={styles.lockBadge}>
-        <Ionicons name="lock-closed" size={24} color={colors.accent.orange} />
+    <SurfaceCard tone="neutral" padding="md" showAccentStripe={false}>
+      <View style={styles.lockedCard}>
+        <View style={styles.lockBadge}>
+          <Ionicons name="lock-closed" size={24} color={colors.accent.orange} />
+        </View>
+
+        {featureName && (
+          <Text variant="bodySemibold" color="primary" style={styles.featureName}>
+            {featureName}
+          </Text>
+        )}
+
+        <Text variant="caption" color="secondary" style={styles.description}>
+          Unlock premium features with Hercules Pro
+        </Text>
+
+        <TouchableOpacity
+          style={styles.ctaButton}
+          onPress={onUnlock}
+          activeOpacity={0.8}
+        >
+          <Ionicons name="star" size={16} color={colors.text.onAccent} />
+          <Text variant="labelMedium" style={styles.ctaText}>
+            {ctaText}
+          </Text>
+        </TouchableOpacity>
       </View>
-
-      {featureName && (
-        <Text variant="bodySemibold" color="primary" style={styles.featureName}>
-          {featureName}
-        </Text>
-      )}
-
-      <Text variant="caption" color="secondary" style={styles.description}>
-        Unlock premium features with Hercules Pro
-      </Text>
-
-      <TouchableOpacity
-        style={styles.ctaButton}
-        onPress={onUnlock}
-        activeOpacity={0.8}
-      >
-        <Ionicons name="star" size={16} color={colors.text.onAccent} />
-        <Text variant="labelMedium" style={styles.ctaText}>
-          {ctaText}
-        </Text>
-      </TouchableOpacity>
-    </View>
+    </SurfaceCard>
   );
 };
 

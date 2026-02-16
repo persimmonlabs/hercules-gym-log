@@ -11,11 +11,13 @@ import Animated, { useSharedValue, withSpring } from 'react-native-reanimated';
 import { triggerHaptic } from '@/utils/haptics';
 
 import { Text } from '@/components/atoms/Text';
-import { SurfaceCard } from '@/components/atoms/SurfaceCard';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { NameEditModal } from '@/components/molecules/NameEditModal';
-import { BodyMetricsModal } from '@/components/molecules/BodyMetricsModal';
 import { UnitsModal } from '@/components/molecules/UnitsModal';
+import { ProfilePickerModal } from '@/components/molecules/ProfilePickerModal';
+import { DateOfBirthModal } from '@/components/molecules/DateOfBirthModal';
+import { HeightModal } from '@/components/molecules/HeightModal';
+import { WeightModal } from '@/components/molecules/WeightModal';
 import { NotificationsModal } from '@/components/molecules/NotificationsModal';
 import { SignOutConfirmationModal } from '@/components/molecules/SignOutConfirmationModal';
 import { FeedbackModal } from '@/components/molecules/FeedbackModal';
@@ -33,17 +35,24 @@ const ProfileModal: React.FC = () => {
   const router = useRouter();
   const { theme } = useTheme();
   const { user, signOut } = useAuth();
-  const { profile, fetchProfile, updateProfile, updateBodyMetrics } = useUserProfileStore();
+  const { profile, fetchProfile, updateProfile, updateBodyMetrics, updateProfileField } = useUserProfileStore();
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [isNameModalVisible, setIsNameModalVisible] = useState(false);
-  const [isBodyMetricsModalVisible, setIsBodyMetricsModalVisible] = useState(false);
   const [isUnitsModalVisible, setIsUnitsModalVisible] = useState(false);
+  const [isDobModalVisible, setIsDobModalVisible] = useState(false);
+  const [isGenderModalVisible, setIsGenderModalVisible] = useState(false);
+  const [isHeightModalVisible, setIsHeightModalVisible] = useState(false);
+  const [isWeightModalVisible, setIsWeightModalVisible] = useState(false);
+  const [isExperienceModalVisible, setIsExperienceModalVisible] = useState(false);
+  const [isGoalModalVisible, setIsGoalModalVisible] = useState(false);
+  const [isEquipmentModalVisible, setIsEquipmentModalVisible] = useState(false);
+  const [isTrainingDaysModalVisible, setIsTrainingDaysModalVisible] = useState(false);
   const [isNotificationsModalVisible, setIsNotificationsModalVisible] = useState(false);
   const [isSignOutModalVisible, setIsSignOutModalVisible] = useState(false);
   const [isFeedbackModalVisible, setIsFeedbackModalVisible] = useState(false);
   const [isDeleteAccountModalVisible, setIsDeleteAccountModalVisible] = useState(false);
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
-  const { weightUnit, distanceUnit, sizeUnit, formatWeight, hapticsEnabled, setHapticsEnabled } = useSettingsStore();
+  const { weightUnit, distanceUnit, sizeUnit, formatWeight, hapticsEnabled, setHapticsEnabled, themePreference, setThemePreference } = useSettingsStore();
   const { notificationsEnabled, configs } = useNotificationStore();
   const { isPremium, isLoading: isPremiumLoading } = usePremiumStatus();
   const { premiumOverride, setPremiumOverride } = useDevToolsStore();
@@ -200,12 +209,14 @@ const ProfileModal: React.FC = () => {
     const inches = profile?.heightInches ?? 0;
     const totalInches = feet * 12 + inches;
 
+    if (totalInches === 0) return null;
+
     if (sizeUnit === 'cm') {
       const heightCm = Math.round(totalInches * 2.54);
       return `${heightCm} cm`;
     }
 
-    return `${totalInches} in`;
+    return `${feet}' ${inches}"`;
   };
 
   const getBodyMetricsSubtitle = () => {
@@ -227,9 +238,31 @@ const ProfileModal: React.FC = () => {
     return 'Set height and weight for accurate stats';
   };
 
-  const handleBodyMetricsSave = (heightFeet: number, heightInches: number, weightLbs: number) => {
-    updateBodyMetrics(heightFeet, heightInches, weightLbs);
-    setIsBodyMetricsModalVisible(false);
+  const genderLabels: Record<string, string> = {
+    male: 'Male', female: 'Female', other: 'Other', prefer_not_to_say: 'Prefer not to say',
+  };
+  const experienceLabels: Record<string, string> = {
+    beginner: 'Beginner', intermediate: 'Intermediate', advanced: 'Advanced',
+  };
+  const goalLabels: Record<string, string> = {
+    'build-muscle': 'Build Muscle', 'lose-fat': 'Lose Fat', 'gain-strength': 'Gain Strength',
+    'general-fitness': 'General Fitness', 'improve-endurance': 'Improve Endurance',
+  };
+  const equipmentLabels: Record<string, string> = {
+    'full-gym': 'Full Gym', 'dumbbells-only': 'Dumbbells Only', 'bodyweight': 'Bodyweight Only',
+    'home-gym': 'Home Gym', 'resistance-bands': 'Resistance Bands',
+  };
+
+  const formatDob = (dob: string | null | undefined) => {
+    if (!dob) return 'Not set';
+    // Parse ISO date string directly to avoid timezone offset issues
+    const parts = dob.split('-');
+    if (parts.length !== 3) return 'Not set';
+    const y = parseInt(parts[0], 10);
+    const m = parseInt(parts[1], 10) - 1; // JS months are 0-indexed
+    const d = parseInt(parts[2], 10);
+    const date = new Date(y, m, d);
+    return date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
   };
 
   return (
@@ -356,7 +389,7 @@ const ProfileModal: React.FC = () => {
             />
             <SettingsItem
               title="Units of Measurement"
-              subtitle={`${weightUnit === 'kg' ? 'kg' : 'lbs'} • ${distanceUnit === 'km' ? 'km' : 'mi'} • ${sizeUnit === 'cm' ? 'cm' : 'in'}`}
+              subtitle={`${weightUnit === 'kg' ? 'kg' : 'lbs'} • ${distanceUnit === 'km' ? 'km' : 'mi'} • ${sizeUnit === 'cm' ? 'cm' : 'ft/in'}`}
               onPress={() => {
                 triggerHaptic('selection');
                 setIsUnitsModalVisible(true);
@@ -371,6 +404,75 @@ const ProfileModal: React.FC = () => {
                 setHapticsEnabled(val);
                 if (val) triggerHaptic('selection');
               }}
+              showDivider
+            />
+            <ToggleSettingsItem
+              title="Dark Mode"
+              subtitle={themePreference === 'dark' ? "On" : "Off"}
+              value={themePreference === 'dark'}
+              onValueChange={(val) => {
+                triggerHaptic('selection');
+                setThemePreference(val ? 'dark' : 'light');
+              }}
+            />
+          </View>
+        </View>
+
+        <View style={[styles.sectionDivider, { backgroundColor: theme.text.tertiary }]} />
+
+        {/* Profile Section */}
+        <View style={styles.section}>
+          <Text variant="caption" color="secondary" style={styles.sectionTitle}>
+            PROFILE
+          </Text>
+
+          <View style={[styles.settingsGroup, { backgroundColor: theme.surface.card }]}>
+            <SettingsItem
+              title="Date of Birth"
+              subtitle={formatDob(profile?.dateOfBirth)}
+              onPress={() => { triggerHaptic('selection'); setIsDobModalVisible(true); }}
+              showDivider
+            />
+            <SettingsItem
+              title="Gender"
+              subtitle={profile?.gender ? genderLabels[profile.gender] || 'Not set' : 'Not set'}
+              onPress={() => { triggerHaptic('selection'); setIsGenderModalVisible(true); }}
+              showDivider
+            />
+            <SettingsItem
+              title="Height"
+              subtitle={getFormattedHeight() || 'Not set'}
+              onPress={() => { triggerHaptic('selection'); setIsHeightModalVisible(true); }}
+              showDivider
+            />
+            <SettingsItem
+              title="Weight"
+              subtitle={profile?.weightLbs ? formatWeight(profile.weightLbs) : 'Not set'}
+              onPress={() => { triggerHaptic('selection'); setIsWeightModalVisible(true); }}
+              showDivider
+            />
+            <SettingsItem
+              title="Experience Level"
+              subtitle={profile?.experienceLevel ? experienceLabels[profile.experienceLevel] || 'Not set' : 'Not set'}
+              onPress={() => { triggerHaptic('selection'); setIsExperienceModalVisible(true); }}
+              showDivider
+            />
+            <SettingsItem
+              title="Primary Goal"
+              subtitle={profile?.primaryGoal ? goalLabels[profile.primaryGoal] || 'Not set' : 'Not set'}
+              onPress={() => { triggerHaptic('selection'); setIsGoalModalVisible(true); }}
+              showDivider
+            />
+            <SettingsItem
+              title="Available Equipment"
+              subtitle={profile?.availableEquipment ? equipmentLabels[profile.availableEquipment] || 'Not set' : 'Not set'}
+              onPress={() => { triggerHaptic('selection'); setIsEquipmentModalVisible(true); }}
+              showDivider
+            />
+            <SettingsItem
+              title="Training Days per Week"
+              subtitle={profile?.trainingDaysPerWeek ? `${profile.trainingDaysPerWeek} days` : 'Not set'}
+              onPress={() => { triggerHaptic('selection'); setIsTrainingDaysModalVisible(true); }}
             />
           </View>
         </View>
@@ -477,13 +579,92 @@ const ProfileModal: React.FC = () => {
         onSave={handleNameSave}
       />
 
-      <BodyMetricsModal
-        visible={isBodyMetricsModalVisible}
-        heightFeet={profile?.heightFeet || 5}
-        heightInches={profile?.heightInches || 9}
+      <DateOfBirthModal
+        visible={isDobModalVisible}
+        currentValue={profile?.dateOfBirth}
+        onSave={(iso) => updateProfileField('dateOfBirth', iso)}
+        onClose={() => setIsDobModalVisible(false)}
+      />
+
+      <ProfilePickerModal
+        visible={isGenderModalVisible}
+        title="Gender"
+        options={[
+          { value: 'male', label: 'Male' },
+          { value: 'female', label: 'Female' },
+          { value: 'other', label: 'Other' },
+          { value: 'prefer_not_to_say', label: 'Prefer not to say' },
+        ]}
+        selectedValue={profile?.gender}
+        onSelect={(v) => updateProfileField('gender', v)}
+        onClose={() => setIsGenderModalVisible(false)}
+      />
+
+      <HeightModal
+        visible={isHeightModalVisible}
+        heightFeet={profile?.heightFeet || 0}
+        heightInches={profile?.heightInches || 0}
+        onSave={(feet, inches) => updateBodyMetrics(feet, inches, profile?.weightLbs || 0)}
+        onClose={() => setIsHeightModalVisible(false)}
+      />
+
+      <WeightModal
+        visible={isWeightModalVisible}
         weightLbs={profile?.weightLbs || 0}
-        onClose={() => setIsBodyMetricsModalVisible(false)}
-        onSave={handleBodyMetricsSave}
+        onSave={(lbs) => updateBodyMetrics(profile?.heightFeet || 0, profile?.heightInches || 0, lbs)}
+        onClose={() => setIsWeightModalVisible(false)}
+      />
+
+      <ProfilePickerModal
+        visible={isExperienceModalVisible}
+        title="Experience Level"
+        options={[
+          { value: 'beginner', label: 'Beginner' },
+          { value: 'intermediate', label: 'Intermediate' },
+          { value: 'advanced', label: 'Advanced' },
+        ]}
+        selectedValue={profile?.experienceLevel}
+        onSelect={(v) => updateProfileField('experienceLevel', v)}
+        onClose={() => setIsExperienceModalVisible(false)}
+      />
+
+      <ProfilePickerModal
+        visible={isGoalModalVisible}
+        title="Primary Goal"
+        options={[
+          { value: 'build-muscle', label: 'Build Muscle' },
+          { value: 'lose-fat', label: 'Lose Fat' },
+          { value: 'gain-strength', label: 'Gain Strength' },
+          { value: 'general-fitness', label: 'General Fitness' },
+          { value: 'improve-endurance', label: 'Improve Endurance' },
+        ]}
+        selectedValue={profile?.primaryGoal}
+        onSelect={(v) => updateProfileField('primaryGoal', v)}
+        onClose={() => setIsGoalModalVisible(false)}
+      />
+
+      <ProfilePickerModal
+        visible={isEquipmentModalVisible}
+        title="Available Equipment"
+        options={[
+          { value: 'full-gym', label: 'Full Gym' },
+          { value: 'dumbbells-only', label: 'Dumbbells Only' },
+          { value: 'bodyweight', label: 'Bodyweight Only' },
+          { value: 'home-gym', label: 'Home Gym' },
+          { value: 'resistance-bands', label: 'Resistance Bands' },
+        ]}
+        selectedValue={profile?.availableEquipment}
+        onSelect={(v) => updateProfileField('availableEquipment', v)}
+        onClose={() => setIsEquipmentModalVisible(false)}
+      />
+
+      <ProfilePickerModal
+        visible={isTrainingDaysModalVisible}
+        title="Training Days per Week"
+        options={[1, 2, 3, 4, 5, 6, 7].map((n) => ({ value: n, label: `${n} day${n > 1 ? 's' : ''}` }))}
+        selectedValue={profile?.trainingDaysPerWeek}
+        onSelect={(v) => updateProfileField('trainingDaysPerWeek', v)}
+        onClose={() => setIsTrainingDaysModalVisible(false)}
       />
 
       <UnitsModal

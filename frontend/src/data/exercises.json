@@ -1208,26 +1208,27 @@
     "exercise_type": "weight",
     "distance_unit": null,
     "muscles": {
-      "Quads": 0.35,
-      "Glutes": 0.245,
-      "Hamstrings": 0.15,
-      "Upper Back": 0.04,
-      "Lower Back": 0.04,
-      "Mid Back": 0.03,
-      "Front Delts": 0.02,
-      "Upper Abs": 0.02,
-      "Lower Abs": 0.015,
-      "Obliques": 0.015,
-      "Calves - Medial Head": 0.01,
-      "Calves - Lateral Head": 0.01,
-      "Soleus": 0.01,
-      "Abductors": 0.01,
-      "Flexors": 0.01,
+      "Quads": 0.3461,
+      "Glutes": 0.2426,
+      "Hamstrings": 0.1485,
+      "Upper Back": 0.0396,
+      "Lower Back": 0.0396,
+      "Mid Back": 0.0297,
+      "Front Delts": 0.0198,
+      "Upper Abs": 0.0198,
+      "Lower Abs": 0.0149,
+      "Obliques": 0.0149,
+      "Calves - Medial Head": 0.0099,
+      "Calves - Lateral Head": 0.0099,
+      "Soleus": 0.0099,
+      "Abductors": 0.0099,
+      "Flexors": 0.0099,
       "Lats": 0.005,
       "Lateral Delts": 0.005,
       "Rear Delts": 0.005,
       "Extensors": 0.005,
-      "Adductors": 0.005
+      "Adductors": 0.005,
+      "Hip Flexors": 0.01
     },
     "equipment": [
       "Barbell",
@@ -1371,29 +1372,30 @@
     "exercise_type": "weight",
     "distance_unit": null,
     "muscles": {
-      "Quads": 0.28,
-      "Glutes": 0.23,
-      "Hamstrings": 0.15,
-      "Lower Back": 0.05,
-      "Upper Back": 0.035,
-      "Mid Back": 0.025,
-      "Front Delts": 0.02,
-      "Flexors": 0.02,
-      "Abductors": 0.02,
-      "Adductors": 0.02,
-      "Upper Abs": 0.02,
-      "Lower Abs": 0.02,
-      "Obliques": 0.02,
-      "Lats": 0.015,
-      "Calves - Medial Head": 0.015,
-      "Soleus": 0.015,
-      "Calves - Lateral Head": 0.01,
-      "Rear Delts": 0.01,
-      "Lateral Delts": 0.005,
-      "Triceps - Long Head": 0.005,
-      "Extensors": 0.005,
-      "Upper Chest": 0.005,
-      "Mid Chest": 0.005
+      "Quads": 0.2744,
+      "Glutes": 0.2254,
+      "Hamstrings": 0.147,
+      "Lower Back": 0.049,
+      "Upper Back": 0.0343,
+      "Mid Back": 0.0245,
+      "Front Delts": 0.0196,
+      "Flexors": 0.0196,
+      "Abductors": 0.0196,
+      "Adductors": 0.0196,
+      "Upper Abs": 0.0196,
+      "Lower Abs": 0.0196,
+      "Obliques": 0.0196,
+      "Lats": 0.0147,
+      "Calves - Medial Head": 0.0147,
+      "Soleus": 0.0147,
+      "Calves - Lateral Head": 0.0098,
+      "Rear Delts": 0.0098,
+      "Lateral Delts": 0.0049,
+      "Triceps - Long Head": 0.0049,
+      "Extensors": 0.0049,
+      "Upper Chest": 0.0049,
+      "Mid Chest": 0.0049,
+      "Hip Flexors": 0.02
     },
     "equipment": [
       "Barbell",
@@ -1618,24 +1620,25 @@
     "exercise_type": "weight",
     "distance_unit": null,
     "muscles": {
-      "Glutes": 0.345,
-      "Quads": 0.295,
-      "Hamstrings": 0.15,
-      "Abductors": 0.04,
-      "Lower Back": 0.04,
-      "Adductors": 0.02,
-      "Upper Back": 0.02,
-      "Flexors": 0.015,
-      "Obliques": 0.015,
-      "Front Delts": 0.01,
-      "Mid Back": 0.01,
-      "Upper Abs": 0.01,
-      "Lats": 0.005,
-      "Lateral Delts": 0.005,
-      "Rear Delts": 0.005,
-      "Calves - Medial Head": 0.005,
-      "Calves - Lateral Head": 0.005,
-      "Soleus": 0.005
+      "Glutes": 0.3381,
+      "Quads": 0.2891,
+      "Hamstrings": 0.147,
+      "Abductors": 0.0392,
+      "Lower Back": 0.0392,
+      "Adductors": 0.0196,
+      "Upper Back": 0.0196,
+      "Flexors": 0.0147,
+      "Obliques": 0.0147,
+      "Front Delts": 0.0098,
+      "Mid Back": 0.0098,
+      "Upper Abs": 0.0098,
+      "Lats": 0.0049,
+      "Lateral Delts": 0.0049,
+      "Rear Delts": 0.0049,
+      "Calves - Medial Head": 0.0049,
+      "Calves - Lateral Head": 0.0049,
+      "Soleus": 0.0049,
+      "Hip Flexors": 0.02
     },
     "equipment": [
       "Barbell",
@@ -2375,12 +2378,13 @@
     "exercise_type": "weight",
     "distance_unit": null,
     "muscles": {
-      "Obliques": 0.45,
-      "Upper Abs": 0.35,
-      "Lower Abs": 0.18,
-      "Lower Back": 0.01,
-      "Hamstrings": 0.005,
-      "Glutes": 0.005
+      "Obliques": 0.4365,
+      "Upper Abs": 0.3395,
+      "Lower Abs": 0.1746,
+      "Lower Back": 0.0097,
+      "Hamstrings": 0.0049,
+      "Glutes": 0.0049,
+      "Hip Flexors": 0.03
     },
     "equipment": [
       "Bench"
@@ -2397,14 +2401,15 @@
     "exercise_type": "weight",
     "distance_unit": null,
     "muscles": {
-      "Upper Abs": 0.5,
-      "Lower Abs": 0.3,
-      "Obliques": 0.17,
-      "Lower Back": 0.01,
-      "Hamstrings": 0.005,
-      "Glutes": 0.005,
-      "Flexors": 0.005,
-      "Abductors": 0.005
+      "Upper Abs": 0.46,
+      "Lower Abs": 0.276,
+      "Obliques": 0.1564,
+      "Lower Back": 0.0092,
+      "Hamstrings": 0.0046,
+      "Glutes": 0.0046,
+      "Flexors": 0.0046,
+      "Abductors": 0.0046,
+      "Hip Flexors": 0.08
     },
     "equipment": [
       "Bench"
@@ -2600,21 +2605,22 @@
     "exercise_type": "weight",
     "distance_unit": null,
     "muscles": {
-      "Quads": 0.35,
-      "Glutes": 0.2,
-      "Lower Back": 0.15,
-      "Hamstrings": 0.1,
-      "Flexors": 0.05,
-      "Mid Back": 0.03,
-      "Upper Abs": 0.02,
-      "Obliques": 0.02,
-      "Upper Back": 0.02,
-      "Abductors": 0.01,
-      "Adductors": 0.01,
-      "Calves - Medial Head": 0.01,
-      "Front Delts": 0.01,
-      "Lats": 0.01,
-      "Lower Abs": 0.01
+      "Quads": 0.3465,
+      "Glutes": 0.198,
+      "Lower Back": 0.1485,
+      "Hamstrings": 0.099,
+      "Flexors": 0.0495,
+      "Mid Back": 0.0297,
+      "Upper Abs": 0.0198,
+      "Obliques": 0.0198,
+      "Upper Back": 0.0198,
+      "Abductors": 0.0099,
+      "Adductors": 0.0099,
+      "Calves - Medial Head": 0.0099,
+      "Front Delts": 0.0099,
+      "Lats": 0.0099,
+      "Lower Abs": 0.0099,
+      "Hip Flexors": 0.01
     },
     "equipment": [
       "Dumbbell"
@@ -2656,18 +2662,19 @@
     "exercise_type": "weight",
     "distance_unit": null,
     "muscles": {
-      "Quads": 0.3,
-      "Glutes": 0.3,
-      "Hamstrings": 0.25,
-      "Flexors": 0.05,
-      "Lower Back": 0.02,
-      "Abductors": 0.015,
-      "Adductors": 0.015,
-      "Calves - Medial Head": 0.01,
-      "Calves - Lateral Head": 0.01,
-      "Soleus": 0.01,
-      "Front Delts": 0.01,
-      "Upper Abs": 0.01
+      "Quads": 0.294,
+      "Glutes": 0.294,
+      "Hamstrings": 0.245,
+      "Flexors": 0.049,
+      "Lower Back": 0.0196,
+      "Abductors": 0.0147,
+      "Adductors": 0.0147,
+      "Calves - Medial Head": 0.0098,
+      "Calves - Lateral Head": 0.0098,
+      "Soleus": 0.0098,
+      "Front Delts": 0.0098,
+      "Upper Abs": 0.0098,
+      "Hip Flexors": 0.02
     },
     "equipment": [
       "Dumbbell"
@@ -2684,19 +2691,20 @@
     "exercise_type": "weight",
     "distance_unit": null,
     "muscles": {
-      "Quads": 0.3,
-      "Glutes": 0.3,
-      "Hamstrings": 0.25,
-      "Flexors": 0.05,
-      "Lower Back": 0.025,
-      "Abductors": 0.015,
-      "Adductors": 0.015,
-      "Calves - Medial Head": 0.01,
-      "Calves - Lateral Head": 0.01,
-      "Mid Back": 0.01,
-      "Upper Back": 0.01,
-      "Front Delts": 0.004,
-      "Upper Abs": 0.001
+      "Quads": 0.294,
+      "Glutes": 0.294,
+      "Hamstrings": 0.245,
+      "Flexors": 0.049,
+      "Lower Back": 0.0245,
+      "Abductors": 0.0147,
+      "Adductors": 0.0147,
+      "Calves - Medial Head": 0.0098,
+      "Calves - Lateral Head": 0.0098,
+      "Mid Back": 0.0098,
+      "Upper Back": 0.0098,
+      "Front Delts": 0.0039,
+      "Upper Abs": 0.001,
+      "Hip Flexors": 0.02
     },
     "equipment": [
       "Dumbbell"
@@ -2827,22 +2835,23 @@
     "exercise_type": "weight",
     "distance_unit": null,
     "muscles": {
-      "Quads": 0.3,
-      "Glutes": 0.3,
-      "Hamstrings": 0.18,
-      "Flexors": 0.06,
-      "Lower Back": 0.05,
-      "Upper Back": 0.02,
-      "Abductors": 0.015,
-      "Calves - Medial Head": 0.01,
-      "Calves - Lateral Head": 0.01,
-      "Soleus": 0.01,
-      "Mid Back": 0.01,
-      "Front Delts": 0.01,
-      "Adductors": 0.01,
-      "Lateral Delts": 0.005,
-      "Rear Delts": 0.005,
-      "Extensors": 0.005
+      "Quads": 0.294,
+      "Glutes": 0.294,
+      "Hamstrings": 0.1764,
+      "Flexors": 0.0588,
+      "Lower Back": 0.049,
+      "Upper Back": 0.0196,
+      "Abductors": 0.0147,
+      "Calves - Medial Head": 0.0098,
+      "Calves - Lateral Head": 0.0098,
+      "Soleus": 0.0098,
+      "Mid Back": 0.0098,
+      "Front Delts": 0.0098,
+      "Adductors": 0.0098,
+      "Lateral Delts": 0.0049,
+      "Rear Delts": 0.0049,
+      "Extensors": 0.0049,
+      "Hip Flexors": 0.02
     },
     "equipment": [
       "Dumbbell",
@@ -3258,21 +3267,22 @@
     "exercise_type": "weight",
     "distance_unit": null,
     "muscles": {
-      "Quads": 0.35,
-      "Glutes": 0.2,
-      "Hamstrings": 0.1,
-      "Lower Back": 0.08,
-      "Upper Back": 0.07,
-      "Adductors": 0.05,
-      "Upper Abs": 0.04,
-      "Mid Back": 0.03,
-      "Lower Abs": 0.03,
-      "Obliques": 0.03,
-      "Flexors": 0.01,
+      "Quads": 0.3465,
+      "Glutes": 0.198,
+      "Hamstrings": 0.099,
+      "Lower Back": 0.0792,
+      "Upper Back": 0.0693,
+      "Adductors": 0.0495,
+      "Upper Abs": 0.0396,
+      "Mid Back": 0.0297,
+      "Lower Abs": 0.0297,
+      "Obliques": 0.0297,
+      "Flexors": 0.0099,
       "Abductors": 0.005,
       "Calves - Medial Head": 0.002,
       "Calves - Lateral Head": 0.002,
-      "Soleus": 0.001
+      "Soleus": 0.001,
+      "Hip Flexors": 0.01
     },
     "equipment": [
       "Kettlebell"
@@ -4364,7 +4374,7 @@
   },
   {
     "id": "exercise_154",
-    "name":"Dumbbell Calf Raises",
+    "name": "Dumbbell Calf Raises",
     "exercise_type": "weight",
     "distance_unit": null,
     "muscles": {
@@ -4647,10 +4657,11 @@
     "exercise_type": "bodyweight",
     "distance_unit": null,
     "muscles": {
-      "Upper Abs": 0.5,
-      "Lower Abs": 0.4,
-      "Obliques": 0.095,
-      "Lower Back": 0.005
+      "Upper Abs": 0.485,
+      "Lower Abs": 0.388,
+      "Obliques": 0.0922,
+      "Lower Back": 0.0049,
+      "Hip Flexors": 0.03
     },
     "equipment": [
       "Bodyweight"
@@ -4667,10 +4678,11 @@
     "exercise_type": "bodyweight",
     "distance_unit": null,
     "muscles": {
-      "Upper Abs": 0.45,
-      "Lower Abs": 0.35,
-      "Obliques": 0.17,
-      "Lower Back": 0.03
+      "Upper Abs": 0.405,
+      "Lower Abs": 0.315,
+      "Obliques": 0.153,
+      "Lower Back": 0.027,
+      "Hip Flexors": 0.1
     },
     "equipment": [
       "Bodyweight"
@@ -4687,14 +4699,15 @@
     "exercise_type": "bodyweight",
     "distance_unit": null,
     "muscles": {
-      "Quads": 0.35,
-      "Lower Abs": 0.3,
-      "Upper Abs": 0.2,
-      "Obliques": 0.08,
-      "Abductors": 0.02,
-      "Lower Back": 0.02,
-      "Glutes": 0.02,
-      "Hamstrings": 0.01
+      "Quads": 0.2975,
+      "Lower Abs": 0.255,
+      "Upper Abs": 0.17,
+      "Obliques": 0.068,
+      "Abductors": 0.017,
+      "Lower Back": 0.017,
+      "Glutes": 0.017,
+      "Hamstrings": 0.0085,
+      "Hip Flexors": 0.15
     },
     "equipment": [
       "Bodyweight"
@@ -4741,16 +4754,17 @@
     "exercise_type": "bodyweight",
     "distance_unit": null,
     "muscles": {
-      "Quads": 0.4,
-      "Glutes": 0.25,
-      "Hamstrings": 0.2,
-      "Lower Back": 0.05,
-      "Calves - Medial Head": 0.025,
-      "Calves - Lateral Head": 0.025,
-      "Soleus": 0.015,
-      "Mid Back": 0.015,
-      "Upper Back": 0.015,
-      "Abductors": 0.005
+      "Quads": 0.392,
+      "Glutes": 0.245,
+      "Hamstrings": 0.196,
+      "Lower Back": 0.049,
+      "Calves - Medial Head": 0.0245,
+      "Calves - Lateral Head": 0.0245,
+      "Soleus": 0.0147,
+      "Mid Back": 0.0147,
+      "Upper Back": 0.0147,
+      "Abductors": 0.0049,
+      "Hip Flexors": 0.02
     },
     "equipment": [
       "Bodyweight"
@@ -4767,11 +4781,12 @@
     "exercise_type": "bodyweight",
     "distance_unit": null,
     "muscles": {
-      "Lower Abs": 0.4,
-      "Upper Abs": 0.2,
-      "Obliques": 0.2,
-      "Front Delts": 0.1,
-      "Quads": 0.1
+      "Lower Abs": 0.36,
+      "Upper Abs": 0.18,
+      "Obliques": 0.18,
+      "Front Delts": 0.09,
+      "Quads": 0.09,
+      "Hip Flexors": 0.1
     },
     "equipment": [
       "Bodyweight"
@@ -5500,8 +5515,8 @@
       "Front Delts": 0.35,
       "Triceps - Long Head": 0.15,
       "Triceps - Lateral Head": 0.12,
-      "Triceps - Medial Head": 0.10,
-      "Upper Chest": 0.10,
+      "Triceps - Medial Head": 0.1,
+      "Upper Chest": 0.1,
       "Mid Chest": 0.05,
       "Upper Back": 0.05,
       "Upper Abs": 0.04,
@@ -5523,10 +5538,10 @@
     "exercise_type": "bodyweight",
     "distance_unit": null,
     "muscles": {
-      "Mid Chest": 0.30,
-      "Upper Chest": 0.20,
+      "Mid Chest": 0.3,
+      "Upper Chest": 0.2,
       "Front Delts": 0.18,
-      "Triceps - Long Head": 0.10,
+      "Triceps - Long Head": 0.1,
       "Triceps - Lateral Head": 0.08,
       "Triceps - Medial Head": 0.06,
       "Lower Chest": 0.05,
@@ -5548,12 +5563,12 @@
     "exercise_type": "bodyweight",
     "distance_unit": null,
     "muscles": {
-      "Quads": 0.20,
+      "Quads": 0.2,
       "Calves - Medial Head": 0.15,
-      "Calves - Lateral Head": 0.10,
-      "Soleus": 0.10,
+      "Calves - Lateral Head": 0.1,
+      "Soleus": 0.1,
       "Glutes": 0.15,
-      "Front Delts": 0.10,
+      "Front Delts": 0.1,
       "Lateral Delts": 0.08,
       "Abductors": 0.05,
       "Upper Abs": 0.04,
@@ -5575,11 +5590,11 @@
     "distance_unit": null,
     "muscles": {
       "Hamstrings": 0.35,
-      "Quads": 0.20,
+      "Quads": 0.2,
       "Calves - Medial Head": 0.12,
       "Calves - Lateral Head": 0.08,
       "Soleus": 0.08,
-      "Glutes": 0.10,
+      "Glutes": 0.1,
       "Upper Abs": 0.04,
       "Lower Abs": 0.03
     },
@@ -5599,9 +5614,9 @@
     "distance_unit": null,
     "muscles": {
       "Lower Abs": 0.35,
-      "Upper Abs": 0.30,
-      "Obliques": 0.20,
-      "Hip Flexors": 0.10,
+      "Upper Abs": 0.3,
+      "Obliques": 0.2,
+      "Hip Flexors": 0.1,
       "Lower Back": 0.05
     },
     "equipment": [
@@ -5620,10 +5635,10 @@
     "distance_unit": null,
     "muscles": {
       "Lower Back": 0.25,
-      "Glutes": 0.20,
+      "Glutes": 0.2,
       "Upper Abs": 0.15,
       "Lower Abs": 0.15,
-      "Hamstrings": 0.10,
+      "Hamstrings": 0.1,
       "Front Delts": 0.08,
       "Obliques": 0.07
     },
@@ -5643,9 +5658,9 @@
     "distance_unit": null,
     "muscles": {
       "Obliques": 0.35,
-      "Upper Abs": 0.30,
+      "Upper Abs": 0.3,
       "Lower Abs": 0.25,
-      "Hip Flexors": 0.10
+      "Hip Flexors": 0.1
     },
     "equipment": [
       "Bodyweight"
@@ -5662,14 +5677,15 @@
     "exercise_type": "bodyweight",
     "distance_unit": null,
     "muscles": {
-      "Quads": 0.35,
-      "Glutes": 0.30,
-      "Hamstrings": 0.20,
-      "Calves - Medial Head": 0.05,
-      "Calves - Lateral Head": 0.03,
-      "Soleus": 0.03,
-      "Upper Abs": 0.02,
-      "Lower Abs": 0.02
+      "Quads": 0.343,
+      "Glutes": 0.294,
+      "Hamstrings": 0.196,
+      "Calves - Medial Head": 0.049,
+      "Calves - Lateral Head": 0.0294,
+      "Soleus": 0.0294,
+      "Upper Abs": 0.0196,
+      "Lower Abs": 0.0196,
+      "Hip Flexors": 0.02
     },
     "equipment": [
       "Bodyweight"
@@ -5686,14 +5702,15 @@
     "exercise_type": "bodyweight",
     "distance_unit": null,
     "muscles": {
-      "Quads": 0.35,
-      "Glutes": 0.28,
-      "Hamstrings": 0.20,
-      "Calves - Medial Head": 0.05,
-      "Calves - Lateral Head": 0.04,
-      "Soleus": 0.03,
-      "Upper Abs": 0.03,
-      "Lower Abs": 0.02
+      "Quads": 0.343,
+      "Glutes": 0.2744,
+      "Hamstrings": 0.196,
+      "Calves - Medial Head": 0.049,
+      "Calves - Lateral Head": 0.0392,
+      "Soleus": 0.0294,
+      "Upper Abs": 0.0294,
+      "Lower Abs": 0.0196,
+      "Hip Flexors": 0.02
     },
     "equipment": [
       "Bodyweight"
@@ -5710,14 +5727,15 @@
     "exercise_type": "bodyweight",
     "distance_unit": null,
     "muscles": {
-      "Quads": 0.30,
-      "Glutes": 0.25,
-      "Hamstrings": 0.18,
-      "Calves - Medial Head": 0.08,
-      "Calves - Lateral Head": 0.06,
-      "Soleus": 0.05,
-      "Upper Abs": 0.04,
-      "Lower Abs": 0.04
+      "Quads": 0.294,
+      "Glutes": 0.245,
+      "Hamstrings": 0.1764,
+      "Calves - Medial Head": 0.0784,
+      "Calves - Lateral Head": 0.0588,
+      "Soleus": 0.049,
+      "Upper Abs": 0.0392,
+      "Lower Abs": 0.0392,
+      "Hip Flexors": 0.02
     },
     "equipment": [
       "Bodyweight"
@@ -5734,14 +5752,15 @@
     "exercise_type": "bodyweight",
     "distance_unit": null,
     "muscles": {
-      "Upper Abs": 0.25,
-      "Lower Abs": 0.25,
-      "Obliques": 0.15,
-      "Abductors": 0.10,
-      "Front Delts": 0.08,
-      "Glutes": 0.07,
-      "Quads": 0.05,
-      "Adductors": 0.05
+      "Upper Abs": 0.245,
+      "Lower Abs": 0.245,
+      "Obliques": 0.147,
+      "Abductors": 0.098,
+      "Front Delts": 0.0784,
+      "Glutes": 0.0686,
+      "Quads": 0.049,
+      "Adductors": 0.049,
+      "Hip Flexors": 0.02
     },
     "equipment": [
       "Bodyweight"
@@ -5760,7 +5779,7 @@
     "muscles": {
       "Glutes": 0.55,
       "Hamstrings": 0.25,
-      "Lower Back": 0.10,
+      "Lower Back": 0.1,
       "Upper Abs": 0.05,
       "Lower Abs": 0.05
     },
@@ -5828,7 +5847,7 @@
     "muscles": {
       "Lats": 0.35,
       "Mid Back": 0.18,
-      "Biceps - Long Head": 0.10,
+      "Biceps - Long Head": 0.1,
       "Biceps - Short Head": 0.08,
       "Rear Delts": 0.08,
       "Upper Back": 0.07,
@@ -5852,7 +5871,7 @@
     "exercise_type": "weight",
     "distance_unit": null,
     "muscles": {
-      "Hamstrings": 0.40,
+      "Hamstrings": 0.4,
       "Glutes": 0.28,
       "Lower Back": 0.12,
       "Upper Back": 0.05,
@@ -5877,9 +5896,9 @@
     "exercise_type": "weight",
     "distance_unit": null,
     "muscles": {
-      "Lats": 0.50,
+      "Lats": 0.5,
       "Rear Delts": 0.12,
-      "Triceps - Long Head": 0.10,
+      "Triceps - Long Head": 0.1,
       "Mid Back": 0.08,
       "Upper Back": 0.06,
       "Upper Abs": 0.05,
@@ -5927,7 +5946,7 @@
     "distance_unit": null,
     "muscles": {
       "Glutes": 0.65,
-      "Hamstrings": 0.20,
+      "Hamstrings": 0.2,
       "Lower Back": 0.08,
       "Upper Abs": 0.04,
       "Lower Abs": 0.03
@@ -5949,7 +5968,7 @@
     "muscles": {
       "Lats": 0.38,
       "Mid Back": 0.14,
-      "Upper Back": 0.10,
+      "Upper Back": 0.1,
       "Biceps - Long Head": 0.09,
       "Brachialis": 0.07,
       "Biceps - Short Head": 0.07,
@@ -5975,10 +5994,10 @@
     "distance_unit": null,
     "muscles": {
       "Triceps - Long Head": 0.24,
-      "Triceps - Lateral Head": 0.20,
+      "Triceps - Lateral Head": 0.2,
       "Upper Chest": 0.12,
       "Front Delts": 0.12,
-      "Mid Chest": 0.10,
+      "Mid Chest": 0.1,
       "Triceps - Medial Head": 0.08,
       "Lower Chest": 0.05,
       "Flexors": 0.03,
@@ -6002,11 +6021,11 @@
     "exercise_type": "weight",
     "distance_unit": null,
     "muscles": {
-      "Upper Abs": 0.20,
+      "Upper Abs": 0.2,
       "Lower Abs": 0.18,
       "Lats": 0.15,
       "Front Delts": 0.12,
-      "Obliques": 0.10,
+      "Obliques": 0.1,
       "Triceps - Long Head": 0.08,
       "Quads": 0.06,
       "Glutes": 0.05,
@@ -6045,6 +6064,312 @@
     "difficulty": "Intermediate",
     "is_compound": true,
     "push_pull": "push",
+    "upper_lower": "upper"
+  },
+  {
+    "id": "exercise_156",
+    "name": "Trap Bar Deadlift",
+    "exercise_type": "weight",
+    "distance_unit": null,
+    "muscles": {
+      "Quads": 0.22,
+      "Glutes": 0.2,
+      "Hamstrings": 0.16,
+      "Lower Back": 0.12,
+      "Upper Back": 0.08,
+      "Mid Back": 0.06,
+      "Lats": 0.04,
+      "Flexors": 0.04,
+      "Extensors": 0.02,
+      "Upper Abs": 0.03,
+      "Lower Abs": 0.02,
+      "Obliques": 0.01
+    },
+    "equipment": [
+      "Trap Bar"
+    ],
+    "movement_pattern": "Hip Hinge",
+    "difficulty": "Intermediate",
+    "is_compound": true,
+    "push_pull": "pull",
+    "upper_lower": "lower"
+  },
+  {
+    "id": "exercise_157",
+    "name": "Hex Bar Deadlift",
+    "exercise_type": "weight",
+    "distance_unit": null,
+    "muscles": {
+      "Quads": 0.22,
+      "Glutes": 0.2,
+      "Hamstrings": 0.16,
+      "Lower Back": 0.12,
+      "Upper Back": 0.08,
+      "Mid Back": 0.06,
+      "Lats": 0.04,
+      "Flexors": 0.04,
+      "Extensors": 0.02,
+      "Upper Abs": 0.03,
+      "Lower Abs": 0.02,
+      "Obliques": 0.01
+    },
+    "equipment": [
+      "Trap Bar"
+    ],
+    "movement_pattern": "Hip Hinge",
+    "difficulty": "Intermediate",
+    "is_compound": true,
+    "push_pull": "pull",
+    "upper_lower": "lower"
+  },
+  {
+    "id": "exercise_158",
+    "name": "Sumo Deadlift",
+    "exercise_type": "weight",
+    "distance_unit": null,
+    "muscles": {
+      "Glutes": 0.22,
+      "Quads": 0.18,
+      "Hamstrings": 0.14,
+      "Hip Adductors": 0.1,
+      "Lower Back": 0.1,
+      "Upper Back": 0.06,
+      "Mid Back": 0.05,
+      "Lats": 0.04,
+      "Flexors": 0.04,
+      "Upper Abs": 0.03,
+      "Lower Abs": 0.02,
+      "Extensors": 0.01,
+      "Obliques": 0.01
+    },
+    "equipment": [
+      "Barbell"
+    ],
+    "movement_pattern": "Hip Hinge",
+    "difficulty": "Intermediate",
+    "is_compound": true,
+    "push_pull": "pull",
+    "upper_lower": "lower"
+  },
+  {
+    "id": "exercise_159",
+    "name": "Farmer's Carry",
+    "exercise_type": "weight",
+    "distance_unit": null,
+    "muscles": {
+      "Flexors": 0.18,
+      "Upper Back": 0.15,
+      "Quads": 0.1,
+      "Glutes": 0.1,
+      "Obliques": 0.1,
+      "Upper Abs": 0.08,
+      "Lower Abs": 0.05,
+      "Lower Back": 0.06,
+      "Hamstrings": 0.05,
+      "Front Delts": 0.05,
+      "Mid Back": 0.04,
+      "Extensors": 0.04
+    },
+    "equipment": [
+      "Dumbbell"
+    ],
+    "movement_pattern": "Carry",
+    "difficulty": "Beginner",
+    "is_compound": true,
+    "push_pull": null,
+    "upper_lower": null
+  },
+  {
+    "id": "exercise_160",
+    "name": "Cable Glute Kickback",
+    "exercise_type": "weight",
+    "distance_unit": null,
+    "muscles": {
+      "Glutes": 0.55,
+      "Hamstrings": 0.2,
+      "Lower Back": 0.08,
+      "Upper Abs": 0.05,
+      "Lower Abs": 0.05,
+      "Hip Flexors": 0.04,
+      "Obliques": 0.03
+    },
+    "equipment": [
+      "Cable"
+    ],
+    "movement_pattern": "Hip Extension",
+    "difficulty": "Beginner",
+    "is_compound": false,
+    "push_pull": "push",
+    "upper_lower": "lower"
+  },
+  {
+    "id": "exercise_161",
+    "name": "Dumbbell Pullover",
+    "exercise_type": "weight",
+    "distance_unit": null,
+    "muscles": {
+      "Lats": 0.28,
+      "Mid Chest": 0.18,
+      "Lower Chest": 0.1,
+      "Triceps - Long Head": 0.12,
+      "Front Delts": 0.08,
+      "Mid Back": 0.06,
+      "Upper Abs": 0.06,
+      "Rear Delts": 0.04,
+      "Lower Abs": 0.04,
+      "Triceps - Lateral Head": 0.02,
+      "Triceps - Medial Head": 0.02
+    },
+    "equipment": [
+      "Dumbbell",
+      "Bench"
+    ],
+    "movement_pattern": "Pullover",
+    "difficulty": "Intermediate",
+    "is_compound": true,
+    "push_pull": "pull",
+    "upper_lower": "upper"
+  },
+  {
+    "id": "exercise_162",
+    "name": "Wrist Curls",
+    "exercise_type": "weight",
+    "distance_unit": null,
+    "muscles": {
+      "Flexors": 0.85,
+      "Extensors": 0.15
+    },
+    "equipment": [
+      "Dumbbell"
+    ],
+    "movement_pattern": "Wrist Flexion",
+    "difficulty": "Beginner",
+    "is_compound": false,
+    "push_pull": "pull",
+    "upper_lower": "upper"
+  },
+  {
+    "id": "exercise_163",
+    "name": "Cable Lateral Raise",
+    "exercise_type": "weight",
+    "distance_unit": null,
+    "muscles": {
+      "Lateral Delts": 0.55,
+      "Front Delts": 0.15,
+      "Rear Delts": 0.1,
+      "Upper Back": 0.08,
+      "Flexors": 0.05,
+      "Upper Abs": 0.04,
+      "Obliques": 0.03
+    },
+    "equipment": [
+      "Cable"
+    ],
+    "movement_pattern": "Lateral Raise",
+    "difficulty": "Beginner",
+    "is_compound": false,
+    "push_pull": "push",
+    "upper_lower": "upper"
+  },
+  {
+    "id": "exercise_164",
+    "name": "Hanging Leg Raise",
+    "exercise_type": "bodyweight",
+    "distance_unit": null,
+    "muscles": {
+      "Lower Abs": 0.3,
+      "Upper Abs": 0.22,
+      "Hip Flexors": 0.2,
+      "Obliques": 0.12,
+      "Flexors": 0.08,
+      "Lats": 0.04,
+      "Front Delts": 0.04
+    },
+    "equipment": [
+      "Pull-up Bar"
+    ],
+    "movement_pattern": "Hip Flexion",
+    "difficulty": "Intermediate",
+    "is_compound": true,
+    "push_pull": null,
+    "upper_lower": null
+  },
+  {
+    "id": "exercise_165",
+    "name": "T-Bar Row",
+    "exercise_type": "weight",
+    "distance_unit": null,
+    "muscles": {
+      "Lats": 0.22,
+      "Mid Back": 0.18,
+      "Upper Back": 0.12,
+      "Rear Delts": 0.1,
+      "Biceps - Long Head": 0.08,
+      "Biceps - Short Head": 0.07,
+      "Lower Back": 0.07,
+      "Flexors": 0.05,
+      "Brachialis": 0.04,
+      "Front Delts": 0.03,
+      "Upper Abs": 0.02,
+      "Extensors": 0.02
+    },
+    "equipment": [
+      "Barbell",
+      "Landmine"
+    ],
+    "movement_pattern": "Horizontal Pull",
+    "difficulty": "Intermediate",
+    "is_compound": true,
+    "push_pull": "pull",
+    "upper_lower": "upper"
+  },
+  {
+    "id": "exercise_166",
+    "name": "Cable Woodchop",
+    "exercise_type": "weight",
+    "distance_unit": null,
+    "muscles": {
+      "Obliques": 0.35,
+      "Upper Abs": 0.18,
+      "Lower Abs": 0.12,
+      "Front Delts": 0.08,
+      "Rear Delts": 0.05,
+      "Lats": 0.05,
+      "Glutes": 0.05,
+      "Hip Flexors": 0.04,
+      "Quads": 0.04,
+      "Mid Back": 0.04
+    },
+    "equipment": [
+      "Cable"
+    ],
+    "movement_pattern": "Rotation",
+    "difficulty": "Intermediate",
+    "is_compound": true,
+    "push_pull": null,
+    "upper_lower": null
+  },
+  {
+    "id": "exercise_167",
+    "name": "Incline Dumbbell Curl",
+    "exercise_type": "weight",
+    "distance_unit": null,
+    "muscles": {
+      "Biceps - Long Head": 0.38,
+      "Biceps - Short Head": 0.25,
+      "Brachialis": 0.17,
+      "Flexors": 0.1,
+      "Front Delts": 0.06,
+      "Extensors": 0.04
+    },
+    "equipment": [
+      "Dumbbell",
+      "Bench"
+    ],
+    "movement_pattern": "Elbow Flexion",
+    "difficulty": "Beginner",
+    "is_compound": false,
+    "push_pull": "pull",
     "upper_lower": "upper"
   }
 ]

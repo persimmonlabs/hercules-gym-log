@@ -12,12 +12,16 @@ import {
     ScrollView,
 } from 'react-native';
 import { useRouter, Link } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 
 import { colors, spacing, typography, radius, sizing } from '@/constants/theme';
+import { useAuth } from '@/providers/AuthProvider';
 import { supabaseClient } from '@/lib/supabaseClient';
+import { useAuthStore } from '@/store/authStore';
 
 export default function SignupScreen() {
     const router = useRouter();
+    const setJustSignedUp = useAuthStore((state) => state.setJustSignedUp);
     const [firstName, setFirstName] = useState('');
     const [lastName, setLastName] = useState('');
     const [email, setEmail] = useState('');
@@ -52,10 +56,13 @@ export default function SignupScreen() {
             if (error) throw error;
 
             if (data.session) {
-                // User is signed in automatically
-                router.replace('/(tabs)');
+                // User is signed in automatically — mark as just signed up and send to onboarding
+                setJustSignedUp(true);
+                router.replace('/onboarding');
             } else {
                 // Email confirmation required
+                // Mark as just signed up so they see onboarding after confirming email and logging in
+                setJustSignedUp(true);
                 Alert.alert(
                     'Success',
                     'Please check your email to confirm your account.',

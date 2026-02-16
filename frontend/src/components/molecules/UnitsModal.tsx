@@ -9,13 +9,13 @@ import { triggerHaptic } from '@/utils/haptics';
 
 import { Text } from '@/components/atoms/Text';
 import { Button } from '@/components/atoms/Button';
-import { IconSymbol } from '@/components/ui/icon-symbol';
 import { radius, shadows, spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/useTheme';
 import {
   useSettingsStore,
   WeightUnit,
   DistanceUnit,
+  SizeUnit,
 } from '@/store/settingsStore';
 
 interface UnitsModalProps {
@@ -88,8 +88,10 @@ export const UnitsModal: React.FC<UnitsModalProps> = ({ visible, onClose }) => {
   const {
     weightUnit,
     distanceUnit,
+    sizeUnit,
     setWeightUnit,
     setDistanceUnit,
+    setSizeUnit,
   } = useSettingsStore();
 
   const handleClose = useCallback(() => {
@@ -135,6 +137,16 @@ export const UnitsModal: React.FC<UnitsModalProps> = ({ visible, onClose }) => {
                 ]}
                 selectedValue={distanceUnit}
                 onSelect={(value) => setDistanceUnit(value as DistanceUnit)}
+              />
+
+              <UnitRow
+                label="Height"
+                options={[
+                  { value: 'in', label: 'Feet/Inches (ft)' },
+                  { value: 'cm', label: 'Centimeters (cm)' },
+                ]}
+                selectedValue={sizeUnit}
+                onSelect={(value) => setSizeUnit(value as SizeUnit)}
               />
             </View>
           </ScrollView>
