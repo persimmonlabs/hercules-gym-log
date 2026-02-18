@@ -83,7 +83,7 @@ export const CardioGoalModal: React.FC<CardioGoalModalProps> = ({
         }
       }
     }
-  }, [visible, goalType, weeklyCardioTimeGoal, weeklyCardioDistanceGoal, convertDistance]);
+  }, [visible, goalType, weeklyCardioTimeGoal, weeklyCardioDistanceGoal, convertDistance, distanceUnit]);
 
   const parseTimeDigits = useCallback((inputDigits: string) => {
     const padded = inputDigits.padStart(4, '0');
@@ -146,13 +146,8 @@ export const CardioGoalModal: React.FC<CardioGoalModalProps> = ({
 
   const handleClear = useCallback(() => {
     triggerHaptic('selection');
-    if (goalType === 'time') {
-      setWeeklyCardioTimeGoal(null);
-    } else {
-      setWeeklyCardioDistanceGoal(null);
-    }
-    onClose();
-  }, [goalType, setWeeklyCardioTimeGoal, setWeeklyCardioDistanceGoal, onClose]);
+    setDigits('');
+  }, []);
 
   const handleCancel = useCallback(() => {
     triggerHaptic('selection');
@@ -227,7 +222,6 @@ export const CardioGoalModal: React.FC<CardioGoalModalProps> = ({
     },
     presetButton: {
       backgroundColor: isDarkMode ? theme.surface.elevated : colors.neutral.gray200,
-      borderColor: theme.accent.orangeMuted,
     },
   };
 
@@ -249,9 +243,6 @@ export const CardioGoalModal: React.FC<CardioGoalModalProps> = ({
 
           {/* Preset suggestions */}
           <View style={styles.presetsContainer}>
-            <Text variant="caption" color="secondary" style={styles.presetsLabel}>
-              Quick presets
-            </Text>
             <View style={styles.presetsRow}>
               {displayPresets.map((preset) => (
                 <Pressable
@@ -384,7 +375,6 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xs,
     paddingHorizontal: spacing.md,
     borderRadius: radius.md,
-    borderWidth: 1,
   },
   numpad: {
     gap: spacing.sm,

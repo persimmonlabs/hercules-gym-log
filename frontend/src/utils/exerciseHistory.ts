@@ -5,7 +5,7 @@
 
 import type { SetLog, Workout } from '@/types/workout';
 import type { ExerciseType } from '@/types/exercise';
-import { exercises as exerciseCatalog } from '@/constants/exercises';
+import { exercises as exerciseCatalog, getExerciseTypeByName } from '@/constants/exercises';
 
 const DEFAULT_SET_COUNT = 3;
 
@@ -93,9 +93,10 @@ export const createSetsWithHistory = (
     workouts: Workout[],
     currentWorkoutId?: string,
     requestedSetCount?: number,
+    customExercises?: { name: string; exerciseType: ExerciseType }[],
 ): SetsWithHistoryResult => {
     const exercise = exerciseCatalog.find(e => e.name === exerciseName);
-    const exerciseType: ExerciseType = exercise?.exerciseType || 'weight';
+    const exerciseType: ExerciseType = getExerciseTypeByName(exerciseName, customExercises ?? []);
     const supportsGpsTracking = exercise?.supportsGpsTracking ?? false;
 
     // GPS-enabled exercises should never be pre-populated with history

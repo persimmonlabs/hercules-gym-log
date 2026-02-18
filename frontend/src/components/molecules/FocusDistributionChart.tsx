@@ -1,7 +1,9 @@
 import React, { useMemo, useState, useEffect, useRef, useCallback } from 'react';
-import { View, Dimensions, StyleSheet, ScrollView, NativeSyntheticEvent, NativeScrollEvent, TouchableOpacity, LayoutChangeEvent, Platform, UIManager, Animated, Easing } from 'react-native';
+import { View, Dimensions, StyleSheet, ScrollView, NativeSyntheticEvent, NativeScrollEvent, TouchableOpacity, LayoutChangeEvent, Platform, UIManager, Animated, Easing, Pressable } from 'react-native';
 import { VictoryPie } from 'victory-native';
 import { useFocusEffect } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons';
+import { triggerHaptic } from '@/utils/haptics';
 
 import { Text } from '@/components/atoms/Text';
 import { colors, spacing, radius } from '@/constants/theme';
@@ -15,7 +17,28 @@ const SCREEN_WIDTH = Dimensions.get('window').width;
 const CHART_WIDTH = SCREEN_WIDTH - spacing.xl * 2;
 const PIE_SIZE = 220; // Reduced size
 
-// Build Maps - handles up to 4 levels (high -> mid -> low -> detailed)
+// Alias map: translates exercises.json muscle names to new hierarchy names
+const MUSCLE_NAME_ALIASES: Record<string, string> = {
+  'Upper Back': 'Traps',
+  'Lateral Delts': 'Side Delts',
+  'Biceps - Long Head': 'Biceps',
+  'Biceps - Short Head': 'Biceps',
+  'Brachialis': 'Biceps',
+  'Triceps - Long Head': 'Triceps',
+  'Triceps - Lateral Head': 'Triceps',
+  'Triceps - Medial Head': 'Triceps',
+  'Flexors': 'Forearms',
+  'Extensors': 'Forearms',
+  'Calves - Medial Head': 'Calves',
+  'Calves - Lateral Head': 'Calves',
+  'Soleus': 'Calves',
+  'Upper Abs': 'Abs',
+  'Lower Abs': 'Abs',
+};
+
+const resolveMuscle = (name: string): string => MUSCLE_NAME_ALIASES[name] ?? name;
+
+// Build Maps - handles 3 levels (high -> mid -> low)
 const buildMaps = () => {
   const leafToL1: Record<string, string> = {}; // Specific -> Body Part (Upper/Lower/Core)
   const leafToL2: Record<string, string> = {}; // Specific -> Muscle Group (Chest/Back/etc)
@@ -26,26 +49,15 @@ const buildMaps = () => {
   Object.entries(hierarchy).forEach(([l1, l1Data]) => {
     if (l1Data?.muscles) {
       Object.entries(l1Data.muscles).forEach(([l2, l2Data]: [string, any]) => {
-        // l2 is "Chest", "Arms", "Calves", etc.
         leafToL1[l2] = l1;
         leafToL2[l2] = l2;
         leafToL3[l2] = l2;
 
         if (l2Data?.muscles) {
-          Object.entries(l2Data.muscles).forEach(([l3, l3Data]: [string, any]) => {
-            // l3 could be "Upper Chest" (low), "Biceps" (low with children), or "Medial Head" (detailed under Calves)
+          Object.entries(l2Data.muscles).forEach(([l3]: [string, any]) => {
             leafToL1[l3] = l1;
             leafToL2[l3] = l2;
             leafToL3[l3] = l3;
-            
-            // Handle L4 (detailed level, e.g., Long Head under Biceps)
-            if (l3Data?.muscles) {
-              Object.keys(l3Data.muscles).forEach(l4 => {
-                leafToL1[l4] = l1;
-                leafToL2[l4] = l2;
-                leafToL3[l4] = l4;
-              });
-            }
           });
         }
       });
@@ -78,9 +90,12 @@ interface ChartPageProps {
   selectedSlice: string | null;
   onSelectSlice: (name: string) => void;
   onLayout?: (event: LayoutChangeEvent) => void;
+  pageIndex: number;
+  showTapHint?: boolean;
+  breadcrumb?: string[];
 }
 
-const ChartPage: React.FC<ChartPageProps> = ({ title, data, selectedSlice, onSelectSlice, onLayout }) => {
+const ChartPage: React.FC<ChartPageProps> = ({ title, data, selectedSlice, onSelectSlice, onLayout, pageIndex, showTapHint = true, breadcrumb = [] }) => {
   // Prepare chart data for Victory
   const chartData = useMemo(() => {
     return data.map((item) => ({
@@ -92,10 +107,33 @@ const ChartPage: React.FC<ChartPageProps> = ({ title, data, selectedSlice, onSel
   }, [data]);
 
   const colorScale = chartData.map(d => d.color);
+  const isRootLevel = breadcrumb.length === 0;
 
   return (
     <View style={styles.pageContainer} onLayout={onLayout}>
       <Text variant="heading3" color="primary" style={styles.chartTitle}>{title}</Text>
+      
+      {/* Tap hint or breadcrumb - styled like DrilldownBarChart */}
+      {data.length > 0 && (
+        <View style={styles.breadcrumbContainer}>
+          {isRootLevel && showTapHint ? (
+            <Text variant="caption" color="tertiary">
+              Tap a slice to explore
+            </Text>
+          ) : breadcrumb.length > 0 ? (
+            breadcrumb.map((item, index) => (
+              <View key={`${index}-${item}`} style={styles.breadcrumbItem}>
+                {index > 0 && (
+                  <Ionicons name="chevron-forward" size={14} color={colors.text.tertiary} />
+                )}
+                <Text variant="caption" color={index === breadcrumb.length - 1 ? 'primary' : 'tertiary'}>
+                  {item}
+                </Text>
+              </View>
+            ))
+          ) : null}
+        </View>
+      )}
       {data.length > 0 ? (
         <>
           <View style={styles.chartContainer}>
@@ -207,7 +245,8 @@ export const FocusDistributionChart: React.FC = () => {
 
         totalSets += completedSets;
 
-        Object.entries(weights).forEach(([muscle, weight]) => {
+        Object.entries(weights).forEach(([rawMuscle, weight]) => {
+          const muscle = resolveMuscle(rawMuscle);
           const contribution = completedSets * weight;
 
           // Level 1
@@ -428,6 +467,9 @@ export const FocusDistributionChart: React.FC = () => {
             selectedSlice={selections[0] || null}
             onSelectSlice={(name) => handleSelectSlice(0, name)}
             onLayout={handlePageLayout(0)}
+            pageIndex={0}
+            showTapHint={true}
+            breadcrumb={[]}
           />
           <ChartPage
             title="Muscle Group"
@@ -435,6 +477,9 @@ export const FocusDistributionChart: React.FC = () => {
             selectedSlice={selections[1] || null}
             onSelectSlice={(name) => handleSelectSlice(1, name)}
             onLayout={handlePageLayout(1)}
+            pageIndex={1}
+            showTapHint={true}
+            breadcrumb={['Body Region', 'Muscle Group']}
           />
           <ChartPage
             title="Specific Muscle"
@@ -442,6 +487,9 @@ export const FocusDistributionChart: React.FC = () => {
             selectedSlice={selections[2] || null}
             onSelectSlice={(name) => handleSelectSlice(2, name)}
             onLayout={handlePageLayout(2)}
+            pageIndex={2}
+            showTapHint={false}
+            breadcrumb={['Body Region', 'Muscle Group', 'Specific Muscle']}
           />
         </ScrollView>
       </Animated.View>
@@ -513,5 +561,19 @@ const styles = StyleSheet.create({
     height: 12,
     borderRadius: 2,
     marginRight: spacing.xs,
-  }
+  },
+  breadcrumbContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexWrap: 'wrap',
+    gap: spacing.xs,
+    paddingHorizontal: spacing.sm,
+    marginBottom: spacing.sm,
+  },
+  breadcrumbItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
 });

@@ -68,6 +68,8 @@ export const TabSwipeContainer = forwardRef<ScrollView, TabSwipeContainerProps>(
   );
 });
 
+TabSwipeContainer.displayName = 'TabSwipeContainer';
+
 const styles = StyleSheet.create({
   root: {
     flex: 1,

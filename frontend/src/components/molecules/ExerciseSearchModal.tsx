@@ -11,7 +11,7 @@ import {
   StyleSheet,
   TextInput,
   View,
-  ScrollView,
+  FlatList,
   Dimensions,
   Keyboard,
 } from 'react-native';
@@ -41,7 +41,15 @@ import { getExerciseDisplayTags } from '@/utils/exerciseDisplayTags';
 
 const SCREEN_HEIGHT = Dimensions.get('window').height;
 const DISMISS_THRESHOLD = spacing['2xl'] * 2;
+const ITEM_HEIGHT = 64;
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+
+const keyExtractor = (item: Exercise) => item.id;
+const getItemLayout = (_data: any, index: number) => ({
+  length: ITEM_HEIGHT,
+  offset: ITEM_HEIGHT * index,
+  index,
+});
 
 interface ExerciseSearchModalProps {
   visible: boolean;
@@ -63,35 +71,45 @@ export const ExerciseSearchModal: React.FC<ExerciseSearchModalProps> = ({
   const insets = useSafeAreaInsets();
   const inputRef = useRef<TextInput>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [selectedMap, setSelectedMap] = useState<Map<string, Exercise>>(new Map());
   const [isModalVisible, setIsModalVisible] = useState(visible);
   
   // Animation values
   const sheetTranslateY = useSharedValue(SCREEN_HEIGHT);
 
-  // Get suggestions based on search term
+  // Get suggestions based on search term — cap at 50 for performance, still plenty of results
   const suggestions = useSemanticExerciseSearch(searchTerm, exerciseCatalog, {
-    limit: 20,
+    limit: 50,
     excludeIds,
   });
 
-  // Show popular exercises when search is empty
+  // Show popular exercises when search is empty — cap at 50 for fast initial render
   const popularExercises = useMemo(() => {
     if (searchTerm.trim()) return [];
     const excluded = new Set(excludeIds);
     return exerciseCatalog
       .filter(ex => !excluded.has(ex.id))
-      .slice(0, 20);
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .slice(0, 50);
   }, [excludeIds, searchTerm]);
 
-  const displayExercises = searchTerm.trim() ? suggestions : popularExercises;
+  // Sort selected exercises to top
+  const displayExercises = useMemo(() => {
+    const base = searchTerm.trim() ? suggestions : popularExercises;
+    if (selectedMap.size === 0) return base;
+    return [...base].sort((a, b) => {
+      const aS = selectedMap.has(a.id) ? 0 : 1;
+      const bS = selectedMap.has(b.id) ? 0 : 1;
+      return aS - bS;
+    });
+  }, [searchTerm, suggestions, popularExercises, selectedMap]);
 
   // Handle modal visibility and animations
   useEffect(() => {
     if (visible) {
       setIsModalVisible(true);
       setSearchTerm('');
-      setSelectedIds(new Set());
+      setSelectedMap(new Map());
       // Animate in after modal renders
       requestAnimationFrame(() => {
         sheetTranslateY.value = withSpring(0, springGentle);
@@ -151,24 +169,23 @@ export const ExerciseSearchModal: React.FC<ExerciseSearchModalProps> = ({
 
   const handleToggleExercise = useCallback((exercise: Exercise) => {
     triggerHaptic('selection');
-    setSelectedIds(prev => {
-      const next = new Set(prev);
+    setSelectedMap(prev => {
+      const next = new Map(prev);
       if (next.has(exercise.id)) {
         next.delete(exercise.id);
       } else {
-        next.add(exercise.id);
+        next.set(exercise.id, exercise);
       }
       return next;
     });
   }, []);
 
-
   const handleAddSelected = useCallback(() => {
-    if (selectedIds.size === 0) return;
+    if (selectedMap.size === 0) return;
     
     Keyboard.dismiss();
     triggerHaptic('success');
-    const selectedExercises = displayExercises.filter(ex => selectedIds.has(ex.id));
+    const selectedExercises = Array.from(selectedMap.values());
     
     if (onAddMultipleExercises) {
       onAddMultipleExercises(selectedExercises);
@@ -176,9 +193,9 @@ export const ExerciseSearchModal: React.FC<ExerciseSearchModalProps> = ({
       selectedExercises.forEach(ex => onAddExercise(ex));
     }
     
-    setSelectedIds(new Set());
+    setSelectedMap(new Map());
     onClose();
-  }, [selectedIds, displayExercises, onAddExercise, onAddMultipleExercises, onClose]);
+  }, [selectedMap, onAddExercise, onAddMultipleExercises, onClose]);
 
   const handleClearSearch = useCallback(() => {
     setSearchTerm('');
@@ -279,56 +296,60 @@ export const ExerciseSearchModal: React.FC<ExerciseSearchModalProps> = ({
                   : 'Popular exercises'
                 }
               </Text>
-              {selectedIds.size > 0 && (
+              {selectedMap.size > 0 && (
                 <View style={styles.selectedBadge}>
                   <Text variant="caption" style={styles.selectedBadgeText}>
-                    {selectedIds.size} selected
+                    {selectedMap.size} selected
                   </Text>
                 </View>
               )}
             </View>
 
             {/* Exercise List */}
-            <ScrollView
-              style={styles.scrollView}
-              contentContainerStyle={[
-                styles.scrollContent,
-                { paddingBottom: selectedIds.size > 0 ? spacing.md : insets.bottom + spacing.lg },
-              ]}
-              showsVerticalScrollIndicator={false}
-              keyboardShouldPersistTaps="handled"
-              keyboardDismissMode="on-drag"
-            >
-              {displayExercises.length > 0 ? (
-                displayExercises.map((exercise) => (
+            {displayExercises.length > 0 ? (
+              <FlatList
+                data={displayExercises}
+                keyExtractor={keyExtractor}
+                renderItem={({ item }) => (
                   <ExerciseRow
-                    key={exercise.id}
-                    exercise={exercise}
-                    isSelected={selectedIds.has(exercise.id)}
+                    exercise={item}
+                    isSelected={selectedMap.has(item.id)}
                     onToggle={handleToggleExercise}
                   />
-                ))
-              ) : (
-                <View style={styles.emptyState}>
-                  <Text variant="body" color="secondary">
-                    No exercises found for "{searchTerm}"
-                  </Text>
-                  <Text variant="caption" color="tertiary">
-                    Try a different search term
-                  </Text>
-                </View>
-              )}
-            </ScrollView>
+                )}
+                style={styles.scrollView}
+                contentContainerStyle={[
+                  styles.scrollContent,
+                  { paddingBottom: selectedMap.size > 0 ? spacing.md : insets.bottom + spacing.lg },
+                ]}
+                showsVerticalScrollIndicator={false}
+                keyboardShouldPersistTaps="handled"
+                keyboardDismissMode="on-drag"
+                initialNumToRender={12}
+                maxToRenderPerBatch={10}
+                windowSize={5}
+                getItemLayout={getItemLayout}
+              />
+            ) : (
+              <View style={styles.emptyState}>
+                <Text variant="body" color="secondary">
+                  No exercises found for &quot;{searchTerm}&quot;
+                </Text>
+                <Text variant="caption" color="tertiary">
+                  Try a different search term
+                </Text>
+              </View>
+            )}
 
             {/* Bottom Action */}
-            {selectedIds.size > 0 && (
+            {selectedMap.size > 0 && (
               <Animated.View
                 entering={FadeIn.duration(150)}
                 exiting={FadeOut.duration(100)}
                 style={[styles.bottomAction, { paddingBottom: insets.bottom + spacing.md }]}
               >
                 <Button
-                  label={`Add ${selectedIds.size} Exercise${selectedIds.size !== 1 ? 's' : ''}`}
+                  label={`Add ${selectedMap.size} Exercise${selectedMap.size !== 1 ? 's' : ''}`}
                   variant="primary"
                   size="lg"
                   onPress={handleAddSelected}
@@ -349,19 +370,21 @@ interface ExerciseRowProps {
   onToggle: (exercise: Exercise) => void;
 }
 
-const ExerciseRow: React.FC<ExerciseRowProps> = ({
+const ExerciseRow: React.FC<ExerciseRowProps> = React.memo(({
   exercise,
   isSelected,
   onToggle,
 }) => {
-  const tags = getExerciseDisplayTags({
+  const tags = useMemo(() => getExerciseDisplayTags({
     muscles: exercise.muscles,
     exerciseType: exercise.exerciseType,
-  }, { maxTags: 2 });
+  }, { maxTags: 2 }), [exercise.muscles, exercise.exerciseType]);
+
+  const handlePress = useCallback(() => onToggle(exercise), [exercise, onToggle]);
 
   return (
     <Pressable
-      onPress={() => onToggle(exercise)}
+      onPress={handlePress}
       style={({ pressed }) => [
         styles.exerciseRow,
         isSelected && styles.exerciseRowSelected,
@@ -388,7 +411,7 @@ const ExerciseRow: React.FC<ExerciseRowProps> = ({
       </View>
     </Pressable>
   );
-};
+});
 
 const styles = StyleSheet.create({
   gestureRoot: {

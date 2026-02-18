@@ -9,12 +9,13 @@
         "equipment": "full-gym",
         "daysPerWeek": 3,
         "durationWeeks": 8,
-        "description": "Classic 3-day split perfect for beginners. Focus on compound movements to build a solid foundation.",
+        "description": "A classic 3-day split for beginners using machines and dumbbells to build technique before progressing to barbell work.",
         "tags": [
           "hypertrophy",
           "compound",
           "split"
-        ]
+        ],
+        "recommendation": "Perform each workout once per week with at least one rest day between sessions — e.g. Monday / Wednesday / Friday. Rest 60–90 seconds between sets. Aim for 3 sets of 10–12 reps per exercise."
       },
       "scheduleType": "rotation",
       "workouts": [
@@ -23,18 +24,23 @@
           "name": "Push Day",
           "exercises": [
             {
-              "id": "exercise_001",
-              "name": "Barbell Bench Press",
+              "id": "exercise_002",
+              "name": "Chest Press Machine",
               "sets": 3
             },
             {
-              "id": "exercise_005",
-              "name": "Dumbbell Shoulder Press",
+              "id": "exercise_102",
+              "name": "Incline Dumbbell Bench Press",
               "sets": 3
             },
             {
-              "id": "exercise_099",
-              "name": "Incline Barbell Bench Press",
+              "id": "exercise_022",
+              "name": "Seated Shoulder Press Machine",
+              "sets": 3
+            },
+            {
+              "id": "exercise_004",
+              "name": "Lateral Raises",
               "sets": 3
             },
             {
@@ -49,23 +55,28 @@
           "name": "Pull Day",
           "exercises": [
             {
-              "id": "exercise_052",
-              "name": "Barbell Bent-Over Row",
-              "sets": 3
-            },
-            {
               "id": "exercise_008",
               "name": "Wide Grip Lat Pulldown",
               "sets": 3
             },
             {
-              "id": "exercise_096",
+              "id": "exercise_010",
+              "name": "Seated Row Machine",
+              "sets": 3
+            },
+            {
+              "id": "exercise_148",
+              "name": "Rear Delt Fly Machine",
+              "sets": 3
+            },
+            {
+              "id": "exercise_095",
               "name": "Face Pull",
               "sets": 3
             },
             {
-              "id": "exercise_031",
-              "name": "Barbell Bicep Curl",
+              "id": "exercise_027",
+              "name": "Dumbbell Bicep Curls",
               "sets": 3
             }
           ]
@@ -75,18 +86,28 @@
           "name": "Leg Day",
           "exercises": [
             {
-              "id": "exercise_019",
-              "name": "Barbell Squat",
-              "sets": 3
-            },
-            {
-              "id": "exercise_047",
-              "name": "Barbell Romanian Deadlift",
+              "id": "exercise_153",
+              "name": "Dumbbell Goblet Squat",
               "sets": 3
             },
             {
               "id": "exercise_014",
               "name": "Leg Press",
+              "sets": 3
+            },
+            {
+              "id": "exercise_086",
+              "name": "Dumbbell Romanian Deadlifts",
+              "sets": 3
+            },
+            {
+              "id": "exercise_015",
+              "name": "Leg Extensions",
+              "sets": 3
+            },
+            {
+              "id": "exercise_016",
+              "name": "Seated Leg Curl",
               "sets": 3
             },
             {
@@ -113,7 +134,8 @@
           null
         ]
       },
-      "isPremade": true
+      "isPremade": true,
+      "isFree": true
     },
     {
       "id": "full-body-2day",
@@ -123,12 +145,14 @@
         "experienceLevel": "beginner",
         "equipment": "dumbbells-only",
         "daysPerWeek": 2,
-        "description": "A simple 2-day routine for busy schedules using only dumbbells.",
+        "durationWeeks": 8,
+        "description": "A simple 2-day dumbbell routine for busy schedules. Each session covers all major muscle groups with beginner-friendly movements.",
         "tags": [
           "full-body",
           "dumbbells",
           "efficient"
-        ]
+        ],
+        "recommendation": "Perform each workout once per week with at least 2 rest days between sessions — e.g. Monday / Thursday. Rest 60–90 seconds between sets. Aim for 3 sets of 10–12 reps per exercise."
       },
       "scheduleType": "weekly",
       "workouts": [
@@ -137,8 +161,8 @@
           "name": "Workout A",
           "exercises": [
             {
-              "id": "exercise_023",
-              "name": "Dumbbell Bulgarian Split Squat",
+              "id": "exercise_153",
+              "name": "Dumbbell Goblet Squat",
               "sets": 3
             },
             {
@@ -147,19 +171,8 @@
               "sets": 3
             },
             {
-              "id": "exercise_052",
-              "name": "Barbell Bent-Over Row",
-              "sets": 3
-            }
-          ]
-        },
-        {
-          "id": "fb-b",
-          "name": "Workout B",
-          "exercises": [
-            {
-              "id": "exercise_047",
-              "name": "Barbell Romanian Deadlift",
+              "id": "exercise_145",
+              "name": "Single-Arm Dumbbell Row",
               "sets": 3
             },
             {
@@ -168,9 +181,40 @@
               "sets": 3
             },
             {
-              "id": "exercise_023",
-              "name": "Dumbbell Bulgarian Split Squat",
+              "id": "exercise_011",
+              "name": "Dumbbell Hammer Curls",
+              "sets": 2
+            }
+          ]
+        },
+        {
+          "id": "fb-b",
+          "name": "Workout B",
+          "exercises": [
+            {
+              "id": "exercise_086",
+              "name": "Dumbbell Romanian Deadlifts",
               "sets": 3
+            },
+            {
+              "id": "exercise_005",
+              "name": "Dumbbell Shoulder Press",
+              "sets": 3
+            },
+            {
+              "id": "exercise_145",
+              "name": "Single-Arm Dumbbell Row",
+              "sets": 3
+            },
+            {
+              "id": "exercise_084",
+              "name": "Dumbbell Lunges",
+              "sets": 3
+            },
+            {
+              "id": "exercise_053",
+              "name": "Triceps Kickback",
+              "sets": 2
             }
           ]
         }
@@ -181,7 +225,8 @@
           "thursday": "fb-b"
         }
       },
-      "isPremade": true
+      "isPremade": true,
+      "isFree": true
     },
     {
       "id": "ppl-intermediate",
@@ -198,7 +243,8 @@
           "ppl",
           "split",
           "intermediate"
-        ]
+        ],
+        "recommendation": "Run as a 6-day rotation — Push / Pull / Legs / Push / Pull / Legs / Rest. Rest 60–90 seconds between sets. Aim for 4 sets of 8–10 reps on compounds, 3 sets of 10–12 reps on isolations."
       },
       "scheduleType": "rotation",
       "workouts": [
@@ -212,7 +258,7 @@
               "sets": 4
             },
             {
-              "id": "exercise_099",
+              "id": "exercise_098",
               "name": "Incline Barbell Bench Press",
               "sets": 4
             },
@@ -253,7 +299,7 @@
               "sets": 3
             },
             {
-              "id": "exercise_096",
+              "id": "exercise_095",
               "name": "Face Pull",
               "sets": 3
             },
@@ -320,8 +366,13 @@
               "sets": 3
             },
             {
-              "id": "exercise_060",
-              "name": "Cable Incline Triceps Extension",
+              "id": "exercise_103",
+              "name": "Incline Dumbbell Fly",
+              "sets": 3
+            },
+            {
+              "id": "exercise_053",
+              "name": "Triceps Kickback",
               "sets": 3
             }
           ]
@@ -341,12 +392,12 @@
               "sets": 4
             },
             {
-              "id": "exercise_077",
-              "name": "Dumbbell Row",
+              "id": "exercise_145",
+              "name": "Single-Arm Dumbbell Row",
               "sets": 3
             },
             {
-              "id": "exercise_096",
+              "id": "exercise_095",
               "name": "Face Pull",
               "sets": 3
             },
@@ -400,7 +451,8 @@
           null
         ]
       },
-      "isPremade": true
+      "isPremade": true,
+      "isFree": true
     },
     {
       "id": "ppl-advanced",
@@ -417,7 +469,8 @@
           "ppl",
           "advanced",
           "high-volume"
-        ]
+        ],
+        "recommendation": "Run as a 6-day rotation — Push / Pull / Legs / Push / Pull / Legs / Rest. Heavy days: 4–5 sets of 5–8 reps. Volume days: 4 sets of 10–15 reps. Rest 2–3 minutes on heavy compounds, 60–90 seconds on isolations."
       },
       "scheduleType": "rotation",
       "workouts": [
@@ -431,7 +484,7 @@
               "sets": 5
             },
             {
-              "id": "exercise_099",
+              "id": "exercise_098",
               "name": "Incline Barbell Bench Press",
               "sets": 4
             },
@@ -482,7 +535,7 @@
               "sets": 3
             },
             {
-              "id": "exercise_096",
+              "id": "exercise_095",
               "name": "Face Pull",
               "sets": 3
             },
@@ -554,13 +607,13 @@
               "sets": 4
             },
             {
-              "id": "exercise_028",
-              "name": "Dumbbell Front Raises",
+              "id": "exercise_100",
+              "name": "Incline Cable Fly",
               "sets": 3
             },
             {
-              "id": "exercise_053",
-              "name": "Triceps Kickback",
+              "id": "exercise_116",
+              "name": "Overhead Cable Triceps Extension",
               "sets": 3
             }
           ]
@@ -575,8 +628,8 @@
               "sets": 4
             },
             {
-              "id": "exercise_077",
-              "name": "Dumbbell Row",
+              "id": "exercise_145",
+              "name": "Single-Arm Dumbbell Row",
               "sets": 4
             },
             {
@@ -590,7 +643,7 @@
               "sets": 3
             },
             {
-              "id": "exercise_096",
+              "id": "exercise_095",
               "name": "Face Pull",
               "sets": 3
             },
@@ -649,7 +702,8 @@
           null
         ]
       },
-      "isPremade": true
+      "isPremade": true,
+      "isFree": false
     },
     {
       "id": "upper-lower-beginner",
@@ -666,7 +720,8 @@
           "split",
           "beginner",
           "hypertrophy"
-        ]
+        ],
+        "recommendation": "Train 4 days per week — e.g. Monday / Tuesday / Thursday / Friday. Rest 60–90 seconds between sets. Aim for 3 sets of 10–12 reps on compounds, 2–3 sets of 12–15 reps on isolations."
       },
       "scheduleType": "weekly",
       "workouts": [
@@ -675,18 +730,18 @@
           "name": "Upper Body A",
           "exercises": [
             {
-              "id": "exercise_001",
-              "name": "Barbell Bench Press",
+              "id": "exercise_002",
+              "name": "Chest Press Machine",
               "sets": 3
             },
             {
-              "id": "exercise_052",
-              "name": "Barbell Bent-Over Row",
+              "id": "exercise_010",
+              "name": "Seated Row Machine",
               "sets": 3
             },
             {
-              "id": "exercise_005",
-              "name": "Dumbbell Shoulder Press",
+              "id": "exercise_022",
+              "name": "Seated Shoulder Press Machine",
               "sets": 3
             },
             {
@@ -711,18 +766,18 @@
           "name": "Lower Body A",
           "exercises": [
             {
-              "id": "exercise_019",
-              "name": "Barbell Squat",
-              "sets": 3
-            },
-            {
-              "id": "exercise_047",
-              "name": "Barbell Romanian Deadlift",
-              "sets": 3
-            },
-            {
               "id": "exercise_014",
               "name": "Leg Press",
+              "sets": 3
+            },
+            {
+              "id": "exercise_086",
+              "name": "Dumbbell Romanian Deadlifts",
+              "sets": 3
+            },
+            {
+              "id": "exercise_015",
+              "name": "Leg Extensions",
               "sets": 3
             },
             {
@@ -747,8 +802,8 @@
               "sets": 3
             },
             {
-              "id": "exercise_077",
-              "name": "Dumbbell Row",
+              "id": "exercise_145",
+              "name": "Single-Arm Dumbbell Row",
               "sets": 3
             },
             {
@@ -778,13 +833,13 @@
           "name": "Lower Body B",
           "exercises": [
             {
-              "id": "exercise_014",
-              "name": "Leg Press",
+              "id": "exercise_096",
+              "name": "Hack Squat Machine",
               "sets": 3
             },
             {
-              "id": "exercise_020",
-              "name": "Barbell Deadlift",
+              "id": "exercise_086",
+              "name": "Dumbbell Romanian Deadlifts",
               "sets": 3
             },
             {
@@ -816,7 +871,8 @@
           "sunday": null
         }
       },
-      "isPremade": true
+      "isPremade": true,
+      "isFree": true
     },
     {
       "id": "upper-lower-intermediate",
@@ -833,7 +889,8 @@
           "split",
           "intermediate",
           "progressive-overload"
-        ]
+        ],
+        "recommendation": "Train 4 days per week — e.g. Monday / Tuesday / Thursday / Friday. Strength days: 4 sets of 6–8 reps, rest 2–3 minutes. Hypertrophy days: 3–4 sets of 10–12 reps, rest 60–90 seconds. Increase weight when you hit the top of the rep range."
       },
       "scheduleType": "weekly",
       "workouts": [
@@ -919,12 +976,12 @@
               "sets": 4
             },
             {
-              "id": "exercise_077",
-              "name": "Dumbbell Row",
+              "id": "exercise_145",
+              "name": "Single-Arm Dumbbell Row",
               "sets": 4
             },
             {
-              "id": "exercise_099",
+              "id": "exercise_098",
               "name": "Incline Barbell Bench Press",
               "sets": 3
             },
@@ -962,7 +1019,7 @@
             {
               "id": "exercise_023",
               "name": "Dumbbell Bulgarian Split Squat",
-              "sets": 3
+              "sets": 4
             },
             {
               "id": "exercise_015",
@@ -998,7 +1055,8 @@
           "sunday": null
         }
       },
-      "isPremade": true
+      "isPremade": true,
+      "isFree": false
     },
     {
       "id": "dumbbell-ppl",
@@ -1015,7 +1073,8 @@
           "dumbbells",
           "home-gym",
           "intermediate"
-        ]
+        ],
+        "recommendation": "Perform each workout once per week with a rest day between sessions — e.g. Monday / Wednesday / Friday. Rest 60–90 seconds between sets. Aim for 4 sets of 8–10 reps on compounds, 3 sets of 10–12 reps on isolations."
       },
       "scheduleType": "rotation",
       "workouts": [
@@ -1039,8 +1098,8 @@
               "sets": 3
             },
             {
-              "id": "exercise_028",
-              "name": "Dumbbell Front Raises",
+              "id": "exercise_081",
+              "name": "Dumbbell Fly",
               "sets": 3
             },
             {
@@ -1055,14 +1114,19 @@
           "name": "Pull Day",
           "exercises": [
             {
-              "id": "exercise_077",
-              "name": "Dumbbell Row",
+              "id": "exercise_145",
+              "name": "Single-Arm Dumbbell Row",
               "sets": 4
             },
             {
-              "id": "exercise_078",
-              "name": "Dumbbell Romanian Deadlift",
-              "sets": 4
+              "id": "exercise_161",
+              "name": "Dumbbell Pullover",
+              "sets": 3
+            },
+            {
+              "id": "exercise_087",
+              "name": "Dumbbell Shrugs",
+              "sets": 3
             },
             {
               "id": "exercise_027",
@@ -1081,7 +1145,7 @@
           "name": "Legs Day",
           "exercises": [
             {
-              "id": "exercise_079",
+              "id": "exercise_153",
               "name": "Dumbbell Goblet Squat",
               "sets": 4
             },
@@ -1091,17 +1155,17 @@
               "sets": 4
             },
             {
-              "id": "exercise_080",
+              "id": "exercise_084",
               "name": "Dumbbell Lunges",
               "sets": 3
             },
             {
-              "id": "exercise_078",
-              "name": "Dumbbell Romanian Deadlift",
+              "id": "exercise_086",
+              "name": "Dumbbell Romanian Deadlifts",
               "sets": 3
             },
             {
-              "id": "exercise_081",
+              "id": "exercise_154",
               "name": "Dumbbell Calf Raises",
               "sets": 4
             }
@@ -1118,7 +1182,8 @@
           null
         ]
       },
-      "isPremade": true
+      "isPremade": true,
+      "isFree": false
     },
     {
       "id": "bodyweight-hypertrophy",
@@ -1135,7 +1200,8 @@
           "calisthenics",
           "beginner",
           "home"
-        ]
+        ],
+        "recommendation": "Perform each workout once per week with at least one rest day between sessions — e.g. Monday / Wednesday / Friday. Aim for 3–4 sets of as many quality reps as possible (AMRAP). Rest 60–90 seconds between sets."
       },
       "scheduleType": "rotation",
       "workouts": [
@@ -1149,8 +1215,8 @@
               "sets": 4
             },
             {
-              "id": "bodyweight_004",
-              "name": "Dips",
+              "id": "bodyweight_027",
+              "name": "Knee Push-ups",
               "sets": 3
             },
             {
@@ -1197,7 +1263,7 @@
           "exercises": [
             {
               "id": "bodyweight_008",
-              "name": "Air Squats",
+              "name": "Bodyweight Squats",
               "sets": 4
             },
             {
@@ -1211,8 +1277,8 @@
               "sets": 3
             },
             {
-              "id": "duration_005",
-              "name": "Glute Bridge Hold",
+              "id": "bodyweight_037",
+              "name": "Bodyweight Glute Bridges",
               "sets": 3
             }
           ]
@@ -1229,7 +1295,8 @@
           null
         ]
       },
-      "isPremade": true
+      "isPremade": true,
+      "isFree": true
     },
     {
       "id": "starting-strength",
@@ -1240,13 +1307,14 @@
         "equipment": "full-gym",
         "daysPerWeek": 3,
         "durationWeeks": 12,
-        "description": "Linear progression program focusing on the big compound lifts.",
+        "description": "Barbell-focused linear progression for beginners. Start with the bar and add weight every session on the big compound lifts.",
         "tags": [
           "strength",
           "linear-progression",
           "beginner",
           "compound"
-        ]
+        ],
+        "recommendation": "Alternate Workout A and B three times per week — e.g. Week 1: A/B/A, Week 2: B/A/B. Rest 3–5 minutes between sets. Perform 3 sets of 5 reps (squats and bench/press) and 1 set of 5 reps (deadlift). Add 5 lbs each session."
       },
       "scheduleType": "rotation",
       "workouts": [
@@ -1281,8 +1349,8 @@
               "sets": 3
             },
             {
-              "id": "exercise_005",
-              "name": "Dumbbell Shoulder Press",
+              "id": "exercise_155",
+              "name": "Barbell Overhead Press",
               "sets": 3
             },
             {
@@ -1302,7 +1370,8 @@
           null
         ]
       },
-      "isPremade": true
+      "isPremade": true,
+      "isFree": true
     },
     {
       "id": "strength-intermediate",
@@ -1319,7 +1388,8 @@
           "531",
           "intermediate",
           "powerlifting"
-        ]
+        ],
+        "recommendation": "Train 4 days per week — e.g. Monday / Tuesday / Thursday / Friday. Main lifts: follow 5/3/1 percentages (5 sets). Accessories: 3–4 sets of 8–12 reps. Rest 3–5 minutes on main lifts, 60–90 seconds on accessories."
       },
       "scheduleType": "weekly",
       "workouts": [
@@ -1369,8 +1439,8 @@
               "sets": 4
             },
             {
-              "id": "exercise_077",
-              "name": "Dumbbell Row",
+              "id": "exercise_145",
+              "name": "Single-Arm Dumbbell Row",
               "sets": 4
             },
             {
@@ -1421,12 +1491,12 @@
           "name": "Overhead Press Day",
           "exercises": [
             {
-              "id": "exercise_005",
-              "name": "Dumbbell Shoulder Press",
+              "id": "exercise_155",
+              "name": "Barbell Overhead Press",
               "sets": 5
             },
             {
-              "id": "exercise_099",
+              "id": "exercise_098",
               "name": "Incline Barbell Bench Press",
               "sets": 4
             },
@@ -1436,13 +1506,13 @@
               "sets": 3
             },
             {
-              "id": "exercise_096",
+              "id": "exercise_095",
               "name": "Face Pull",
               "sets": 3
             },
             {
-              "id": "exercise_053",
-              "name": "Triceps Kickback",
+              "id": "exercise_068",
+              "name": "Close Grip Barbell Bench Press",
               "sets": 3
             }
           ]
@@ -1459,7 +1529,8 @@
           "sunday": null
         }
       },
-      "isPremade": true
+      "isPremade": true,
+      "isFree": true
     },
     {
       "id": "strength-advanced",
@@ -1476,7 +1547,8 @@
           "powerlifting",
           "advanced",
           "periodization"
-        ]
+        ],
+        "recommendation": "Train 5 days per week — e.g. Monday through Friday with weekends off. Main lifts: 5–6 sets of 3–5 reps with heavy weight. Accessories: 3–4 sets of 8–12 reps. Rest 3–5 minutes on main lifts, 90–120 seconds on accessories."
       },
       "scheduleType": "weekly",
       "workouts": [
@@ -1526,7 +1598,7 @@
               "sets": 4
             },
             {
-              "id": "exercise_099",
+              "id": "exercise_098",
               "name": "Incline Barbell Bench Press",
               "sets": 4
             },
@@ -1583,8 +1655,8 @@
               "sets": 4
             },
             {
-              "id": "exercise_077",
-              "name": "Dumbbell Row",
+              "id": "exercise_145",
+              "name": "Single-Arm Dumbbell Row",
               "sets": 4
             },
             {
@@ -1629,8 +1701,8 @@
               "sets": 4
             },
             {
-              "id": "exercise_025",
-              "name": "Lying Leg Curl",
+              "id": "exercise_015",
+              "name": "Leg Extensions",
               "sets": 3
             },
             {
@@ -1652,7 +1724,8 @@
           "sunday": null
         }
       },
-      "isPremade": true
+      "isPremade": true,
+      "isFree": false
     },
     {
       "id": "dumbbell-strength-program",
@@ -1669,7 +1742,8 @@
           "dumbbells",
           "home-gym",
           "intermediate"
-        ]
+        ],
+        "recommendation": "Perform each workout once per week with a rest day between sessions — e.g. Monday / Wednesday / Friday. Rest 90–120 seconds between sets. Aim for 4–5 sets of 5–8 reps on compounds, 3 sets of 8–10 reps on isolations."
       },
       "scheduleType": "rotation",
       "workouts": [
@@ -1683,8 +1757,8 @@
               "sets": 5
             },
             {
-              "id": "exercise_077",
-              "name": "Dumbbell Row",
+              "id": "exercise_145",
+              "name": "Single-Arm Dumbbell Row",
               "sets": 5
             },
             {
@@ -1698,8 +1772,8 @@
               "sets": 3
             },
             {
-              "id": "exercise_053",
-              "name": "Triceps Kickback",
+              "id": "exercise_143",
+              "name": "Dumbbell Overhead Tricep Extension",
               "sets": 3
             }
           ]
@@ -1709,13 +1783,13 @@
           "name": "Lower Body",
           "exercises": [
             {
-              "id": "exercise_079",
+              "id": "exercise_153",
               "name": "Dumbbell Goblet Squat",
               "sets": 5
             },
             {
-              "id": "exercise_078",
-              "name": "Dumbbell Romanian Deadlift",
+              "id": "exercise_086",
+              "name": "Dumbbell Romanian Deadlifts",
               "sets": 5
             },
             {
@@ -1724,12 +1798,12 @@
               "sets": 4
             },
             {
-              "id": "exercise_080",
+              "id": "exercise_084",
               "name": "Dumbbell Lunges",
               "sets": 3
             },
             {
-              "id": "exercise_081",
+              "id": "exercise_154",
               "name": "Dumbbell Calf Raises",
               "sets": 4
             }
@@ -1740,7 +1814,7 @@
           "name": "Full Body",
           "exercises": [
             {
-              "id": "exercise_079",
+              "id": "exercise_153",
               "name": "Dumbbell Goblet Squat",
               "sets": 4
             },
@@ -1750,8 +1824,8 @@
               "sets": 4
             },
             {
-              "id": "exercise_077",
-              "name": "Dumbbell Row",
+              "id": "exercise_145",
+              "name": "Single-Arm Dumbbell Row",
               "sets": 4
             },
             {
@@ -1760,8 +1834,8 @@
               "sets": 3
             },
             {
-              "id": "exercise_078",
-              "name": "Dumbbell Romanian Deadlift",
+              "id": "exercise_086",
+              "name": "Dumbbell Romanian Deadlifts",
               "sets": 3
             }
           ]
@@ -1777,7 +1851,8 @@
           null
         ]
       },
-      "isPremade": true
+      "isPremade": true,
+      "isFree": false
     },
     {
       "id": "fat-loss-beginner",
@@ -1794,7 +1869,8 @@
           "circuit",
           "beginner",
           "conditioning"
-        ]
+        ],
+        "recommendation": "Perform each circuit once per week with at least one rest day between sessions — e.g. Monday / Wednesday / Friday. Move quickly between exercises with 30–45 seconds rest. Aim for 3 sets of 12–15 reps per exercise."
       },
       "scheduleType": "rotation",
       "workouts": [
@@ -1854,8 +1930,8 @@
               "sets": 3
             },
             {
-              "id": "exercise_009",
-              "name": "Bicep Curl Machine",
+              "id": "exercise_024",
+              "name": "Standing Calf Raise Machine",
               "sets": 3
             }
           ]
@@ -1870,23 +1946,23 @@
               "sets": 3
             },
             {
-              "id": "exercise_010",
-              "name": "Seated Row Machine",
-              "sets": 3
-            },
-            {
               "id": "exercise_002",
               "name": "Chest Press Machine",
               "sets": 3
             },
             {
-              "id": "exercise_007",
-              "name": "Seated Triceps Dip Machine",
+              "id": "exercise_010",
+              "name": "Seated Row Machine",
               "sets": 3
             },
             {
-              "id": "exercise_024",
-              "name": "Standing Calf Raise Machine",
+              "id": "exercise_022",
+              "name": "Seated Shoulder Press Machine",
+              "sets": 3
+            },
+            {
+              "id": "exercise_063",
+              "name": "Cable Crunch",
               "sets": 3
             }
           ]
@@ -1903,7 +1979,8 @@
           null
         ]
       },
-      "isPremade": true
+      "isPremade": true,
+      "isFree": true
     },
     {
       "id": "fat-loss-intermediate",
@@ -1920,7 +1997,8 @@
           "hiit",
           "intermediate",
           "strength"
-        ]
+        ],
+        "recommendation": "Train 4 days per week — e.g. Monday / Tuesday / Thursday / Friday. Strength days: 3–4 sets of 8–12 reps, rest 60–90 seconds. HIIT days: perform exercises as a circuit with minimal rest. Full body: 3 sets of 10–12 reps."
       },
       "scheduleType": "weekly",
       "workouts": [
@@ -2002,7 +2080,7 @@
             },
             {
               "id": "bodyweight_008",
-              "name": "Air Squats",
+              "name": "Bodyweight Squats",
               "sets": 5
             },
             {
@@ -2032,8 +2110,8 @@
               "sets": 3
             },
             {
-              "id": "exercise_077",
-              "name": "Dumbbell Row",
+              "id": "exercise_145",
+              "name": "Single-Arm Dumbbell Row",
               "sets": 3
             },
             {
@@ -2060,7 +2138,8 @@
           "sunday": null
         }
       },
-      "isPremade": true
+      "isPremade": true,
+      "isFree": true
     },
     {
       "id": "bodyweight-fat-loss",
@@ -2077,7 +2156,8 @@
           "bodyweight",
           "home",
           "beginner"
-        ]
+        ],
+        "recommendation": "Train 4 days per week — e.g. Monday / Tuesday / Thursday / Saturday. Perform exercises as a circuit with 20–30 seconds rest between exercises. Rest 60–90 seconds between rounds. Aim for 3–4 rounds."
       },
       "scheduleType": "weekly",
       "workouts": [
@@ -2113,7 +2193,7 @@
           "exercises": [
             {
               "id": "bodyweight_008",
-              "name": "Air Squats",
+              "name": "Bodyweight Squats",
               "sets": 4
             },
             {
@@ -2149,7 +2229,7 @@
             },
             {
               "id": "bodyweight_008",
-              "name": "Air Squats",
+              "name": "Bodyweight Squats",
               "sets": 4
             },
             {
@@ -2207,7 +2287,8 @@
           "sunday": null
         }
       },
-      "isPremade": true
+      "isPremade": true,
+      "isFree": true
     },
     {
       "id": "general-fitness-intermediate",
@@ -2224,7 +2305,8 @@
           "balanced",
           "intermediate",
           "conditioning"
-        ]
+        ],
+        "recommendation": "Perform each workout once per week with a rest day between sessions — e.g. Monday / Wednesday / Friday. Strength day: 4 sets of 6–8 reps, rest 2–3 minutes. Conditioning: circuit style with 45–60 seconds rest. Full body: 3–4 sets of 8–10 reps."
       },
       "scheduleType": "rotation",
       "workouts": [
@@ -2269,8 +2351,8 @@
               "sets": 3
             },
             {
-              "id": "exercise_077",
-              "name": "Dumbbell Row",
+              "id": "exercise_145",
+              "name": "Single-Arm Dumbbell Row",
               "sets": 3
             },
             {
@@ -2327,7 +2409,8 @@
           null
         ]
       },
-      "isPremade": true
+      "isPremade": true,
+      "isFree": true
     },
     {
       "id": "dumbbell-fitness",
@@ -2344,7 +2427,8 @@
           "dumbbells",
           "beginner",
           "home-gym"
-        ]
+        ],
+        "recommendation": "Perform each workout once per week with at least one rest day between sessions — e.g. Monday / Wednesday / Friday. Rest 60–90 seconds between sets. Aim for 3 sets of 10–12 reps per exercise."
       },
       "scheduleType": "rotation",
       "workouts": [
@@ -2358,8 +2442,8 @@
               "sets": 3
             },
             {
-              "id": "exercise_077",
-              "name": "Dumbbell Row",
+              "id": "exercise_145",
+              "name": "Single-Arm Dumbbell Row",
               "sets": 3
             },
             {
@@ -2384,17 +2468,17 @@
           "name": "Lower Body",
           "exercises": [
             {
-              "id": "exercise_079",
+              "id": "exercise_153",
               "name": "Dumbbell Goblet Squat",
               "sets": 3
             },
             {
-              "id": "exercise_078",
-              "name": "Dumbbell Romanian Deadlift",
+              "id": "exercise_086",
+              "name": "Dumbbell Romanian Deadlifts",
               "sets": 3
             },
             {
-              "id": "exercise_080",
+              "id": "exercise_084",
               "name": "Dumbbell Lunges",
               "sets": 3
             },
@@ -2404,7 +2488,7 @@
               "sets": 3
             },
             {
-              "id": "exercise_081",
+              "id": "exercise_154",
               "name": "Dumbbell Calf Raises",
               "sets": 3
             }
@@ -2415,7 +2499,7 @@
           "name": "Full Body",
           "exercises": [
             {
-              "id": "exercise_079",
+              "id": "exercise_153",
               "name": "Dumbbell Goblet Squat",
               "sets": 3
             },
@@ -2425,8 +2509,8 @@
               "sets": 3
             },
             {
-              "id": "exercise_077",
-              "name": "Dumbbell Row",
+              "id": "exercise_145",
+              "name": "Single-Arm Dumbbell Row",
               "sets": 3
             },
             {
@@ -2435,8 +2519,8 @@
               "sets": 2
             },
             {
-              "id": "exercise_078",
-              "name": "Dumbbell Romanian Deadlift",
+              "id": "exercise_086",
+              "name": "Dumbbell Romanian Deadlifts",
               "sets": 2
             }
           ]
@@ -2453,7 +2537,8 @@
           null
         ]
       },
-      "isPremade": true
+      "isPremade": true,
+      "isFree": true
     },
     {
       "id": "bodyweight-fitness",
@@ -2470,7 +2555,8 @@
           "bodyweight",
           "calisthenics",
           "intermediate"
-        ]
+        ],
+        "recommendation": "Train 4 days per week — e.g. Monday / Tuesday / Thursday / Saturday. Aim for 3–4 sets of as many quality reps as possible (AMRAP). Rest 60–90 seconds between sets. Progress by adding reps before adding sets."
       },
       "scheduleType": "weekly",
       "workouts": [
@@ -2532,7 +2618,7 @@
           "exercises": [
             {
               "id": "bodyweight_008",
-              "name": "Air Squats",
+              "name": "Bodyweight Squats",
               "sets": 4
             },
             {
@@ -2595,7 +2681,8 @@
           "sunday": null
         }
       },
-      "isPremade": true
+      "isPremade": true,
+      "isFree": false
     },
     {
       "id": "bro-split-5day",
@@ -2612,7 +2699,8 @@
           "bodybuilding",
           "hypertrophy",
           "intermediate"
-        ]
+        ],
+        "recommendation": "Train 5 days per week — e.g. Monday through Friday with weekends off. Aim for 3–4 sets of 8–12 reps on compounds, 3 sets of 10–15 reps on isolations. Rest 90–120 seconds between sets."
       },
       "scheduleType": "weekly",
       "workouts": [
@@ -2626,7 +2714,7 @@
               "sets": 4
             },
             {
-              "id": "exercise_099",
+              "id": "exercise_098",
               "name": "Incline Barbell Bench Press",
               "sets": 4
             },
@@ -2688,23 +2776,23 @@
               "sets": 4
             },
             {
-              "id": "exercise_004",
-              "name": "Lateral Raises",
-              "sets": 4
-            },
-            {
-              "id": "exercise_028",
-              "name": "Dumbbell Front Raises",
-              "sets": 3
-            },
-            {
               "id": "exercise_030",
               "name": "Arnold Press",
               "sets": 3
             },
             {
-              "id": "exercise_096",
+              "id": "exercise_004",
+              "name": "Lateral Raises",
+              "sets": 4
+            },
+            {
+              "id": "exercise_095",
               "name": "Face Pull",
+              "sets": 3
+            },
+            {
+              "id": "exercise_127",
+              "name": "Seated Bent Over Rear Delt Raise",
               "sets": 3
             }
           ]
@@ -2724,13 +2812,13 @@
               "sets": 4
             },
             {
-              "id": "exercise_027",
-              "name": "Dumbbell Bicep Curls",
+              "id": "exercise_012",
+              "name": "EZ Bar Curls",
               "sets": 3
             },
             {
-              "id": "exercise_053",
-              "name": "Triceps Kickback",
+              "id": "exercise_116",
+              "name": "Overhead Cable Triceps Extension",
               "sets": 3
             },
             {
@@ -2788,7 +2876,8 @@
           "sunday": null
         }
       },
-      "isPremade": true
+      "isPremade": true,
+      "isFree": false
     },
     {
       "id": "upper-lower-advanced",
@@ -2805,7 +2894,8 @@
           "advanced",
           "high-frequency",
           "hypertrophy"
-        ]
+        ],
+        "recommendation": "Train 5 days per week — e.g. Monday / Tuesday / Thursday / Friday / Saturday. Power days: 4–5 sets of 4–6 reps, rest 2–3 minutes. Hypertrophy days: 3–4 sets of 10–12 reps, rest 60–90 seconds. Volume day: 3–4 sets of 8–10 reps."
       },
       "scheduleType": "weekly",
       "workouts": [
@@ -2836,6 +2926,11 @@
             {
               "id": "exercise_006",
               "name": "Cable Triceps Pushdown",
+              "sets": 3
+            },
+            {
+              "id": "exercise_031",
+              "name": "Barbell Bicep Curl",
               "sets": 3
             }
           ]
@@ -2881,12 +2976,12 @@
               "sets": 4
             },
             {
-              "id": "exercise_077",
-              "name": "Dumbbell Row",
+              "id": "exercise_145",
+              "name": "Single-Arm Dumbbell Row",
               "sets": 4
             },
             {
-              "id": "exercise_099",
+              "id": "exercise_098",
               "name": "Incline Barbell Bench Press",
               "sets": 4
             },
@@ -2968,13 +3063,13 @@
               "sets": 3
             },
             {
-              "id": "exercise_096",
+              "id": "exercise_095",
               "name": "Face Pull",
               "sets": 3
             },
             {
-              "id": "exercise_053",
-              "name": "Triceps Kickback",
+              "id": "exercise_116",
+              "name": "Overhead Cable Triceps Extension",
               "sets": 3
             }
           ]
@@ -2991,7 +3086,8 @@
           "sunday": null
         }
       },
-      "isPremade": true
+      "isPremade": true,
+      "isFree": false
     },
     {
       "id": "powerbuilding",
@@ -3008,7 +3104,8 @@
           "strength",
           "hypertrophy",
           "intermediate"
-        ]
+        ],
+        "recommendation": "Train 4 days per week — e.g. Monday / Tuesday / Thursday / Friday. Main lifts: 5 sets of 3–5 reps with heavy weight. Accessories: 3–4 sets of 8–12 reps. Rest 3–5 minutes on main lifts, 60–90 seconds on accessories."
       },
       "scheduleType": "weekly",
       "workouts": [
@@ -3053,7 +3150,7 @@
               "sets": 5
             },
             {
-              "id": "exercise_099",
+              "id": "exercise_098",
               "name": "Incline Barbell Bench Press",
               "sets": 4
             },
@@ -3115,8 +3212,8 @@
               "sets": 4
             },
             {
-              "id": "exercise_077",
-              "name": "Dumbbell Row",
+              "id": "exercise_145",
+              "name": "Single-Arm Dumbbell Row",
               "sets": 4
             },
             {
@@ -3125,7 +3222,7 @@
               "sets": 3
             },
             {
-              "id": "exercise_096",
+              "id": "exercise_095",
               "name": "Face Pull",
               "sets": 3
             },
@@ -3148,7 +3245,8 @@
           "sunday": null
         }
       },
-      "isPremade": true
+      "isPremade": true,
+      "isFree": false
     },
     {
       "id": "dumbbell-upper-lower",
@@ -3165,7 +3263,8 @@
           "dumbbells",
           "home-gym",
           "intermediate"
-        ]
+        ],
+        "recommendation": "Train 4 days per week — e.g. Monday / Tuesday / Thursday / Friday. Aim for 3–4 sets of 8–12 reps per exercise. Rest 60–90 seconds between sets. Increase dumbbell weight when you can complete all sets at the top of the rep range."
       },
       "scheduleType": "weekly",
       "workouts": [
@@ -3179,8 +3278,8 @@
               "sets": 4
             },
             {
-              "id": "exercise_077",
-              "name": "Dumbbell Row",
+              "id": "exercise_145",
+              "name": "Single-Arm Dumbbell Row",
               "sets": 4
             },
             {
@@ -3197,6 +3296,11 @@
               "id": "exercise_027",
               "name": "Dumbbell Bicep Curls",
               "sets": 3
+            },
+            {
+              "id": "exercise_143",
+              "name": "Dumbbell Overhead Tricep Extension",
+              "sets": 3
             }
           ]
         },
@@ -3205,13 +3309,13 @@
           "name": "Lower Body A",
           "exercises": [
             {
-              "id": "exercise_079",
+              "id": "exercise_153",
               "name": "Dumbbell Goblet Squat",
               "sets": 4
             },
             {
-              "id": "exercise_078",
-              "name": "Dumbbell Romanian Deadlift",
+              "id": "exercise_086",
+              "name": "Dumbbell Romanian Deadlifts",
               "sets": 4
             },
             {
@@ -3220,12 +3324,12 @@
               "sets": 3
             },
             {
-              "id": "exercise_080",
+              "id": "exercise_084",
               "name": "Dumbbell Lunges",
               "sets": 3
             },
             {
-              "id": "exercise_081",
+              "id": "exercise_154",
               "name": "Dumbbell Calf Raises",
               "sets": 4
             }
@@ -3241,8 +3345,8 @@
               "sets": 4
             },
             {
-              "id": "exercise_077",
-              "name": "Dumbbell Row",
+              "id": "exercise_145",
+              "name": "Single-Arm Dumbbell Row",
               "sets": 4
             },
             {
@@ -3251,8 +3355,8 @@
               "sets": 3
             },
             {
-              "id": "exercise_028",
-              "name": "Dumbbell Front Raises",
+              "id": "exercise_011",
+              "name": "Dumbbell Hammer Curls",
               "sets": 3
             },
             {
@@ -3272,22 +3376,22 @@
               "sets": 4
             },
             {
-              "id": "exercise_078",
-              "name": "Dumbbell Romanian Deadlift",
+              "id": "exercise_086",
+              "name": "Dumbbell Romanian Deadlifts",
               "sets": 4
             },
             {
-              "id": "exercise_079",
+              "id": "exercise_153",
               "name": "Dumbbell Goblet Squat",
               "sets": 3
             },
             {
-              "id": "exercise_080",
+              "id": "exercise_084",
               "name": "Dumbbell Lunges",
               "sets": 3
             },
             {
-              "id": "exercise_081",
+              "id": "exercise_154",
               "name": "Dumbbell Calf Raises",
               "sets": 4
             }
@@ -3305,7 +3409,8 @@
           "sunday": null
         }
       },
-      "isPremade": true
+      "isPremade": true,
+      "isFree": false
     },
     {
       "id": "bodyweight-strength-program",
@@ -3322,7 +3427,8 @@
           "strength",
           "calisthenics",
           "intermediate"
-        ]
+        ],
+        "recommendation": "Train 4 days per week — e.g. Monday / Tuesday / Thursday / Saturday. Aim for 4–5 sets of 3–8 reps on strength exercises. Rest 2–3 minutes between sets. Progress by adding reps, then harder variations."
       },
       "scheduleType": "weekly",
       "workouts": [
@@ -3389,7 +3495,7 @@
             },
             {
               "id": "bodyweight_008",
-              "name": "Air Squats",
+              "name": "Bodyweight Squats",
               "sets": 5
             },
             {
@@ -3442,7 +3548,8 @@
           "sunday": null
         }
       },
-      "isPremade": true
+      "isPremade": true,
+      "isFree": false
     },
     {
       "id": "hiit-shred",
@@ -3459,7 +3566,8 @@
           "fat-loss",
           "conditioning",
           "intermediate"
-        ]
+        ],
+        "recommendation": "Train 4 days per week — e.g. Monday / Tuesday / Thursday / Saturday. Perform exercises as a circuit with 15–20 seconds rest between exercises. Rest 60–90 seconds between rounds. Aim for 4–5 rounds per workout."
       },
       "scheduleType": "weekly",
       "workouts": [
@@ -3599,7 +3707,8 @@
           "sunday": null
         }
       },
-      "isPremade": true
+      "isPremade": true,
+      "isFree": false
     },
     {
       "id": "full-body-3day-intermediate",
@@ -3616,7 +3725,8 @@
           "intermediate",
           "efficient",
           "hypertrophy"
-        ]
+        ],
+        "recommendation": "Perform each workout once per week with at least one rest day between sessions — e.g. Monday / Wednesday / Friday. Aim for 3–4 sets of 8–10 reps on compounds, 3 sets of 10–12 reps on isolations. Rest 90–120 seconds between sets."
       },
       "scheduleType": "rotation",
       "workouts": [
@@ -3697,8 +3807,8 @@
               "sets": 4
             },
             {
-              "id": "exercise_077",
-              "name": "Dumbbell Row",
+              "id": "exercise_145",
+              "name": "Single-Arm Dumbbell Row",
               "sets": 4
             },
             {
@@ -3707,7 +3817,7 @@
               "sets": 3
             },
             {
-              "id": "exercise_096",
+              "id": "exercise_095",
               "name": "Face Pull",
               "sets": 3
             }
@@ -3725,7 +3835,8 @@
           null
         ]
       },
-      "isPremade": true
+      "isPremade": true,
+      "isFree": false
     },
     {
       "id": "athletic-performance-program",
@@ -3742,7 +3853,8 @@
           "power",
           "performance",
           "advanced"
-        ]
+        ],
+        "recommendation": "Train 4 days per week — e.g. Monday / Tuesday / Thursday / Saturday. Power day: 4–5 sets of 3–5 reps, explosive tempo. Strength day: 4 sets of 5–8 reps. Speed day: max effort intervals. Conditioning: circuit style."
       },
       "scheduleType": "weekly",
       "workouts": [
@@ -3803,7 +3915,7 @@
           "name": "Speed & Agility",
           "exercises": [
             {
-              "id": "cardio_008",
+              "id": "cardio_009",
               "name": "Sprint Intervals",
               "sets": 8
             },
@@ -3839,8 +3951,8 @@
               "sets": 3
             },
             {
-              "id": "exercise_077",
-              "name": "Dumbbell Row",
+              "id": "exercise_145",
+              "name": "Single-Arm Dumbbell Row",
               "sets": 3
             },
             {
@@ -3867,7 +3979,8 @@
           "sunday": null
         }
       },
-      "isPremade": true
+      "isPremade": true,
+      "isFree": false
     },
     {
       "id": "beginner-machine-program",
@@ -3884,7 +3997,8 @@
           "machines",
           "safe",
           "hypertrophy"
-        ]
+        ],
+        "recommendation": "Perform each workout once per week with at least one rest day between sessions — e.g. Monday / Wednesday / Friday. Rest 60–90 seconds between sets. Aim for 3 sets of 12–15 reps per exercise. Focus on controlled form."
       },
       "scheduleType": "rotation",
       "workouts": [
@@ -3975,8 +4089,8 @@
               "sets": 2
             },
             {
-              "id": "exercise_003",
-              "name": "Butterfly Machine",
+              "id": "exercise_008",
+              "name": "Wide Grip Lat Pulldown",
               "sets": 2
             }
           ]
@@ -3993,7 +4107,8 @@
           null
         ]
       },
-      "isPremade": true
+      "isPremade": true,
+      "isFree": true
     },
     {
       "id": "minimalist-strength",
@@ -4010,7 +4125,8 @@
           "strength",
           "efficient",
           "beginner"
-        ]
+        ],
+        "recommendation": "Alternate Workout A and B twice per week — e.g. Monday / Thursday. Rest 3–5 minutes between sets. Aim for 3 sets of 5 reps per exercise. Add 5 lbs each session when you complete all reps."
       },
       "scheduleType": "rotation",
       "workouts": [
@@ -4068,7 +4184,8 @@
           null
         ]
       },
-      "isPremade": true
+      "isPremade": true,
+      "isFree": true
     },
     {
       "id": "dumbbell-6day",
@@ -4085,7 +4202,8 @@
           "advanced",
           "high-volume",
           "bodybuilding"
-        ]
+        ],
+        "recommendation": "Run as a 6-day rotation with one rest day per week. Aim for 4–5 sets of 8–12 reps per exercise. Rest 60–90 seconds between sets. Use heavy dumbbells and focus on progressive overload."
       },
       "scheduleType": "rotation",
       "workouts": [
@@ -4099,13 +4217,13 @@
               "sets": 5
             },
             {
-              "id": "exercise_076",
-              "name": "Dumbbell Bench Press",
+              "id": "exercise_102",
+              "name": "Incline Dumbbell Bench Press",
               "sets": 4
             },
             {
-              "id": "exercise_076",
-              "name": "Dumbbell Bench Press",
+              "id": "exercise_081",
+              "name": "Dumbbell Fly",
               "sets": 4
             }
           ]
@@ -4115,18 +4233,18 @@
           "name": "Back",
           "exercises": [
             {
-              "id": "exercise_077",
-              "name": "Dumbbell Row",
+              "id": "exercise_145",
+              "name": "Single-Arm Dumbbell Row",
               "sets": 5
             },
             {
-              "id": "exercise_077",
-              "name": "Dumbbell Row",
+              "id": "exercise_161",
+              "name": "Dumbbell Pullover",
               "sets": 4
             },
             {
-              "id": "exercise_078",
-              "name": "Dumbbell Romanian Deadlift",
+              "id": "exercise_087",
+              "name": "Dumbbell Shrugs",
               "sets": 4
             }
           ]
@@ -4167,8 +4285,8 @@
               "sets": 4
             },
             {
-              "id": "exercise_053",
-              "name": "Triceps Kickback",
+              "id": "exercise_143",
+              "name": "Dumbbell Overhead Tricep Extension",
               "sets": 4
             },
             {
@@ -4177,9 +4295,9 @@
               "sets": 4
             },
             {
-              "id": "exercise_053",
-              "name": "Triceps Kickback",
-              "sets": 4
+              "id": "exercise_029",
+              "name": "Incline Dumbbell Bicep Curls",
+              "sets": 3
             }
           ]
         },
@@ -4188,13 +4306,13 @@
           "name": "Legs A",
           "exercises": [
             {
-              "id": "exercise_079",
+              "id": "exercise_153",
               "name": "Dumbbell Goblet Squat",
               "sets": 5
             },
             {
-              "id": "exercise_078",
-              "name": "Dumbbell Romanian Deadlift",
+              "id": "exercise_086",
+              "name": "Dumbbell Romanian Deadlifts",
               "sets": 4
             },
             {
@@ -4203,7 +4321,7 @@
               "sets": 4
             },
             {
-              "id": "exercise_081",
+              "id": "exercise_154",
               "name": "Dumbbell Calf Raises",
               "sets": 4
             }
@@ -4219,17 +4337,17 @@
               "sets": 5
             },
             {
-              "id": "exercise_080",
+              "id": "exercise_084",
               "name": "Dumbbell Lunges",
               "sets": 4
             },
             {
-              "id": "exercise_079",
+              "id": "exercise_153",
               "name": "Dumbbell Goblet Squat",
               "sets": 4
             },
             {
-              "id": "exercise_081",
+              "id": "exercise_154",
               "name": "Dumbbell Calf Raises",
               "sets": 4
             }
@@ -4247,7 +4365,8 @@
           null
         ]
       },
-      "isPremade": true
+      "isPremade": true,
+      "isFree": false
     },
     {
       "id": "crossfit-inspired",
@@ -4264,7 +4383,8 @@
           "functional",
           "varied",
           "conditioning"
-        ]
+        ],
+        "recommendation": "Train 5 days per week — e.g. Monday through Friday with weekends off. Strength day: 5 sets of 3–5 reps. MetCon/WOD: circuit style with minimal rest. Gymnastics: skill work with 2–3 minute rest. Endurance: sustained effort."
       },
       "scheduleType": "weekly",
       "workouts": [
@@ -4330,8 +4450,8 @@
               "sets": 5
             },
             {
-              "id": "bodyweight_015",
-              "name": "Handstand Push-ups",
+              "id": "bodyweight_026",
+              "name": "Pike Push-ups",
               "sets": 4
             },
             {
@@ -4346,8 +4466,8 @@
           "name": "WOD",
           "exercises": [
             {
-              "id": "exercise_045",
-              "name": "Barbell Power Clean",
+              "id": "exercise_038",
+              "name": "Barbell Front Squat",
               "sets": 5
             },
             {
@@ -4377,13 +4497,13 @@
               "sets": 3
             },
             {
-              "id": "cardio_008",
+              "id": "cardio_009",
               "name": "Sprint Intervals",
               "sets": 5
             },
             {
               "id": "bodyweight_008",
-              "name": "Air Squats",
+              "name": "Bodyweight Squats",
               "sets": 4
             },
             {
@@ -4405,7 +4525,8 @@
           "sunday": null
         }
       },
-      "isPremade": true
+      "isPremade": true,
+      "isFree": false
     }
   ]
 }

@@ -17,7 +17,7 @@ import { springBouncy } from '@/constants/animations';
 
 export type WorkoutFilterState = {
   experienceLevel: 'all' | 'beginner' | 'intermediate' | 'advanced';
-  equipment: 'all' | 'full-gym' | 'dumbbells-only' | 'bodyweight' | 'minimal-equipment';
+  equipment: 'all' | 'full-gym' | 'dumbbells-only' | 'bodyweight';
   goal: 'all' | 'build-muscle' | 'strength' | 'lose-fat' | 'general-fitness';
   workoutType: 'all' | 'full-body' | 'push' | 'pull' | 'upper-body' | 'lower-body' | 'core-mobility';
   duration: 'all' | 'quick' | 'medium' | 'long';
@@ -35,7 +35,6 @@ const EQUIPMENT_FILTERS = [
   { label: 'Full Gym', value: 'full-gym' as const },
   { label: 'Dumbbells Only', value: 'dumbbells-only' as const },
   { label: 'Bodyweight', value: 'bodyweight' as const },
-  { label: 'Minimal Equipment', value: 'minimal-equipment' as const },
 ];
 
 const GOAL_FILTERS = [

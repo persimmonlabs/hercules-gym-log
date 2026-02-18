@@ -3,14 +3,13 @@
  * GPS-based activity tracker for outdoor cardio exercises.
  * Shows Start button initially, then live timer/distance with Pause/Stop controls.
  */
-import React, { useCallback, useEffect } from 'react';
+import React, { useCallback } from 'react';
 import { StyleSheet, View } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withSpring,
   FadeIn,
-  FadeOut,
 } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -18,7 +17,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Text } from '@/components/atoms/Text';
 import { radius, spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/useTheme';
-import { useGpsTracking, GpsTrackingState } from '@/hooks/useGpsTracking';
+import { useGpsTracking } from '@/hooks/useGpsTracking';
 import { springBouncy } from '@/constants/animations';
 import { useSettingsStore } from '@/store/settingsStore';
 
@@ -146,13 +145,10 @@ const ActionButton: React.FC<ActionButtonProps> = ({ iconName, label, onPress, v
   );
 };
 
-export const GpsActivityTracker: React.FC<GpsActivityTrackerProps> = ({
-  onComplete,
-  distanceUnit = 'miles',
-}) => {
+export const GpsActivityTracker: React.FC<GpsActivityTrackerProps> = ({ onComplete }) => {
   const { theme } = useTheme();
   // Subscribe to distanceUnit to trigger re-renders when units change
-  const distanceUnitPref = useSettingsStore((state) => state.distanceUnit);
+  useSettingsStore((state) => state.distanceUnit);
   const { convertDistance, getDistanceUnitShort } = useSettingsStore();
   const {
     state,

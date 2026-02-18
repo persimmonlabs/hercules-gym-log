@@ -26,6 +26,8 @@ import { formatSessionDateTime, formatWorkoutTitle } from '@/utils/workout';
 import { useWorkoutDetailAnimation } from '@/hooks/useWorkoutDetailAnimation';
 import type { Workout, WorkoutExercise } from '@/types/workout';
 import { useNavigationStore } from '@/store/navigationStore';
+import { getExerciseTypeByName } from '@/constants/exercises';
+import { useCustomExerciseStore } from '@/store/customExerciseStore';
 
 const WorkoutDetailScreen: React.FC = () => {
   const router = useRouter();
@@ -96,10 +98,29 @@ const WorkoutDetailScreen: React.FC = () => {
     setIsSaving(true);
     triggerHaptic('success');
     
+    // Auto-complete cardio/duration sets that have meaningful data
+    const currentCustomExercises = useCustomExerciseStore.getState().customExercises;
+    const finalExercises = editedExercises.map((exercise) => {
+      const exType = getExerciseTypeByName(exercise.name, currentCustomExercises);
+      if (exType !== 'cardio' && exType !== 'duration') return exercise;
+      return {
+        ...exercise,
+        sets: exercise.sets.map((set) => {
+          if (set.completed) return set;
+          const hasDuration = (set.duration ?? 0) > 0;
+          const hasDistance = (set.distance ?? 0) > 0;
+          if (hasDuration || hasDistance) {
+            return { ...set, completed: true };
+          }
+          return set;
+        }),
+      };
+    });
+
     const updatedWorkout: Workout = {
       ...workout,
       name: editedName.trim() || workout.name,
-      exercises: editedExercises,
+      exercises: finalExercises,
     };
     
     try {

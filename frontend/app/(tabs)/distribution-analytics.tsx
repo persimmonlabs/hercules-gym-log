@@ -6,8 +6,7 @@
 
 import React, { useCallback, useEffect } from 'react';
 import { View, StyleSheet, TouchableOpacity, ActivityIndicator, BackHandler } from 'react-native';
-import { useFocusEffect } from 'expo-router';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
 import { Text } from '@/components/atoms/Text';
@@ -94,6 +93,7 @@ const DistributionAnalyticsScreen: React.FC = () => {
               key={`upper-${chartKey}`}
               data={hierarchicalVolumeDistribution}
               rootGroup="Upper Body"
+              showTapHint={true}
             />
           </PremiumLock>
         </View>
@@ -111,6 +111,7 @@ const DistributionAnalyticsScreen: React.FC = () => {
               key={`lower-${chartKey}`}
               data={hierarchicalVolumeDistribution}
               rootGroup="Lower Body"
+              showTapHint={true}
             />
           </PremiumLock>
         </View>
@@ -128,6 +129,7 @@ const DistributionAnalyticsScreen: React.FC = () => {
               key={`core-${chartKey}`}
               data={hierarchicalVolumeDistribution}
               rootGroup="Core"
+              showTapHint={false}
             />
           </PremiumLock>
         </View>

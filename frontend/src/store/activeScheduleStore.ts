@@ -340,6 +340,47 @@ export const useActiveScheduleStore = create<ActiveScheduleStore>((set, get) => 
   },
 }));
 
+/** Pure function: compute today's workout from a state snapshot — safe to call in useMemo */
+export function computeTodaysWorkout(state: ActiveScheduleState): TodayWorkoutResult {
+  const date = new Date();
+  const dateKey = formatDateKey(date);
+
+  const override = state.overrides.find(o => o.date === dateKey);
+  if (override) {
+    return {
+      workoutId: override.workoutId,
+      source: 'override',
+      label: override.note || (override.workoutId ? 'Override' : 'Rest'),
+      context: 'Manual override',
+    };
+  }
+
+  const { activeRule } = state;
+  if (!activeRule) {
+    return {
+      workoutId: null,
+      source: 'none',
+      label: 'No schedule',
+      context: 'Set up a schedule to see your workouts',
+    };
+  }
+
+  switch (activeRule.type) {
+    case 'weekly':
+      return computeWeeklyWorkout(activeRule, date);
+    case 'rotating':
+      return computeRotatingWorkout(activeRule, date);
+    case 'plan-driven':
+      return computePlanDrivenWorkout(activeRule, date);
+    default:
+      return {
+        workoutId: null,
+        source: 'none',
+        label: 'Unknown schedule type',
+      };
+  }
+}
+
 /** Compute workout for weekly schedule */
 function computeWeeklyWorkout(rule: WeeklyScheduleRule, date: Date): TodayWorkoutResult {
   const dayIndex = date.getDay();

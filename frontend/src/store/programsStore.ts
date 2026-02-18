@@ -436,6 +436,55 @@ export const useProgramsStore = create<ProgramsState>((set, get) => ({
         return;
       }
 
+      // Before deleting, promote plan-only workouts to standalone templates.
+      // If a workout with the same name already exists in workout_templates, skip it.
+      const programToDelete = get().userPrograms.find(p => p.id === id);
+      if (programToDelete) {
+        const plansStore = usePlansStore.getState();
+        const existingNames = new Set(
+          plansStore.plans.map(p => p.name.trim().toLowerCase())
+        );
+
+        // Also check workouts in OTHER programs (not the one being deleted)
+        // to avoid promoting workouts that still exist in another plan
+        const otherProgramWorkoutNames = new Set<string>();
+        get().userPrograms.forEach(prog => {
+          if (prog.id === id) return;
+          prog.workouts.forEach(w => {
+            otherProgramWorkoutNames.add(w.name.trim().toLowerCase());
+          });
+        });
+
+        for (const workout of programToDelete.workouts) {
+          const nameKey = workout.name.trim().toLowerCase();
+          // Only promote if no standalone template exists AND not in another program
+          if (!existingNames.has(nameKey) && !otherProgramWorkoutNames.has(nameKey)) {
+            try {
+              const exercisesToSave = workout.exercises.map(e => ({
+                id: e.id,
+                name: e.name,
+                sets: 3,
+              }));
+              await plansStore.addPlan({
+                name: workout.name,
+                exercises: workout.exercises.map(e => {
+                  // Resolve full exercise objects from the catalog
+                  const catalogExercise = require('@/constants/exercises').exercises.find(
+                    (ex: any) => ex.id === e.id
+                  );
+                  return catalogExercise || e;
+                }),
+                source: 'custom',
+              });
+              console.log(`[programsStore] Promoted "${workout.name}" to standalone template`);
+            } catch (promoteError: any) {
+              // If promotion fails (e.g. free limit), log but continue with deletion
+              console.warn(`[programsStore] Could not promote "${workout.name}":`, promoteError?.message);
+            }
+          }
+        }
+      }
+
       const nextPrograms = get().userPrograms.filter(p => p.id !== id);
       set({ userPrograms: nextPrograms });
 

@@ -131,10 +131,7 @@ const CreatePlanScreen: React.FC = () => {
 
   const handleBackPress = useCallback(() => {
     triggerHaptic('selection');
-    router.replace({
-      pathname: '/(tabs)/add-workout',
-      params: { mode: 'workout' }
-    });
+    router.replace('/(tabs)/workout');
   }, [router]);
 
   const handleSavePlanPress = useCallback(() => {

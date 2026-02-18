@@ -39,7 +39,7 @@ export const WorkoutInProgressModal: React.FC<WorkoutInProgressModalProps> = ({
                 Workout in Progress
               </Text>
               <Text variant="body" color="secondary" style={styles.textCentered}>
-                You have an ongoing session "{sessionName}" ({elapsedLabel} elapsed).
+                You have an ongoing session &quot;{sessionName}&quot; ({elapsedLabel} elapsed).
               </Text>
             </View>
 

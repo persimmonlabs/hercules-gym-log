@@ -6,7 +6,6 @@ import {
   Keyboard,
   Platform,
   Pressable,
-  ScrollView,
   StyleSheet,
   TextInput,
   View,
@@ -16,26 +15,17 @@ import { triggerHaptic } from '@/utils/haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import Animated, {
-  runOnJS,
-  useAnimatedStyle,
-  useSharedValue,
-  withSpring,
-  withTiming,
-  Layout,
-} from 'react-native-reanimated';
+import { runOnJS } from 'react-native-reanimated';
 import { StatusBar } from 'expo-status-bar';
 import * as NavigationBar from 'expo-navigation-bar';
-import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 
 import { SheetModal } from '@/components/molecules/SheetModal';
 import { Button } from '@/components/atoms/Button';
 import { Text } from '@/components/atoms/Text';
 import { ExerciseSetEditor } from '@/components/molecules/ExerciseSetEditor';
 import { ExerciseHistoryModal } from '@/components/molecules/ExerciseHistoryModal';
-import { exercises as baseExerciseCatalog, createCustomExerciseCatalogItem } from '@/constants/exercises';
-import { springGentle } from '@/constants/animations';
-import { colors, radius, shadows, sizing, spacing, typography, zIndex } from '@/constants/theme';
+import { exercises as baseExerciseCatalog, createCustomExerciseCatalogItem, getExerciseTypeByName } from '@/constants/exercises';
+import { colors, radius, sizing, spacing, zIndex } from '@/constants/theme';
 import { useTheme } from '@/hooks/useTheme';
 import { useElapsedTimer } from '@/hooks/useElapsedTimer';
 import { useSemanticExerciseSearch } from '@/hooks/useSemanticExerciseSearch';
@@ -44,6 +34,7 @@ import { usePlansStore } from '@/store/plansStore';
 import { useWorkoutSessionsStore } from '@/store/workoutSessionsStore';
 import { useProgramsStore } from '@/store/programsStore';
 import { useCustomExerciseStore } from '@/store/customExerciseStore';
+import { useSettingsStore } from '@/store/settingsStore';
 import { CreateExerciseModal } from '@/components/molecules/CreateExerciseModal';
 import { FinishConfirmationModal } from '@/components/molecules/FinishConfirmationModal';
 import { DeleteConfirmationModal } from '@/components/molecules/DeleteConfirmationModal';
@@ -52,11 +43,6 @@ import { createSetsWithHistory } from '@/utils/exerciseHistory';
 import { getExerciseDisplayTagText } from '@/utils/exerciseDisplayTags';
 import type { Exercise, ExerciseCatalogItem } from '@/constants/exercises';
 import type { SetLog, WorkoutExercise } from '@/types/workout';
-import hierarchyData from '@/data/hierarchy.json';
-
-const SCREEN_HEIGHT = Dimensions.get('window').height;
-const SHEET_DISMISS_THRESHOLD = spacing['2xl'] * 2;
-const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 interface ExerciseProgressSnapshot {
   completedSets: number;
@@ -102,6 +88,9 @@ const WorkoutSessionScreen: React.FC = () => {
 
     return state.plans.find((plan) => plan.id === activePlanId)?.name ?? null;
   });
+  
+  // Prioritize workout name from session, then plan name, then fallback to 'Current Session'
+  const sessionDisplayName = sessionToDisplay?.name ?? activePlanName ?? 'Current Session';
   const isSessionActive = useSessionStore((state) => state.isSessionActive);
   const addExerciseToSession = useSessionStore((state) => state.addExercise);
   const endSession = useSessionStore((state) => state.endSession);
@@ -112,8 +101,12 @@ const WorkoutSessionScreen: React.FC = () => {
   const addWorkout = useWorkoutSessionsStore((state) => state.addWorkout);
   const { activeRotation, advanceRotation } = useProgramsStore();
   const customExercises = useCustomExerciseStore((state) => state.customExercises);
+  const convertWeightToLbs = useSettingsStore((state) => state.convertWeightToLbs);
 
-  const sessionExercises = sessionToDisplay?.exercises ?? [];
+  const sessionExercises = useMemo(
+    () => sessionToDisplay?.exercises ?? [],
+    [sessionToDisplay?.exercises],
+  );
 
   const [pickerVisible, setPickerVisible] = useState<boolean>(false);
   const [createExerciseModalVisible, setCreateExerciseModalVisible] = useState<boolean>(false);
@@ -222,7 +215,7 @@ const WorkoutSessionScreen: React.FC = () => {
         void NavigationBar.setBackgroundColorAsync(theme.primary.bg);
       };
     }
-  }, [theme.primary.bg]);
+  }, [theme.primary.bg, theme.surface.tint]);
 
 
 
@@ -238,28 +231,6 @@ const WorkoutSessionScreen: React.FC = () => {
     limit: exerciseCatalog.length,
   });
 
-  // Build muscle to mid-level group mapping
-  const muscleToMidLevelMap = useMemo(() => {
-    const map: Record<string, string> = {};
-    const hierarchy = hierarchyData.muscle_hierarchy;
-
-    Object.entries(hierarchy).forEach(([l1, l1Data]) => {
-      if (l1Data.muscles) {
-        Object.entries(l1Data.muscles).forEach(([midLevel, midLevelData]) => {
-          // Map the mid-level group to itself
-          map[midLevel] = midLevel;
-
-          // Map all low-level muscles to their mid-level parent
-          if (midLevelData.muscles) {
-            Object.keys(midLevelData.muscles).forEach(lowLevel => {
-              map[lowLevel] = midLevel;
-            });
-          }
-        });
-      }
-    });
-    return map;
-  }, []);
 
   const filteredExercises = useMemo(() => {
     const trimmedQuery = searchTerm.trim();
@@ -331,7 +302,7 @@ const WorkoutSessionScreen: React.FC = () => {
 
     if (targetName) {
       // Always fetch new exercise's history when replacing
-      const { sets, historySetCount } = createSetsWithHistory(exercise.name, allWorkouts);
+      const { sets, historySetCount } = createSetsWithHistory(exercise.name, allWorkouts, undefined, undefined, customExercises);
 
       const nextExercise: WorkoutExercise = {
         name: exercise.name,
@@ -374,7 +345,7 @@ const WorkoutSessionScreen: React.FC = () => {
         return rest;
       });
     } else {
-      const { sets, historySetCount } = createSetsWithHistory(exercise.name, allWorkouts);
+      const { sets, historySetCount } = createSetsWithHistory(exercise.name, allWorkouts, undefined, undefined, customExercises);
       const nextExercise: WorkoutExercise = {
         name: exercise.name,
         sets,
@@ -455,6 +426,36 @@ const WorkoutSessionScreen: React.FC = () => {
     const durationMilliseconds = endTime - currentSessionData.startTime;
     const durationSeconds = Math.max(Math.floor(durationMilliseconds / 1000), 0);
 
+    const currentCustomExercises = useCustomExerciseStore.getState().customExercises;
+    const exercisesInLbs = currentSessionData.exercises.map((exercise) => {
+      const exType = getExerciseTypeByName(exercise.name, currentCustomExercises);
+      return {
+        ...exercise,
+        sets: exercise.sets.map((set) => {
+          // Auto-complete cardio/duration sets that have meaningful data entered
+          // Users often enter time/distance without pressing "Complete set"
+          let completed = set.completed;
+          if (!completed && (exType === 'cardio' || exType === 'duration')) {
+            const hasDuration = (set.duration ?? 0) > 0;
+            const hasDistance = (set.distance ?? 0) > 0;
+            if (hasDuration || hasDistance) {
+              completed = true;
+            }
+          }
+          return {
+            ...set,
+            completed,
+            // Session UI stores values in the user's selected unit; normalize to lbs for storage/analytics
+            weight: set.weight !== undefined ? convertWeightToLbs(set.weight) : undefined,
+            assistanceWeight:
+              set.assistanceWeight !== undefined
+                ? convertWeightToLbs(set.assistanceWeight)
+                : undefined,
+          };
+        }),
+      };
+    });
+
     const workout = {
       id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
       planId: currentSessionData.planId,
@@ -463,7 +464,7 @@ const WorkoutSessionScreen: React.FC = () => {
       startTime: currentSessionData.startTime,
       endTime,
       duration: durationSeconds,
-      exercises: currentSessionData.exercises,
+      exercises: exercisesInLbs,
     };
 
     try {
@@ -486,7 +487,7 @@ const WorkoutSessionScreen: React.FC = () => {
       setIsFinishingWorkout(false);
       router.replace('/(tabs)');
     }
-  }, [isFinishingWorkout, sessionToDisplay, endSession, addWorkout, router, activeRotation, advanceRotation]);
+  }, [isFinishingWorkout, sessionToDisplay, endSession, addWorkout, router, activeRotation, advanceRotation, convertWeightToLbs]);
 
   const handleCancel = useCallback(() => {
     clearSession();
@@ -665,7 +666,7 @@ const WorkoutSessionScreen: React.FC = () => {
   const listHeaderComponent = useMemo(() => (
     <View style={styles.listHeader}>
       <View style={styles.headerCard}>
-        <Text variant="heading2" color="primary">{activePlanName ?? 'Current Session'}</Text>
+        <Text variant="heading2" color="primary">{sessionDisplayName}</Text>
         <View style={styles.headerRow}>
           <View style={styles.headerStat}>
             <Text variant="label" color="secondary">
@@ -686,7 +687,7 @@ const WorkoutSessionScreen: React.FC = () => {
         <Text variant="heading3">Exercises</Text>
       </View>
     </View>
-  ), [activePlanName, elapsedSeconds, exerciseCount, completedExercisesCount]);
+  ), [sessionDisplayName, elapsedSeconds, exerciseCount, completedExercisesCount]);
 
   const tabBarBottomOffset = useMemo(() => insets.bottom + spacing.sm, [insets.bottom]);
   const tabBarMaskHeight = useMemo(
@@ -757,7 +758,7 @@ const WorkoutSessionScreen: React.FC = () => {
         </View>
       </View>
     ),
-    [tabBarTopOffset]
+    []
   );
   const renderExerciseSeparator = useCallback(() => <View style={styles.exerciseSeparator} />, []);
 
@@ -883,6 +884,7 @@ const WorkoutSessionScreen: React.FC = () => {
                         onSetsChange={(updatedSets) => handleExerciseSetsChange(item.name, updatedSets)}
                         onProgressChange={(progress) => handleExerciseProgressChange(item.name, progress)}
                         exerciseType={exerciseCatalog.find(e => e.name === item.name)?.exerciseType || 'weight'}
+                        distanceUnit={exerciseCatalog.find(e => e.name === item.name)?.distanceUnit}
                         historySetCount={sessionToDisplay?.historySetCounts?.[item.name] ?? 0}
                         supportsGpsTracking={exerciseCatalog.find(e => e.name === item.name)?.supportsGpsTracking ?? false}
                         activeSetMenuIndex={activeMenu?.type === 'set' && activeMenu.exerciseName === item.name ? activeMenu.setIndex : null}

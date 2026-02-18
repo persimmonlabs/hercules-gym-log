@@ -36,9 +36,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingTop: spacing.sm,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.border.light,
   },
   stat: {
     flexDirection: 'row',
@@ -94,7 +91,9 @@ export const ProgramCard: React.FC<ProgramCardProps> = ({ program, onPress, styl
   // Workouts don't have a 'workouts' array of their own, they contain exercises directly
   const workoutsArray = 'workouts' in program && Array.isArray(program.workouts) ? program.workouts : [];
   const exercisesArray = 'exercises' in program && Array.isArray(program.exercises) ? program.exercises : [];
-  const itemCount = workoutsArray.length > 0 ? workoutsArray.length : exercisesArray.length;
+  // Filter out null/rest days - only count workouts with exercises
+  const actualWorkouts = workoutsArray.filter(w => w && w.exercises && w.exercises.length > 0);
+  const itemCount = workoutsArray.length > 0 ? actualWorkouts.length : exercisesArray.length;
   const itemLabel = workoutsArray.length > 0 ? 'workouts' : 'exercises';
 
   // Show locked card for premium content
@@ -137,7 +136,7 @@ export const ProgramCard: React.FC<ProgramCardProps> = ({ program, onPress, styl
       >
         <View style={styles.header}>
           <Text variant="bodySemibold" color="primary">{name}</Text>
-          <Text variant="caption" color="secondary" numberOfLines={2}>{metadata.description}</Text>
+          <Text variant="caption" color="secondary">{metadata.description}</Text>
         </View>
 
         <View style={styles.tags}>
@@ -148,10 +147,7 @@ export const ProgramCard: React.FC<ProgramCardProps> = ({ program, onPress, styl
 
         <View style={styles.footer}>
           <Text variant="caption" color="secondary">
-            {itemCount} {itemLabel} • {isWorkout
-              ? `${(metadata as any).durationMinutes || 0} min`
-              : `${(metadata as any).daysPerWeek || 0} days/week`
-            }
+            {itemCount} {itemLabel}{isWorkout ? ` • ${(metadata as any).durationMinutes || 0} min` : ''}
           </Text>
         </View>
       </Pressable>

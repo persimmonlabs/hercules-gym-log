@@ -1,168 +1,35 @@
-import React, { useCallback, useEffect, useMemo, useState, useRef } from 'react';
-import { Alert, Modal, Pressable, StyleSheet, View, ScrollView, Platform, BackHandler, type ViewStyle } from 'react-native';
-import { useRouter } from 'expo-router';
-import { useScrollToTop, useFocusEffect } from '@react-navigation/native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { BackHandler, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useFocusEffect, useScrollToTop } from '@react-navigation/native';
 import { triggerHaptic } from '@/utils/haptics';
-import Animated, { Easing, useAnimatedStyle, useSharedValue, withSpring, withTiming, FadeInDown, FadeOutUp, type AnimatedStyle } from 'react-native-reanimated';
 
+import { Button } from '@/components/atoms/Button';
 import { SurfaceCard } from '@/components/atoms/SurfaceCard';
 import { Text } from '@/components/atoms/Text';
-import { ScreenHeader } from '@/components/molecules/ScreenHeader';
-import { TabSwipeContainer } from '@/components/templates/TabSwipeContainer';
-import { Button } from '@/components/atoms/Button';
-import { MyScheduleCard } from '@/components/molecules/MyScheduleCard';
 import { AddOverrideModal } from '@/components/molecules/AddOverrideModal';
-import WorkoutSubcardList from '@/components/molecules/WorkoutSubcardList';
+import { MyScheduleCard } from '@/components/molecules/MyScheduleCard';
+import { ScreenHeader } from '@/components/molecules/ScreenHeader';
 import { ProgramSubcardList } from '@/components/molecules/ProgramSubcardList';
-import { colors, radius, shadows, sizing, spacing } from '@/constants/theme';
-import { useTheme } from '@/hooks/useTheme';
-import { usePlansStore, type Plan, type PlansState } from '@/store/plansStore';
-import { useProgramsStore } from '@/store/programsStore';
-import { IconSymbol } from '@/components/ui/icon-symbol';
-import { useSessionStore } from '@/store/sessionStore';
-import { ProgramCard } from '@/components/molecules/ProgramCard';
+import WorkoutSubcardList from '@/components/molecules/WorkoutSubcardList';
 import { WorkoutInProgressModal } from '@/components/molecules/WorkoutInProgressModal';
+import { TabSwipeContainer } from '@/components/templates/TabSwipeContainer';
+import { colors, radius, shadows, sizing, spacing } from '@/constants/theme';
+import { useActiveScheduleStore } from '@/store/activeScheduleStore';
+import { usePlanBuilderContext } from '@/providers/PlanBuilderProvider';
+import { usePlansStore, type PlansState } from '@/store/plansStore';
+import { useProgramsStore } from '@/store/programsStore';
+import { useSessionStore } from '@/store/sessionStore';
+import { useWorkoutSessionsStore, type WorkoutSessionsState } from '@/store/workoutSessionsStore';
 import type { WorkoutExercise } from '@/types/workout';
 import { createSetsWithHistory } from '@/utils/workout';
-import { useWorkoutSessionsStore, type WorkoutSessionsState } from '@/store/workoutSessionsStore';
-import { useActiveScheduleStore } from '@/store/activeScheduleStore';
-import type { UserProgram, Weekday, WeeklyScheduleConfig } from '@/types/premadePlan';
-import { usePlanBuilderContext } from '@/providers/PlanBuilderProvider';
-
-const getPlanSummary = (program: UserProgram) => {
-  // If no schedule, fallback to basic count
-  if (!program.schedule) {
-    return `${program.workouts.length} workouts`;
-  }
-
-  if (program.schedule.type === 'rotation' && program.schedule.rotation) {
-    const order = program.schedule.rotation.workoutOrder;
-    let workoutCount = 0;
-
-    order.forEach(id => {
-      const workout = program.workouts.find(w => w.id === id);
-      if (workout && workout.exercises.length > 0) {
-        workoutCount++;
-      }
-    });
-
-    return `${workoutCount} workouts`;
-  }
-
-  if (program.schedule.type === 'weekly' && program.schedule.weekly) {
-    const weekly = program.schedule.weekly;
-    const days: Weekday[] = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
-    let workoutCount = 0;
-
-    days.forEach(day => {
-      const workoutId = weekly[day];
-      if (workoutId) {
-        const workout = program.workouts.find(w => w.id === workoutId);
-        if (workout && workout.exercises.length > 0) {
-          workoutCount++;
-        }
-      }
-    });
-
-    return `${workoutCount} workouts`;
-  }
-
-  // Fallback
-  return `${program.workouts.length} workouts`;
-};
-
-const CARD_LIFT_TRANSLATE = -2;
-const CARD_LIFT_DURATION_MS = 200;
-const CARD_PRESS_SCALE = 0.98;
-const SCALE_DOWN_DURATION_MS = 150;
-const scaleDownTimingConfig = {
-  duration: SCALE_DOWN_DURATION_MS,
-  easing: Easing.out(Easing.cubic),
-};
-const scaleUpSpringConfig = {
-  damping: 15,
-  stiffness: 300,
-};
-
-const timingConfig = {
-  duration: CARD_LIFT_DURATION_MS,
-  easing: Easing.out(Easing.cubic),
-};
-
-type ShadowConfig = {
-  shadowOpacity: number;
-  shadowRadius: number;
-  elevation: number;
-};
-
-const shadowConfigs: Record<'sm' | 'md' | 'lg', ShadowConfig> = {
-  sm: {
-    shadowOpacity: shadows.sm.shadowOpacity,
-    shadowRadius: shadows.sm.shadowRadius,
-    elevation: shadows.sm.elevation,
-  },
-  md: {
-    shadowOpacity: shadows.md.shadowOpacity,
-    shadowRadius: shadows.md.shadowRadius,
-    elevation: shadows.md.elevation,
-  },
-  lg: {
-    shadowOpacity: shadows.lg.shadowOpacity,
-    shadowRadius: shadows.lg.shadowRadius,
-    elevation: shadows.lg.elevation,
-  },
-};
-
-type CardLiftAnimation = {
-  animatedStyle: AnimatedStyle<ViewStyle>;
-  onPressIn: () => void;
-  onPressOut: () => void;
-};
-
-const useCardLiftAnimation = (initialShadow: ShadowConfig, activeShadow: ShadowConfig): CardLiftAnimation => {
-  const translateY = useSharedValue<number>(0);
-  const shadowOpacity = useSharedValue<number>(initialShadow.shadowOpacity);
-  const shadowRadius = useSharedValue<number>(initialShadow.shadowRadius);
-  const elevation = useSharedValue<number>(initialShadow.elevation);
-  const scale = useSharedValue<number>(1);
-
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [
-      { translateY: translateY.value },
-      { scale: scale.value },
-    ],
-    shadowOpacity: shadowOpacity.value,
-    shadowRadius: shadowRadius.value,
-    elevation: elevation.value,
-  }));
-
-  const handlePressIn = () => {
-    translateY.value = withTiming(CARD_LIFT_TRANSLATE, timingConfig);
-    shadowOpacity.value = withTiming(activeShadow.shadowOpacity, timingConfig);
-    shadowRadius.value = withTiming(activeShadow.shadowRadius, timingConfig);
-    elevation.value = withTiming(activeShadow.elevation, timingConfig);
-    scale.value = withTiming(CARD_PRESS_SCALE, scaleDownTimingConfig);
-  };
-
-  const handlePressOut = () => {
-    translateY.value = withTiming(0, timingConfig);
-    shadowOpacity.value = withTiming(initialShadow.shadowOpacity, timingConfig);
-    shadowRadius.value = withTiming(initialShadow.shadowRadius, timingConfig);
-    elevation.value = withTiming(initialShadow.elevation, timingConfig);
-    scale.value = withSpring(1, scaleUpSpringConfig);
-  };
-
-  return {
-    animatedStyle,
-    onPressIn: handlePressIn,
-    onPressOut: handlePressOut,
-  };
-};
+import { useCustomExerciseStore } from '@/store/customExerciseStore';
 
 const styles = StyleSheet.create({
   contentContainer: {
     flexGrow: 1,
+  },
+  innerContainer: {
     paddingTop: spacing.xl,
     paddingHorizontal: spacing.md,
     paddingBottom: spacing.sm,
@@ -315,16 +182,35 @@ const styles = StyleSheet.create({
 });
 
 const PlansScreen: React.FC = () => {
-  const { theme } = useTheme();
   const router = useRouter();
+  const { scrollTo } = useLocalSearchParams<{ scrollTo?: string }>();
   const scrollRef = useRef<ScrollView>(null);
-  const insets = useSafeAreaInsets();
+  const scheduleCardRef = useRef<View>(null);
+  const plansCardRef = useRef<View>(null);
   useScrollToTop(scrollRef);
 
   useFocusEffect(
     useCallback(() => {
-      scrollRef.current?.scrollTo({ y: 0, animated: false });
-    }, [])
+      if (scrollTo === 'schedule') {
+        scheduleCardRef.current?.measureLayout(
+          scrollRef.current as any,
+          (_x, y) => {
+            scrollRef.current?.scrollTo({ y, animated: false });
+          },
+          () => {}
+        );
+      } else if (scrollTo === 'plans') {
+        plansCardRef.current?.measureLayout(
+          scrollRef.current as any,
+          (_x, y) => {
+            scrollRef.current?.scrollTo({ y: Math.max(0, y - 100), animated: false });
+          },
+          () => {}
+        );
+      } else {
+        scrollRef.current?.scrollTo({ y: 0, animated: false });
+      }
+    }, [scrollTo])
   );
 
   // Handle Android hardware back button - navigate to Dashboard
@@ -346,8 +232,8 @@ const PlansScreen: React.FC = () => {
   const setCompletionOverlayVisible = useSessionStore((state) => state.setCompletionOverlayVisible);
   const isSessionActive = useSessionStore((state) => state.isSessionActive);
   const currentSession = useSessionStore((state) => state.currentSession);
-  const clearSession = useSessionStore((state) => state.clearSession);
   const allWorkouts = useWorkoutSessionsStore((state: WorkoutSessionsState) => state.workouts);
+  const customExercises = useCustomExerciseStore((state) => state.customExercises);
   const [expandedPlanId, setExpandedPlanId] = useState<string | null>(null);
   const [isDeleteDialogVisible, setIsDeleteDialogVisible] = useState<boolean>(false);
   const [itemToDelete, setItemToDelete] = useState<any>(null);
@@ -381,12 +267,6 @@ const PlansScreen: React.FC = () => {
   const handleCreateWorkoutPress = useCallback(() => {
     triggerHaptic('selection');
     router.push('/(tabs)/create-workout');
-  }, [router]);
-
-
-  const handleBrowseProgramsPress = useCallback(() => {
-    triggerHaptic('selection');
-    router.push('/(tabs)/browse-programs');
   }, [router]);
 
   const handleProgramPress = useCallback((program: any) => {
@@ -625,7 +505,7 @@ const PlansScreen: React.FC = () => {
 
       const historySetCounts: Record<string, number> = {};
       const workoutExercises: WorkoutExercise[] = item.exercises.map((exercise: any) => {
-        const { sets, historySetCount } = createSetsWithHistory(exercise.name, allWorkouts);
+        const { sets, historySetCount } = createSetsWithHistory(exercise.name, allWorkouts, undefined, undefined, customExercises);
         historySetCounts[exercise.name] = historySetCount;
         return {
           name: exercise.name,
@@ -666,13 +546,14 @@ const PlansScreen: React.FC = () => {
         }}
       />
 
+      <View style={styles.innerContainer}>
       <ScreenHeader
         title="Programs"
         subtitle="Manage your workouts and training plans"
       />
 
       {/* My Workouts Section with Carousel */}
-      <View style={{ marginTop: -spacing.xs }}>
+      <View style={{ marginTop: -spacing.md }}>
         <SurfaceCard tone="card" padding="xl" showAccentStripe={true} style={{ borderWidth: 0 }}>
           <WorkoutSubcardList
               workouts={myWorkouts}
@@ -691,7 +572,7 @@ const PlansScreen: React.FC = () => {
       </View>
 
       {/* My Plans Section with Carousel */}
-      <View style={{ marginTop: -spacing.xs }}>
+      <View ref={plansCardRef}>
         <SurfaceCard tone="card" padding="xl" showAccentStripe={true} style={{ borderWidth: 0 }}>
           <ProgramSubcardList
               programs={myPlans}
@@ -709,16 +590,23 @@ const PlansScreen: React.FC = () => {
       </View>
 
       {/* My Schedule Section */}
-      <View>
-        <MyScheduleCard
-          onEditPress={() => {
-            triggerHaptic('selection');
-            router.push('/(tabs)/schedule-setup');
-          }}
-          onAddOverridePress={() => setIsOverrideModalVisible(true)}
-          onDeletePress={handleDeleteSchedule}
-        />
+      <View ref={scheduleCardRef}>
+        <SurfaceCard tone="card" padding="xl" showAccentStripe={true} style={{ borderWidth: 0 }}>
+          <MyScheduleCard
+            onEditPress={() => {
+              triggerHaptic('selection');
+              router.push({
+                pathname: '/(tabs)/schedule-setup',
+                params: { mode: activeScheduleRule ? 'edit' : 'create' },
+              });
+            }}
+            onAddOverridePress={() => setIsOverrideModalVisible(true)}
+            onDeletePress={handleDeleteSchedule}
+          />
+        </SurfaceCard>
       </View>
+
+      </View>{/* end innerContainer */}
 
       <AddOverrideModal
         visible={isOverrideModalVisible}
@@ -743,7 +631,7 @@ const PlansScreen: React.FC = () => {
                   {itemToDelete?.type === 'program_deletion' ? 'Delete Plan' : 'Remove Workout'}
                 </Text>
                 <Text variant="body" color="secondary">
-                  Are you sure you want to {itemToDelete?.type === 'program_deletion' ? 'delete' : 'remove'} "{itemToDelete?.name}"?
+                  Are you sure you want to {itemToDelete?.type === 'program_deletion' ? 'delete' : 'remove'} &quot;{itemToDelete?.name}&quot;?
                   {(itemToDelete?.type === 'program_deletion' && itemToDelete?.id === activePlanId)
                     ? ' This will also start a new week and clear your current schedule.'
                     : ''}

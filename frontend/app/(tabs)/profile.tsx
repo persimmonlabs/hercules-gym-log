@@ -915,6 +915,7 @@ const StatsScreen: React.FC = () => {
           titleCentered={true}
           showHorizontalAccentBar={false}
           showChevron={false}
+          padding="sm"
         >
           <View style={{ gap: spacing.md, paddingBottom: spacing.lg }}>
             <View style={{ gap: spacing.sm }}>
@@ -991,8 +992,9 @@ const StatsScreen: React.FC = () => {
         titleCentered={true}
         showHorizontalAccentBar={false}
         showChevron={false}
+        padding="sm"
       >
-        <View style={{ paddingBottom: spacing.xl }}>
+        <View style={{ paddingBottom: spacing.sm }}>
           <Pressable
             style={herculesAiStyles.pressableStretch}
             onPress={() => {

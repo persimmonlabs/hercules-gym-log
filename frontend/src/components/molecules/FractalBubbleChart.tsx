@@ -22,6 +22,7 @@ interface FractalBubbleChartProps {
   onMusclePress?: (muscleName: string) => void;
   /** Optional: Start at a specific L1 group (e.g., "Upper Body", "Lower Body", "Core") */
   rootGroup?: string;
+  showTapHint?: boolean;
 }
 
 interface BreadcrumbItem {
@@ -46,13 +47,16 @@ const getDisplayName = (fullName: string): string => {
   return fullName;
 };
 
-export const FractalBubbleChart: React.FC<FractalBubbleChartProps> = ({ data, onMusclePress, rootGroup }) => {
+export const FractalBubbleChart: React.FC<FractalBubbleChartProps> = ({ data, onMusclePress, rootGroup, showTapHint = true }) => {
   // If rootGroup is provided, start at L1 level with that group
   const initialBreadcrumb: BreadcrumbItem[] = rootGroup 
     ? [{ name: rootGroup, level: 'L1' }]
     : [{ name: 'Overview', level: 'root' }];
   const [breadcrumb, setBreadcrumb] = useState<BreadcrumbItem[]>(initialBreadcrumb);
   const [selectedSlice, setSelectedSlice] = useState<string | null>(null);
+  
+  // Check if we're at the root level (starting point for rootGroup mode)
+  const isRootLevel = rootGroup && breadcrumb.length === 1 && breadcrumb[0].level === 'L1';
 
   // Get current level's data with RELATIVE percentages (sum to 100%)
   const currentData = useMemo((): ChartSlice[] => {
@@ -150,21 +154,30 @@ export const FractalBubbleChart: React.FC<FractalBubbleChartProps> = ({ data, on
         </Text>
       </View>
 
-      <View style={styles.breadcrumbContainer}>
-        {breadcrumb.map((item, index) => (
-          <View key={`${item.level}-${item.name}`} style={styles.breadcrumbItem}>
-            {index > 0 && <Ionicons name="chevron-forward" size={14} color={colors.text.tertiary} />}
-            <Pressable
-              onPress={() => handleBreadcrumbPress(index)}
-              style={[styles.breadcrumbButton, index === breadcrumb.length - 1 && styles.breadcrumbButtonActive]}
-            >
-              <Text variant="caption" color={index === breadcrumb.length - 1 ? 'primary' : 'tertiary'}>
-                {item.name}
-              </Text>
-            </Pressable>
-          </View>
-        ))}
-      </View>
+      {/* Tap hint or breadcrumb */}
+      {hasData && (
+        <View style={styles.breadcrumbContainer}>
+          {isRootLevel && showTapHint ? (
+            <Text variant="caption" color="tertiary">
+              Tap a slice to explore
+            </Text>
+          ) : (
+            breadcrumb.map((item, index) => (
+              <View key={`${item.level}-${item.name}`} style={styles.breadcrumbItem}>
+                {index > 0 && <Ionicons name="chevron-forward" size={14} color={colors.text.tertiary} />}
+                <Pressable
+                  onPress={() => handleBreadcrumbPress(index)}
+                  style={[styles.breadcrumbButton, index === breadcrumb.length - 1 && styles.breadcrumbButtonActive]}
+                >
+                  <Text variant="caption" color={index === breadcrumb.length - 1 ? 'primary' : 'tertiary'}>
+                    {item.name}
+                  </Text>
+                </Pressable>
+              </View>
+            ))
+          )}
+        </View>
+      )}
 
       {!hasData ? (
         <View style={styles.emptyContainer}>
@@ -271,7 +284,7 @@ const styles = StyleSheet.create({
   headerSubtitle: {
     textAlign: 'center',
   },
-  breadcrumbContainer: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: spacing.xs, paddingVertical: spacing.xs },
+  breadcrumbContainer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap', gap: spacing.xs, paddingVertical: spacing.xs, width: '100%' },
   breadcrumbItem: { flexDirection: 'row', alignItems: 'center' },
   breadcrumbButton: { paddingHorizontal: spacing.sm, paddingVertical: spacing.xs, borderRadius: radius.sm },
   breadcrumbButtonActive: { backgroundColor: colors.neutral.gray200 },

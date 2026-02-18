@@ -108,6 +108,17 @@ function BrowseProgramsScreen() {
     duration: 'all',
   });
 
+  // Reset filters when entering the page
+  useEffect(() => {
+    setFilters({
+      experienceLevel: 'all',
+      equipment: 'all',
+      goal: 'all',
+      workoutType: 'all',
+      duration: 'all',
+    });
+  }, []);
+
   const filteredItems = useMemo(() => {
     try {
       if (isWorkoutMode) {
@@ -194,8 +205,8 @@ function BrowseProgramsScreen() {
 
   const handleBack = useCallback(() => {
     triggerHaptic('selection');
-    router.back();
-  }, [router]);
+    router.push({ pathname: '/(tabs)/plans', params: { scrollTo: isWorkoutMode ? 'top' : 'plans' } });
+  }, [router, isWorkoutMode]);
 
   // Handle Android hardware back button
   useEffect(() => {
@@ -276,9 +287,10 @@ function BrowseProgramsScreen() {
             return null;
           }
           
-          // Check if this is a premium workout that should be locked
+          // Check if this is a premium item that should be locked
           const isWorkout = item.metadata && 'durationMinutes' in item.metadata;
-          const isLocked = isWorkout && !(item as any).isFree && !isPremium;
+          const isFree = (item as any).isFree !== false; // Default to free if not specified
+          const isLocked = !isFree && !isPremium;
           
           return (
             <View style={{ paddingHorizontal: spacing.md }}>

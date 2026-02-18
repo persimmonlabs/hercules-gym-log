@@ -27,7 +27,10 @@ export const SimpleVolumeChart: React.FC<SimpleVolumeChartProps> = ({ timeRange 
   const { weeklyVolume, hasFilteredData } = useAnalyticsData({ timeRange });
   const weightUnit = useSettingsStore((state) => state.weightUnit);
 
-  const data = weeklyVolume.high;
+  const rawData = weeklyVolume.high;
+  
+  // Sort data by value descending (highest to left, smallest to right)
+  const data = [...rawData].sort((a, b) => b.value - a.value);
 
   // Calculate Y-axis ticks
   const rawMax = Math.max(...data.map((d) => d.value), 0);

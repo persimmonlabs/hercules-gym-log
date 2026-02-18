@@ -48,6 +48,7 @@ const styles = StyleSheet.create({
   },
   titleContainer: {
     flex: 1,
+    gap: spacing.sm,
   },
   scrollContent: {
     paddingHorizontal: spacing.md,
@@ -55,57 +56,26 @@ const styles = StyleSheet.create({
     gap: spacing.lg,
   },
   outerCardContent: {
-    gap: spacing.lg,
+    gap: spacing.md,
   },
   metadataRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: spacing.sm,
-    marginTop: spacing.sm,
-  },
-  exerciseCard: {
-    borderRadius: radius.md,
-    backgroundColor: colors.surface.card,
-    borderWidth: 1,
-    borderColor: colors.border.light,
-    padding: spacing.md,
     gap: spacing.xs,
   },
   exerciseRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
-    paddingVertical: spacing.sm,
+    paddingVertical: 5,
+    paddingLeft: spacing.xs,
   },
-  exerciseNumber: {
-    width: sizing.iconLG,
-    height: sizing.iconLG,
-    borderRadius: radius.full,
-    backgroundColor: colors.surface.card,
-    borderWidth: 1,
-    borderColor: colors.accent.orange,
-    justifyContent: 'center',
-    alignItems: 'center',
+  exerciseDash: {
+    width: 8,
     flexShrink: 0,
   },
-  exerciseNumberText: {
-    color: colors.text.primary,
-    fontSize: 16,
-    fontWeight: '600',
-    includeFontPadding: false,
-  },
-  exerciseNameContainer: {
-    flex: 1,
-    flexShrink: 1,
-    width: 0,
-  },
-  exerciseName: {
-    fontSize: 18,
-    fontWeight: '500',
-    color: colors.text.primary,
-  },
   exercisesList: {
-    gap: spacing.sm,
+    gap: 0,
   },
 });
 
@@ -154,26 +124,6 @@ export default function WorkoutPreviewScreen() {
     return () => backHandler.remove();
   }, [handleBack]);
 
-  // Not found state - instant render
-  if (!workout) {
-    return (
-      <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom + sizing.tabBarHeight }]}>
-        <View style={[styles.header, { paddingHorizontal: spacing.md }]}>
-          <View style={styles.titleContainer}>
-            <Text variant="heading2" color="primary">Workout Not Found</Text>
-            <Text variant="body" color="secondary">The requested workout could not be found.</Text>
-          </View>
-          <Pressable onPress={handleBack} style={styles.backButton} hitSlop={8}>
-            <IconSymbol name="arrow-back" size={24} color={colors.text.primary} />
-          </Pressable>
-        </View>
-        <View style={{ justifyContent: 'center', alignItems: 'center', flex: 1 }}>
-          <Button label="Go Back" onPress={handleBack} />
-        </View>
-      </View>
-    );
-  }
-
   const handleAddToWorkouts = useCallback(async () => {
     if (isAdding || !workout) return;
     setIsAdding(true);
@@ -207,6 +157,26 @@ export default function WorkoutPreviewScreen() {
     }
   }, [addPlan, isAdding, workout, router]);
 
+  // Not found state - instant render
+  if (!workout) {
+    return (
+      <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom + sizing.tabBarHeight }]}>
+        <View style={[styles.header, { paddingHorizontal: spacing.md }]}>
+          <View style={styles.titleContainer}>
+            <Text variant="heading2" color="primary">Workout Not Found</Text>
+            <Text variant="body" color="secondary">The requested workout could not be found.</Text>
+          </View>
+          <Pressable onPress={handleBack} style={styles.backButton} hitSlop={8}>
+            <IconSymbol name="arrow-back" size={24} color={colors.text.primary} />
+          </Pressable>
+        </View>
+        <View style={{ justifyContent: 'center', alignItems: 'center', flex: 1 }}>
+          <Button label="Go Back" onPress={handleBack} />
+        </View>
+      </View>
+    );
+  }
+
   // Format experience level for display
   const formatExperience = (level: string) => {
     return level.charAt(0).toUpperCase() + level.slice(1);
@@ -232,11 +202,9 @@ export default function WorkoutPreviewScreen() {
               <Text variant="heading2" color="primary">
                 {workout.name}
               </Text>
-              <Text variant="body" color="secondary">
+              <Text variant="body" color="secondary" style={{ lineHeight: 22 }}>
                 {workout.metadata.description}
               </Text>
-
-              {/* Metadata badges */}
               <View style={styles.metadataRow}>
                 <Badge
                   label={formatExperience(workout.metadata.experienceLevel)}
@@ -261,21 +229,15 @@ export default function WorkoutPreviewScreen() {
           <SurfaceCard padding="xl" tone="neutral">
             <View style={styles.outerCardContent}>
               <Text variant="heading3" color="primary">
-                Exercises ({workout.exercises.length})
+                Exercises Included
               </Text>
               <View style={styles.exercisesList}>
-                {workout.exercises.map((exercise, index) => (
+                {workout.exercises.map((exercise) => (
                   <View key={exercise.id} style={styles.exerciseRow}>
-                    <View style={styles.exerciseNumber}>
-                      <Text style={styles.exerciseNumberText}>
-                        {index + 1}
-                      </Text>
-                    </View>
-                    <View style={styles.exerciseNameContainer}>
-                      <Text style={styles.exerciseName}>
-                        {exercise.name}
-                      </Text>
-                    </View>
+                    <Text variant="caption" color="tertiary" style={styles.exerciseDash}>–</Text>
+                    <Text variant="body" color="secondary">
+                      {exercise.name}
+                    </Text>
                   </View>
                 ))}
               </View>

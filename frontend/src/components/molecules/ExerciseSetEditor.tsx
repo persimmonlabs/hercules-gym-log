@@ -4,21 +4,18 @@
  */
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, TextInput, View, findNodeHandle, UIManager } from 'react-native';
-import Animated, { Layout } from 'react-native-reanimated';
+import Animated from 'react-native-reanimated';
 import { triggerHaptic } from '@/utils/haptics';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 import { Text } from '@/components/atoms/Text';
-import { Button } from '@/components/atoms/Button';
 import { HoldRepeatIconButton } from '@/components/atoms/HoldRepeatIconButton';
 import { TimePickerModal } from '@/components/molecules/TimePickerModal';
 import { GpsActivityTracker } from '@/components/molecules/GpsActivityTracker';
-import { springGentle } from '@/constants/animations';
 import { colors, radius, shadows, sizing, spacing, zIndex } from '@/constants/theme';
 import type { SetLog } from '@/types/workout';
 import type { ExerciseType } from '@/types/exercise';
 import { useSettingsStore } from '@/store/settingsStore';
-import { useTimer } from '@/hooks/useTimer';
 
 interface ExerciseSetEditorProps {
   isExpanded: boolean;
@@ -62,12 +59,6 @@ type ActiveSelectionTarget = {
   index: number;
 };
 
-type TimeInputState = {
-  index: number;
-  field: 'hours' | 'minutes' | 'seconds';
-  digitsEntered: number; // 0, 1, or 2
-};
-
 const formatWeightInputValue = (value: number): string => {
   return value.toFixed(1);
 };
@@ -92,132 +83,38 @@ const formatDurationForSummary = (seconds: number): string => {
   return `${mins}:${secs.toString().padStart(2, '0')}`;
 };
 
-const parseDuration = (input: string): number => {
-  // Handle hh:mm:ss, mm:ss format or just seconds
-  if (input.includes(':')) {
-    const parts = input.split(':').map(Number);
-    if (parts.length === 3) {
-      // hh:mm:ss format
-      const [hours, mins, secs] = parts;
-      return (hours || 0) * 3600 + (mins || 0) * 60 + (secs || 0);
-    } else if (parts.length === 2) {
-      // mm:ss format
-      const [mins, secs] = parts;
-      return (mins || 0) * 60 + (secs || 0);
-    }
-  }
-  return parseInt(input, 10) || 0;
-};
-
-// Parse hours, minutes and seconds into total seconds
-const parseDurationFromParts = (hours: string, minutes: string, seconds: string): number => {
-  const hrs = parseInt(hours, 10) || 0;
-  const mins = parseInt(minutes, 10) || 0;
-  let secs = parseInt(seconds, 10) || 0;
-  // Clamp seconds to 0-59
-  if (secs > 59) secs = 59;
-  return hrs * 3600 + mins * 60 + secs;
-};
-
-// Parse minutes and seconds into total seconds (for duration exercises)
-const parseDurationFromPartsMMSS = (minutes: string, seconds: string): number => {
-  const mins = parseInt(minutes, 10) || 0;
-  let secs = parseInt(seconds, 10) || 0;
-  // Clamp seconds to 0-59
-  if (secs > 59) secs = 59;
-  return mins * 60 + secs;
-};
-
-// Smart time input handler for focused typing with digit tracking
-const sanitizeTimeInputWithState = (
-  value: string,
-  currentState: TimeInputState | null,
-  index: number,
-  field: 'hours' | 'minutes' | 'seconds',
-  maxVal?: number
-): { sanitized: string; newState: TimeInputState } => {
-  // Keep only digits
-  const digits = value.replace(/[^0-9]/g, '');
-
-  // If no state or different field/index, this is a fresh start
-  const isFreshStart = !currentState || currentState.index !== index || currentState.field !== field;
-
-  if (digits.length === 0) {
-    return {
-      sanitized: '00',
-      newState: { index, field, digitsEntered: 0 }
-    };
+// Format distance input for the given exercise distance unit.
+// - miles: show hundredths (e.g., 1.25)
+// - meters/floors: show whole numbers
+const formatDistanceInputValue = (
+  value: number,
+  distanceUnit: 'miles' | 'meters' | 'floors'
+): string => {
+  if (!Number.isFinite(value)) {
+    return distanceUnit === 'miles' ? '0.00' : '0';
   }
 
-  // Check if we're continuing to type in the same field
-  const isTypingInSameField = currentState && currentState.index === index && currentState.field === field;
-
-  if (digits.length === 1) {
-    // If we already entered 1 digit and now have 1 digit, user typed second digit
-    // (selection replaced both, but we track state)
-    if (isTypingInSameField && currentState.digitsEntered === 1) {
-      // This is the second digit - combine with previous
-      // We need to extract the second digit from the new input
-      let result = digits;
-
-      // Clamp if needed
-      if (maxVal !== undefined) {
-        const num = parseInt(result, 10);
-        if (num > maxVal) {
-          result = maxVal.toString();
-        }
-      }
-
-      return {
-        sanitized: result.padStart(2, '0'),
-        newState: { index, field, digitsEntered: 2 }
-      };
-    }
-
-    // First digit: show "0X"
-    let result = '0' + digits;
-
-    // Clamp if needed
-    if (maxVal !== undefined) {
-      const num = parseInt(result, 10);
-      if (num > maxVal) {
-        result = '0' + maxVal.toString().charAt(1);
-      }
-    }
-
-    return {
-      sanitized: result,
-      newState: { index, field, digitsEntered: 1 }
-    };
+  if (distanceUnit === 'meters' || distanceUnit === 'floors') {
+    return Math.round(value).toString();
   }
 
-  // Two or more digits: show "XY" (last 2 digits)
-  let result = digits.slice(-2);
-
-  // Clamp if needed
-  if (maxVal !== undefined) {
-    const num = parseInt(result, 10);
-    if (num > maxVal) {
-      result = maxVal.toString().padStart(2, '0');
-    }
-  }
-
-  return {
-    sanitized: result,
-    newState: { index, field, digitsEntered: 2 }
-  };
-};
-
-// Format distance with 2 decimal places (hundredths)
-const formatDistanceValue = (value: number): string => {
   return value.toFixed(2);
 };
 
-const createDraftFromSet = (set: SetLog): SetDraft => {
+const createDraftFromSet = (
+  set: SetLog,
+  options: {
+    distanceUnit: 'miles' | 'meters' | 'floors';
+    convertDistanceForExercise: (miles: number, distanceUnit?: 'miles' | 'meters' | 'floors') => number;
+  }
+): SetDraft => {
   const duration = set.duration ?? 0;
   const hours = Math.floor(duration / 3600);
   const mins = Math.floor((duration % 3600) / 60);
   const secs = duration % 60;
+
+  const baseDistance = set.distance ?? 0;
+  const displayDistance = options.convertDistanceForExercise(baseDistance, options.distanceUnit);
 
   return {
     ...set,
@@ -227,7 +124,7 @@ const createDraftFromSet = (set: SetLog): SetDraft => {
     hoursInput: hours.toString().padStart(2, '0'),
     minutesInput: mins.toString().padStart(2, '0'),
     secondsInput: secs.toString().padStart(2, '0'),
-    distanceInput: formatDistanceValue(set.distance ?? 0),
+    distanceInput: formatDistanceInputValue(displayDistance, options.distanceUnit),
     assistanceWeightInput: formatWeightInputValue(set.assistanceWeight ?? 0),
   };
 };
@@ -300,15 +197,26 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
   onInputFocus,
 }) => {
   // Subscribe to unit values to trigger re-renders when units change
-  const weightUnitPref = useSettingsStore((state) => state.weightUnit);
   const distanceUnitPref = useSettingsStore((state) => state.distanceUnit);
-  const { getWeightUnit, formatWeight, getDistanceUnitForExercise, formatDistanceForExercise, convertDistanceForExercise, convertDistanceToMilesForExercise } = useSettingsStore();
+  const {
+    getWeightUnit,
+    getDistanceUnitForExercise,
+    formatDistanceForExercise,
+    convertDistanceForExercise,
+    convertDistanceToMilesForExercise,
+  } = useSettingsStore();
   const weightUnit = getWeightUnit();
   const distanceUnitLabel = getDistanceUnitForExercise(distanceUnit);
-  const [sets, setSets] = useState<SetDraft[]>(() => initialSets.map((set) => createDraftFromSet(set)));
+  const [sets, setSets] = useState<SetDraft[]>(() =>
+    initialSets.map((set) =>
+      createDraftFromSet(set, {
+        distanceUnit,
+        convertDistanceForExercise,
+      })
+    )
+  );
   const [openMenuIndex, setOpenMenuIndex] = useState<number | null>(null);
   const [activeSelection, setActiveSelection] = useState<ActiveSelectionTarget | null>(null);
-  const [timeInputState, setTimeInputState] = useState<TimeInputState | null>(null);
   const [timePickerVisible, setTimePickerVisible] = useState<boolean>(false);
   const [timePickerIndex, setTimePickerIndex] = useState<number>(0);
   const [runningTimers, setRunningTimers] = useState<Set<number>>(new Set());
@@ -399,6 +307,45 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
     setsRef.current = sets;
   }, [sets]);
 
+  // If the user changes distance units, update the *display* text for any existing
+  // cardio sets without mutating the stored base values (miles/meters/floors).
+  useEffect(() => {
+    if (!isExpanded || exerciseType !== 'cardio') {
+      return;
+    }
+
+    setSets((prev) => {
+      const next = prev.map((draft) => {
+        const baseDistance = draft.distance ?? 0;
+        const displayDistance = convertDistanceForExercise(baseDistance, distanceUnit);
+        const nextInput = formatDistanceInputValue(displayDistance, distanceUnit);
+
+        if (draft.distanceInput === nextInput) {
+          return draft;
+        }
+
+        return {
+          ...draft,
+          distanceInput: nextInput,
+        };
+      });
+
+      setsRef.current = next;
+
+      // Keep TextInput native values in sync for immediate visual updates.
+      setTimeout(() => {
+        next.forEach((draft, index) => {
+          const distanceRef = distanceInputRefs.current[index];
+          if (distanceRef) {
+            distanceRef.setNativeProps({ text: draft.distanceInput });
+          }
+        });
+      }, 0);
+
+      return next;
+    });
+  }, [distanceUnitPref, distanceUnit, convertDistanceForExercise, isExpanded, exerciseType]);
+
 
   useEffect(() => {
     const wasExpanded = prevIsExpandedRef.current;
@@ -426,7 +373,12 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
     }
 
     skipNextEmitRef.current = true;
-    const nextDrafts = initialSets.map((set) => createDraftFromSet(set));
+    const nextDrafts = initialSets.map((set) =>
+      createDraftFromSet(set, {
+        distanceUnit,
+        convertDistanceForExercise,
+      })
+    );
     setsRef.current = nextDrafts;
     totalSetsRef.current = nextDrafts.length;
     completedSetsRef.current = nextDrafts.filter((set) => set.completed).length;
@@ -627,7 +579,10 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
         newSetLog = DEFAULT_NEW_SET;
       }
 
-      const newSetValues = createDraftFromSet(newSetLog);
+      const newSetValues = createDraftFromSet(newSetLog, {
+        distanceUnit,
+        convertDistanceForExercise,
+      });
 
       const next = [...prev, newSetValues];
       setsRef.current = next;
@@ -636,7 +591,7 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
       setTimeout(emitProgress, 0);
       return next;
     });
-  }, [emitProgress, historySetCount, exerciseType]);
+  }, [emitProgress, historySetCount, exerciseType, distanceUnit, convertDistanceForExercise]);
 
   const removeSet = useCallback((index: number) => {
     triggerHaptic('selection');
@@ -753,18 +708,20 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
           return set;
         }
 
+        const zeroText = formatDistanceInputValue(0, distanceUnit);
+
         if (distanceInputRef) {
-          distanceInputRef.setNativeProps({ text: '0.00' });
+          distanceInputRef.setNativeProps({ text: zeroText });
         }
 
         return {
           ...set,
           distance: 0,
-          distanceInput: '0.00',
+          distanceInput: zeroText,
         };
       }),
     );
-  }, []);
+  }, [distanceUnit]);
 
   const handleRepsBlur = useCallback((index: number) => {
     setActiveSelection(null);
@@ -835,7 +792,6 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
       }
       return null;
     });
-    setTimeInputState(null);
     const prev = setsRef.current;
     if (!prev[index]) {
       return;
@@ -849,7 +805,6 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
     });
 
     const justCompleted = !prev[index].completed && updatedSets[index].completed;
-    let propagatedIndex: number | null = null;
 
     if (justCompleted) {
       // Stop timer if this is a timed exercise and timer is running
@@ -877,7 +832,6 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
       const nextUncompletedIndex = updatedSets.findIndex((set, idx) => idx > index && !set.completed);
       if (nextUncompletedIndex !== -1 && nextUncompletedIndex >= historySetCount) {
         const nextSet = updatedSets[nextUncompletedIndex];
-        propagatedIndex = nextUncompletedIndex;
         updatedSets[nextUncompletedIndex] = {
           ...nextSet,
           weight: completedSet.weight ?? 0,
@@ -916,6 +870,7 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
   }, [measureAndScrollToInput]);
 
   const handleGpsActivityComplete = useCallback((durationSeconds: number, distanceMiles: number) => {
+    const displayDistance = convertDistanceForExercise(distanceMiles, distanceUnit);
     const completedSet: SetDraft = {
       completed: true,
       duration: durationSeconds,
@@ -926,7 +881,7 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
       hoursInput: Math.floor(durationSeconds / 3600).toString().padStart(2, '0'),
       minutesInput: Math.floor((durationSeconds % 3600) / 60).toString().padStart(2, '0'),
       secondsInput: (durationSeconds % 60).toString().padStart(2, '0'),
-      distanceInput: distanceMiles.toFixed(2),
+      distanceInput: formatDistanceInputValue(displayDistance, distanceUnit),
       assistanceWeightInput: '0',
     };
 
@@ -936,7 +891,7 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
     completedSetsRef.current = 1;
     setSets(updatedSets);
     emitProgress();
-  }, [emitProgress]);
+  }, [emitProgress, convertDistanceForExercise, distanceUnit]);
 
   const openTimePicker = useCallback((index: number) => {
     triggerHaptic('selection');
@@ -1278,11 +1233,11 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
                               }
 
                               const currentDisplayValue = convertDistanceForExercise(current.distance ?? 0, distanceUnit);
-                              const increment = distanceUnit === 'meters' ? 50 : 0.25;
+                              const increment = distanceUnit === 'meters' ? 50 : distanceUnit === 'floors' ? 1 : 0.25;
                               const newDisplayValue = Math.max(0, currentDisplayValue - increment);
                               const newMiles = convertDistanceToMilesForExercise(newDisplayValue, distanceUnit);
                               const nextDistance = Math.round(newMiles * 100) / 100;
-                              const nextText = formatDistanceValue(newDisplayValue);
+                              const nextText = formatDistanceInputValue(newDisplayValue, distanceUnit);
 
                               const distanceRef = distanceInputRefs.current[index];
                               if (distanceRef) {
@@ -1304,7 +1259,7 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
                             keyboardType="decimal-pad"
                             style={styles.metricValue}
                             textAlign="center"
-                            placeholder="0.00"
+                            placeholder={distanceUnit === 'meters' || distanceUnit === 'floors' ? '0' : '0.00'}
                             placeholderTextColor={colors.text.tertiary}
                             cursorColor={colors.accent.primary}
                             selectionColor={colors.accent.orangeLight}
@@ -1327,11 +1282,13 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
                               }
 
                               const currentDisplayValue = convertDistanceForExercise(current.distance ?? 0, distanceUnit);
-                              const increment = distanceUnit === 'meters' ? 50 : 0.25;
-                              const newDisplayValue = distanceUnit === 'meters' ? currentDisplayValue + increment : Math.round((currentDisplayValue + increment) * 100) / 100;
+                              const increment = distanceUnit === 'meters' ? 50 : distanceUnit === 'floors' ? 1 : 0.25;
+                              const newDisplayValue = distanceUnit === 'meters' || distanceUnit === 'floors'
+                                ? currentDisplayValue + increment
+                                : Math.round((currentDisplayValue + increment) * 100) / 100;
                               const newMiles = convertDistanceToMilesForExercise(newDisplayValue, distanceUnit);
                               const nextDistance = Math.round(newMiles * 100) / 100;
-                              const nextText = formatDistanceValue(newDisplayValue);
+                              const nextText = formatDistanceInputValue(newDisplayValue, distanceUnit);
 
                               const distanceRef = distanceInputRefs.current[index];
                               if (distanceRef) {

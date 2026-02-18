@@ -1,11 +1,10 @@
-import React, { useCallback, useEffect, useMemo, useState, useRef } from 'react';
-import { Pressable, StyleSheet, View, InteractionManager, BackHandler } from 'react-native';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { Pressable, StyleSheet, View, BackHandler } from 'react-native';
 import { useRouter } from 'expo-router';
 import { triggerHaptic } from '@/utils/haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { ActivityIndicator } from 'react-native';
 
 import { Text } from '@/components/atoms/Text';
 import { InputField } from '@/components/atoms/InputField';
@@ -155,17 +154,6 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: colors.border.light,
   },
-  loadingContainer: {
-    ...StyleSheet.absoluteFillObject,
-    zIndex: 100,
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: spacing.md,
-    backgroundColor: colors.primary.bg,
-  },
-  loadingText: {
-    textAlign: 'center',
-  },
 });
 
 const AddExercisesScreen: React.FC = () => {
@@ -187,47 +175,20 @@ const AddExercisesScreen: React.FC = () => {
     resetFilters,
     updateFilters,
     setIsLoading,
-    isLoading,
   } = usePlanBuilderContext();
 
   const [selectedMap, setSelectedMap] = useState<SelectedExerciseMap>({});
   const [isFilterSheetVisible, setIsFilterSheetVisible] = useState(false);
-  const [isReady, setIsReady] = useState(false); // Track when content is ready to show
   const [isCreateExerciseModalVisible, setIsCreateExerciseModalVisible] = useState(false);
   const customExercises = useCustomExerciseStore((state) => state.customExercises);
-  const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
-
-  // Debounce search term for better performance
-  useEffect(() => {
-    if (searchDebounceRef.current) {
-      clearTimeout(searchDebounceRef.current);
-    }
-    searchDebounceRef.current = setTimeout(() => {
-      setDebouncedSearchTerm(searchTerm);
-    }, 150);
-    return () => {
-      if (searchDebounceRef.current) {
-        clearTimeout(searchDebounceRef.current);
-      }
-    };
-  }, [searchTerm]);
 
   useEffect(() => {
     // Reset state on mount
     resetFilters();
     setSearchTerm('');
-
-    // Wait for content to be ready before showing
-    const task = InteractionManager.runAfterInteractions(() => {
-      requestAnimationFrame(() => {
-        setIsReady(true);
-        setIsLoading(false);
-      });
-    });
+    setIsLoading(false);
 
     return () => {
-      task.cancel();
       resetFilters();
       setSearchTerm('');
       setSelectedMap({});
@@ -341,19 +302,15 @@ const AddExercisesScreen: React.FC = () => {
     ],
   );
 
-  // Show loading until content is ready
-  if (!isReady) {
-    return (
-      <View style={[styles.container, { paddingTop: insets.top }]}>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.accent.primary} />
-          <Text variant="body" color="secondary" style={styles.loadingText}>
-            Loading exercises...
-          </Text>
-        </View>
-      </View>
-    );
-  }
+  // Memoize sorted exercise list to avoid re-sorting on every render
+  const sortedExercises = useMemo(() => {
+    if (!hasExercises) return [];
+    return [...filteredAvailableExercises].sort((a, b) => {
+      const aSelected = selectedMap[a.id] ? 0 : 1;
+      const bSelected = selectedMap[b.id] ? 0 : 1;
+      return aSelected - bSelected;
+    });
+  }, [filteredAvailableExercises, selectedMap, hasExercises]);
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
@@ -436,7 +393,7 @@ const AddExercisesScreen: React.FC = () => {
 
         <SurfaceCard tone="card" padding="xl" showAccentStripe style={styles.listCard}>
           {hasExercises ? (
-            filteredAvailableExercises.map((exercise) => (
+            sortedExercises.map((exercise) => (
               <ExerciseSelectionRow
                 key={exercise.id}
                 exercise={exercise}
@@ -515,11 +472,6 @@ const AddExercisesScreen: React.FC = () => {
         onClose={() => setIsCreateExerciseModalVisible(false)}
         onExerciseCreated={(exerciseName, exerciseType) => {
           // Create a catalog item for the new exercise and select it
-          const newExercise = createCustomExerciseCatalogItem(
-            `temp-${Date.now()}`,
-            exerciseName,
-            exerciseType
-          );
           // Find the actual exercise from the store (it will have the real ID)
           const actualExercise = customExercises.find(e => e.name === exerciseName);
           if (actualExercise) {

@@ -6,14 +6,21 @@
 import { useMemo } from 'react';
 import { useWorkoutSessionsStore } from '@/store/workoutSessionsStore';
 import { useDevToolsStore } from '@/store/devToolsStore';
+import { useCustomExerciseStore } from '@/store/customExerciseStore';
 import { exercises as exerciseCatalog } from '@/constants/exercises';
 import type { ExerciseType } from '@/types/exercise';
 
-// Build exercise type lookup map
-const EXERCISE_TYPE_MAP = exerciseCatalog.reduce((acc, ex) => {
+// Build base exercise type lookup map (static catalog)
+const BASE_EXERCISE_TYPE_MAP = exerciseCatalog.reduce((acc, ex) => {
   acc[ex.name] = ex.exerciseType;
   return acc;
 }, {} as Record<string, ExerciseType>);
+
+// Distance unit lookup for cardio exercises (static catalog)
+const BASE_EXERCISE_DISTANCE_UNIT_MAP = exerciseCatalog.reduce((acc, ex) => {
+  acc[ex.name] = ex.distanceUnit;
+  return acc;
+}, {} as Record<string, 'miles' | 'meters' | 'floors' | undefined>);
 
 interface WeeklyCardioProgress {
   /** Total cardio time in seconds for the current calendar week */
@@ -57,6 +64,14 @@ export const useWeeklyCardioProgress = (): WeeklyCardioProgress => {
   const forceEmptyAnalytics = useDevToolsStore((state) => state.forceEmptyAnalytics);
   const rawWorkouts = useWorkoutSessionsStore((state) => state.workouts);
   const workouts = __DEV__ && forceEmptyAnalytics ? [] : rawWorkouts;
+  const customExercises = useCustomExerciseStore((state) => state.customExercises);
+
+  // Merge custom exercises into type maps
+  const exerciseTypeMap = useMemo(() => {
+    const map = { ...BASE_EXERCISE_TYPE_MAP };
+    customExercises.forEach((ce) => { map[ce.name] = ce.exerciseType; });
+    return map;
+  }, [customExercises]);
 
   const progress = useMemo(() => {
     const weekStart = getCalendarWeekStart();
@@ -74,11 +89,14 @@ export const useWeeklyCardioProgress = (): WeeklyCardioProgress => {
 
     weeklyWorkouts.forEach((workout) => {
       workout.exercises.forEach((exercise: any) => {
-        const exerciseType = EXERCISE_TYPE_MAP[exercise.name];
+        const exerciseType = exerciseTypeMap[exercise.name];
         if (exerciseType !== 'cardio') return;
 
         exercise.sets.forEach((set: any) => {
-          if (!set.completed) return;
+          // Include sets that are completed OR have meaningful cardio data
+          // (users often enter time/distance without pressing "Complete set")
+          const hasData = (set.duration ?? 0) > 0 || (set.distance ?? 0) > 0;
+          if (!set.completed && !hasData) return;
 
           // Accumulate time
           if (set.duration && set.duration > 0) {
@@ -87,8 +105,16 @@ export const useWeeklyCardioProgress = (): WeeklyCardioProgress => {
 
           // Accumulate distance
           if (set.distance && set.distance > 0) {
-            weeklyDistance += set.distance;
-            weeklyDistanceByType[exercise.name] = 
+            const distanceUnit = BASE_EXERCISE_DISTANCE_UNIT_MAP[exercise.name];
+
+            // Only count real distance units towards weeklyDistance (mi/km goals).
+            // Floor-based activities are tracked in the per-activity breakdown only.
+            // Custom cardio exercises default to miles (no distanceUnit), so they count.
+            if (distanceUnit !== 'floors') {
+              weeklyDistance += set.distance;
+            }
+
+            weeklyDistanceByType[exercise.name] =
               (weeklyDistanceByType[exercise.name] || 0) + set.distance;
           }
         });
@@ -103,7 +129,7 @@ export const useWeeklyCardioProgress = (): WeeklyCardioProgress => {
       weekEnd,
       hasWeeklyData: weeklyTime > 0 || weeklyDistance > 0,
     };
-  }, [workouts]);
+  }, [workouts, exerciseTypeMap]);
 
   return progress;
 };

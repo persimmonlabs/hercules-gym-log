@@ -4,16 +4,11 @@ import { normalizeSearchText } from '@/utils/strings';
 import {
   type DifficultyLevel,
   type EquipmentType,
-  type Exercise,
   type ExerciseCatalogItem,
   type ExerciseType,
   type MovementPattern,
   type MuscleGroup,
   type FilterMuscleGroup,
-  DIFFICULTY_LEVELS,
-  EQUIPMENT_TYPES,
-  MOVEMENT_PATTERNS,
-  MUSCLE_GROUPS,
   FILTER_MUSCLE_GROUPS,
   FILTER_EQUIPMENT,
   FILTER_DIFFICULTY,
@@ -45,17 +40,13 @@ const MAP_L2_TO_MUSCLE_GROUP: Record<string, MuscleGroup> = {
   Hamstrings: 'Legs',
   Calves: 'Legs',
   Glutes: 'Glutes',
-  'Hip Stabilizers': 'Legs',
+  'Hips': 'Legs',
   Adductors: 'Legs',
   Abductors: 'Legs',
   Abs: 'Core',
   Obliques: 'Core',
   'Lower Back': 'Core',
 };
-
-// Map for muscles that exist at mid level but have detailed children (no low level)
-// These muscles should be treated as valid leaf nodes in exercises.json
-const MID_LEVEL_LEAF_MUSCLES = ['Calves'];
 
 interface MuscleMeta {
   muscleGroup: MuscleGroup;
@@ -269,7 +260,7 @@ export const isCustomExercise = (exerciseId: string): boolean => {
  */
 export const getExerciseTypeByName = (
   exerciseName: string,
-  customExercises: Array<{ name: string; exerciseType: ExerciseType }>
+  customExercises: { name: string; exerciseType: ExerciseType }[]
 ): ExerciseType => {
   const customExercise = customExercises.find(
     (e) => e.name.toLowerCase() === exerciseName.toLowerCase()

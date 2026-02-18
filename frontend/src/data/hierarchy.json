@@ -15,8 +15,8 @@
           "level": "mid",
           "muscles": {
             "Lats": { "level": "low" },
+            "Traps": { "level": "low" },
             "Mid Back": { "level": "low" },
-            "Upper Back": { "level": "low" },
             "Lower Back": { "level": "low" }
           }
         },
@@ -24,36 +24,16 @@
           "level": "mid",
           "muscles": {
             "Front Delts": { "level": "low" },
-            "Lateral Delts": { "level": "low" },
+            "Side Delts": { "level": "low" },
             "Rear Delts": { "level": "low" }
           }
         },
         "Arms": {
           "level": "mid",
           "muscles": {
-            "Biceps": {
-              "level": "low",
-              "muscles": {
-                "Biceps - Long Head": { "level": "detailed" },
-                "Biceps - Short Head": { "level": "detailed" },
-                "Brachialis": { "level": "detailed" }
-              }
-            },
-            "Triceps": {
-              "level": "low",
-              "muscles": {
-                "Triceps - Long Head": { "level": "detailed" },
-                "Triceps - Lateral Head": { "level": "detailed" },
-                "Triceps - Medial Head": { "level": "detailed" }
-              }
-            },
-            "Forearms": {
-              "level": "low",
-              "muscles": {
-                "Flexors": { "level": "detailed" },
-                "Extensors": { "level": "detailed" }
-              }
-            }
+            "Biceps": { "level": "low" },
+            "Triceps": { "level": "low" },
+            "Forearms": { "level": "low" }
           }
         }
       }
@@ -61,96 +41,46 @@
     "Lower Body": {
       "level": "high",
       "muscles": {
-        "Quads": {
-          "level": "mid",
-          "muscles": {
-            "Quads": { "level": "low" }
-          }
-        },
-        "Hamstrings": {
-          "level": "mid",
-          "muscles": {
-            "Hamstrings": { "level": "low" }
-          }
-        },
-        "Glutes": {
-          "level": "mid",
-          "muscles": {
-            "Glutes": { "level": "low" }
-          }
-        },
-        "Calves": {
-          "level": "mid",
-          "muscles": {
-            "Calves": {
-              "level": "low",
-              "muscles": {
-                "Calves - Medial Head": { "level": "detailed" },
-                "Calves - Lateral Head": { "level": "detailed" },
-                "Soleus": { "level": "detailed" }
-              }
-            }
-          }
-        },
-        
+        "Quads": { "level": "mid" },
+        "Hamstrings": { "level": "mid" },
+        "Glutes": { "level": "mid" },
         "Hips": {
           "level": "mid",
           "muscles": {
             "Adductors": { "level": "low" },
-            "Abductors": { "level": "low" }
+            "Abductors": { "level": "low" },
+            "Hip Flexors": { "level": "low" }
           }
-        }
+        },
+        "Calves": { "level": "mid" }
       }
     },
     "Core": {
       "level": "high",
       "muscles": {
-        "Abs": {
-          "level": "mid",
-          "muscles": {
-            "Upper Abs": { "level": "low" },
-            "Lower Abs": { "level": "low" }
-          }
-        },
-        "Obliques": {
-          "level": "mid",
-          "muscles": {
-            "Obliques": { "level": "low" }
-          }
-        }
+        "Abs": { "level": "mid" },
+        "Obliques": { "level": "mid" }
       }
     }
   },
 
   "muscle_aliases": {
     "Chest": ["Upper Chest", "Mid Chest", "Lower Chest"],
-    "Back": ["Lats", "Mid Back", "Upper Back", "Lower Back", "Traps"],
-    "Shoulders": ["Front Delts", "Lateral Delts", "Rear Delts"],
-
-    "Arms": [
-      "Biceps", "Triceps", "Forearms",
-      "Long Head (Biceps)", "Short Head (Biceps)", "Brachialis",
-      "Long Head (Triceps)", "Lateral Head (Triceps)", "Medial Head (Triceps)",
-      "Flexors", "Extensors"
-    ],
-
-    "Biceps": ["Long Head", "Short Head", "Brachialis"],
-    "Triceps": ["Long Head", "Lateral Head", "Medial Head"],
-    "Forearms": ["Flexors", "Extensors"],
+    "Back": ["Lats", "Traps", "Mid Back", "Lower Back"],
+    "Shoulders": ["Front Delts", "Side Delts", "Rear Delts"],
+    "Arms": ["Biceps", "Triceps", "Forearms"],
 
     "Quads": ["Quads"],
     "Hamstrings": ["Hamstrings"],
     "Glutes": ["Glutes"],
+    "Calves": ["Calves"],
+    "Hips": ["Adductors", "Abductors", "Hip Flexors"],
 
-    "Calves": ["Medial Head", "Lateral Head", "Soleus"],
-
-    "Hip Stabilizers": ["Adductors", "Abductors"],
-
-    "Abs": ["Upper Abs", "Lower Abs"],
+    "Abs": ["Abs"],
     "Obliques": ["Obliques"],
 
     "Upper Body": ["Chest", "Back", "Shoulders", "Arms"],
-    "Lower Body": ["Quads", "Hamstrings", "Glutes", "Calves", "Hip Stabilizers"],
+    "Lower Body": ["Quads", "Hamstrings", "Glutes", "Hips", "Calves"],
     "Core": ["Abs", "Obliques"]
   }
 }

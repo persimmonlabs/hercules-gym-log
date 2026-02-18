@@ -80,6 +80,25 @@ const WorkoutSubcardList: React.FC<WorkoutSubcardListProps> = ({
         )}
       </View>
 
+      {/* Empty State */}
+      {workouts.length === 0 && (
+        <SurfaceCard
+          tone="neutral"
+          padding="md"
+          showAccentStripe={false}
+          style={styles.emptyCard}
+        >
+          <View style={styles.emptyContent}>
+            <Text variant="bodySemibold" color="primary" style={styles.emptyTitle}>
+              No workouts yet
+            </Text>
+            <Text variant="body" color="secondary" style={styles.emptySubtext}>
+              Add a workout to see it here.
+            </Text>
+          </View>
+        </SurfaceCard>
+      )}
+
       {/* Workout List */}
       {displayWorkouts.map((workout) => {
         const workoutSelectionKey = workout.uniqueId || workout.id;
@@ -307,6 +326,29 @@ const styles = StyleSheet.create({
   wideButton: {
     alignSelf: 'center',
     width: '100%',
+  },
+  emptyCard: {
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border.light,
+    borderRadius: radius.lg,
+    backgroundColor: colors.surface.card,
+    shadowColor: 'transparent',
+    shadowOpacity: 0,
+    shadowRadius: 0,
+    shadowOffset: { width: 0, height: 0 },
+    elevation: 0,
+    paddingLeft: spacing.lg,
+  },
+  emptyContent: {
+    alignItems: 'flex-start',
+    justifyContent: 'center',
+    paddingVertical: spacing.sm,
+  },
+  emptyTitle: {
+    marginBottom: spacing.xs,
+  },
+  emptySubtext: {
+    textAlign: 'left',
   },
   cardHeader: {
     flexDirection: 'row',

@@ -1,17 +1,24 @@
 /**
- * useInsightsData Hook (v3)
+ * useInsightsData Hook (v4)
  * Calculates actionable training insights for the Performance Insights tab.
  *
  * Design goals:
  * - Simple, one-sentence insights with specific data + specific action.
+ * - Goal-aware balance detection using the SAME ideal ratios as the Balance Score.
+ * - Volume-based balance alerts (not just set-based) for coherence with Balance Score.
+ * - Compound/Isolated balance alert (previously missing).
+ * - Movement pattern diversity insight.
  * - Rep-range-aware plateau detection (strength / hypertrophy / endurance buckets).
  * - Size-aware volume expectations (quads ≠ obliques).
  * - Bodyweight exercises count as "trained"; suggest weighted alternatives when appropriate.
  * - New-user guard: require minimum workout history before surfacing insights.
  *
+ * Shared constants imported from useTrainingBalanceMetrics so every
+ * balance-related number in the app is coherent.
+ *
  * Insight Types:
- * - Balance Alert: Push/Pull and Upper/Lower set imbalances (7-day window).
- * - Plateau Detection: E1RM stall (per rep range) or volume decline per exercise (28-day window).
+ * - Balance Alert: Push/Pull, Upper/Lower, and Compound/Isolated imbalances (7-day).
+ * - Plateau Detection: E1RM stall (per rep range) or volume decline per exercise (28-day).
  * - Focus Suggestion: Skipped muscle (7d), low volume share (14d), or never-trained reminder.
  */
 
@@ -20,6 +27,12 @@ import { useMemo } from 'react';
 import { useWorkoutSessionsStore } from '@/store/workoutSessionsStore';
 import { useDevToolsStore } from '@/store/devToolsStore';
 import { useUserProfileStore } from '@/store/userProfileStore';
+import type { PrimaryGoal } from '@/store/userProfileStore';
+import {
+  getIdealRatios,
+  calculateRatioScore,
+  MOVEMENT_PATTERN_TARGETS,
+} from '@/hooks/useTrainingBalanceMetrics';
 import exercisesData from '@/data/exercises.json';
 import hierarchyData from '@/data/hierarchy.json';
 import type { ExerciseType } from '@/types/exercise';
@@ -58,8 +71,11 @@ const WEEK_MS = 7 * DAY_MS;
 
 // Balance (7-day)
 const BALANCE_WINDOW_DAYS = 7;
-const BALANCE_THRESHOLD = 0.15; // ~57.5/42.5
-const BALANCE_MIN_TOTAL_SETS = 12;
+// Threshold derived from shared BALANCE_DEVIATION_PER_POINT:
+// A score below this means the ratio is off enough to warrant an alert.
+// 70 = 100 - 15 * 2 → ~15% deviation from ideal triggers an alert.
+const BALANCE_SCORE_ALERT_THRESHOLD = 70;
+const BALANCE_MIN_TOTAL = 8;
 
 // Plateaus (28-day / 4 weeks)
 const PLATEAU_WEEKS = 4;
@@ -234,17 +250,17 @@ const resolveMuscle = (name: string): string => MUSCLE_NAME_ALIASES[name] ?? nam
 
 interface ExerciseMetadata {
   push_pull: 'push' | 'pull' | null;
-  upper_lower: 'upper' | 'lower' | null;
   is_compound: boolean;
   exercise_type: ExerciseType;
+  movement_pattern: string | null;
 }
 
 const EXERCISE_METADATA = exercisesData.reduce((acc, ex) => {
   acc[ex.name] = {
     push_pull: ex.push_pull as 'push' | 'pull' | null,
-    upper_lower: ex.upper_lower as 'upper' | 'lower' | null,
     is_compound: ex.is_compound ?? false,
     exercise_type: (ex.exercise_type as ExerciseType) || 'weight',
+    movement_pattern: (ex as any).movement_pattern ?? null,
   } satisfies ExerciseMetadata;
   return acc;
 }, {} as Record<string, ExerciseMetadata>);
@@ -332,10 +348,16 @@ export const useInsightsData = () => {
     const insights: Insight[] = [];
 
     // ========================================================================
-    // 1. BALANCE ALERTS (set-based, 7-day)
+    // 1. BALANCE ALERTS (volume-based, 7-day, goal-aware)
+    //    Uses the SAME calculateRatioScore + getIdealRatios as BalanceScoreCard
+    //    so alerts are coherent with the displayed balance score.
     // ========================================================================
-    const pushPullSets = { push: 0, pull: 0 };
-    const upperLowerSets = { upper: 0, lower: 0 };
+    const primaryGoal = useUserProfileStore.getState().profile?.primaryGoal;
+    const ideals = getIdealRatios(primaryGoal);
+
+    const bal = { pushVol: 0, pullVol: 0, upperVol: 0, lowerVol: 0, compoundVol: 0, isolatedVol: 0 };
+    const balSets = { push: 0, pull: 0, upper: 0, lower: 0, compound: 0, isolated: 0 };
+    const weekMovementPatterns = new Set<string>();
 
     weekWorkouts.forEach((workout) => {
       workout.exercises.forEach((exercise: any) => {
@@ -348,10 +370,17 @@ export const useInsightsData = () => {
 
         exercise.sets.forEach((set: any) => {
           if (!isCompletedSet(set)) return;
+          const vol = computeSetVolume(set, et, userBodyWeight);
 
-          if (meta.push_pull === 'push') pushPullSets.push += 1;
-          if (meta.push_pull === 'pull') pushPullSets.pull += 1;
+          // Push / Pull
+          if (meta.push_pull === 'push') { balSets.push += 1; bal.pushVol += vol; }
+          if (meta.push_pull === 'pull') { balSets.pull += 1; bal.pullVol += vol; }
 
+          // Compound / Isolated
+          if (meta.is_compound) { balSets.compound += 1; bal.compoundVol += vol; }
+          else { balSets.isolated += 1; bal.isolatedVol += vol; }
+
+          // Upper / Lower (muscle-weight-based, matching balance score exactly)
           if (muscleWeights) {
             let uW = 0;
             let lW = 0;
@@ -363,67 +392,96 @@ export const useInsightsData = () => {
             });
             const t = uW + lW;
             if (t > 0) {
-              upperLowerSets.upper += uW / t;
-              upperLowerSets.lower += lW / t;
+              balSets.upper += uW / t;
+              balSets.lower += lW / t;
+              if (vol > 0) {
+                bal.upperVol += vol * (uW / t);
+                bal.lowerVol += vol * (lW / t);
+              }
             }
           }
+
+          // Movement pattern tracking
+          if (meta.movement_pattern) weekMovementPatterns.add(meta.movement_pattern);
         });
       });
     });
 
-    const addBalance = (
-      aName: string,
-      bName: string,
-      aSets: number,
-      bSets: number,
-      descriptorForA: string,
-      exerciseForA: string,
-      descriptorForB: string,
-      exerciseForB: string,
+    // Helper: generate a balance insight using the shared scoring function
+    const addBalanceInsight = (
+      label: string,
+      leftVol: number,
+      rightVol: number,
+      leftSets: number,
+      rightSets: number,
+      idealLeftPct: number,
+      weakLeftDesc: string,
+      weakLeftEx: string,
+      weakRightDesc: string,
+      weakRightEx: string,
     ) => {
-      const total = aSets + bSets;
-      if (total < BALANCE_MIN_TOTAL_SETS) return;
-      const aRatio = safeDivide(aSets, total);
-      const imbalance = Math.abs(aRatio - 0.5) * 2;
-      if (imbalance <= BALANCE_THRESHOLD) return;
+      const totalVol = leftVol + rightVol;
+      const totalSets = leftSets + rightSets;
+      if (totalSets < BALANCE_MIN_TOTAL) return;
 
-      const weakIsB = aRatio >= 0.5;
-      const strongSets = weakIsB ? Math.round(aSets) : Math.round(bSets);
-      const weakSets = weakIsB ? Math.round(bSets) : Math.round(aSets);
-      const weakLabel = weakIsB ? bName.toLowerCase() : aName.toLowerCase();
-      const weakDescriptor = weakIsB ? descriptorForB : descriptorForA;
-      const exSuggestion = weakIsB ? exerciseForB : exerciseForA;
+      // Use volume-based score (primary) — same as balance score card
+      const volScore = calculateRatioScore(leftVol, rightVol, idealLeftPct);
+      // Use set-based score as secondary confirmation
+      const setScore = calculateRatioScore(leftSets, rightSets, idealLeftPct);
+      // Average both for the alert decision
+      const avgScore = totalVol > 0 ? (volScore * 0.7 + setScore * 0.3) : setScore;
+
+      if (avgScore >= BALANCE_SCORE_ALERT_THRESHOLD) return;
+
+      const leftPct = totalVol > 0
+        ? Math.round((leftVol / totalVol) * 100)
+        : Math.round((leftSets / totalSets) * 100);
+      const rightPct = 100 - leftPct;
+      const [aLabel, bLabel] = label.split('/').map((s) => s.trim());
+      const weakIsRight = leftPct >= idealLeftPct;
+      const weakLabel = weakIsRight ? bLabel.toLowerCase() : aLabel.toLowerCase();
+      const weakDesc = weakIsRight ? weakRightDesc : weakLeftDesc;
+      const weakEx = weakIsRight ? weakRightEx : weakLeftEx;
 
       insights.push({
         type: 'balance',
         priority: 'suggestion',
         title: 'Balance Alert',
-        message: `You did ${strongSets} ${weakIsB ? aName.toLowerCase() : bName.toLowerCase()} vs ${weakSets} ${weakLabel} sets this week. Try adding ${weakDescriptor} like ${exSuggestion}.`,
+        message: `Your ${label} split is ${leftPct}/${rightPct} this week (ideal ~${idealLeftPct}/${100 - idealLeftPct}). Try adding ${weakDesc} like ${weakEx} to strengthen your ${weakLabel} training.`,
         icon: '⚖️',
         borderColor: INSIGHT_COLORS.warning,
       });
     };
 
-    addBalance(
-      'Push',
-      'Pull',
-      pushPullSets.push,
-      pushPullSets.pull,
-      'push-focused exercises',
-      'Bench Press or Overhead Press',
-      'pull-focused exercises',
-      'Lat Pulldowns or Cable Rows',
+    addBalanceInsight(
+      'Push / Pull', bal.pushVol, bal.pullVol, balSets.push, balSets.pull, ideals.pushPull,
+      'push exercises', 'Bench Press or Overhead Press',
+      'pull exercises', 'Barbell Rows or Lat Pulldowns',
     );
-    addBalance(
-      'Upper',
-      'Lower',
-      upperLowerSets.upper,
-      upperLowerSets.lower,
-      'upper body focused exercises',
-      'Bench Press or Barbell Rows',
-      'lower body focused exercises',
-      'Squats or Deadlifts',
+    addBalanceInsight(
+      'Upper / Lower', bal.upperVol, bal.lowerVol, balSets.upper, balSets.lower, ideals.upperLower,
+      'upper body exercises', 'Bench Press or Barbell Rows',
+      'lower body exercises', 'Squats or Romanian Deadlifts',
     );
+    addBalanceInsight(
+      'Compound / Isolated', bal.compoundVol, bal.isolatedVol, balSets.compound, balSets.isolated, ideals.compoundIsolated,
+      'compound movements', 'Squats or Bench Press',
+      'isolation exercises', 'Curls or Lateral Raises',
+    );
+
+    // Movement pattern diversity insight
+    const missingPatterns = MOVEMENT_PATTERN_TARGETS.filter((p) => !weekMovementPatterns.has(p));
+    if (weekWorkouts.length >= 2 && missingPatterns.length >= 3) {
+      const missing = missingPatterns.slice(0, 3).join(', ');
+      insights.push({
+        type: 'balance',
+        priority: 'suggestion',
+        title: 'Movement Diversity',
+        message: `You're missing ${missingPatterns.length} key movement patterns this week: ${missing}. Varying patterns reduces injury risk and improves overall strength.`,
+        icon: '🔄',
+        borderColor: INSIGHT_COLORS.info,
+      });
+    }
 
     // ========================================================================
     // 2. PLATEAU DETECTION (rep-range grouped E1RM + volume decline, 4 weeks)

@@ -16,6 +16,7 @@ import { useSessionStore } from '@/store/sessionStore';
 import type { WorkoutExercise } from '@/types/workout';
 import { createSetsWithHistory } from '@/utils/workout';
 import { useWorkoutSessionsStore } from '@/store/workoutSessionsStore';
+import { useCustomExerciseStore } from '@/store/customExerciseStore';
 import WorkoutSessionScreen from '../workout-session';
 import { WorkoutCompletionOverlay } from '@/components/organisms';
 
@@ -115,6 +116,7 @@ const WorkoutScreen: React.FC = () => {
   };
 
   const allWorkouts = useWorkoutSessionsStore((state) => state.workouts);
+  const customExercises = useCustomExerciseStore((state) => state.customExercises);
 
   // Combine workouts from both plans and programs with name-based deduplication
   // This prevents duplicates when the same workout exists in both plansStore and programs
@@ -199,7 +201,7 @@ const WorkoutScreen: React.FC = () => {
 
         const historySetCounts: Record<string, number> = {};
         const mappedExercises: WorkoutExercise[] = workout.exercises.map((exercise: any) => {
-          const { sets, historySetCount } = createSetsWithHistory(exercise.name, allWorkouts);
+          const { sets, historySetCount } = createSetsWithHistory(exercise.name, allWorkouts, undefined, undefined, customExercises);
           historySetCounts[exercise.name] = historySetCount;
           return {
             name: exercise.name,

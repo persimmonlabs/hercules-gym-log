@@ -11,6 +11,7 @@ import { triggerHaptic } from '@/utils/haptics';
 import { Text } from '@/components/atoms/Text';
 import { ExerciseSetEditor } from '@/components/molecules/ExerciseSetEditor';
 import { colors, radius, shadows, sizing, spacing } from '@/constants/theme';
+import { exercises as exerciseCatalog } from '@/constants/exercises';
 import type { SetLog, WorkoutExercise } from '@/types/workout';
 
 interface EditableWorkoutExerciseCardProps {
@@ -126,6 +127,9 @@ export const EditableWorkoutExerciseCard: React.FC<EditableWorkoutExerciseCardPr
           initialSets={exercise.sets}
           onSetsChange={onSaveSets}
           onProgressChange={onProgressChange}
+          exerciseType={exerciseCatalog.find(e => e.name === exercise.name)?.exerciseType || 'weight'}
+          distanceUnit={exerciseCatalog.find(e => e.name === exercise.name)?.distanceUnit}
+          supportsGpsTracking={exerciseCatalog.find(e => e.name === exercise.name)?.supportsGpsTracking ?? false}
         />
       ) : null}
     </View>

@@ -25,25 +25,24 @@ const CHART_HEIGHT = 220;
 interface DrilldownBarChartProps {
   data: HierarchicalSetData;
   rootGroup: string;
+  showTapHint?: boolean;
 }
 
 interface BreadcrumbItem {
   name: string;
-  level: 'L1' | 'L2' | 'L3';
+  level: 'L1' | 'L2';
 }
 
-// Strip prefix from detailed muscle names
+// Abbreviate long muscle names for chart labels
 const getDisplayName = (fullName: string): string => {
   if (fullName === 'Hamstrings') return 'Hams.';
-  if (fullName.includes(' - ')) {
-    return fullName.split(' - ')[1];
-  }
   return fullName;
 };
 
 export const DrilldownBarChart: React.FC<DrilldownBarChartProps> = ({
   data,
   rootGroup,
+  showTapHint = true,
 }) => {
   // Use reactive selector for unit
   const weightUnit = useSettingsStore((state) => state.weightUnit);
@@ -69,20 +68,7 @@ export const DrilldownBarChart: React.FC<DrilldownBarChartProps> = ({
     } else if (current.level === 'L2') {
       // L2 -> get L3 children (e.g., Arms -> Biceps, Triceps, Forearms)
       const l1Name = breadcrumb[0].name;
-      const l3Children = hierarchy[l1Name]?.muscles?.[current.name]?.muscles || {};
-      const l3Names = Object.keys(l3Children);
-      
-      // Special case: if L3 has same name as L2 (e.g., Calves -> Calves),
-      // return L4 children directly to skip redundant level
-      if (l3Names.length === 1 && l3Names[0] === current.name) {
-        return Object.keys(l3Children[current.name]?.muscles || {});
-      }
-      return l3Names;
-    } else if (current.level === 'L3') {
-      // L3 -> get L4 children (e.g., Biceps -> Long Head, Short Head, Brachialis)
-      const l1Name = breadcrumb[0].name;
-      const l2Name = breadcrumb.length > 1 ? breadcrumb[1].name : '';
-      return Object.keys(hierarchy[l1Name]?.muscles?.[l2Name]?.muscles?.[current.name]?.muscles || {});
+      return Object.keys(hierarchy[l1Name]?.muscles?.[current.name]?.muscles || {});
     }
     return [];
   }, [breadcrumb]);
@@ -90,24 +76,14 @@ export const DrilldownBarChart: React.FC<DrilldownBarChartProps> = ({
   // Get current level's data, ensuring all expected children are included
   const currentData = useMemo((): ChartSlice[] => {
     const current = breadcrumb[breadcrumb.length - 1];
-    let key = `${current.level}:${current.name}`;
-    
-    // Special case: for L3 where L2 and L3 have same name (e.g., Calves),
-    // the data is stored under L2 key, not L3
-    if (current.level === 'L3' && breadcrumb.length > 1) {
-      const l2Name = breadcrumb[1].name;
-      if (l2Name === current.name) {
-        key = `L2:${current.name}`;
-      }
-    }
-    
+    const key = `${current.level}:${current.name}`;
     const rawData = data.byParent[key] || [];
     
     // Create a map of existing data
     const dataMap = new Map(rawData.map(d => [d.name, d]));
     
     // Include all expected children, with 0 values for missing ones
-    return expectedChildren.map((name, index) => {
+    const unsorted = expectedChildren.map((name, index) => {
       const existing = dataMap.get(name);
       if (existing) {
         return existing;
@@ -120,29 +96,19 @@ export const DrilldownBarChart: React.FC<DrilldownBarChartProps> = ({
         color: colors.neutral.gray400,
       };
     });
+    
+    // Sort by value descending (highest to left, smallest to right)
+    return [...unsorted].sort((a, b) => b.value - a.value);
   }, [breadcrumb, data, expectedChildren]);
 
-  // Check if we can drill down further
+  // Check if we can drill down further (only L1 -> L2 is possible)
   const canDrillDown = useCallback(
     (name: string): boolean => {
       const current = breadcrumb[breadcrumb.length - 1];
-      let nextLevel: 'L2' | 'L3' | null = null;
+      if (current.level !== 'L1') return false;
 
-      if (current.level === 'L1') nextLevel = 'L2';
-      else if (current.level === 'L2') nextLevel = 'L3';
-
-      if (!nextLevel) return false;
-
-      // Check for data at the next level
-      let key = `${nextLevel}:${name}`;
-      let children = data.byParent[key];
-      
-      // Special case: for same-name L2/L3 (e.g., Calves), data is under L2 key
-      if (!children?.length && nextLevel === 'L3' && current.name === name) {
-        key = `L2:${name}`;
-        children = data.byParent[key];
-      }
-      
+      const key = `L2:${name}`;
+      const children = data.byParent[key];
       return children && children.length > 0;
     },
     [breadcrumb, data]
@@ -156,9 +122,7 @@ export const DrilldownBarChart: React.FC<DrilldownBarChartProps> = ({
       if (selectedBar?.label === label) {
         // Second tap - try to drill down
         if (canDrillDown(label)) {
-          const current = breadcrumb[breadcrumb.length - 1];
-          let nextLevel: 'L2' | 'L3' = current.level === 'L1' ? 'L2' : 'L3';
-          setBreadcrumb([...breadcrumb, { name: label, level: nextLevel }]);
+          setBreadcrumb([...breadcrumb, { name: label, level: 'L2' }]);
           setSelectedBar(null);
         } else {
           // No children - just deselect
@@ -226,17 +190,28 @@ export const DrilldownBarChart: React.FC<DrilldownBarChartProps> = ({
     return breadcrumb[breadcrumb.length - 1].name;
   }, [breadcrumb, rootGroup]);
 
+  const isRootLevel = breadcrumb.length === 1;
+
   return (
     <View style={styles.container}>
-      {/* Header */}
+      {/* Header - always shows root group name */}
       <View style={styles.header}>
         <Text variant="heading3" color="primary">
-          {headerTitle}
+          {rootGroup}
         </Text>
       </View>
 
-      {/* Breadcrumb - always visible unless empty state */}
-      {hasData && (
+      {/* Tap hint - styled like breadcrumb container */}
+      {isRootLevel && hasData && showTapHint && (
+        <View style={styles.breadcrumbContainer}>
+          <Text variant="caption" color="tertiary">
+            Tap a bar to explore
+          </Text>
+        </View>
+      )}
+
+      {/* Breadcrumb - only visible when drilled down */}
+      {!isRootLevel && hasData && (
         <View style={styles.breadcrumbContainer}>
           {breadcrumb.map((item, index) => (
             <View key={`${item.level}-${item.name}`} style={styles.breadcrumbItem}>
@@ -370,6 +345,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingBottom: spacing.xs,
   },
+  headerContent: {
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  tapHint: {
+    marginTop: spacing.xxs,
+  },
   breadcrumbContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -377,6 +359,7 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: spacing.xs,
     paddingHorizontal: spacing.sm,
+    width: '100%',
   },
   breadcrumbItem: {
     flexDirection: 'row',

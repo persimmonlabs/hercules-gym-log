@@ -139,7 +139,7 @@
         "tags": ["beginner", "dumbbells", "home-gym", "full-body"]
       },
       "isPremade": true,
-      "isFree": false
+      "isFree": true
     },
     {
       "id": "beginner-hiit-cardio",
@@ -164,7 +164,7 @@
         "tags": ["beginner", "hiit", "cardio", "fat-loss", "bodyweight"]
       },
       "isPremade": true,
-      "isFree": false
+      "isFree": true
     },
     {
       "id": "beginner-core-foundation",
@@ -332,7 +332,7 @@
         "tags": ["intermediate", "full-body", "dumbbells", "strength"]
       },
       "isPremade": true,
-      "isFree": false
+      "isFree": true
     },
     {
       "id": "intermediate-calisthenics",
@@ -356,7 +356,7 @@
         "tags": ["intermediate", "calisthenics", "bodyweight", "strength", "minimal-equipment"]
       },
       "isPremade": true,
-      "isFree": false
+      "isFree": true
     },
     {
       "id": "metabolic-conditioning",

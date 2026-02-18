@@ -22,7 +22,7 @@ interface CompactExerciseRowProps {
   showReorderControls?: boolean;
 }
 
-export const CompactExerciseRow: React.FC<CompactExerciseRowProps> = ({
+export const CompactExerciseRow: React.FC<CompactExerciseRowProps> = React.memo(({
   exercise,
   index,
   totalCount,
@@ -116,7 +116,7 @@ export const CompactExerciseRow: React.FC<CompactExerciseRowProps> = ({
       </Pressable>
     </View>
   );
-};
+});
 
 const styles = StyleSheet.create({
   container: {

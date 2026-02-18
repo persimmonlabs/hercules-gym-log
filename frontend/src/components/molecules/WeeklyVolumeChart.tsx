@@ -20,7 +20,28 @@ const CHART_CONTENT_HEIGHT = 250; // VictoryChart height
 const TITLE_HEIGHT = 30; // Approximate title height
 const CHART_CONTAINER_HEIGHT = CHART_CONTENT_HEIGHT + TITLE_HEIGHT + spacing.sm * 2;
 
-// Build Maps - handles up to 4 levels (high -> mid -> low -> detailed)
+// Alias map: translates exercises.json muscle names to new hierarchy names
+const MUSCLE_NAME_ALIASES: Record<string, string> = {
+    'Upper Back': 'Traps',
+    'Lateral Delts': 'Side Delts',
+    'Biceps - Long Head': 'Biceps',
+    'Biceps - Short Head': 'Biceps',
+    'Brachialis': 'Biceps',
+    'Triceps - Long Head': 'Triceps',
+    'Triceps - Lateral Head': 'Triceps',
+    'Triceps - Medial Head': 'Triceps',
+    'Flexors': 'Forearms',
+    'Extensors': 'Forearms',
+    'Calves - Medial Head': 'Calves',
+    'Calves - Lateral Head': 'Calves',
+    'Soleus': 'Calves',
+    'Upper Abs': 'Abs',
+    'Lower Abs': 'Abs',
+};
+
+const resolveMuscle = (name: string): string => MUSCLE_NAME_ALIASES[name] ?? name;
+
+// Build Maps - handles 3 levels (high -> mid -> low)
 const buildMaps = () => {
     const leafToL1: Record<string, string> = {}; // Specific -> Body Part (Upper/Lower/Core)
     const leafToL2: Record<string, string> = {}; // Specific -> Muscle Group (Chest/Back/etc)
@@ -31,24 +52,14 @@ const buildMaps = () => {
     Object.entries(hierarchy).forEach(([l1, l1Data]) => {
         if (l1Data?.muscles) {
             Object.entries(l1Data.muscles).forEach(([l2, l2Data]: [string, any]) => {
-                // l2 is "Chest", "Arms", "Calves", etc.
                 leafToL1[l2] = l1;
                 leafToL2[l2] = l2;
                 l2ToL1[l2] = l1;
 
                 if (l2Data?.muscles) {
-                    Object.entries(l2Data.muscles).forEach(([l3, l3Data]: [string, any]) => {
-                        // l3 could be "Upper Chest" (low), "Biceps" (low with children), or "Medial Head" (detailed under Calves)
+                    Object.entries(l2Data.muscles).forEach(([l3]: [string, any]) => {
                         leafToL1[l3] = l1;
                         leafToL2[l3] = l2;
-
-                        // Handle L4 (detailed level, e.g., Long Head under Biceps)
-                        if (l3Data?.muscles) {
-                            Object.keys(l3Data.muscles).forEach(l4 => {
-                                leafToL1[l4] = l1;
-                                leafToL2[l4] = l2;
-                            });
-                        }
                     });
                 }
             });
@@ -306,7 +317,8 @@ export const WeeklyVolumeChart: React.FC = () => {
 
                     const setVolume = convertWeight((set.weight ?? 0) * (set.reps ?? 0));
 
-                    Object.entries(weights).forEach(([muscle, weight]) => {
+                    Object.entries(weights).forEach(([rawMuscle, weight]) => {
+                        const muscle = resolveMuscle(rawMuscle);
                         const contribution = setVolume * weight;
 
                         // L1 Accumulation
@@ -341,8 +353,7 @@ export const WeeklyVolumeChart: React.FC = () => {
             const muscles = Object.keys(hierarchyData.muscle_hierarchy[parentL1 as keyof typeof hierarchyData.muscle_hierarchy].muscles);
             const values = muscles.map(m => volumeL2[m] || 0);
             const labels = muscles.map(m => {
-                if (m === 'Hip Stabilizers') return 'Hips';
-                if (m === 'Hamstrings') return 'Hams';
+                if (m === 'Hamstrings') return 'Hams.';
                 return m;
             });
             return formatData(labels, values);

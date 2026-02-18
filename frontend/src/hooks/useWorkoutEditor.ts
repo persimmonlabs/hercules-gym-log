@@ -243,21 +243,62 @@ export const useWorkoutEditor = (workoutId?: string): WorkoutEditorHook => {
       return allExercises.sort((a, b) => a.name.localeCompare(b.name));
     }
 
+    // Synonym map for body-part searches
+    const SYNONYMS: Record<string, string[]> = {
+      arms: ['biceps', 'triceps', 'forearms', 'forearm', 'bicep', 'tricep', 'curl', 'arm'],
+      legs: ['quads', 'quadriceps', 'hamstrings', 'hamstring', 'glutes', 'glute', 'calves', 'calf', 'leg'],
+      core: ['abs', 'abdominals', 'obliques', 'oblique', 'abdominal', 'plank', 'crunch'],
+      abs: ['abdominals', 'abdominal', 'obliques', 'oblique', 'core', 'crunch', 'plank'],
+      back: ['lats', 'latissimus', 'rhomboids', 'trapezius', 'traps', 'erector', 'row', 'pull'],
+      chest: ['pectorals', 'pectoral', 'pecs', 'bench', 'press', 'fly'],
+      shoulders: ['deltoids', 'deltoid', 'delts', 'delt', 'shoulder', 'lateral raise', 'overhead'],
+      shoulder: ['deltoids', 'deltoid', 'delts', 'delt', 'shoulders', 'lateral raise', 'overhead'],
+      glutes: ['glute', 'gluteus', 'hip thrust', 'hip', 'butt'],
+      calves: ['calf', 'gastrocnemius', 'soleus'],
+      push: ['chest', 'shoulders', 'triceps', 'bench', 'press'],
+      pull: ['back', 'biceps', 'row', 'pulldown', 'pullup'],
+    };
+
+    const synonymTerms = SYNONYMS[query] ?? [];
+    const allTerms = [query, ...synonymTerms];
+
     // For short queries (1-2 chars), require word-start match
     const isShortQuery = query.length <= 2;
 
     const filtered = allExercises.filter((exercise) => {
       const name = exercise.name.toLowerCase();
       const muscleGroup = exercise.muscleGroup.toLowerCase();
+      const filterGroup = exercise.filterMuscleGroup.toLowerCase();
+      const searchIdx = 'searchIndex' in exercise ? (exercise as any).searchIndex as string : '';
 
       if (isShortQuery) {
-        // Require word-start match for short queries
         return name.startsWith(query) || name.includes(` ${query}`) ||
                muscleGroup.startsWith(query) || muscleGroup.includes(` ${query}`);
       }
 
-      // For longer queries, standard includes is fine
-      return name.includes(query) || muscleGroup.includes(query);
+      // Check direct match on name or muscle group
+      if (name.includes(query) || muscleGroup.includes(query) || filterGroup.includes(query)) {
+        return true;
+      }
+
+      // Check searchIndex
+      if (searchIdx && searchIdx.includes(query)) {
+        return true;
+      }
+
+      // Check synonym terms against name, muscleGroup, filterGroup, and searchIndex
+      for (const term of synonymTerms) {
+        if (term.length >= 3) {
+          if (name.includes(term) || muscleGroup.includes(term) || filterGroup.includes(term)) {
+            return true;
+          }
+          if (searchIdx && searchIdx.includes(term)) {
+            return true;
+          }
+        }
+      }
+
+      return false;
     });
 
     // Sort by relevance: exact/prefix matches first, then alphabetically

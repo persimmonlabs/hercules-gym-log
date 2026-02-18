@@ -284,17 +284,12 @@ export const PlanBuilderCard: React.FC<PlanBuilderCardProps> = ({
             )
           ) : (
             <View style={styles.noWorkoutsContainer}>
-              <IconSymbol
-                name="fitness-center"
-                size={32}
-                color={colors.text.muted}
-              />
               <Text variant="body" color="tertiary" style={styles.noWorkoutsText}>
-                Create workouts first to build a plan
+                Add workouts to build your plan
               </Text>
               {onCreateWorkout && (
                 <Button
-                  label="Create a Workout"
+                  label="Add a Workout"
                   variant="ghost"
                   size="md"
                   onPress={onCreateWorkout}
@@ -348,7 +343,7 @@ interface SelectedWorkoutRowProps {
   enableRowAnimations?: boolean;
 }
 
-const SelectedWorkoutRow: React.FC<SelectedWorkoutRowProps> = ({
+const SelectedWorkoutRow: React.FC<SelectedWorkoutRowProps> = React.memo(({
   workout,
   index,
   totalCount,
@@ -427,7 +422,7 @@ const SelectedWorkoutRow: React.FC<SelectedWorkoutRowProps> = ({
       </Pressable>
     </RowWrapper>
   );
-};
+});
 
 const styles = StyleSheet.create({
   container: {

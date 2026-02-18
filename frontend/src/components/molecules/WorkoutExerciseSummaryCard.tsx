@@ -10,10 +10,11 @@ import Animated, { Layout } from 'react-native-reanimated';
 import { Text } from '@/components/atoms/Text';
 import { SurfaceCard } from '@/components/atoms/SurfaceCard';
 import { colors, radius, spacing, sizing } from '@/constants/theme';
-import { exercises as exerciseCatalog } from '@/constants/exercises';
+import { exercises as exerciseCatalog, getExerciseTypeByName } from '@/constants/exercises';
 import type { WorkoutExercise, SetLog } from '@/types/workout';
 import type { ExerciseType } from '@/types/exercise';
 import { useSettingsStore } from '@/store/settingsStore';
+import { useCustomExerciseStore } from '@/store/customExerciseStore';
 
 interface WorkoutExerciseSummaryCardProps {
   exercise: WorkoutExercise;
@@ -89,17 +90,28 @@ export const WorkoutExerciseSummaryCard: React.FC<WorkoutExerciseSummaryCardProp
   const weightUnit = useSettingsStore((state) => state.weightUnit);
   const distanceUnitPref = useSettingsStore((state) => state.distanceUnit);
   const { formatWeight, formatDistanceForExercise } = useSettingsStore();
-  // Look up exercise type from catalog
+  const customExercises = useCustomExerciseStore((state) => state.customExercises);
+  // Look up exercise type from catalog and custom exercises
   const catalogEntry = exerciseCatalog.find(e => e.name === exercise.name);
-  const exerciseType: ExerciseType = catalogEntry?.exerciseType || 'weight';
+  const exerciseType: ExerciseType = getExerciseTypeByName(exercise.name, customExercises);
   const exerciseDistanceUnit = catalogEntry?.distanceUnit;
 
-  // Only show completed sets in the summary
+  // Show completed sets in the summary.
+  // For cardio/duration exercises, also include sets with meaningful data
+  // (duration > 0 or distance > 0) even if not explicitly marked completed,
+  // since users often enter time/distance without pressing "Complete set".
+  const isTimedType = exerciseType === 'cardio' || exerciseType === 'duration';
   const completedSets = exercise.sets
     .map((set, originalIndex) => ({ set, originalIndex }))
-    .filter(({ set }) => set.completed);
+    .filter(({ set }) => {
+      if (set.completed) return true;
+      if (isTimedType) {
+        return (set.duration ?? 0) > 0 || (set.distance ?? 0) > 0;
+      }
+      return false;
+    });
 
-  // Don't render the card if no sets were completed
+  // Don't render the card if no sets have data
   if (completedSets.length === 0) {
     return null;
   }

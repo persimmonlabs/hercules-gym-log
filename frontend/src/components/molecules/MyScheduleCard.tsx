@@ -120,14 +120,21 @@ export const MyScheduleCard: React.FC<MyScheduleCardProps> = ({
   };
 
   const renderEmptyState = () => (
-    <View style={styles.emptyCard}>
-      <Text variant="heading4" color="primary" style={{ textAlign: 'center' }}>
-        No schedule yet
-      </Text>
-      <Text variant="body" color="secondary" style={{ textAlign: 'center' }}>
-        Create a schedule to see it here.
-      </Text>
-    </View>
+    <SurfaceCard
+      tone="neutral"
+      padding="md"
+      showAccentStripe={false}
+      style={styles.emptyCard}
+    >
+      <View style={styles.emptyContent}>
+        <Text variant="bodySemibold" color="primary" style={styles.emptyTitle}>
+          No schedule yet
+        </Text>
+        <Text variant="body" color="secondary" style={styles.emptySubtext}>
+          Create a schedule to see it here.
+        </Text>
+      </View>
+    </SurfaceCard>
   );
 
   const renderWeeklySchedule = () => {
@@ -237,42 +244,40 @@ export const MyScheduleCard: React.FC<MyScheduleCardProps> = ({
   };
 
   return (
-    <View style={styles.content}>
-      <SurfaceCard tone="neutral" padding="lg" showAccentStripe={true}>
-        <View style={styles.innerContent}>
-          <Text variant="heading3" color="primary">
-            My Schedule
-          </Text>
-          {renderScheduleContent()}
+    <View style={styles.innerContent}>
+      <View style={styles.cardHeader}>
+        <Text variant="heading3" color="primary">
+          My Schedule
+        </Text>
+      </View>
+      {renderScheduleContent()}
 
-          {activeRule ? (
-            <View style={styles.buttonRow}>
-              <Button
-                label="Edit Schedule"
-                variant="primary"
-                size="md"
-                onPress={onEditPress}
-                style={styles.primaryButton}
-              />
-              <Button
-                label="Add Override"
-                variant="secondary"
-                size="md"
-                textColor={colors.accent.orange}
-                style={[styles.secondaryButton, { ...shadows.sm }]}
-                onPress={onAddOverridePress}
-              />
-            </View>
-          ) : (
-            <Button
-              label="Create Schedule"
-              variant="primary"
-              size="md"
-              onPress={onEditPress}
-            />
-          )}
+      {activeRule ? (
+        <View style={styles.buttonRow}>
+          <Button
+            label="Edit Schedule"
+            variant="primary"
+            size="md"
+            onPress={onEditPress}
+            style={styles.primaryButton}
+          />
+          <Button
+            label="Add Override"
+            variant="secondary"
+            size="md"
+            textColor={colors.accent.orange}
+            style={[styles.secondaryButton, { ...shadows.sm }]}
+            onPress={onAddOverridePress}
+          />
         </View>
-      </SurfaceCard>
+      ) : (
+        <Button
+          label="Create Schedule"
+          variant="primary"
+          size="md"
+          onPress={onEditPress}
+        />
+      )}
     </View>
   );
 };
@@ -284,12 +289,34 @@ const styles = StyleSheet.create({
   innerContent: {
     gap: spacing.md,
   },
-  emptyCard: {
-    borderRadius: radius.lg,
-    backgroundColor: colors.surface.elevated,
-    padding: spacing.xl,
-    gap: spacing.xs,
+  cardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
+    marginBottom: spacing.md,
+  },
+  emptyCard: {
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border.light,
+    borderRadius: radius.lg,
+    backgroundColor: colors.surface.card,
+    shadowColor: 'transparent',
+    shadowOpacity: 0,
+    shadowRadius: 0,
+    shadowOffset: { width: 0, height: 0 },
+    elevation: 0,
+    paddingLeft: spacing.lg,
+  },
+  emptyContent: {
+    alignItems: 'flex-start',
+    justifyContent: 'center',
+    paddingVertical: spacing.sm,
+  },
+  emptyTitle: {
+    marginBottom: spacing.xs,
+  },
+  emptySubtext: {
+    textAlign: 'left',
   },
   scheduleList: {
     gap: spacing.md,

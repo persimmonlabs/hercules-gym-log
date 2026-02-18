@@ -6,8 +6,7 @@
 
 import React, { useCallback, useEffect } from 'react';
 import { View, StyleSheet, TouchableOpacity, ActivityIndicator, BackHandler } from 'react-native';
-import { useFocusEffect } from 'expo-router';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
 import { Text } from '@/components/atoms/Text';
@@ -84,49 +83,50 @@ const VolumeAnalyticsScreen: React.FC = () => {
       </View>
 
       {/* Upper Body Breakdown (Premium) */}
-      <SurfaceCard tone="neutral" padding="md" showAccentStripe={false}>
-        <PremiumLock
-          isLocked={!isPremium}
-          featureName="Upper Body Breakdown"
-          onUnlock={handleUpgrade}
-        >
+      <PremiumLock
+        isLocked={!isPremium}
+        featureName="Upper Body Breakdown"
+        onUnlock={handleUpgrade}
+      >
+        <SurfaceCard tone="neutral" padding="md" showAccentStripe={false}>
           <DrilldownBarChart
             key={`upper-${chartKey}`}
             data={hierarchicalVolumeDistribution}
             rootGroup="Upper Body"
           />
-        </PremiumLock>
-      </SurfaceCard>
+        </SurfaceCard>
+      </PremiumLock>
 
       {/* Lower Body Breakdown (Premium) */}
-      <SurfaceCard tone="neutral" padding="md" showAccentStripe={false}>
-        <PremiumLock
-          isLocked={!isPremium}
-          featureName="Lower Body Breakdown"
-          onUnlock={handleUpgrade}
-        >
+      <PremiumLock
+        isLocked={!isPremium}
+        featureName="Lower Body Breakdown"
+        onUnlock={handleUpgrade}
+      >
+        <SurfaceCard tone="neutral" padding="md" showAccentStripe={false}>
           <DrilldownBarChart
             key={`lower-${chartKey}`}
             data={hierarchicalVolumeDistribution}
             rootGroup="Lower Body"
           />
-        </PremiumLock>
-      </SurfaceCard>
+        </SurfaceCard>
+      </PremiumLock>
 
       {/* Core Breakdown (Premium) */}
-      <SurfaceCard tone="neutral" padding="md" showAccentStripe={false}>
-        <PremiumLock
-          isLocked={!isPremium}
-          featureName="Core Breakdown"
-          onUnlock={handleUpgrade}
-        >
+      <PremiumLock
+        isLocked={!isPremium}
+        featureName="Core Breakdown"
+        onUnlock={handleUpgrade}
+      >
+        <SurfaceCard tone="neutral" padding="md" showAccentStripe={false}>
           <DrilldownBarChart
             key={`core-${chartKey}`}
             data={hierarchicalVolumeDistribution}
             rootGroup="Core"
+            showTapHint={false}
           />
-        </PremiumLock>
-      </SurfaceCard>
+        </SurfaceCard>
+      </PremiumLock>
 
       {/* Tip */}
       <View style={styles.tipContainer}>

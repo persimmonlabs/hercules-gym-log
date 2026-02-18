@@ -1,7 +1,6 @@
-import React, { useCallback, useRef, useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, Pressable, Dimensions, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
-import Animated, { FadeIn, FadeOut, Layout } from 'react-native-reanimated';
-import { useRouter } from 'expo-router';
+import React, { useCallback, useRef } from 'react';
+import { View, StyleSheet, ScrollView, Pressable, Dimensions } from 'react-native';
+import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 import { useFocusEffect } from '@react-navigation/native';
 import { triggerHaptic } from '@/utils/haptics';
 import { Text } from '@/components/atoms/Text';
@@ -30,7 +29,6 @@ interface WorkoutCarouselProps {
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const CARD_WIDTH = SCREEN_WIDTH * 0.65;
 const CARD_SPACING = spacing.md;
-const CARD_TOTAL_WIDTH = CARD_WIDTH + CARD_SPACING;
 const LEFT_MARGIN = spacing.lg + spacing.xs;
 
 export const WorkoutCarousel: React.FC<WorkoutCarouselProps> = ({
@@ -43,7 +41,6 @@ export const WorkoutCarousel: React.FC<WorkoutCarouselProps> = ({
   onDeleteWorkout,
   onCloseExpanded,
 }) => {
-  const router = useRouter();
   const scrollViewRef = useRef<ScrollView>(null);
 
   // Reset scroll position when parent screen gains focus

@@ -160,14 +160,29 @@ export const useScheduleEditor = (): UseScheduleEditorReturn => {
   }, [activeSchedule]);
 
   const planNameLookup = useMemo(() => {
-    const lookup = plans.reduce<Record<string, string>>((acc, plan: Plan) => {
-      acc[plan.id] = plan.name;
-      return acc;
-    }, {});
+    const lookup: Record<string, string> = {};
+    const seenNames = new Set<string>();
 
+    // Add custom workouts first — these are the canonical versions
+    plans.forEach((plan: Plan) => {
+      const nameKey = plan.name.trim().toLowerCase();
+      if (!seenNames.has(nameKey)) {
+        seenNames.add(nameKey);
+        lookup[plan.id] = plan.name;
+      }
+    });
+
+    // Add program workouts — always register their IDs so existing schedules
+    // that reference plan_workouts IDs can still resolve workout names
     userPrograms.forEach((prog) => {
       prog.workouts.forEach((workout) => {
-        lookup[workout.id] = `${prog.name}: ${workout.name}`;
+        const nameKey = workout.name.trim().toLowerCase();
+        // Always add the ID → name mapping for lookup resolution
+        if (!lookup[workout.id]) {
+          lookup[workout.id] = workout.name;
+        }
+        // Track name for planOptions dedup (handled separately below)
+        seenNames.add(nameKey);
       });
     });
 
@@ -175,21 +190,30 @@ export const useScheduleEditor = (): UseScheduleEditorReturn => {
   }, [plans, userPrograms]);
 
   const planOptions = useMemo<ScheduleOption[]>(() => {
-    const options = [
+    const options: ScheduleOption[] = [
       { label: 'Rest Day', value: null },
-      ...plans.map((plan: Plan) => ({ label: plan.name, value: plan.id })),
     ];
+    const seenNames = new Set<string>();
 
-    if (userPrograms.length > 0) {
-      userPrograms.forEach((prog) => {
-        prog.workouts.forEach((workout) => {
-          options.push({
-            label: `${prog.name}: ${workout.name}`,
-            value: workout.id,
-          });
-        });
+    // Add custom workouts first — canonical versions
+    plans.forEach((plan: Plan) => {
+      const nameKey = plan.name.trim().toLowerCase();
+      if (!seenNames.has(nameKey)) {
+        seenNames.add(nameKey);
+        options.push({ label: plan.name, value: plan.id });
+      }
+    });
+
+    // Add program workouts — only if not already present by name
+    userPrograms.forEach((prog) => {
+      prog.workouts.forEach((workout) => {
+        const nameKey = workout.name.trim().toLowerCase();
+        if (!seenNames.has(nameKey)) {
+          seenNames.add(nameKey);
+          options.push({ label: workout.name, value: workout.id });
+        }
       });
-    }
+    });
 
     return options;
   }, [plans, userPrograms]);

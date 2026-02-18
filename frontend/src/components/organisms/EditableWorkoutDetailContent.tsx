@@ -15,13 +15,14 @@ import { TimePickerModal } from '@/components/molecules/TimePickerModal';
 import { SheetModal } from '@/components/molecules/SheetModal';
 import { spacing, colors, radius, sizing } from '@/constants/theme';
 import { useTheme } from '@/hooks/useTheme';
-import { exercises as exerciseCatalog } from '@/constants/exercises';
+import { exercises as exerciseCatalog, getExerciseTypeByName, createCustomExerciseCatalogItem } from '@/constants/exercises';
+import { useCustomExerciseStore } from '@/store/customExerciseStore';
 import { triggerHaptic } from '@/utils/haptics';
 import { formatDurationLabel, getWorkoutTotals, getWorkoutVolume } from '@/utils/workout';
 import { searchExercises } from '@/utils/exerciseSearch';
 import { useSettingsStore } from '@/store/settingsStore';
 import type { Workout, WorkoutExercise, SetLog } from '@/types/workout';
-import type { ExerciseType } from '@/types/exercise';
+import type { ExerciseType, ExerciseCatalogItem } from '@/types/exercise';
 
 interface EditableWorkoutDetailContentProps {
   workout: Workout;
@@ -107,8 +108,17 @@ const EditableSetRow: React.FC<EditableSetRowProps> = ({
   onDeleteSet,
 }) => {
   const { theme } = useTheme();
-  const { formatWeight, formatDistanceForExercise } = useSettingsStore();
+  // Subscribe to unit preferences so the row re-renders when units change
   const weightUnit = useSettingsStore((state) => state.weightUnit);
+  const distanceUnitPref = useSettingsStore((state) => state.distanceUnit);
+
+  const {
+    convertWeight,
+    convertWeightToLbs,
+    getDistanceUnitForExercise,
+    convertDistanceForExercise,
+    convertDistanceToMilesForExercise,
+  } = useSettingsStore();
   const [isTimePickerVisible, setIsTimePickerVisible] = useState(false);
   const [activeSelection, setActiveSelection] = useState<ActiveSelectionTarget | null>(null);
   
@@ -120,17 +130,32 @@ const EditableSetRow: React.FC<EditableSetRowProps> = ({
     assistanceWeight: set.assistanceWeight ?? 0,
   });
   
-  // Helper to convert weight for display
+  const effectiveDistanceUnit = distanceUnit ?? 'miles';
+  const distanceUnitLabel = getDistanceUnitForExercise(effectiveDistanceUnit);
+
+  // Helper to convert weight (stored as lbs) for display
   const formatWeightForDisplay = useCallback((weightLbs: number) => {
     if (weightLbs === 0) return '';
-    const val = weightUnit === 'kg' ? weightLbs / 2.20462 : weightLbs;
-    return String(Math.round(val * 10) / 10);
-  }, [weightUnit]);
+    const display = convertWeight(weightLbs);
+    return display % 1 === 0 ? display.toFixed(0) : display.toFixed(1);
+  }, [convertWeight, weightUnit]);
+
+  // Helper to convert distance (stored as miles) for display
+  const formatDistanceForDisplay = useCallback((miles: number) => {
+    if (miles === 0) return '';
+    const display = convertDistanceForExercise(miles, effectiveDistanceUnit);
+
+    if (effectiveDistanceUnit === 'meters' || effectiveDistanceUnit === 'floors') {
+      return Math.round(display).toString();
+    }
+
+    return display.toFixed(2);
+  }, [convertDistanceForExercise, effectiveDistanceUnit, distanceUnitPref]);
   
   // Local string state for inputs
   const [weightInput, setWeightInput] = useState(() => formatWeightForDisplay(set.weight ?? 0));
   const [repsInput, setRepsInput] = useState(() => set.reps?.toString() ?? '');
-  const [distanceInput, setDistanceInput] = useState(() => set.distance?.toString() ?? '');
+  const [distanceInput, setDistanceInput] = useState(() => formatDistanceForDisplay(set.distance ?? 0));
   const [assistanceInput, setAssistanceInput] = useState(() => formatWeightForDisplay(set.assistanceWeight ?? 0));
   
   // Sync local state only when props change from EXTERNAL source (not our own updates)
@@ -150,7 +175,7 @@ const EditableSetRow: React.FC<EditableSetRowProps> = ({
       // External change (deletion/reorder) - sync local state
       setWeightInput(formatWeightForDisplay(currentWeight));
       setRepsInput(currentReps?.toString() ?? '');
-      setDistanceInput(currentDistance?.toString() ?? '');
+      setDistanceInput(formatDistanceForDisplay(currentDistance));
       setAssistanceInput(formatWeightForDisplay(currentAssistance));
       
       // Update our tracking ref
@@ -161,17 +186,26 @@ const EditableSetRow: React.FC<EditableSetRowProps> = ({
         assistanceWeight: currentAssistance,
       };
     }
-  }, [set.weight, set.reps, set.distance, set.assistanceWeight, formatWeightForDisplay]);
+  }, [set.weight, set.reps, set.distance, set.assistanceWeight, formatWeightForDisplay, formatDistanceForDisplay]);
+
+  // If units change while the editor is open, update *display* strings from the stored base values.
+  useEffect(() => {
+    setWeightInput(formatWeightForDisplay(set.weight ?? 0));
+    setAssistanceInput(formatWeightForDisplay(set.assistanceWeight ?? 0));
+    setDistanceInput(formatDistanceForDisplay(set.distance ?? 0));
+  }, [weightUnit, distanceUnitPref, effectiveDistanceUnit]);
 
   const handleWeightChange = useCallback((text: string) => {
     const sanitized = sanitizeWeightInput(text);
     setActiveSelection(null);
     setWeightInput(sanitized);
+
     const numValue = sanitized.length > 0 ? parseFloat(sanitized) : 0;
-    const weightInLbs = weightUnit === 'kg' ? numValue * 2.20462 : numValue;
+    const weightInLbs = convertWeightToLbs(numValue);
+
     lastSentValuesRef.current.weight = weightInLbs;
     onSetChange(setIndex, { ...set, weight: weightInLbs });
-  }, [set, setIndex, onSetChange, weightUnit]);
+  }, [set, setIndex, onSetChange, convertWeightToLbs]);
 
   const handleRepsChange = useCallback((text: string) => {
     const sanitized = sanitizeRepsInput(text);
@@ -191,20 +225,25 @@ const EditableSetRow: React.FC<EditableSetRowProps> = ({
     const sanitized = sanitizeWeightInput(text);
     setActiveSelection(null);
     setDistanceInput(sanitized);
+
     const numValue = sanitized.length > 0 ? parseFloat(sanitized) : 0;
-    lastSentValuesRef.current.distance = numValue;
-    onSetChange(setIndex, { ...set, distance: numValue });
-  }, [set, setIndex, onSetChange]);
+    const milesValue = convertDistanceToMilesForExercise(numValue, effectiveDistanceUnit);
+
+    lastSentValuesRef.current.distance = milesValue;
+    onSetChange(setIndex, { ...set, distance: milesValue });
+  }, [set, setIndex, onSetChange, convertDistanceToMilesForExercise, effectiveDistanceUnit]);
 
   const handleAssistanceChange = useCallback((text: string) => {
     const sanitized = sanitizeWeightInput(text);
     setActiveSelection(null);
     setAssistanceInput(sanitized);
+
     const numValue = sanitized.length > 0 ? parseFloat(sanitized) : 0;
-    const weightInLbs = weightUnit === 'kg' ? numValue * 2.20462 : numValue;
+    const weightInLbs = convertWeightToLbs(numValue);
+
     lastSentValuesRef.current.assistanceWeight = weightInLbs;
     onSetChange(setIndex, { ...set, assistanceWeight: weightInLbs });
-  }, [set, setIndex, onSetChange, weightUnit]);
+  }, [set, setIndex, onSetChange, convertWeightToLbs]);
 
   const renderInputs = () => {
     switch (exerciseType) {
@@ -223,7 +262,7 @@ const EditableSetRow: React.FC<EditableSetRowProps> = ({
                 cursorColor={colors.accent.primary}
                 selectionColor={colors.accent.orangeLight}
               />
-              <Text variant="caption" color="secondary">{distanceUnit || 'mi'}</Text>
+              <Text variant="caption" color="secondary">{distanceUnitLabel}</Text>
             </View>
             <Pressable 
               style={[styles.timeDisplayButton, { borderColor: theme.accent.orangeMuted, backgroundColor: theme.surface.card }]}
@@ -371,12 +410,20 @@ const AddExerciseModal: React.FC<AddExerciseModalProps> = ({
   const { theme } = useTheme();
   const [searchTerm, setSearchTerm] = useState('');
   
+  const customExercises = useCustomExerciseStore((state) => state.customExercises);
+  const allExercises = useMemo<ExerciseCatalogItem[]>(() => {
+    const customCatalogItems = customExercises.map((ce) =>
+      createCustomExerciseCatalogItem(ce.id, ce.name, ce.exerciseType)
+    );
+    return [...exerciseCatalog, ...customCatalogItems];
+  }, [customExercises]);
+
   const filteredExercises = useMemo(() => {
-    const excludeIds = exerciseCatalog
+    const excludeIds = allExercises
       .filter(ex => existingExerciseNames.includes(ex.name))
       .map(ex => ex.id);
-    return searchExercises(searchTerm, exerciseCatalog, { excludeIds, limit: 50 });
-  }, [searchTerm, existingExerciseNames]);
+    return searchExercises(searchTerm, allExercises, { excludeIds, limit: 50 });
+  }, [searchTerm, existingExerciseNames, allExercises]);
   
   return (
     <SheetModal
@@ -410,6 +457,7 @@ const AddExerciseModal: React.FC<AddExerciseModalProps> = ({
             </Text>
           </View>
         }
+        ListFooterComponent={<View style={styles.spacer} />}
         renderItem={({ item }) => (
           <Pressable
             style={styles.modalItem}
@@ -555,7 +603,7 @@ export const EditableWorkoutDetailContent: React.FC<EditableWorkoutDetailContent
         <View style={styles.exerciseList}>
           {workout.exercises.map((exercise, exerciseIndex) => {
             const catalogEntry = exerciseCatalog.find(e => e.name === exercise.name);
-            const exerciseType: ExerciseType = catalogEntry?.exerciseType || 'weight';
+            const exerciseType: ExerciseType = getExerciseTypeByName(exercise.name, useCustomExerciseStore.getState().customExercises);
             const exerciseDistanceUnit = catalogEntry?.distanceUnit;
 
             return (
@@ -874,5 +922,8 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.border.light,
     gap: spacing.xxs,
+  },
+  spacer: {
+    height: spacing.xl * 2,
   },
 });

@@ -13,6 +13,7 @@ import { spacing } from '@/constants/theme';
 import { useAnalyticsData } from '@/hooks/useAnalyticsData';
 import { useSettingsStore } from '@/store/settingsStore';
 import { exercises as exerciseCatalog } from '@/constants/exercises';
+import { useCustomExerciseStore } from '@/store/customExerciseStore';
 import { TIME_RANGE_SUBTITLES } from '@/types/analytics';
 import type { TimeRange } from '@/types/analytics';
 
@@ -21,6 +22,7 @@ const EMPTY_CARD_MIN_HEIGHT = 120;
 export const DistanceByActivityCard: React.FC = () => {
   const [timeRange, setTimeRange] = useState<TimeRange>('week');
   const { formatDistanceForExercise } = useSettingsStore();
+  const customExercises = useCustomExerciseStore((state) => state.customExercises);
   
   const { cardioStats } = useAnalyticsData({ timeRange });
 
@@ -52,9 +54,11 @@ export const DistanceByActivityCard: React.FC = () => {
       ) : (
         <View style={styles.listContainer}>
           {distanceEntries.map(([exerciseName, distance]) => {
-            // Get the exercise's specific distance unit from catalog
+            // Get the exercise's specific distance unit from catalog or custom exercises
             const exerciseEntry = exerciseCatalog.find(e => e.name === exerciseName);
-            const distanceUnit = exerciseEntry?.distanceUnit;
+            const customEntry = customExercises.find(e => e.name === exerciseName);
+            // Custom cardio exercises default to miles (no distanceUnit property)
+            const distanceUnit = exerciseEntry?.distanceUnit ?? (customEntry ? undefined : undefined);
 
             return (
               <View key={exerciseName} style={styles.activityRow}>
@@ -86,6 +90,7 @@ const styles = StyleSheet.create({
   listContainer: {
     gap: spacing.sm,
     paddingTop: spacing.md,
+    paddingBottom: spacing.md,
   },
   activityRow: {
     flexDirection: 'row',

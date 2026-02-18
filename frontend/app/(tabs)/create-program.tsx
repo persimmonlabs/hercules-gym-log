@@ -1,4 +1,4 @@
-import React, { useCallback, useState, useEffect } from 'react';
+import React, { useCallback, useRef, useState, useEffect } from 'react';
 import { Alert, Pressable, StyleSheet, View, BackHandler } from 'react-native';
 import { useRouter } from 'expo-router';
 import { triggerHaptic } from '@/utils/haptics';
@@ -79,10 +79,13 @@ const CreatePlanScreen: React.FC = () => {
   
   const [isSaving, setIsSaving] = useState(false);
   const [showLimitModal, setShowLimitModal] = useState(false);
+  const scrollRef = useRef<any>(null);
 
   // Always start with a fresh builder session and clean up on unmount
   useEffect(() => {
     resetBuilder();
+    // Reset scroll position to top
+    scrollRef.current?.scrollToPosition?.(0, 0, false);
 
     return () => {
       resetBuilder();
@@ -98,7 +101,7 @@ const CreatePlanScreen: React.FC = () => {
 
   const handleBackPress = useCallback(() => {
     triggerHaptic('selection');
-    router.push('/(tabs)/plans');
+    router.push({ pathname: '/(tabs)/plans', params: { scrollTo: 'plans' } });
   }, [router]);
 
   // Handle Android hardware back button
@@ -170,7 +173,7 @@ const CreatePlanScreen: React.FC = () => {
       await addUserProgram(newProgram);
       
       triggerHaptic('success');
-      router.push('/(tabs)/plans');
+      router.push({ pathname: '/(tabs)/plans', params: { scrollTo: 'plans' } });
     } catch (error: any) {
       if (error?.message === 'FREE_LIMIT_REACHED') {
         setShowLimitModal(true);
@@ -185,7 +188,7 @@ const CreatePlanScreen: React.FC = () => {
 
   const handleGoToCreateWorkout = useCallback(() => {
     triggerHaptic('selection');
-    router.push('/(tabs)/create-workout');
+    router.push({ pathname: '/(tabs)/plans', params: { scrollTo: 'top' } });
   }, [router]);
 
   return (
@@ -197,6 +200,7 @@ const CreatePlanScreen: React.FC = () => {
       />
       <View style={[styles.container, { paddingTop: insets.top }]}>
         <KeyboardAwareScrollView
+          ref={scrollRef}
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"

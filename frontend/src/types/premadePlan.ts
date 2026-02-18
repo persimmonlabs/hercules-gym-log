@@ -62,6 +62,7 @@ export interface PlanMetadata {
   durationWeeks?: number; // Optional program length
   description: string;
   tags?: string[];
+  recommendation?: string; // Optional recommended schedule and training guidelines
 }
 
 /** A complete premade plan (collection of workouts) */

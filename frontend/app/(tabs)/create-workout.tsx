@@ -1,10 +1,9 @@
-import React, { useCallback, useEffect, useMemo, useState, useLayoutEffect } from 'react';
-import { Pressable, StyleSheet, View, BackHandler } from 'react-native';
+import React, { useCallback, useEffect, useMemo, useRef, useState, useLayoutEffect } from 'react';
+import { Pressable, StyleSheet, View, BackHandler, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { triggerHaptic } from '@/utils/haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
-import { ActivityIndicator } from 'react-native';
 
 import { Text } from '@/components/atoms/Text';
 import { IconSymbol } from '@/components/ui/icon-symbol';
@@ -71,6 +70,7 @@ const CreateWorkoutScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
   const [showLimitModal, setShowLimitModal] = useState(false);
   const [hasSaved, setHasSaved] = useState(false);
+  const scrollRef = useRef<any>(null);
   const { planId, returnTo } = useLocalSearchParams<{ 
     planId?: string; 
     returnTo?: string; 
@@ -116,6 +116,8 @@ const CreateWorkoutScreen: React.FC = () => {
     setIsLoading(false);
     // Fresh session flag on mount
     setHasSaved(false);
+    // Reset scroll position to top
+    scrollRef.current?.scrollToPosition?.(0, 0, false);
 
     return () => {
       // Always fully reset builder state when this screen unmounts
@@ -224,6 +226,7 @@ const CreateWorkoutScreen: React.FC = () => {
           </View>
         ) : (
           <KeyboardAwareScrollView
+            ref={scrollRef}
             contentContainerStyle={styles.scrollContent}
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"

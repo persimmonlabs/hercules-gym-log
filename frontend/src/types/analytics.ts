@@ -153,7 +153,7 @@ export interface AnalyticsNavigationParams {
 // Hierarchical drill-down navigation path
 export interface DrillDownPath {
   name: string;
-  level: 'root' | 'high' | 'mid' | 'low' | 'detailed';
+  level: 'root' | 'high' | 'mid' | 'low';
 }
 
 // Hierarchical set distribution data for drill-down

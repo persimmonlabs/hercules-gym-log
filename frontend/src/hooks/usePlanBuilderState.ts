@@ -73,9 +73,9 @@ export const usePlanBuilderState = (editingPlanId: string | null): PlanBuilderSt
   const pendingLoadingChange = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Minimum loading duration to prevent flash (ms)
-  const MIN_LOADING_DURATION = 150;
+  const MIN_LOADING_DURATION = 100;
 
-  // Wrapper for setIsLoading that ensures minimum duration and waits for next paint
+  // Wrapper for setIsLoading that ensures minimum duration
   const setIsLoading = useCallback((loading: boolean) => {
     // Clear any pending loading change
     if (pendingLoadingChange.current) {
@@ -88,18 +88,17 @@ export const usePlanBuilderState = (editingPlanId: string | null): PlanBuilderSt
       loadingStartTime.current = Date.now();
       setIsLoadingState(true);
     } else {
-      // When turning OFF loading, ensure minimum duration and wait for next frame
+      // When turning OFF loading, ensure minimum duration then show content
       const elapsed = Date.now() - loadingStartTime.current;
       const remaining = Math.max(0, MIN_LOADING_DURATION - elapsed);
 
-      pendingLoadingChange.current = setTimeout(() => {
-        // Wait for next animation frame to ensure content is painted
-        requestAnimationFrame(() => {
-          requestAnimationFrame(() => {
-            setIsLoadingState(false);
-          });
-        });
-      }, remaining);
+      if (remaining === 0) {
+        setIsLoadingState(false);
+      } else {
+        pendingLoadingChange.current = setTimeout(() => {
+          setIsLoadingState(false);
+        }, remaining);
+      }
     }
   }, []);
 
@@ -169,17 +168,30 @@ export const usePlanBuilderState = (editingPlanId: string | null): PlanBuilderSt
               return { ...found };
             }
             
-            // If not found, create a placeholder exercise from the stored data
-            // This ensures AI-created exercises are preserved even if not in catalog
+            // If not found, create a placeholder exercise from the stored data.
+            // This ensures AI-created exercises are preserved even if not in catalog.
+            const rawType = (ex as any).exerciseType;
+            const normalizedType: ExerciseCatalogItem['exerciseType'] = (
+              ['weight', 'cardio', 'bodyweight', 'assisted', 'reps_only', 'duration'] as const
+            ).includes(rawType)
+              ? rawType
+              : 'weight';
+
+            const placeholder = createCustomExerciseCatalogItem(
+              ex.id || `ai-exercise-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+              ex.name,
+              normalizedType
+            );
+
+            const muscles =
+              (ex as any).muscles && typeof (ex as any).muscles === 'object' && !Array.isArray((ex as any).muscles)
+                ? (ex as any).muscles
+                : {};
+
             return {
-              id: ex.id || `ai-exercise-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-              name: ex.name,
-              muscles: (ex as any).muscles || [],
-              equipment: (ex as any).equipment || 'other',
-              difficulty: (ex as any).difficulty || 'intermediate',
-              exerciseType: (ex as any).exerciseType || 'strength',
-              isCustom: true,
-            } as ExerciseCatalogItem;
+              ...placeholder,
+              muscles,
+            };
           });
 
         console.log('[usePlanBuilderState] Loaded program workout:', workout.name, 'with', mappedExercises.length, 'exercises');
@@ -335,19 +347,23 @@ export const usePlanBuilderState = (editingPlanId: string | null): PlanBuilderSt
 
       const normalizedName = normalizeSearchText(exercise.name);
 
-      return searchTokens.every((token) => {
-        // For short tokens (1-2 chars), require word-start match
+      return searchTokens.some((token) => {
+        // For short tokens (1-2 chars), require word-start match on name
         if (token.length <= 2) {
           return normalizedName.startsWith(token) || normalizedName.includes(` ${token}`);
         }
 
-        // For longer tokens, check name first (word-boundary aware), then searchIndex
+        // Check name first
         if (normalizedName.includes(token)) {
           return true;
         }
 
-        // Only check searchIndex for 3+ char tokens to avoid noise
-        return exercise.searchIndex.includes(token);
+        // Check searchIndex for 3+ char tokens
+        if (exercise.searchIndex.includes(token)) {
+          return true;
+        }
+
+        return false;
       });
     },
     [searchTokens],

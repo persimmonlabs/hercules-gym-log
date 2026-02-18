@@ -13,8 +13,6 @@ import type { PlanExercise } from '@/types/plan';
 
 const DEFAULT_PLAN_SET_COUNT = 3;
 
-const createPlanIdentifier = (): string => `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-
 export type SubmitPlanResult = 'success' | 'missing-name' | 'no-exercises' | 'duplicate-name' | 'error';
 
 interface UsePlanSaveHandlerParams {
@@ -47,48 +45,10 @@ export const usePlanSaveHandler = ({
   const persistPlan = usePlansStore((state) => state.addPlan);
   const updatePlan = usePlansStore((state) => state.updatePlan);
   const plans = usePlansStore((state) => state.plans);
-  const { updateWorkoutInProgram, userPrograms } = useProgramsStore();
+  const { userPrograms } = useProgramsStore();
   const globalSearchParams = useGlobalSearchParams<{ source?: 'library' | 'recommended' }>();
 
   const isEditing = Boolean(editingPlanId);
-
-  /**
-   * Generate a unique workout name by checking both custom workouts and program workouts.
-   * If name already exists, appends (2), (3), etc.
-   */
-  const generateUniqueName = useCallback((baseName: string, excludeId?: string): string => {
-    // Collect all existing workout names (case-insensitive)
-    const existingNames = new Set<string>();
-
-    // Add custom workout names
-    plans.forEach(p => {
-      if (p.id !== excludeId) {
-        existingNames.add(p.name.trim().toLowerCase());
-      }
-    });
-
-    // Add program workout names
-    userPrograms.forEach(prog => {
-      prog.workouts.forEach(w => {
-        existingNames.add(w.name.trim().toLowerCase());
-      });
-    });
-
-    const trimmedBase = baseName.trim();
-    if (!existingNames.has(trimmedBase.toLowerCase())) {
-      return trimmedBase;
-    }
-
-    // Find unique suffix
-    let counter = 2;
-    let uniqueName = `${trimmedBase} (${counter})`;
-    while (existingNames.has(uniqueName.toLowerCase())) {
-      counter++;
-      uniqueName = `${trimmedBase} (${counter})`;
-    }
-
-    return uniqueName;
-  }, [plans, userPrograms]);
 
   const handleSavePlan = useCallback(async (): Promise<SubmitPlanResult> => {
     const trimmedName = planName.trim();
@@ -138,8 +98,6 @@ export const usePlanSaveHandler = ({
 
     try {
       if (isProgramWorkout && editingPlanId) {
-        const [_, programId, workoutId] = editingPlanId.split(':');
-
         // Sync across ALL programs that have a workout with this name
         const { updateWorkoutsByName } = useProgramsStore.getState();
         await updateWorkoutsByName(originalName, {
@@ -230,7 +188,6 @@ export const usePlanSaveHandler = ({
   const saveLabel = 'Save Workout';
   const selectedListTitle = 'Exercises';
   const selectedListSubtitle = '';
-  const saveCtaLabel = 'Save Workout';
 
   const isSaveDisabled = useMemo(() => {
     const trimmedName = planName.trim();

@@ -9,15 +9,15 @@ import { colors, spacing, radius } from '@/constants/theme';
 import { useTheme } from '@/hooks/useTheme';
 import { useWorkoutSessionsStore } from '@/store/workoutSessionsStore';
 import { usePersonalRecordsStore } from '@/store/personalRecordsStore';
-import { useSettingsStore } from '@/store/settingsStore';
+import { useCustomExerciseStore } from '@/store/customExerciseStore';
 import type { Workout } from '@/types/workout';
-import { exercises as exerciseCatalog } from '@/constants/exercises';
+import { exercises as exerciseCatalog, getExerciseTypeByName, createCustomExerciseCatalogItem } from '@/constants/exercises';
+import type { ExerciseType, ExerciseCatalogItem } from '@/types/exercise';
 import { searchExercises } from '@/utils/exerciseSearch';
 import { SheetModal } from '@/components/molecules/SheetModal';
 
 export const PersonalRecordsSection: React.FC = () => {
   const { theme } = useTheme();
-  const { weightUnit } = useSettingsStore(); // Force re-render on unit change
   const workouts = useWorkoutSessionsStore((state) => state.workouts);
   const trackedExercises = usePersonalRecordsStore((state) => state.trackedExercises);
   const replaceTrackedExercise = usePersonalRecordsStore((state) => state.replaceTrackedExercise);
@@ -34,42 +34,126 @@ export const PersonalRecordsSection: React.FC = () => {
     setIsModalVisible(true);
   };
 
+  const customExercises = useCustomExerciseStore((state) => state.customExercises);
+
+  interface PRRecord {
+    exerciseType: ExerciseType;
+    distanceUnit?: 'miles' | 'meters' | 'floors';
+    weight: number;
+    reps: number;
+    distance: number;
+    duration: number;
+    assistanceWeight: number;
+    date: string | null;
+  }
+
   const records = useMemo(() => {
-    return trackedExercises.map((exerciseName) => {
-      let maxWeight = 0;
-      let associatedReps = 0;
-      let recordDate: string | null = null;
+    const trackedSet = new Set(trackedExercises);
+    const recordMap = new Map<string, PRRecord>();
 
-      workouts.forEach((workout: Workout) => {
-        const exercise = workout.exercises.find((e) => e.name === exerciseName);
-        if (exercise) {
-          exercise.sets.forEach((set) => {
-            const setWeight = set.weight ?? 0;
-            const setReps = set.reps ?? 0;
-            // Check if set is valid (weight > 0)
-            if (setWeight > maxWeight) {
-              maxWeight = setWeight;
-              associatedReps = setReps;
-              recordDate = workout.date;
-            } else if (setWeight === maxWeight && setWeight > 0) {
-              // Tie breaker: more reps
-              if (setReps > associatedReps) {
-                associatedReps = setReps;
-                recordDate = workout.date;
-              }
-            }
-          });
-        }
+    trackedExercises.forEach((exerciseName) => {
+      const exType = getExerciseTypeByName(exerciseName, customExercises);
+      const catalogEntry = exerciseCatalog.find(e => e.name === exerciseName);
+      recordMap.set(exerciseName, {
+        exerciseType: exType,
+        distanceUnit: catalogEntry?.distanceUnit,
+        weight: 0, reps: 0, distance: 0, duration: 0, assistanceWeight: Infinity,
+        date: null,
       });
+    });
 
+    workouts.forEach((workout: Workout) => {
+      workout.exercises.forEach((exercise) => {
+        if (!trackedSet.has(exercise.name)) return;
+
+        const existing = recordMap.get(exercise.name);
+        if (!existing) return;
+        const exType = existing.exerciseType;
+
+        exercise.sets.forEach((set) => {
+          // For cardio/duration, include sets with meaningful data even if not completed
+          if (!set.completed) {
+            if (exType === 'cardio' || exType === 'duration') {
+              const hasData = (set.duration ?? 0) > 0 || (set.distance ?? 0) > 0;
+              if (!hasData) return;
+            } else {
+              return;
+            }
+          }
+
+          switch (exType) {
+            case 'cardio': {
+              const dist = set.distance ?? 0;
+              const dur = set.duration ?? 0;
+              // Track by max distance first; if distances are equal (including both 0),
+              // fall back to longest duration
+              if (dist > existing.distance || (dist === existing.distance && dur > existing.duration)) {
+                existing.distance = dist;
+                existing.duration = dur;
+                existing.date = workout.date;
+              }
+              break;
+            }
+            case 'duration': {
+              const dur = set.duration ?? 0;
+              if (dur > existing.duration) {
+                existing.duration = dur;
+                existing.date = workout.date;
+              }
+              break;
+            }
+            case 'bodyweight':
+            case 'reps_only': {
+              const r = set.reps ?? 0;
+              if (r > existing.reps) {
+                existing.reps = r;
+                existing.date = workout.date;
+              }
+              break;
+            }
+            case 'assisted': {
+              const assist = set.assistanceWeight ?? 0;
+              const r2 = set.reps ?? 0;
+              if (r2 <= 0) break;
+              if (assist < existing.assistanceWeight || (assist === existing.assistanceWeight && r2 > existing.reps)) {
+                existing.assistanceWeight = assist;
+                existing.reps = r2;
+                existing.date = workout.date;
+              }
+              break;
+            }
+            case 'weight':
+            default: {
+              const w = set.weight ?? 0;
+              const r3 = set.reps ?? 0;
+              if (w <= 0 || r3 <= 0) break;
+              if (w > existing.weight || (w === existing.weight && r3 > existing.reps)) {
+                existing.weight = w;
+                existing.reps = r3;
+                existing.date = workout.date;
+              }
+              break;
+            }
+          }
+        });
+      });
+    });
+
+    return trackedExercises.map((exerciseName) => {
+      const record = recordMap.get(exerciseName)!;
       return {
         name: exerciseName,
-        weight: maxWeight,
-        reps: associatedReps,
-        date: recordDate,
+        exerciseType: record.exerciseType,
+        distanceUnit: record.distanceUnit,
+        weight: record.weight,
+        reps: record.reps,
+        distance: record.distance,
+        duration: record.duration,
+        assistanceWeight: record.assistanceWeight === Infinity ? 0 : record.assistanceWeight,
+        date: record.date,
       };
     });
-  }, [workouts, trackedExercises]);
+  }, [workouts, trackedExercises, customExercises]);
 
   const handleReplaceExercise = (index: number) => {
     setSelectedExerciseIndex(index);
@@ -84,12 +168,21 @@ export const PersonalRecordsSection: React.FC = () => {
     }
   };
 
+  // Merge custom exercises into catalog for the exercise picker
+  const allExercises = useMemo<ExerciseCatalogItem[]>(() => {
+    const customCatalogItems = customExercises.map((ce) =>
+      createCustomExerciseCatalogItem(ce.id, ce.name, ce.exerciseType)
+    );
+    return [...exerciseCatalog, ...customCatalogItems];
+  }, [customExercises]);
+
   const filteredExercises = useMemo(() => {
-    const excludeIds = exerciseCatalog
-      .filter(ex => trackedExercises.includes(ex.name))
+    const trackedSet = new Set(trackedExercises);
+    const excludeIds = allExercises
+      .filter(ex => trackedSet.has(ex.name))
       .map(ex => ex.id);
-    return searchExercises(searchQuery, exerciseCatalog, { excludeIds, limit: 50 });
-  }, [searchQuery, trackedExercises]);
+    return searchExercises(searchQuery, allExercises, { excludeIds, limit: 50 });
+  }, [searchQuery, trackedExercises, allExercises]);
 
   return (
     <SurfaceCard tone="neutral" padding="xl" showAccentStripe={false}>
@@ -105,8 +198,13 @@ export const PersonalRecordsSection: React.FC = () => {
             <PRCard
               key={`${record.name}-${index}`}
               exerciseName={record.name}
+              exerciseType={record.exerciseType}
+              distanceUnit={record.distanceUnit}
               weight={record.weight}
               reps={record.reps}
+              distance={record.distance}
+              duration={record.duration}
+              assistanceWeight={record.assistanceWeight}
               date={record.date}
               onReplace={() => handleReplaceExercise(index)}
             />
@@ -139,6 +237,7 @@ export const PersonalRecordsSection: React.FC = () => {
                   <Ionicons name="chevron-forward" size={20} color={theme.text.tertiary} />
                 </TouchableOpacity>
               )}
+              ListFooterComponent={<View style={styles.spacer} />}
               style={styles.exerciseList}
             />
           </View>
@@ -186,5 +285,8 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.md,
     borderBottomWidth: 0.5,
     borderBottomColor: colors.border.light,
+  },
+  spacer: {
+    height: spacing.xl * 2,
   },
 });

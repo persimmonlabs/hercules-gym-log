@@ -80,7 +80,7 @@ export const SignOutConfirmationModal: React.FC<SignOutConfirmationModalProps> =
           </Text>
           
           <Text variant="body" color="secondary" style={styles.message}>
-            Are you sure you want to sign out? You'll need to sign in again to access your account.
+            Are you sure you want to sign out? You&apos;ll need to sign in again to access your account.
           </Text>
 
           <View style={styles.buttonStack}>

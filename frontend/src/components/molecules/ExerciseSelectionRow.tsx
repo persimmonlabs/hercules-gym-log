@@ -18,7 +18,7 @@ interface ExerciseSelectionRowProps {
   onToggle: (exercise: Exercise) => void;
 }
 
-export const ExerciseSelectionRow: React.FC<ExerciseSelectionRowProps> = ({ exercise, selected, onToggle }) => {
+export const ExerciseSelectionRow: React.FC<ExerciseSelectionRowProps> = React.memo(({ exercise, selected, onToggle }) => {
   const handlePress = useCallback(() => {
     triggerHaptic('selection');
     onToggle(exercise);
@@ -56,7 +56,7 @@ export const ExerciseSelectionRow: React.FC<ExerciseSelectionRowProps> = ({ exer
       </View>
     </Pressable>
   );
-};
+});
 
 const styles = StyleSheet.create({
   container: {

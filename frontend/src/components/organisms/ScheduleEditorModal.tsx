@@ -108,17 +108,27 @@ export const ScheduleEditorModal: React.FC<ScheduleEditorModalProps> = ({
 
   const allWorkouts = useMemo(() => {
     const workouts: { id: string; name: string; source: string }[] = [];
+    const seenNames = new Set<string>();
 
+    // Add custom workouts first — canonical versions
+    plans.forEach((plan) => {
+      const nameKey = plan.name.trim().toLowerCase();
+      if (!seenNames.has(nameKey)) {
+        seenNames.add(nameKey);
+        workouts.push({ id: plan.id, name: plan.name, source: '' });
+      }
+    });
+
+    // Add program workouts — only if not already present by name
     userPrograms.forEach((program) => {
       program.workouts.forEach((w) => {
-        if (w.exercises.length > 0) {
+        if (w.exercises.length === 0) return;
+        const nameKey = w.name.trim().toLowerCase();
+        if (!seenNames.has(nameKey)) {
+          seenNames.add(nameKey);
           workouts.push({ id: w.id, name: w.name, source: program.name });
         }
       });
-    });
-
-    plans.forEach((plan) => {
-      workouts.push({ id: plan.id, name: plan.name, source: 'Custom' });
     });
 
     return workouts;

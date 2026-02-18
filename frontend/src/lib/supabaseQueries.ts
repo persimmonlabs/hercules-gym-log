@@ -6,6 +6,7 @@
 import { supabaseClient } from './supabaseClient';
 import type { Workout } from '@/types/workout';
 import type { UserPlan, PlanWorkout } from '@/types/premadePlan';
+import { migrateWorkoutExercises, migrateExerciseName } from '@/utils/exerciseMigration';
 
 // ============================================================================
 // RETRY UTILITY & ERROR HANDLING
@@ -158,7 +159,7 @@ export async function fetchWorkoutSessions(userId: string): Promise<Workout[]> {
 
             console.log('[Supabase] Successfully fetched', data?.length ?? 0, 'workout sessions');
 
-            // Transform from DB format to app format
+            // Transform from DB format to app format and migrate exercise names
             return (data || []).map((row) => ({
                 id: row.id,
                 planId: row.plan_id,
@@ -167,7 +168,7 @@ export async function fetchWorkoutSessions(userId: string): Promise<Workout[]> {
                 startTime: row.start_time,
                 endTime: row.end_time,
                 duration: row.duration,
-                exercises: row.exercises || [],
+                exercises: migrateWorkoutExercises(row.exercises || []),
             }));
         },
         [], // fallback to empty array
@@ -310,15 +311,21 @@ export async function fetchUserPlans(userId: string): Promise<UserPlan[]> {
 
             console.log('[Supabase] Successfully fetched', workoutsData?.length ?? 0, 'plan workouts');
 
-            // Group workouts by plan_id
+            // Group workouts by plan_id and migrate exercise names
             const workoutsByPlan = (workoutsData || []).reduce((acc, workout) => {
                 if (!acc[workout.plan_id]) {
                     acc[workout.plan_id] = [];
                 }
+                const exercises = workout.exercises || [];
+                // Migrate exercise names in the exercises array
+                const migratedExercises = exercises.map((ex: any) => ({
+                    ...ex,
+                    name: migrateExerciseName(ex.name),
+                }));
                 acc[workout.plan_id].push({
                     id: workout.id,
                     name: workout.name,
-                    exercises: workout.exercises || [],
+                    exercises: migratedExercises,
                     sourceWorkoutId: workout.source_workout_id,
                 });
                 return acc;
@@ -553,7 +560,7 @@ export async function updateRotationState(
 export interface WorkoutTemplateDB {
     id: string;
     name: string;
-    exercises: Array<{ id: string; name: string; sets?: number }>;
+    exercises: { id: string; name: string; sets?: number }[];
     source?: 'premade' | 'custom' | 'library' | 'recommended';
     created_at: string;
     updated_at: string;
@@ -607,7 +614,7 @@ export async function fetchWorkoutTemplates(userId: string): Promise<WorkoutTemp
 
 export async function createWorkoutTemplate(
     userId: string,
-    template: { name: string; exercises: Array<{ id: string; name: string; sets?: number }>; source?: 'premade' | 'custom' | 'library' | 'recommended' }
+    template: { name: string; exercises: { id: string; name: string; sets?: number }[]; source?: 'premade' | 'custom' | 'library' | 'recommended' }
 ): Promise<string> {
     return withRetry(async () => {
         const { data, error } = await supabaseClient
@@ -633,7 +640,7 @@ export async function createWorkoutTemplate(
 export async function updateWorkoutTemplate(
     userId: string,
     templateId: string,
-    updates: { name?: string; exercises?: Array<{ id: string; name: string; sets?: number }> }
+    updates: { name?: string; exercises?: { id: string; name: string; sets?: number }[] }
 ): Promise<void> {
     console.log('[Supabase] updateWorkoutTemplate called with:', {
         userId,
@@ -693,7 +700,7 @@ export async function deleteWorkoutTemplate(userId: string, templateId: string):
 export async function updatePlanWorkout(
     userId: string,
     workoutId: string,
-    updates: { name?: string; exercises?: Array<{ id: string; name: string; sets?: number }> }
+    updates: { name?: string; exercises?: { id: string; name: string; sets?: number }[] }
 ): Promise<void> {
     console.log('[Supabase] updatePlanWorkout called with:', {
         userId,

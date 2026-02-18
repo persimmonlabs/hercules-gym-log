@@ -25,7 +25,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     justifyContent: 'space-between',
     paddingTop: spacing.xl,
-    paddingBottom: spacing.md,
+    paddingBottom: spacing.sm,
     gap: spacing.sm,
   },
   backButton: {
@@ -35,9 +35,12 @@ const styles = StyleSheet.create({
   },
   titleContainer: {
     flex: 1,
+    gap: spacing.sm,
   },
-  titleWrapper: {
-    paddingBottom: spacing.xs,
+  metaBadges: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.xs,
   },
   scrollContent: {
     paddingHorizontal: spacing.md,
@@ -45,68 +48,35 @@ const styles = StyleSheet.create({
     gap: spacing.lg,
   },
   outerCardContent: {
-    gap: spacing.lg,
+    gap: spacing.md,
   },
-  workoutCard: {
-    borderRadius: radius.md,
-    backgroundColor: colors.surface.card,
-    borderWidth: 1,
-    borderColor: colors.border.light,
-    padding: spacing.md,
+  workoutSection: {
     gap: spacing.xs,
-    marginTop: spacing.md,
-    overflow: 'hidden',
   },
-  exercisesContainer: {
-    marginTop: spacing.xs,
-  },
-  workoutCardHeader: {
+  workoutHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: spacing.sm,
+    gap: spacing.sm,
+    paddingBottom: spacing.xs,
+  },
+  workoutDivider: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: colors.border.light,
+    marginVertical: spacing.md,
   },
   exerciseRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
-    paddingVertical: spacing.sm,
+    paddingVertical: 5,
+    paddingLeft: spacing.xs,
   },
-  exerciseNumber: {
-    width: sizing.iconLG,
-    height: sizing.iconLG,
-    borderRadius: radius.full,
-    backgroundColor: colors.surface.card,
-    borderWidth: 1,
-    borderColor: colors.accent.orange,
-    justifyContent: 'center',
-    alignItems: 'center',
+  exerciseDash: {
+    width: 8,
     flexShrink: 0,
   },
-  exerciseNumberText: {
-    color: colors.text.primary,
-    fontSize: 16,
-    fontWeight: '600',
-    includeFontPadding: false,
-  },
-  exerciseNameContainer: {
-    flex: 1,
-    flexShrink: 1,
-    width: 0,
-  },
-  exerciseName: {
-    fontSize: 18,
-    fontWeight: '500',
-    color: colors.text.primary,
-  },
-  exerciseCount: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    marginTop: spacing.xs,
-  },
   workoutsList: {
-    gap: spacing.md,
+    gap: 0,
   },
 });
 
@@ -150,32 +120,13 @@ export default function ProgramDetailsScreen() {
     return () => backHandler.remove();
   }, [handleBack]);
 
-  if (!program) {
-    return (
-      <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom + sizing.tabBarHeight }]}>
-        <View style={styles.header}>
-          <View style={styles.titleContainer}>
-            <Text variant="heading2" color="primary">Program Not Found</Text>
-            <Text variant="body" color="secondary">The requested program could not be found.</Text>
-          </View>
-          <Pressable onPress={handleBack} style={styles.backButton} hitSlop={8}>
-            <IconSymbol name="arrow-back" size={24} color={colors.text.primary} />
-          </Pressable>
-        </View>
-        <View style={{ justifyContent: 'center', alignItems: 'center', flex: 1 }}>
-          <Button label="Go Back" onPress={handleBack} />
-        </View>
-      </View>
-    );
-  }
-
   const handleAddToPlans = useCallback(async () => {
-    if (isAdding) return;
+    if (isAdding || !program) return;
     setIsAdding(true);
     triggerHaptic('selection');
 
     try {
-      await clonePremadeProgram(program!.id);
+      await clonePremadeProgram(program.id);
       triggerHaptic('success');
 
       // Navigate back to Plans tab
@@ -194,21 +145,19 @@ export default function ProgramDetailsScreen() {
     } finally {
       setIsAdding(false);
     }
-  }, [clonePremadeProgram, isAdding, program!.id, router]);
-
-
+  }, [clonePremadeProgram, isAdding, program, router]);
 
   const handleSetRotation = useCallback(async () => {
-    if (isAdding) return;
+    if (isAdding || !program) return;
     setIsAdding(true);
     triggerHaptic('selection');
 
     try {
       const rotation: RotationSchedule = {
         id: `rot-${Date.now()}`,
-        name: program!.name,
-        programId: program!.id,
-        workoutSequence: program!.workouts.map(w => w.id),
+        name: program.name,
+        programId: program.id,
+        workoutSequence: program.workouts.map((w) => w.id),
         currentIndex: 0,
       };
 
@@ -232,6 +181,24 @@ export default function ProgramDetailsScreen() {
     }
   }, [isAdding, program, setActiveRotation, router]);
 
+  if (!program) {
+    return (
+      <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom + sizing.tabBarHeight }]}>
+        <View style={styles.header}>
+          <View style={styles.titleContainer}>
+            <Text variant="heading2" color="primary">Program Not Found</Text>
+            <Text variant="body" color="secondary">The requested program could not be found.</Text>
+          </View>
+          <Pressable onPress={handleBack} style={styles.backButton} hitSlop={8}>
+            <IconSymbol name="arrow-back" size={24} color={colors.text.primary} />
+          </Pressable>
+        </View>
+        <View style={{ justifyContent: 'center', alignItems: 'center', flex: 1 }}>
+          <Button label="Go Back" onPress={handleBack} />
+        </View>
+      </View>
+    );
+  }
   return (
     <>
       <PremiumLimitModal
@@ -248,56 +215,63 @@ export default function ProgramDetailsScreen() {
               <Text variant="heading2" color="primary">
                 {program.name}
               </Text>
-              <Text variant="body" color="secondary">
+              <Text variant="body" color="secondary" style={{ lineHeight: 22 }}>
                 {program.metadata.description}
               </Text>
+              <View style={styles.metaBadges}>
+                {program.metadata.goal && <Badge label={String(program.metadata.goal).replace('-', ' ')} variant="workout" size="sm" />}
+                {program.metadata.experienceLevel && <Badge label={String(program.metadata.experienceLevel)} variant="workout" size="sm" />}
+                {program.metadata.equipment && <Badge label={String(program.metadata.equipment).replace('-', ' ')} variant="workout" size="sm" />}
+                {program.metadata.daysPerWeek && <Badge label={`${program.metadata.daysPerWeek} days/week`} variant="workout" size="sm" />}
+              </View>
             </View>
             <Pressable onPress={handleBack} style={styles.backButton} hitSlop={8}>
               <IconSymbol name="arrow-back" size={24} color={colors.text.primary} />
             </Pressable>
           </View>
 
-
-
           <SurfaceCard padding="xl" tone="neutral">
             <View style={styles.outerCardContent}>
-              <Text variant="heading3" color="primary">Workouts Included</Text>
+              <Text variant="heading3" color="primary">
+                Workouts Included
+              </Text>
               <View style={styles.workoutsList}>
                 {program.workouts
                   .filter(w => w.exercises.length > 0)
-                  .map((workout, index) => (
-                    <View
-                      key={workout.id}
-                      style={styles.workoutCard}
-                    >
-                      <View style={styles.workoutCardHeader}>
-                        <Text variant="heading4" color="primary">
-                          {index + 1}. {workout.name}
+                  .map((workout, index, arr) => (
+                    <View key={workout.id} style={styles.workoutSection}>
+                      <View style={styles.workoutHeader}>
+                        <Text variant="bodySemibold" color="primary">
+                          {workout.name}
                         </Text>
                       </View>
 
-                      {/* List all exercises */}
-                      <View style={styles.exercisesContainer}>
-                        {workout.exercises.map((ex, exIndex) => (
-                          <View key={ex.id} style={styles.exerciseRow}>
-                            <View style={styles.exerciseNumber}>
-                              <Text style={styles.exerciseNumberText}>
-                                {exIndex + 1}
-                              </Text>
-                            </View>
-                            <View style={styles.exerciseNameContainer}>
-                              <Text style={styles.exerciseName}>
-                                {ex.name}
-                              </Text>
-                            </View>
-                          </View>
-                        ))}
-                      </View>
+                      {workout.exercises.map((ex) => (
+                        <View key={ex.id} style={styles.exerciseRow}>
+                          <Text variant="caption" color="tertiary" style={styles.exerciseDash}>–</Text>
+                          <Text variant="body" color="secondary">
+                            {ex.name}
+                          </Text>
+                        </View>
+                      ))}
+
+                      {index < arr.length - 1 && <View style={styles.workoutDivider} />}
                     </View>
                   ))}
               </View>
             </View>
           </SurfaceCard>
+
+          {program.metadata.recommendation && (
+            <SurfaceCard padding="xl" tone="neutral">
+              <View style={styles.outerCardContent}>
+                <Text variant="heading3" color="primary">Recommendation</Text>
+                <Text variant="body" color="secondary" style={{ lineHeight: 24 }}>
+                  {program.metadata.recommendation}
+                </Text>
+              </View>
+            </SurfaceCard>
+          )}
 
           <View style={styles.outerCardContent}>
             {isUserProgram ? (

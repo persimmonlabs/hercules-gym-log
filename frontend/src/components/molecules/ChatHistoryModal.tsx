@@ -247,6 +247,7 @@ export const ChatHistoryModal: React.FC<ChatHistoryModalProps> = ({
               keyExtractor={(item) => item.id}
               contentContainerStyle={styles.list}
               showsVerticalScrollIndicator={false}
+              ListFooterComponent={<View style={styles.spacer} />}
             />
           )}
         </View>
@@ -358,5 +359,8 @@ const styles = StyleSheet.create({
   },
   newChatButton: {
     width: '100%',
+  },
+  spacer: {
+    height: spacing.xl * 2,
   },
 });

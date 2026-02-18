@@ -10,10 +10,11 @@ import { useWorkoutSessionsStore } from '@/store/workoutSessionsStore';
 import { useUserProfileStore } from '@/store/userProfileStore';
 import { useSettingsStore } from '@/store/settingsStore';
 import { useDevToolsStore } from '@/store/devToolsStore';
+import { useCustomExerciseStore } from '@/store/customExerciseStore';
 import { exercises as exerciseCatalog } from '@/constants/exercises';
 import exercisesData from '@/data/exercises.json';
 import hierarchyData from '@/data/hierarchy.json';
-import { colors } from '@/constants/theme';
+import { formatLocalDate } from '@/utils/chartUtils';
 import type {
   TieredVolumeData,
   TieredSetData,
@@ -27,23 +28,48 @@ import type {
 } from '@/types/analytics';
 import type { ExerciseType } from '@/types/exercise';
 
-// Build exercise type lookup map
-const EXERCISE_TYPE_MAP = exerciseCatalog.reduce((acc, ex) => {
+// Build base exercise type lookup map (static catalog)
+const BASE_EXERCISE_TYPE_MAP = exerciseCatalog.reduce((acc, ex) => {
   acc[ex.name] = ex.exerciseType;
   return acc;
 }, {} as Record<string, ExerciseType>);
+
+// Alias map: translates exercises.json muscle names to new hierarchy names.
+// exercises.json still uses old detailed names; this rolls them up for charts.
+const MUSCLE_NAME_ALIASES: Record<string, string> = {
+  // Renamed muscles
+  'Upper Back': 'Traps',
+  'Lateral Delts': 'Side Delts',
+  // Arms detailed -> L3 parent
+  'Biceps - Long Head': 'Biceps',
+  'Biceps - Short Head': 'Biceps',
+  'Brachialis': 'Biceps',
+  'Triceps - Long Head': 'Triceps',
+  'Triceps - Lateral Head': 'Triceps',
+  'Triceps - Medial Head': 'Triceps',
+  'Flexors': 'Forearms',
+  'Extensors': 'Forearms',
+  // Calves detailed -> L2 parent
+  'Calves - Medial Head': 'Calves',
+  'Calves - Lateral Head': 'Calves',
+  'Soleus': 'Calves',
+  // Abs detailed -> L2 parent
+  'Upper Abs': 'Abs',
+  'Lower Abs': 'Abs',
+};
+
+// Resolve a muscle name from exercises.json to its canonical hierarchy name
+const resolveMuscle = (name: string): string => MUSCLE_NAME_ALIASES[name] ?? name;
 
 // Build muscle hierarchy maps once at module load
 // Maps each muscle (at any level) to its parent at each tier
 // L1 = high (Upper Body, Lower Body, Core)
 // L2 = mid (Chest, Back, Arms, etc.)
-// L3 = low (Biceps, Triceps, Forearms, Upper Chest, etc.)
-// L4 = detailed (Biceps - Long Head, etc.)
+// L3 = low (Upper Chest, Lats, Biceps, Adductors, etc.)
 const buildMaps = () => {
   const leafToL1: Record<string, string> = {};
   const leafToL2: Record<string, string> = {};
   const leafToL3: Record<string, string> = {};
-  const leafToL4: Record<string, string> = {};
   const l2ToL1: Record<string, string> = {};
 
   const hierarchy = hierarchyData.muscle_hierarchy;
@@ -52,37 +78,27 @@ const buildMaps = () => {
     // L1 level (high): Upper Body, Lower Body, Core
     if (l1Data?.muscles) {
       Object.entries(l1Data.muscles).forEach(([l2, l2Data]: [string, any]) => {
-        // L2 level (mid): Chest, Back, Arms, etc.
+        // L2 level (mid): Chest, Back, Arms, Quads, Abs, etc.
         leafToL1[l2] = l1;
         leafToL2[l2] = l2;
         l2ToL1[l2] = l1;
 
         if (l2Data?.muscles) {
-          Object.entries(l2Data.muscles).forEach(([l3, l3Data]: [string, any]) => {
-            // L3 level (low): Biceps, Triceps, Upper Chest, etc.
+          Object.entries(l2Data.muscles).forEach(([l3]: [string, any]) => {
+            // L3 level (low): Upper Chest, Lats, Biceps, Adductors, etc.
             leafToL1[l3] = l1;
             leafToL2[l3] = l2;
             leafToL3[l3] = l3;
-
-            if (l3Data?.muscles) {
-              // L4 level (detailed): Biceps - Long Head, etc.
-              Object.keys(l3Data.muscles).forEach((l4) => {
-                leafToL1[l4] = l1;
-                leafToL2[l4] = l2;
-                leafToL3[l4] = l3;
-                leafToL4[l4] = l4;
-              });
-            }
           });
         }
       });
     }
   });
 
-  return { leafToL1, leafToL2, leafToL3, leafToL4, l2ToL1 };
+  return { leafToL1, leafToL2, leafToL3, l2ToL1 };
 };
 
-const { leafToL1, leafToL2, leafToL3, leafToL4, l2ToL1 } = buildMaps();
+const { leafToL1, leafToL2, leafToL3, l2ToL1 } = buildMaps();
 
 // Exercise name to muscle weights map
 const EXERCISE_MUSCLES = exercisesData.reduce((acc, ex) => {
@@ -97,26 +113,33 @@ const filterByTimeRange = (workouts: any[], range: TimeRange) => {
   if (range === 'all') return workouts;
 
   const now = new Date();
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
   let cutoff: Date;
 
   switch (range) {
-    case 'week':
-      // Last 7 days
-      cutoff = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    case 'week': {
+      // Last 7 calendar days INCLUDING today (local time)
+      cutoff = new Date(todayStart);
+      cutoff.setDate(cutoff.getDate() - 6);
       break;
+    }
     case 'month':
-      // First of current month (inclusive)
+      // First of current month (inclusive, local)
       cutoff = new Date(now.getFullYear(), now.getMonth(), 1);
       break;
     case 'year':
-      // First of current year (inclusive)
+      // First of current year (inclusive, local)
       cutoff = new Date(now.getFullYear(), 0, 1);
       break;
     default:
       return workouts;
   }
 
-  return workouts.filter((w) => new Date(w.date) >= cutoff);
+  return workouts.filter((w) => {
+    const workoutDate = new Date(w.startTime ?? w.date);
+    return workoutDate >= cutoff;
+  });
 };
 
 // Generate orange color with opacity based on index
@@ -135,9 +158,20 @@ export const useAnalyticsData = (options: UseAnalyticsDataOptions = {}) => {
   const { timeRange = 'week' } = options;
   const forceEmptyAnalytics = useDevToolsStore((state) => state.forceEmptyAnalytics);
   const rawWorkouts = useWorkoutSessionsStore((state) => state.workouts);
-  const workouts = __DEV__ && forceEmptyAnalytics ? [] : rawWorkouts;
+  const workouts = useMemo(
+    () => (__DEV__ && forceEmptyAnalytics ? [] : rawWorkouts),
+    [forceEmptyAnalytics, rawWorkouts],
+  );
   const userBodyWeight = useUserProfileStore((state) => state.profile?.weightLbs);
   const { convertWeight, weightUnit } = useSettingsStore();
+  const customExercises = useCustomExerciseStore((state) => state.customExercises);
+
+  // Merge custom exercises into exercise type map
+  const EXERCISE_TYPE_MAP = useMemo(() => {
+    const map = { ...BASE_EXERCISE_TYPE_MAP };
+    customExercises.forEach((ce) => { map[ce.name] = ce.exerciseType; });
+    return map;
+  }, [customExercises]);
 
   // Filter workouts based on time range
   const filteredWorkouts = useMemo(() => {
@@ -158,7 +192,10 @@ export const useAnalyticsData = (options: UseAnalyticsDataOptions = {}) => {
 
         hasCardio = true;
         exercise.sets.forEach((set: any) => {
-          if (!set.completed) return;
+          // Include sets that are completed OR have meaningful cardio data
+          // (users often enter time/distance without pressing "Complete set")
+          const hasData = (set.duration ?? 0) > 0 || (set.distance ?? 0) > 0;
+          if (!set.completed && !hasData) return;
           totalDuration += set.duration || 0;
           if (set.distance) {
             totalDistanceByType[exercise.name] = (totalDistanceByType[exercise.name] || 0) + set.distance;
@@ -169,10 +206,12 @@ export const useAnalyticsData = (options: UseAnalyticsDataOptions = {}) => {
     });
 
     return { totalDuration, totalDistanceByType, sessionCount };
-  }, [filteredWorkouts]);
+  }, [filteredWorkouts, EXERCISE_TYPE_MAP]);
 
   // Calculate tiered volume data (weight × reps, with body weight for bodyweight/assisted)
   const tieredVolume = useMemo((): TieredVolumeData => {
+    void weightUnit;
+
     const high: Record<string, number> = { 'Upper Body': 0, 'Lower Body': 0, 'Core': 0 };
     const mid: Record<string, number> = {};
     const low: Record<string, number> = {};
@@ -226,7 +265,8 @@ export const useAnalyticsData = (options: UseAnalyticsDataOptions = {}) => {
 
           if (setVolume <= 0) return;
 
-          Object.entries(weights).forEach(([muscle, weight]) => {
+          Object.entries(weights).forEach(([rawMuscle, weight]) => {
+            const muscle = resolveMuscle(rawMuscle);
             const contribution = setVolume * weight;
 
             const cat1 = leafToL1[muscle];
@@ -249,11 +289,13 @@ export const useAnalyticsData = (options: UseAnalyticsDataOptions = {}) => {
     });
 
     return { high, mid, low };
-  }, [filteredWorkouts, userBodyWeight, convertWeight, weightUnit]);
+  }, [filteredWorkouts, userBodyWeight, convertWeight, weightUnit, EXERCISE_TYPE_MAP]);
 
   // Calculate tiered volume distribution (volume = weight × reps × muscle_weighting)
   // Only includes weight and assisted exercises
   const tieredVolumeDistribution = useMemo((): TieredSetData => {
+    void weightUnit;
+
     const distL1: Record<string, number> = {};
     const distL2: Record<string, number> = {};
     const distL3: Record<string, number> = {};
@@ -295,7 +337,8 @@ export const useAnalyticsData = (options: UseAnalyticsDataOptions = {}) => {
           if (setVolume <= 0) return;
 
           // Distribute volume to muscles based on weightings
-          Object.entries(muscleWeights).forEach(([muscle, muscleWeight]) => {
+          Object.entries(muscleWeights).forEach(([rawMuscle, muscleWeight]) => {
+            const muscle = resolveMuscle(rawMuscle);
             const contribution = setVolume * muscleWeight;
 
             const cat1 = leafToL1[muscle];
@@ -334,11 +377,13 @@ export const useAnalyticsData = (options: UseAnalyticsDataOptions = {}) => {
       mid: formatSlices(distL2),
       low: formatSlices(distL3),
     };
-  }, [filteredWorkouts, userBodyWeight, convertWeight, weightUnit]);
+  }, [filteredWorkouts, userBodyWeight, convertWeight, weightUnit, EXERCISE_TYPE_MAP]);
 
   // Calculate hierarchical volume distribution for drill-down navigation
   // Uses same logic as tieredVolumeDistribution but with parent grouping for drill-down
   const hierarchicalVolumeDistribution = useMemo((): HierarchicalSetData => {
+    void weightUnit;
+
     // Build distribution maps at each level with parent tracking
     const distByLevel: Record<string, Record<string, number>> = {};
 
@@ -379,14 +424,14 @@ export const useAnalyticsData = (options: UseAnalyticsDataOptions = {}) => {
           if (setVolume <= 0) return;
 
           // Distribute volume to muscles based on weightings
-          Object.entries(muscleWeights).forEach(([muscle, muscleWeight]) => {
+          Object.entries(muscleWeights).forEach(([rawMuscle, muscleWeight]) => {
+            const muscle = resolveMuscle(rawMuscle);
             const contribution = setVolume * muscleWeight;
 
             // Track at each level with its parent context
             const l1 = leafToL1[muscle];
             const l2 = leafToL2[muscle];
             const l3 = leafToL3[muscle];
-            const l4 = leafToL4[muscle];
 
             // Root level (L1): Upper Body, Lower Body, Core
             if (l1) {
@@ -407,22 +452,6 @@ export const useAnalyticsData = (options: UseAnalyticsDataOptions = {}) => {
               const key = `L2:${l2}`;
               distByLevel[key] = distByLevel[key] || {};
               distByLevel[key][l3] = (distByLevel[key][l3] || 0) + contribution;
-            }
-
-            // L4 grouped by L3 parent (e.g., "Biceps" -> Long Head, Short Head, Brachialis)
-            // Only add if L4 exists (detailed level muscles)
-            if (l3 && l4 && l3 !== l4) {
-              const key = `L3:${l3}`;
-              distByLevel[key] = distByLevel[key] || {};
-              distByLevel[key][l4] = (distByLevel[key][l4] || 0) + contribution;
-            }
-
-            // Special case: when L2 and L3 have the same name (e.g., Calves -> Calves),
-            // show L4 children directly under L2 to avoid redundant drill-down
-            if (l2 && l3 && l2 === l3 && l4) {
-              const key = `L2:${l2}`;
-              distByLevel[key] = distByLevel[key] || {};
-              distByLevel[key][l4] = (distByLevel[key][l4] || 0) + contribution;
             }
           });
         });
@@ -459,7 +488,7 @@ export const useAnalyticsData = (options: UseAnalyticsDataOptions = {}) => {
       root: formatSlicesForLevel(distByLevel['root'] || {}),
       byParent,
     };
-  }, [filteredWorkouts, userBodyWeight, convertWeight, weightUnit]);
+  }, [filteredWorkouts, userBodyWeight, convertWeight, weightUnit, EXERCISE_TYPE_MAP]);
 
   // Weekly volume bar chart data
   const weeklyVolume = useMemo((): WeeklyVolumeData => {
@@ -475,8 +504,7 @@ export const useAnalyticsData = (options: UseAnalyticsDataOptions = {}) => {
       );
       const values = muscles.map((m) => tieredVolume.mid[m] || 0);
       const labels = muscles.map((m) => {
-        if (m === 'Hip Stabilizers') return 'Hips';
-        if (m === 'Hamstrings') return 'Hams';
+        if (m === 'Hamstrings') return 'Hams.';
         return m;
       });
       return formatBarData(labels, values);
@@ -580,7 +608,8 @@ export const useAnalyticsData = (options: UseAnalyticsDataOptions = {}) => {
     const volumeByDate: Record<string, number> = {};
 
     filteredWorkouts.forEach((workout) => {
-      const dateKey = workout.date.split('T')[0]; // YYYY-MM-DD
+      // Bucket by LOCAL calendar day so "today" always shows up on the 7-day chart
+      const dateKey = formatLocalDate(new Date(workout.startTime ?? workout.date));
       
       workout.exercises.forEach((exercise: any) => {
         const exerciseType = EXERCISE_TYPE_MAP[exercise.name] || 'weight';
@@ -637,7 +666,7 @@ export const useAnalyticsData = (options: UseAnalyticsDataOptions = {}) => {
 
     // Return date-indexed volume data (YYYY-MM-DD -> volume)
     return volumeByDate;
-  }, [filteredWorkouts, userBodyWeight, convertWeight, timeRange]);
+  }, [filteredWorkouts, userBodyWeight, convertWeight, EXERCISE_TYPE_MAP]);
 
   // Check if there's any data
   const hasData = workouts.length > 0;
@@ -664,9 +693,9 @@ export const useAnalyticsData = (options: UseAnalyticsDataOptions = {}) => {
     // Utilities
     leafToL1,
     leafToL2,
-    leafToL3,
     l2ToL1,
     EXERCISE_MUSCLES,
+    resolveMuscle,
   };
 };
 

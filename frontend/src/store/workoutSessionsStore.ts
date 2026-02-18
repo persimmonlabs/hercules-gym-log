@@ -25,27 +25,34 @@ export const useWorkoutSessionsStore = create<WorkoutSessionsState>((set, get) =
   isLoading: false,
 
   addWorkout: async (workout) => {
+    // Optimistic insert so Performance/PRs update immediately (even on slow networks)
+    const optimisticId = workout.id;
+    set({ workouts: [workout, ...get().workouts] });
+
     try {
       const { data: { user } } = await supabaseClient.auth.getUser();
       if (!user) {
         console.error('[workoutSessionsStore] No authenticated user');
+        // Roll back optimistic insert
+        set({ workouts: get().workouts.filter((w) => w.id !== optimisticId) });
         return;
       }
 
       // Create in Supabase and get the generated UUID
       const newId = await createWorkoutSession(user.id, workout);
 
-      // Update the workout with the Supabase-generated ID
-      const workoutWithId = { ...workout, id: newId };
-
-      // Update local state
-      const next = [workoutWithId, ...get().workouts];
-      set({ workouts: next });
+      // Replace optimistic workout id with Supabase-generated UUID
+      set({
+        workouts: get().workouts.map((existing) =>
+          existing.id === optimisticId ? { ...existing, id: newId } : existing
+        ),
+      });
 
       console.log('[workoutSessionsStore] Workout added to Supabase with ID:', newId);
     } catch (error) {
       console.error('[workoutSessionsStore] Failed to add workout', error);
-      // Revert optimistic update on error
+      // Remove optimistic workout and rehydrate (best-effort)
+      set({ workouts: get().workouts.filter((w) => w.id !== optimisticId) });
       await get().hydrateWorkouts();
     }
   },
@@ -122,7 +129,7 @@ export const useWorkoutSessionsStore = create<WorkoutSessionsState>((set, get) =
       const workouts = await fetchWorkoutSessions(uid);
       set({ workouts, isLoading: false });
       console.log('[workoutSessionsStore] Hydrated', workouts.length, 'workouts from Supabase');
-    } catch (error) {
+    } catch {
       // Silently handle hydration failures - network issues are expected during app startup
       console.warn('[workoutSessionsStore] Hydration failed, using empty state');
       set({ workouts: [], isLoading: false });

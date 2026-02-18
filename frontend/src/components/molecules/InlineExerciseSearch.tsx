@@ -164,7 +164,7 @@ export const InlineExerciseSearch: React.FC<InlineExerciseSearchProps> = ({
           style={styles.emptyState}
         >
           <Text variant="body" color="secondary">
-            No exercises found for "{searchTerm}"
+            No exercises found for &quot;{searchTerm}&quot;
           </Text>
           {onBrowseAll && (
             <Pressable onPress={onBrowseAll}>

@@ -6,7 +6,7 @@
 import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { View, StyleSheet, ScrollView, Pressable, Modal, FlatList, BackHandler } from 'react-native';
 import { PanGestureHandler, State } from 'react-native-gesture-handler';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { triggerHaptic } from '@/utils/haptics';
 
 import { Text } from '@/components/atoms/Text';
@@ -156,12 +156,10 @@ const createEmptyPlanDrivenRule = (planId: string, cycleWorkouts: (string | null
 const ScheduleSetupScreen: React.FC = () => {
   const { theme } = useTheme();
   const router = useRouter();
+  const { mode } = useLocalSearchParams<{ mode?: string }>();
   const { user } = useAuth();
   const setActiveRule = useActiveScheduleStore((state) => state.setActiveRule);
   const currentRule = useActiveScheduleStore((state) => state.state.activeRule);
-  
-  // Check if we're editing an existing schedule
-  const isEditing = !!currentRule;
 
   const userPrograms = useProgramsStore((state) => state.userPrograms);
   const plans = usePlansStore((state) => state.plans);
@@ -170,7 +168,13 @@ const ScheduleSetupScreen: React.FC = () => {
 
   const editorScrollRef = useRef<ScrollView>(null);
 
-  const [step, setStep] = useState<EditorStep>(isEditing ? 'configure' : 'type-select');
+  // 'edit' mode (existing schedule) starts at configure; 'create' or no mode starts at type-select
+  const [step, setStep] = useState<EditorStep>(mode === 'edit' ? 'configure' : 'type-select');
+
+  // Re-sync step when mode param changes (handles screen reuse by Expo Router)
+  useEffect(() => {
+    setStep(mode === 'edit' ? 'configure' : 'type-select');
+  }, [mode]);
   const [selectedType, setSelectedType] = useState<ScheduleRuleType | null>(
     currentRule?.type || null
   );
@@ -211,24 +215,30 @@ const ScheduleSetupScreen: React.FC = () => {
       { id: null, name: 'Rest Day', source: '', isRest: true },
     ];
 
-    // Add workouts from programs
+    // Deduplicate by name to prevent the same workout showing twice
+    // (once from workout_templates and once from plan_workouts)
+    const seenNames = new Set<string>();
+
+    // Add custom plans (My Workouts) first — these are the canonical versions
+    plans.forEach((plan) => {
+      const nameKey = plan.name.trim().toLowerCase();
+      if (!seenNames.has(nameKey)) {
+        seenNames.add(nameKey);
+        workouts.push({ id: plan.id, name: plan.name, source: '', isRest: false });
+      }
+    });
+
+    // Add workouts from programs — only if not already present by name
     userPrograms.forEach((program) => {
       program.workouts.forEach((w) => {
-        if (w.exercises.length > 0) {
+        if (w.exercises.length === 0) return;
+        const nameKey = w.name.trim().toLowerCase();
+        if (!seenNames.has(nameKey)) {
+          seenNames.add(nameKey);
           workouts.push({ id: w.id, name: w.name, source: program.name, isRest: false });
         }
       });
     });
-
-    // Add custom plans (My Workouts)
-    plans.forEach((plan) => {
-      workouts.push({ id: plan.id, name: plan.name, source: 'My Workouts', isRest: false });
-    });
-
-    // Debug logging (remove in production)
-    console.log('All workouts:', workouts);
-    console.log('Plans count:', plans.length);
-    console.log('Programs count:', userPrograms.length);
 
     return workouts;
   }, [userPrograms, plans]);
@@ -306,10 +316,9 @@ const ScheduleSetupScreen: React.FC = () => {
   const handleBack = useCallback(() => {
     triggerHaptic('selection');
     if (step === 'configure') {
-      // Always go to type-select from configure mode
       setStep('type-select');
     } else {
-      router.push('/(tabs)/plans');
+      router.push({ pathname: '/(tabs)/plans', params: { scrollTo: 'schedule' } });
     }
   }, [step, router]);
 
@@ -343,13 +352,13 @@ const ScheduleSetupScreen: React.FC = () => {
     }
     
     await setActiveRule(finalRule);
-    router.push('/(tabs)/plans');
+    router.push({ pathname: '/(tabs)/plans', params: { scrollTo: 'schedule' } });
   }, [draftRule, startDate, setActiveRule, router]);
 
   const handleClearSchedule = useCallback(async () => {
     triggerHaptic('warning');
     await setActiveRule(null);
-    router.push('/(tabs)/plans');
+    router.push({ pathname: '/(tabs)/plans', params: { scrollTo: 'schedule' } });
   }, [setActiveRule, router]);
 
   const openWorkoutPicker = useCallback((type: 'weekly' | 'rotating' | 'plan-driven', index: number | WeekdayKey) => {
@@ -502,10 +511,21 @@ const ScheduleSetupScreen: React.FC = () => {
     setDraftRule({ ...draftRule, cycleWorkouts: newCycle });
   }, [draftRule]);
 
+  // Build a lookup that maps ALL workout IDs (from both stores) to names.
+  // This ensures existing schedules referencing plan_workouts IDs still resolve
+  // even after allWorkouts deduplicates by name.
+  const workoutNameLookup = useMemo(() => {
+    const lookup: Record<string, string> = {};
+    plans.forEach((plan) => { lookup[plan.id] = plan.name; });
+    userPrograms.forEach((prog) => {
+      prog.workouts.forEach((w) => { if (!lookup[w.id]) lookup[w.id] = w.name; });
+    });
+    return lookup;
+  }, [plans, userPrograms]);
+
   const getWorkoutName = (workoutId: string | null | undefined): string => {
     if (workoutId == null) return 'Rest Day';
-    const workout = allWorkouts.find((w) => w.id === workoutId);
-    return workout?.name || 'Unknown';
+    return workoutNameLookup[workoutId] || 'Rest Day';
   };
 
   const renderTypeSelection = () => (
@@ -564,12 +584,12 @@ const ScheduleSetupScreen: React.FC = () => {
     if (draftRule?.type !== 'weekly') return null;
 
     return (
-      <View style={{ gap: spacing.md, marginTop: spacing.md }}>
+      <View style={{ gap: spacing.md, marginTop: spacing.sm }}>
         <View style={styles.daysList}>
           {WEEKDAYS.map(({ key, label }) => {
             const selectedId = draftRule.days[key];
             const workoutName = getWorkoutName(selectedId);
-            const isRest = selectedId === null;
+            const isRest = selectedId === null || workoutName === 'Rest Day';
 
             return (
               <Pressable
@@ -641,7 +661,7 @@ const ScheduleSetupScreen: React.FC = () => {
         <View style={styles.daysList}>
           {normalizedCycle.map((workoutId, visualIndex) => {
             const workoutName = getWorkoutName(workoutId);
-            const isRest = workoutId === null;
+            const isRest = workoutId === null || workoutName === 'Rest Day';
 
             return (
               <View
@@ -709,10 +729,21 @@ const ScheduleSetupScreen: React.FC = () => {
         {/* Plan Selection */}
         <View style={styles.planList}>
           {allPlans.length === 0 ? (
-            <SurfaceCard tone="neutral" padding="lg">
-              <Text variant="body" color="tertiary" style={styles.emptyText}>
-                No plans available. Create a plan first from My Programs.
-              </Text>
+            <SurfaceCard tone="neutral" padding="lg" showAccentStripe={false}>
+              <View style={{ gap: spacing.md, alignItems: 'center' }}>
+                <Text variant="body" color="tertiary" style={styles.emptyText}>
+                  No plans available. Create a plan first.
+                </Text>
+                <Button
+                  label="Create a Plan"
+                  variant="ghost"
+                  size="md"
+                  onPress={() => {
+                    triggerHaptic('selection');
+                    router.push({ pathname: '/(tabs)/plans', params: { scrollTo: 'plans' } });
+                  }}
+                />
+              </View>
             </SurfaceCard>
           ) : (
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.planScrollView}>
@@ -772,7 +803,7 @@ const ScheduleSetupScreen: React.FC = () => {
         <View style={styles.daysList}>
           {cycleWorkouts.map((workoutId, visualIndex) => {
             const workoutName = getWorkoutName(workoutId);
-            const isRest = workoutId === null;
+            const isRest = workoutId === null || workoutName === 'Rest Day';
             const canMoveUp = visualIndex > 0;
             const canMoveDown = visualIndex < cycleWorkouts.length - 1;
 
@@ -913,8 +944,22 @@ const ScheduleSetupScreen: React.FC = () => {
                     </Text>
                   )}
                 </View>
-                              </Pressable>
+              </Pressable>
             ))}
+            {allWorkouts.length <= 1 && (
+              <View style={{ alignItems: 'center', paddingTop: spacing.md }}>
+                <Button
+                  label="Add a Workout"
+                  variant="ghost"
+                  size="md"
+                  onPress={() => {
+                    setPickerVisible(false);
+                    triggerHaptic('selection');
+                    router.push({ pathname: '/(tabs)/plans', params: { scrollTo: 'top' } });
+                  }}
+                />
+              </View>
+            )}
           </ScrollView>
         </View>
       </View>
@@ -1127,8 +1172,8 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     justifyContent: 'space-between',
     paddingHorizontal: spacing.md,
-    paddingTop: spacing.xl,
-    paddingBottom: spacing.lg,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.sm,
     gap: spacing.sm,
   },
   backButton: {
@@ -1143,10 +1188,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   contentContainer: {
-    flexGrow: 1,
     paddingHorizontal: spacing.md,
     paddingBottom: spacing.sm,
-    gap: spacing.xl,
+    gap: spacing.md,
   },
   scrollView: {
     flex: 1,
@@ -1266,7 +1310,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   saveButtonWrapper: {
-    marginTop: spacing.lg,
+    marginTop: spacing.sm,
   },
   planList: {
     gap: spacing.md,

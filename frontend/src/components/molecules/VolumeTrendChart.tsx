@@ -10,7 +10,7 @@
  * - All Time: Weekly totals (≤90 days) or Monthly totals (>90 days)
  */
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { View, StyleSheet, Dimensions } from 'react-native';
 import { VictoryChart, VictoryLine, VictoryAxis, VictoryTheme, VictoryScatter, VictoryLabel, VictoryArea } from 'victory-native';
 
@@ -20,9 +20,10 @@ import { colors, spacing } from '@/constants/theme';
 import { useAnalyticsData } from '@/hooks/useAnalyticsData';
 import { TIME_RANGE_SUBTITLES } from '@/types/analytics';
 import { useSettingsStore } from '@/store/settingsStore';
+import { useUserProfileStore } from '@/store/userProfileStore';
+import { exercises as exerciseCatalog } from '@/constants/exercises';
 import {
   aggregateByNDays,
-  aggregateByWeek,
   aggregateByMonth,
   formatLocalDate,
   type AggregatedPoint,
@@ -32,23 +33,179 @@ const SCREEN_WIDTH = Dimensions.get('window').width;
 const CHART_WIDTH = SCREEN_WIDTH - spacing.xl * 2 - spacing.md * 2;
 const CHART_HEIGHT = 220;
 
-// Target max ticks for clean x-axis
-const MAX_TICKS = 7;
-
 interface VolumeTrendChartProps {
   timeRange?: 'week' | 'month' | 'year' | 'all';
+  selectedExercise?: string | null;
 }
 
-export const VolumeTrendChart: React.FC<VolumeTrendChartProps> = ({ timeRange = 'week' }) => {
-  const { volumeTrendData, hasFilteredData } = useAnalyticsData({ timeRange });
-  const weightUnit = useSettingsStore((state) => state.weightUnit);
+// Weight-based exercise types that contribute to volume
+export const WEIGHT_EXERCISE_TYPES = ['weight', 'bodyweight', 'assisted'];
+
+export const VolumeTrendChart: React.FC<VolumeTrendChartProps> = ({ timeRange = 'week', selectedExercise = null }) => {
+  const { volumeTrendData, hasFilteredData, filteredWorkouts } = useAnalyticsData({ timeRange });
+  const { convertWeight } = useSettingsStore();
+  const userBodyWeight = useUserProfileStore((state) => state.profile?.weightLbs);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
 
-  if (!volumeTrendData || Object.keys(volumeTrendData).length === 0) {
-    const emptyMessage = `No workout data for ${TIME_RANGE_SUBTITLES[timeRange].toLowerCase()}.`;
+  // Clear any selected middle point when the time range or exercise changes
+  useEffect(() => {
+    setSelectedIndex(null);
+  }, [timeRange, selectedExercise]);
+
+  // Calculate exercise-specific volume data when an exercise is selected
+  const exerciseVolumeTrendData = useMemo((): Record<string, number> => {
+    if (!selectedExercise) return volumeTrendData;
+    
+    const volumeByDate: Record<string, number> = {};
+    const catalogEntry = exerciseCatalog.find((e) => e.name === selectedExercise);
+    const exerciseType = catalogEntry?.exerciseType || 'weight';
+    
+    filteredWorkouts.forEach((workout) => {
+      const dateKey = formatLocalDate(new Date(workout.startTime ?? workout.date));
+      
+      workout.exercises.forEach((exercise: any) => {
+        if (exercise.name !== selectedExercise) return;
+        
+        exercise.sets.forEach((set: any) => {
+          if (!set.completed) return;
+          
+          const reps = set.reps ?? 0;
+          if (reps <= 0) return;
+          
+          let setVolume = 0;
+          
+          switch (exerciseType) {
+            case 'bodyweight':
+              if (userBodyWeight && userBodyWeight > 0) {
+                setVolume = userBodyWeight * reps;
+              }
+              break;
+            case 'assisted':
+              if (userBodyWeight && userBodyWeight > 0) {
+                const assistance = set.assistanceWeight ?? 0;
+                const effective = Math.max(0, userBodyWeight - assistance);
+                if (effective > 0) {
+                  setVolume = effective * reps;
+                }
+              }
+              break;
+            case 'weight':
+            default:
+              const weight = set.weight ?? 0;
+              if (weight > 0) {
+                setVolume = weight * reps;
+              }
+              break;
+          }
+          
+          if (setVolume > 0) {
+            const convertedVolume = convertWeight(setVolume);
+            volumeByDate[dateKey] = (volumeByDate[dateKey] || 0) + convertedVolume;
+          }
+        });
+      });
+    });
+    
+    return volumeByDate;
+  }, [selectedExercise, filteredWorkouts, volumeTrendData, userBodyWeight, convertWeight]);
+
+  // Use exercise-specific data when an exercise is selected
+  const activeVolumeData = selectedExercise ? exerciseVolumeTrendData : volumeTrendData;
+  const hasExerciseData = selectedExercise ? Object.keys(exerciseVolumeTrendData).length > 0 : hasFilteredData;
+
+  // Build human-readable range label under the x-axis (split into main label and descriptor)
+  const { rangeLabel, rangeDescriptor } = useMemo(() => {
+    const now = new Date();
+
+    const formatDayWithWeekday = (d: Date) =>
+      d.toLocaleDateString(undefined, {
+        weekday: 'short',
+        month: 'short',
+        day: 'numeric',
+      });
+
+    switch (timeRange) {
+      case 'week': {
+        const end = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const start = new Date(end);
+        start.setDate(end.getDate() - 6);
+        const startStr = formatDayWithWeekday(start);
+        const endStr = formatDayWithWeekday(end);
+        return { rangeLabel: `${startStr}   -   ${endStr}`, rangeDescriptor: null };
+      }
+      case 'month': {
+        const firstOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        const dayOfMonth = now.getDate();
+        const descriptor = dayOfMonth <= 7 ? null : '3-day avg';
+        return {
+          rangeLabel: firstOfMonth.toLocaleDateString(undefined, {
+            month: 'long',
+            year: 'numeric',
+          }),
+          rangeDescriptor: descriptor,
+        };
+      }
+      case 'year': {
+        const dayOfYear =
+          Math.floor(
+            (now.getTime() - new Date(now.getFullYear(), 0, 1).getTime()) /
+              (1000 * 60 * 60 * 24),
+          ) + 1;
+        let descriptor: string | null = null;
+        if (dayOfYear <= 7) {
+          descriptor = null;
+        } else if (dayOfYear <= 31) {
+          descriptor = '3-day avg';
+        } else {
+          descriptor = '7-day rolling total';
+        }
+        return { rangeLabel: `${now.getFullYear()}`, rangeDescriptor: descriptor };
+      }
+      case 'all': {
+        const keys = Object.keys(activeVolumeData).sort();
+        if (!keys.length) return { rangeLabel: null, rangeDescriptor: null };
+        const startDate = new Date(keys[0] + 'T12:00:00');
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        if (isNaN(startDate.getTime())) return { rangeLabel: null, rangeDescriptor: null };
+        const daysDiff =
+          Math.floor((today.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+
+        let descriptor: string | null = null;
+        if (daysDiff <= 7) {
+          descriptor = null;
+        } else if (daysDiff <= 21) {
+          descriptor = '3-day avg';
+        } else if (daysDiff <= 365) {
+          descriptor = '7-day rolling total';
+        } else {
+          descriptor = 'Monthly totals';
+        }
+
+        const startStr = startDate.toLocaleDateString(undefined, {
+          month: 'short',
+          day: 'numeric',
+          year: 'numeric',
+        });
+        const endStr = today.toLocaleDateString(undefined, {
+          month: 'short',
+          day: 'numeric',
+          year: 'numeric',
+        });
+        return { rangeLabel: `${startStr}   -   ${endStr}`, rangeDescriptor: descriptor };
+      }
+      default:
+        return { rangeLabel: null, rangeDescriptor: null };
+    }
+  }, [timeRange, activeVolumeData]);
+
+  // Show empty state if no data at all, or if filtered exercise has no data
+  if (!activeVolumeData || Object.keys(activeVolumeData).length === 0) {
+    const emptyMessage = selectedExercise 
+      ? `No data for ${selectedExercise} in ${TIME_RANGE_SUBTITLES[timeRange].toLowerCase()}.`
+      : `No workout data for ${TIME_RANGE_SUBTITLES[timeRange].toLowerCase()}.`;
     return (
       <ChartWrapper
-        state={!hasFilteredData ? 'empty' : 'ready'}
+        state={!hasExerciseData ? 'empty' : 'ready'}
         emptyMessage={emptyMessage}
         minHeight={CHART_HEIGHT + 40}
       >
@@ -57,92 +214,6 @@ export const VolumeTrendChart: React.FC<VolumeTrendChartProps> = ({ timeRange = 
     );
   }
 
-  // Handle partial week - calculate projection based on days elapsed
-  const handlePartialWeekProjection = (
-    points: AggregatedPoint[],
-    now: Date
-  ): { points: AggregatedPoint[]; projected: AggregatedPoint | null } => {
-    if (points.length === 0) return { points, projected: null };
-    
-    const lastPoint = points[points.length - 1];
-    const lastWeekStart = new Date(lastPoint.date);
-    
-    // Calculate days elapsed in the current week (Monday = 1, Sunday = 7)
-    const dayOfWeek = now.getDay();
-    const daysElapsed = dayOfWeek === 0 ? 7 : dayOfWeek; // Sunday = 7 days elapsed
-    
-    // Check if the last point is from the current week
-    const weekStart = new Date(now);
-    const diff = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
-    weekStart.setDate(now.getDate() + diff);
-    weekStart.setHours(0, 0, 0, 0);
-    
-    const isCurrentWeek = lastWeekStart.toISOString().split('T')[0] === weekStart.toISOString().split('T')[0];
-    
-    if (isCurrentWeek && daysElapsed < 7 && lastPoint.hasData) {
-      // Project the weekly total based on current pace
-      const projectedValue = Math.round((lastPoint.value / daysElapsed) * 7);
-      
-      // Return points without the partial week, plus a projected point
-      const solidPoints = points.slice(0, -1);
-      const projected: AggregatedPoint = {
-        ...lastPoint,
-        value: projectedValue,
-        hasData: true,
-      };
-      
-      // If we only have the current week, still show it but as projected
-      if (solidPoints.length === 0) {
-        return { points: [], projected };
-      }
-      
-      return { points: solidPoints, projected };
-    }
-    
-    return { points, projected: null };
-  };
-
-  // Handle partial month - calculate projection based on days elapsed
-  const handlePartialMonthProjection = (
-    points: AggregatedPoint[],
-    now: Date
-  ): { points: AggregatedPoint[]; projected: AggregatedPoint | null } => {
-    if (points.length === 0) return { points, projected: null };
-    
-    const lastPoint = points[points.length - 1];
-    const lastMonthDate = new Date(lastPoint.date);
-    
-    // Check if the last point is from the current month
-    const isCurrentMonth = 
-      lastMonthDate.getFullYear() === now.getFullYear() && 
-      lastMonthDate.getMonth() === now.getMonth();
-    
-    if (isCurrentMonth && lastPoint.hasData) {
-      const dayOfMonth = now.getDate();
-      const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-      
-      // Only project if we're less than 80% through the month
-      if (dayOfMonth < daysInMonth * 0.8) {
-        const projectedValue = Math.round((lastPoint.value / dayOfMonth) * daysInMonth);
-        
-        const solidPoints = points.slice(0, -1);
-        const projected: AggregatedPoint = {
-          ...lastPoint,
-          value: projectedValue,
-          hasData: true,
-        };
-        
-        if (solidPoints.length === 0) {
-          return { points: [], projected };
-        }
-        
-        return { points: solidPoints, projected };
-      }
-    }
-    
-    return { points, projected: null };
-  };
-
   // Build data with adaptive bucketing based on time range
   // Returns: { primaryData, secondaryData (for month view), projectedPoint (for year/all) }
   const buildChartData = (): {
@@ -150,7 +221,7 @@ export const VolumeTrendChart: React.FC<VolumeTrendChartProps> = ({ timeRange = 
     secondaryData: AggregatedPoint[] | null;
     projectedPoint?: AggregatedPoint | null;
   } => {
-    if (Object.keys(volumeTrendData).length === 0) {
+    if (Object.keys(activeVolumeData).length === 0) {
       return { primaryData: [], secondaryData: null };
     }
 
@@ -163,7 +234,7 @@ export const VolumeTrendChart: React.FC<VolumeTrendChartProps> = ({ timeRange = 
         for (let i = 6; i >= 0; i--) {
           const date = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i);
           const dateKey = formatLocalDate(date);
-          const volume = volumeTrendData[dateKey] || 0;
+          const volume = activeVolumeData[dateKey] || 0;
           
           points.push({
             date: dateKey,
@@ -185,7 +256,7 @@ export const VolumeTrendChart: React.FC<VolumeTrendChartProps> = ({ timeRange = 
         const dailyPoints: AggregatedPoint[] = [];
         for (let d = new Date(firstOfMonth); d <= today; d.setDate(d.getDate() + 1)) {
           const dateKey = formatLocalDate(new Date(d));
-          const volume = volumeTrendData[dateKey] || 0;
+          const volume = activeVolumeData[dateKey] || 0;
           
           dailyPoints.push({
             date: dateKey,
@@ -257,7 +328,7 @@ export const VolumeTrendChart: React.FC<VolumeTrendChartProps> = ({ timeRange = 
           for (let i = 0; i < dayOfYear; i++) {
             const date = new Date(now.getFullYear(), 0, i + 1);
             const dateKey = formatLocalDate(date);
-            const volume = volumeTrendData[dateKey] || 0;
+            const volume = activeVolumeData[dateKey] || 0;
             
             dailyPoints.push({
               date: dateKey,
@@ -275,7 +346,7 @@ export const VolumeTrendChart: React.FC<VolumeTrendChartProps> = ({ timeRange = 
           for (let i = 0; i < dayOfYear; i++) {
             const date = new Date(now.getFullYear(), 0, i + 1);
             const dateKey = formatLocalDate(date);
-            const volume = volumeTrendData[dateKey] || 0;
+            const volume = activeVolumeData[dateKey] || 0;
             
             dailyPoints.push({
               date: dateKey,
@@ -329,11 +400,38 @@ export const VolumeTrendChart: React.FC<VolumeTrendChartProps> = ({ timeRange = 
           return { primaryData: bucketedPoints, secondaryData: null, projectedPoint: null };
         }
         
-        // Phase 3+: Feb onwards - Weekly totals
-        const weeklyPoints = aggregateByWeek(volumeTrendData, firstOfYear, today);
-        
+        // Phase 3+: Feb onwards - 7-day rolling windows sampled weekly
+        // Sample once per week going backwards from today so the last point is always today
+        const weeklyRollingPoints: AggregatedPoint[] = [];
+
+        const anchors: Date[] = [];
+        for (let anchor = new Date(today); anchor >= firstOfYear; anchor.setDate(anchor.getDate() - 7)) {
+          anchors.push(new Date(anchor));
+        }
+        anchors.reverse();
+
+        anchors.forEach((anchorDate) => {
+          let total = 0;
+
+          // 7-day rolling window ending at anchor (inclusive)
+          for (let offset = 0; offset < 7; offset++) {
+            const d = new Date(anchorDate);
+            d.setDate(d.getDate() - offset);
+            const key = formatLocalDate(d);
+            total += activeVolumeData[key] || 0;
+          }
+
+          const dateKey = formatLocalDate(anchorDate);
+          weeklyRollingPoints.push({
+            date: dateKey,
+            value: Math.round(total),
+            label: dateKey, // will be formatted below
+            hasData: total > 0,
+          });
+        });
+
         // Filter out any weeks that start before Jan 1 (due to week alignment)
-        const filteredPoints = weeklyPoints.filter(point => {
+        const filteredPoints = weeklyRollingPoints.filter(point => {
           const pointDate = new Date(point.date + 'T12:00:00');
           return pointDate.getFullYear() === now.getFullYear();
         });
@@ -356,7 +454,7 @@ export const VolumeTrendChart: React.FC<VolumeTrendChartProps> = ({ timeRange = 
 
       case 'all': {
         // All time - progressive data aggregation based on data span
-        const sortedDates = Object.keys(volumeTrendData).sort();
+        const sortedDates = Object.keys(activeVolumeData).sort();
         
         if (sortedDates.length === 0) {
           return { primaryData: [], secondaryData: null };
@@ -371,7 +469,7 @@ export const VolumeTrendChart: React.FC<VolumeTrendChartProps> = ({ timeRange = 
           const dailyPoints: AggregatedPoint[] = [];
           for (let d = new Date(firstDate); d <= today; d.setDate(d.getDate() + 1)) {
             const dateKey = formatLocalDate(new Date(d));
-            const volume = volumeTrendData[dateKey] || 0;
+            const volume = activeVolumeData[dateKey] || 0;
             
             dailyPoints.push({
               date: dateKey,
@@ -388,7 +486,7 @@ export const VolumeTrendChart: React.FC<VolumeTrendChartProps> = ({ timeRange = 
           const dailyPoints: AggregatedPoint[] = [];
           for (let d = new Date(firstDate); d <= today; d.setDate(d.getDate() + 1)) {
             const dateKey = formatLocalDate(new Date(d));
-            const volume = volumeTrendData[dateKey] || 0;
+            const volume = activeVolumeData[dateKey] || 0;
             
             dailyPoints.push({
               date: dateKey,
@@ -403,14 +501,44 @@ export const VolumeTrendChart: React.FC<VolumeTrendChartProps> = ({ timeRange = 
           return { primaryData: bucketedPoints, secondaryData: null, projectedPoint: null };
         }
         
-        // Phase 3-5: 22-365 days - Weekly totals
+        // Phase 3-5: 22-365 days - 7-day rolling windows sampled weekly
         if (daysDiff <= 365) {
-          const weeklyPoints = aggregateByWeek(volumeTrendData, firstDate, today);
-          return { primaryData: weeklyPoints, secondaryData: null, projectedPoint: null };
+          const weeklyRollingPoints: AggregatedPoint[] = [];
+
+          const anchors: Date[] = [];
+          for (let anchor = new Date(today); anchor >= firstDate; anchor.setDate(anchor.getDate() - 7)) {
+            anchors.push(new Date(anchor));
+          }
+          anchors.reverse();
+
+          anchors.forEach((anchorDate) => {
+            let total = 0;
+
+            // 7-day rolling window ending at anchor (inclusive)
+            for (let offset = 0; offset < 7; offset++) {
+              const d = new Date(anchorDate);
+              d.setDate(d.getDate() - offset);
+              const key = formatLocalDate(d);
+              total += activeVolumeData[key] || 0;
+            }
+
+            const dateKey = formatLocalDate(anchorDate);
+            const label = anchorDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+            weeklyRollingPoints.push({
+              date: dateKey,
+              value: Math.round(total),
+              label,
+              hasData: total > 0,
+            });
+          });
+
+          return { primaryData: weeklyRollingPoints, secondaryData: null, projectedPoint: null };
         }
         
         // Phase 6+: 366+ days - Monthly totals
-        const monthlyPoints = aggregateByMonth(volumeTrendData, firstDate, today);
+        // Only include fully completed months (exclude the current in-progress month)
+        const lastCompletedMonthEnd = new Date(today.getFullYear(), today.getMonth(), 0);
+        const monthlyPoints = aggregateByMonth(activeVolumeData, firstDate, lastCompletedMonthEnd);
         return { primaryData: monthlyPoints, secondaryData: null, projectedPoint: null };
       }
 
@@ -419,87 +547,7 @@ export const VolumeTrendChart: React.FC<VolumeTrendChartProps> = ({ timeRange = 
     }
   };
 
-  const { primaryData: completeData, secondaryData: dailyScatterData, projectedPoint } = buildChartData();
-
-  // Build human-readable range label under the x-axis (split into main label and descriptor)
-  const { rangeLabel, rangeDescriptor } = useMemo(() => {
-    const now = new Date();
-
-    const formatDayWithWeekday = (d: Date) =>
-      d.toLocaleDateString(undefined, {
-        weekday: 'short',
-        month: 'short',
-        day: 'numeric',
-      });
-
-    switch (timeRange) {
-      case 'week': {
-        const end = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-        const start = new Date(end);
-        start.setDate(end.getDate() - 6);
-        const startStr = formatDayWithWeekday(start);
-        const endStr = formatDayWithWeekday(end);
-        return { rangeLabel: `${startStr}   -   ${endStr}`, rangeDescriptor: null };
-      }
-      case 'month': {
-        const firstOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-        const dayOfMonth = now.getDate();
-        const descriptor = dayOfMonth <= 7 ? null : '3-day avg';
-        return {
-          rangeLabel: firstOfMonth.toLocaleDateString(undefined, {
-            month: 'long',
-            year: 'numeric',
-          }),
-          rangeDescriptor: descriptor,
-        };
-      }
-      case 'year': {
-        const dayOfYear = Math.floor((now.getTime() - new Date(now.getFullYear(), 0, 1).getTime()) / (1000 * 60 * 60 * 24)) + 1;
-        let descriptor: string | null = null;
-        if (dayOfYear <= 7) {
-          descriptor = null;
-        } else if (dayOfYear <= 31) {
-          descriptor = '3-day avg';
-        } else {
-          descriptor = 'Weekly totals';
-        }
-        return { rangeLabel: `${now.getFullYear()}`, rangeDescriptor: descriptor };
-      }
-      case 'all': {
-        const keys = Object.keys(volumeTrendData).sort();
-        if (!keys.length) return { rangeLabel: null, rangeDescriptor: null };
-        const startDate = new Date(keys[0] + 'T12:00:00');
-        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-        if (isNaN(startDate.getTime())) return { rangeLabel: null, rangeDescriptor: null };
-        const daysDiff = Math.floor((today.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
-        
-        let descriptor: string | null = null;
-        if (daysDiff <= 7) {
-          descriptor = null;
-        } else if (daysDiff <= 21) {
-          descriptor = '3-day avg';
-        } else if (daysDiff <= 365) {
-          descriptor = 'Weekly totals';
-        } else {
-          descriptor = 'Monthly totals';
-        }
-        
-        const startStr = startDate.toLocaleDateString(undefined, {
-          month: 'short',
-          day: 'numeric',
-          year: 'numeric',
-        });
-        const endStr = today.toLocaleDateString(undefined, {
-          month: 'short',
-          day: 'numeric',
-          year: 'numeric',
-        });
-        return { rangeLabel: `${startStr}   -   ${endStr}`, rangeDescriptor: descriptor };
-      }
-      default:
-        return { rangeLabel: null, rangeDescriptor: null };
-    }
-  }, [timeRange, volumeTrendData]);
+  const { primaryData: completeData, projectedPoint } = buildChartData();
 
   // Format data for Victory - include all points for accurate line
   const chartData = completeData.map((point, index) => ({
@@ -522,8 +570,6 @@ export const VolumeTrendChart: React.FC<VolumeTrendChartProps> = ({ timeRange = 
     dataValues.push(projectedPoint.value);
   }
   const rawMax = Math.max(...dataValues, 0);
-  const rawMin = Math.min(...dataValues, 0);
-  
   // Round to nice numbers
   const allowedIncrements = [10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 10000, 25000, 50000];
   
@@ -614,9 +660,6 @@ export const VolumeTrendChart: React.FC<VolumeTrendChartProps> = ({ timeRange = 
     // Get start and end months
     const startMonth = firstDataDate.getMonth();
     const startYear = firstDataDate.getFullYear();
-    const endMonth = lastDataDate.getMonth();
-    const endYear = lastDataDate.getFullYear();
-    
     // Iterate through months at the specified step
     let currentDate = new Date(startYear, startMonth, 1);
     while (currentDate <= lastDataDate) {
@@ -796,7 +839,7 @@ export const VolumeTrendChart: React.FC<VolumeTrendChartProps> = ({ timeRange = 
         if (chartData.length === 0) return [1];
         
         // Calculate data span in days
-        const sortedDates = Object.keys(volumeTrendData).sort();
+        const sortedDates = Object.keys(activeVolumeData).sort();
         if (sortedDates.length === 0) return [1];
         
         const firstDate = new Date(sortedDates[0] + 'T12:00:00');
@@ -924,7 +967,7 @@ export const VolumeTrendChart: React.FC<VolumeTrendChartProps> = ({ timeRange = 
       if (chartData.length === 0) return '';
       
       // Calculate data span
-      const sortedDates = Object.keys(volumeTrendData).sort();
+      const sortedDates = Object.keys(activeVolumeData).sort();
       if (sortedDates.length === 0) return '';
       
       const firstDateAll = new Date(sortedDates[0] + 'T12:00:00');

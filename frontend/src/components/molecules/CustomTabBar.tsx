@@ -2,12 +2,11 @@
  * CustomTabBar
  * Floating, glassmorphism tab bar with animated interactions and haptics.
  */
-import React, { useRef } from 'react';
+import React from 'react';
 import { Platform, StyleSheet, View, TouchableOpacity } from 'react-native';
 import type { ColorValue } from 'react-native';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import Animated, {
-  SharedValue,
   useAnimatedStyle,
   useSharedValue,
   withSpring,
@@ -39,13 +38,71 @@ type ProfileChildRoute = typeof PROFILE_CHILD_ROUTES[number];
 const isProfileChildRoute = (routeName?: string): routeName is ProfileChildRoute =>
   Boolean(routeName && PROFILE_CHILD_ROUTES.includes(routeName as ProfileChildRoute));
 
+type TabBarItemProps = {
+  isFocused: boolean;
+  isWorkoutRoute: boolean;
+  showActiveSessionGlow: boolean;
+  iconName: keyof typeof Ionicons.glyphMap;
+  onPress: () => void;
+  theme: any;
+  createGradientIcon: (iconName: keyof typeof Ionicons.glyphMap) => React.ReactElement;
+};
+
+const TabBarItem: React.FC<TabBarItemProps> = ({
+  isFocused,
+  isWorkoutRoute,
+  showActiveSessionGlow,
+  iconName,
+  onPress,
+  theme,
+  createGradientIcon,
+}) => {
+  const scale = useSharedValue(1);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+
+  return (
+    <Animated.View style={[styles.tabSlot, animatedStyle]}>
+      <TouchableOpacity
+        accessibilityRole="button"
+        accessibilityState={{ selected: isFocused }}
+        onPress={() => {
+          onPress();
+          scale.value = withSpring(SCALE_ACTIVE, springBouncy);
+          setTimeout(() => {
+            scale.value = withSpring(1, springBouncy);
+          }, 140);
+        }}
+        activeOpacity={1}
+        style={styles.touchable}
+      >
+        {showActiveSessionGlow ? (
+          <Ionicons name="play" size={ICON_SIZE} color={theme.accent.orange} />
+        ) : isFocused ? (
+          isWorkoutRoute ? (
+            <Ionicons
+              name="play-outline"
+              size={ICON_SIZE}
+              color={theme.accent.orange}
+            />
+          ) : (
+            createGradientIcon(iconName)
+          )
+        ) : (
+          <Ionicons name={iconName} size={ICON_SIZE} color={theme.text.primary} />
+        )}
+      </TouchableOpacity>
+    </Animated.View>
+  );
+};
 
 export const CustomTabBar: React.FC<BottomTabBarProps> = ({ state, navigation }) => {
   const insets = useSafeAreaInsets();
   const { theme, isDarkMode } = useTheme();
   const isSessionActive = useSessionStore((store) => store.isSessionActive);
   const workoutDetailSource = useNavigationStore((store) => store.workoutDetailSource);
-  const scalesRef = useRef<SharedValue<number>[]>(state.routes.map(() => useSharedValue(1)));
 
   const TAB_SURFACE_COLOR = theme.surface.card;
   const TAB_BORDER_COLOR = theme.primary.light;
@@ -67,20 +124,16 @@ export const CustomTabBar: React.FC<BottomTabBarProps> = ({ state, navigation })
   const fillBackgroundColor = isWorkoutSessionPage ? 'transparent' : theme.primary.bg;
 
 
-  const focusTab = (index: number, routeName: string) => {
-    const route = state.routes[index];
+  const focusTab = (routeKey: string, routeName: string) => {
     const event = navigation.emit({
       type: 'tabPress',
-      target: route.key,
+      target: routeKey,
       canPreventDefault: true,
     });
 
     if (!event.defaultPrevented) navigation.navigate(routeName);
 
     triggerHaptic('light');
-
-    scalesRef.current[index].value = withSpring(SCALE_ACTIVE, springBouncy);
-    setTimeout(() => { scalesRef.current[index].value = withSpring(1, springBouncy); }, 140);
   };
   const createGradientIcon = (iconName: keyof typeof Ionicons.glyphMap) => (
     <MaskedView
@@ -181,44 +234,18 @@ export const CustomTabBar: React.FC<BottomTabBarProps> = ({ state, navigation })
                     || (isWorkoutDetailScreen && workoutDetailSource === 'calendar' && route.name === 'calendar');
                   const isWorkoutRoute = route.name === 'workout';
                   const showActiveSessionGlow = isWorkoutRoute && isSessionActive;
-                  const animatedStyle = useAnimatedStyle(() => ({
-                    transform: [{ scale: scalesRef.current[index].value }],
-                  }));
 
                   return (
-                    <Animated.View key={route.key} style={[styles.tabSlot, animatedStyle]}>
-                      <TouchableOpacity
-                        accessibilityRole="button"
-                        accessibilityState={{ selected: isFocused }}
-                        onPress={() => focusTab(index, route.name)}
-                        activeOpacity={1}
-                        style={styles.touchable}
-                      >
-                        {showActiveSessionGlow ? (
-                          <Ionicons
-                            name="play"
-                            size={ICON_SIZE}
-                            color={theme.accent.orange}
-                          />
-                        ) : isFocused ? (
-                          isWorkoutRoute ? (
-                            <Ionicons
-                              name="play-outline"
-                              size={ICON_SIZE}
-                              color={theme.accent.orange}
-                            />
-                          ) : (
-                            createGradientIcon(tabMeta.icon)
-                          )
-                        ) : (
-                          <Ionicons
-                            name={tabMeta.icon}
-                            size={ICON_SIZE}
-                            color={theme.text.primary}
-                          />
-                        )}
-                      </TouchableOpacity>
-                    </Animated.View>
+                    <TabBarItem
+                      key={route.key}
+                      isFocused={isFocused}
+                      isWorkoutRoute={isWorkoutRoute}
+                      showActiveSessionGlow={showActiveSessionGlow}
+                      iconName={tabMeta.icon}
+                      theme={theme}
+                      createGradientIcon={createGradientIcon}
+                      onPress={() => focusTab(route.key, route.name)}
+                    />
                   );
                 })}
               </View>

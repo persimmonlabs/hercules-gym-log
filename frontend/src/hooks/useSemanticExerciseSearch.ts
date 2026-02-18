@@ -12,6 +12,34 @@ interface UseSemanticExerciseSearchOptions {
   excludeIds?: string[];
 }
 
+const SEARCH_SYNONYMS: Record<string, string[]> = {
+  arms: ['biceps', 'triceps', 'forearms', 'forearm', 'bicep', 'tricep', 'curl', 'arm'],
+  legs: ['quads', 'quadriceps', 'hamstrings', 'hamstring', 'glutes', 'glute', 'calves', 'calf', 'leg'],
+  core: ['abs', 'abdominals', 'obliques', 'oblique', 'abdominal', 'plank', 'crunch'],
+  abs: ['abdominals', 'abdominal', 'obliques', 'oblique', 'core', 'crunch', 'plank'],
+  back: ['lats', 'latissimus', 'rhomboids', 'trapezius', 'traps', 'erector', 'row', 'pull'],
+  chest: ['pectorals', 'pectoral', 'pecs', 'bench', 'press', 'fly'],
+  shoulders: ['deltoids', 'deltoid', 'delts', 'delt', 'shoulder', 'lateral raise', 'overhead'],
+  shoulder: ['deltoids', 'deltoid', 'delts', 'delt', 'shoulders', 'lateral raise', 'overhead'],
+  glutes: ['glute', 'gluteus', 'hip thrust', 'hip', 'butt'],
+  calves: ['calf', 'gastrocnemius', 'soleus'],
+  push: ['chest', 'shoulders', 'triceps', 'bench', 'press'],
+  pull: ['back', 'biceps', 'row', 'pulldown', 'pullup'],
+};
+
+const expandTokensWithSynonyms = (tokens: string[]): string[] => {
+  const expanded = new Set(tokens);
+  for (const token of tokens) {
+    const synonyms = SEARCH_SYNONYMS[token];
+    if (synonyms) {
+      for (const syn of synonyms) {
+        expanded.add(syn);
+      }
+    }
+  }
+  return Array.from(expanded);
+};
+
 /**
  * Check if a field starts with a token (word-boundary aware).
  * e.g., "barbell row" starts with "row" at word boundary.
@@ -70,7 +98,7 @@ const scoreExercise = (
     hasDirectMatch = true;
   }
 
-  // Score each original token (not expanded synonyms)
+  // Score using original tokens
   for (const token of originalTokens) {
     if (!token) continue;
 
@@ -99,13 +127,27 @@ const scoreExercise = (
     } else if (token === 'bodyweight' && exercise.isBodyweight) {
       score += 8;
     } else if (token.length >= 3 && containsTokenStrict(searchIndex, token)) {
-      // Only match searchIndex for tokens 3+ chars to avoid noise
       score += 3;
     }
   }
 
-  // If no direct match on the exercise name/attributes from original query,
-  // require at least one synonym to match meaningfully
+  // Synonym expansion: check expanded tokens against muscle groups and searchIndex
+  const expandedTokens = expandTokensWithSynonyms(originalTokens);
+  if (expandedTokens.length > originalTokens.length) {
+    const synonymOnlyTokens = expandedTokens.filter(t => !originalTokens.includes(t));
+    for (const syn of synonymOnlyTokens) {
+      if (containsTokenStrict(muscleGroup, syn) || containsTokenStrict(filterMuscleGroup, syn)) {
+        score += 6;
+      } else if (secondaryMuscleGroups.some((target) => containsTokenStrict(target, syn))) {
+        score += 4;
+      } else if (containsTokenStrict(normalizedName, syn)) {
+        score += 5;
+      } else if (syn.length >= 3 && containsTokenStrict(searchIndex, syn)) {
+        score += 2;
+      }
+    }
+  }
+
   if (!hasDirectMatch && score === 0) {
     return 0;
   }

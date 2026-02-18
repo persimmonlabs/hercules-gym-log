@@ -2,7 +2,6 @@ import React, { useCallback, useEffect, useMemo, useState, useRef } from 'react'
 import { View, StyleSheet, Pressable, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useScrollToTop, useFocusEffect } from '@react-navigation/native';
-import type { Href } from 'expo-router';
 import type { ViewStyle } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, {
@@ -23,7 +22,7 @@ import { ScreenHeader } from '@/components/molecules/ScreenHeader';
 import { TabSwipeContainer } from '@/components/templates/TabSwipeContainer';
 import { colors, spacing, radius, shadows, sizing } from '@/constants/theme';
 import { useTheme } from '@/hooks/useTheme';
-import { RecentWorkoutSummary, WeekDayTracker } from '@/types/dashboard';
+import { WeekDayTracker } from '@/types/dashboard';
 import { createWeekTracker } from '@/utils/dashboard';
 import { useSchedulesStore, type SchedulesState } from '@/store/schedulesStore';
 import { usePlansStore, type Plan, type PlansState } from '@/store/plansStore';
@@ -32,16 +31,14 @@ import { WEEKDAY_LABELS } from '@/constants/schedule';
 import type { ScheduleDayKey } from '@/types/schedule';
 import { triggerHaptic } from '@/utils/haptics';
 import { useWorkoutSessionsStore, type WorkoutSessionsState } from '@/store/workoutSessionsStore';
-import type { Workout, WorkoutExercise, SetLog } from '@/types/workout';
-import { IconSymbol } from '@/components/ui/icon-symbol';
+import type { Workout, WorkoutExercise } from '@/types/workout';
 import { useSessionStore } from '@/store/sessionStore';
 import { useUserProfileStore } from '@/store/userProfileStore';
-import { useAuth } from '@/providers/AuthProvider';
 import { WorkoutInProgressModal } from '@/components/molecules/WorkoutInProgressModal';
-import type { Schedule } from '@/types/schedule';
-import type { UserProgram, RotationSchedule, ProgramWorkout } from '@/types/premadePlan';
+import type { ProgramWorkout } from '@/types/premadePlan';
 import { createSetsWithHistory } from '@/utils/workout';
-import { useActiveScheduleStore } from '@/store/activeScheduleStore';
+import { useActiveScheduleStore, computeTodaysWorkout } from '@/store/activeScheduleStore';
+import { useCustomExerciseStore } from '@/store/customExerciseStore';
 import { formatDateToLocalISO } from '@/utils/date';
 
 
@@ -371,7 +368,6 @@ const formatElapsedForSubcard = (minutes: number): string => {
 
 const DashboardScreen: React.FC = () => {
   const { theme } = useTheme();
-  const { user } = useAuth();
   const workouts = useWorkoutSessionsStore((state: WorkoutSessionsState) => state.workouts);
   const profile = useUserProfileStore((state) => state.profile);
 
@@ -488,14 +484,16 @@ const DashboardScreen: React.FC = () => {
   const hydrateSchedules = useSchedulesStore((state: SchedulesState) => state.hydrateSchedules);
   const plans = usePlansStore((state: PlansState) => state.plans);
   const hydratePlans = usePlansStore((state: PlansState) => state.hydratePlans);
-  const { activeRotation, getCurrentRotationWorkout, hydratePrograms, userPrograms, getTodayWorkout, activePlanId } = useProgramsStore();
+  const { activeRotation, hydratePrograms, userPrograms, getTodayWorkout, activePlanId } = useProgramsStore();
   const hydrateWorkouts = useWorkoutSessionsStore((state: WorkoutSessionsState) => state.hydrateWorkouts);
-  const activeScheduleResult = useActiveScheduleStore((state) => state.getTodaysWorkout());
-  const activeScheduleRule = useActiveScheduleStore((state) => state.state.activeRule);
+  const activeScheduleState = useActiveScheduleStore((state) => state.state);
+  const activeScheduleRule = activeScheduleState.activeRule;
+  const activeScheduleResult = useMemo(() => computeTodaysWorkout(activeScheduleState), [activeScheduleState]);
   const startSession = useSessionStore((state) => state.startSession);
   const setCompletionOverlayVisible = useSessionStore((state) => state.setCompletionOverlayVisible);
   const isSessionActive = useSessionStore((state) => state.isSessionActive);
   const currentSession = useSessionStore((state) => state.currentSession);
+  const customExercises = useCustomExerciseStore((state) => state.customExercises);
 
   // Helper function to get workout name from ID
   const getWorkoutName = (workoutId: string | null): string => {
@@ -577,7 +575,7 @@ const DashboardScreen: React.FC = () => {
     | { variant: 'ongoing'; sessionName: string | null; exerciseCount: number; elapsedMinutes: number }
     | { variant: 'activeSchedule'; dayLabel: string; workoutId: string | null; context?: string };
 
-  const todaysCardState: TodaysCardState = useMemo(() => {
+  const todaysCardState: TodaysCardState = useMemo((): TodaysCardState => {
     // PRIORITY 1: Check for ongoing workout session (highest priority)
     if (isSessionActive && currentSession) {
       const elapsedMs = Date.now() - currentSession.startTime;
@@ -609,120 +607,37 @@ const DashboardScreen: React.FC = () => {
     }
 
     // PRIORITY 3: Check new activeScheduleStore (unified schedule system)
-    if (activeScheduleRule && activeScheduleResult.source !== 'none') {
-      const workoutName = getWorkoutName(activeScheduleResult.workoutId);
-      const exerciseCount = getExerciseCount(activeScheduleResult.workoutId);
-      const contextText = activeScheduleResult.workoutId ? `${exerciseCount} ${exerciseCount === 1 ? 'exercise' : 'exercises'}` : 'Take the day off';
+    if (activeScheduleRule) {
+      const { workoutId } = activeScheduleResult;
+
+      // Null workoutId = explicit rest day in the schedule
+      if (!workoutId) {
+        return { variant: 'rest', dayLabel: todayLabel };
+      }
+
+      // Non-null workoutId must resolve to a real workout; if not found (stale/deleted), treat as rest
+      const workoutName = getWorkoutName(workoutId);
+      if (workoutName === 'Unknown Workout') {
+        return { variant: 'rest', dayLabel: todayLabel };
+      }
+
+      const exerciseCount = getExerciseCount(workoutId);
       return {
         variant: 'activeSchedule',
         dayLabel: workoutName,
-        workoutId: activeScheduleResult.workoutId,
-        context: contextText,
+        workoutId,
+        context: `${exerciseCount} ${exerciseCount === 1 ? 'exercise' : 'exercises'}`,
       };
     }
 
-    // Check for active rotation or active plan (Legacy System)
-    const todayProgramWorkout = getTodayWorkout();
-
-    // Check if there's an active plan
-    const activePlan = userPrograms.find(p => p.id === activePlanId);
-
-    // If we have an active plan but no workout (e.g., future start date or rest day)
-    if (activePlan && activePlan.schedule) {
-      if (todayProgramWorkout) {
-        return {
-          variant: 'rotation',
-          programName: activePlan.name,
-          workout: todayProgramWorkout,
-          programId: activePlan.id
-        };
-      }
-
-      // Active plan exists but no workout today (future start date or rest day in rotation)
-      if (activePlan.schedule.type === 'rotation' && activePlan.schedule.rotation?.startDate) {
-        const now = new Date();
-        const start = new Date(activePlan.schedule.rotation.startDate);
-        now.setHours(0, 0, 0, 0);
-        start.setHours(0, 0, 0, 0);
-        const diffDays = Math.floor((now.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
-
-        if (diffDays < 0) {
-          // Plan starts in the future
-          return { variant: 'rest', dayLabel: todayLabel };
-        }
-      }
-    }
-
+    // No active schedule in the new system — show noPlans or noSchedule immediately.
+    // Do NOT fall through to legacy rest-day paths; the user has no schedule configured.
     if (plans.length === 0 && userPrograms.length === 0) {
       return { variant: 'noPlans' };
     }
 
-    if (!activeSchedule) {
-      return { variant: 'noSchedule' };
-    }
-
-    // Check for standalone rotating schedule
-    if (activeSchedule.type === 'rotating' && activeSchedule.rotating) {
-      const { days, startDate } = activeSchedule.rotating;
-
-      if (days.length === 0) {
-        return { variant: 'rest', dayLabel: todayLabel };
-      }
-
-      if (!startDate) {
-        // No start date set, show as rest
-        return { variant: 'rest', dayLabel: todayLabel };
-      }
-
-      // Calculate which day of the rotation we're on
-      const now = new Date();
-      const start = new Date(startDate);
-      now.setHours(0, 0, 0, 0);
-      start.setHours(0, 0, 0, 0);
-      const diffDays = Math.floor((now.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
-
-      if (diffDays < 0) {
-        // Schedule starts in the future
-        return { variant: 'rest', dayLabel: todayLabel };
-      }
-
-      const currentDayIndex = diffDays % days.length;
-      const currentDay = days[currentDayIndex];
-
-      if (!currentDay || !currentDay.planId) {
-        // Rest day in the rotation
-        return { variant: 'rest', dayLabel: `Day ${currentDay?.dayNumber ?? currentDayIndex + 1}` };
-      }
-
-      // Find the plan for today
-      const plan = planNameLookup[currentDay.planId];
-      if (!plan) {
-        return { variant: 'rest', dayLabel: `Day ${currentDay.dayNumber}` };
-      }
-
-      return {
-        variant: 'standaloneRotation',
-        dayLabel: `Day ${currentDay.dayNumber}`,
-        plan,
-        dayNumber: currentDay.dayNumber,
-      };
-    }
-
-    // Weekly schedule
-    const todaysPlanId = activeSchedule.weekdays[todayKey];
-
-    if (!todaysPlanId) {
-      return { variant: 'rest', dayLabel: todayLabel };
-    }
-
-    const plan = planNameLookup[todaysPlanId];
-
-    if (!plan) {
-      return { variant: 'rest', dayLabel: todayLabel };
-    }
-
-    return { variant: 'plan', dayLabel: todayLabel, plan };
-  }, [activeSchedule, activeRotation, getTodayWorkout, planNameLookup, plans.length, todayKey, todayLabel, userPrograms, workouts, activePlanId, isSessionActive, currentSession, activeScheduleRule, activeScheduleResult, getWorkoutName, getExerciseCount]);
+    return { variant: 'noSchedule' };
+  }, [plans.length, userPrograms, workouts, isSessionActive, currentSession, activeScheduleRule, activeScheduleResult, getWorkoutName, getExerciseCount, todayLabel]);
 
   const todaysPlan = todaysCardState.variant === 'plan'
     ? todaysCardState.plan
@@ -753,7 +668,7 @@ const DashboardScreen: React.FC = () => {
 
   const handleCreatePlanPress = useCallback(() => {
     triggerHaptic('selection');
-    router.push('/(tabs)/plans');
+    router.push({ pathname: '/(tabs)/plans', params: { scrollTo: 'plans' } });
   }, [router]);
 
   const handlePlanActionStart = useCallback(() => {
@@ -771,7 +686,7 @@ const DashboardScreen: React.FC = () => {
 
       const historySetCounts: Record<string, number> = {};
       const workoutExercises: WorkoutExercise[] = target.exercises.map((exercise) => {
-        const { sets, historySetCount } = createSetsWithHistory(exercise.name, workouts);
+        const { sets, historySetCount } = createSetsWithHistory(exercise.name, workouts, undefined, undefined, customExercises);
         historySetCounts[exercise.name] = historySetCount;
         return {
           name: exercise.name,
@@ -964,7 +879,7 @@ const DashboardScreen: React.FC = () => {
                 <View style={styles.todaysPlanContainer}>
                   <View style={styles.dashboardCardHeader}>
                     <Text variant="heading3" color="primary">
-                      Today's Workout
+                      Today&apos;s Workout
                     </Text>
                   </View>
                   <View style={styles.todaysPlanBody}>
@@ -1051,7 +966,7 @@ const DashboardScreen: React.FC = () => {
                                   if (targetWorkout) {
                                     const historySetCounts: Record<string, number> = {};
                                     const workoutExercises: WorkoutExercise[] = targetWorkout.exercises.map((exercise) => {
-                                      const { sets, historySetCount } = createSetsWithHistory(exercise.name, workouts);
+                                      const { sets, historySetCount } = createSetsWithHistory(exercise.name, workouts, undefined, undefined, customExercises);
                                       historySetCounts[exercise.name] = historySetCount;
                                       return {
                                         name: exercise.name,
@@ -1164,16 +1079,49 @@ const DashboardScreen: React.FC = () => {
                           showAccentStripe={false}
                           style={styles.inlineCard}
                         >
+                          <View style={styles.quickLinkRow}>
+                            <View style={styles.quickLinkInfo}>
+                              <Text variant="bodySemibold" color="primary">
+                                No workout plans yet
+                              </Text>
+                              <Text variant="body" color="secondary">
+                                Create a plan to see your workouts here.
+                              </Text>
+                            </View>
+                            <Pressable
+                              style={styles.planStartButton}
+                              onPress={handleCreatePlanPress}
+                              accessibilityRole="button"
+                              accessibilityLabel="Go to Programs"
+                            >
+                              <View style={styles.quickLinkButton}>
+                                <LinearGradient
+                                  colors={[theme.accent.gradientStart, theme.accent.gradientEnd]}
+                                  start={{ x: 0, y: 0 }}
+                                  end={{ x: 1, y: 1 }}
+                                  style={styles.planStartButtonGradient}
+                                />
+                                <Text variant="bodySemibold" color="onAccent">
+                                  →
+                                </Text>
+                              </View>
+                            </Pressable>
+                          </View>
+                        </SurfaceCard>
+                      ) : todaysCardState.variant === 'rest' ? (
+                        <SurfaceCard
+                          tone="neutral"
+                          padding="lg"
+                          showAccentStripe={false}
+                          style={styles.inlineCard}
+                        >
                           <View style={styles.todaysPlanEmptyContent}>
                             <Text variant="bodySemibold" color="primary">
-                              Create a workout plan
+                              Rest Day
                             </Text>
                             <Text variant="body" color="secondary">
-                              No workout plans yet. Build one to see it here.
+                              No workout scheduled for today. Enjoy your recovery!
                             </Text>
-                            <View style={styles.todaysPlanActions}>
-                              <Button label="Create Workout Plan" size="md" onPress={handleCreatePlanPress} />
-                            </View>
                           </View>
                         </SurfaceCard>
                       ) : (

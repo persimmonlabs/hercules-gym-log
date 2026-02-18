@@ -11,12 +11,9 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, TextInput, View } from 'react-native';
 import Animated, {
-  FadeIn,
-  FadeOut,
   useAnimatedStyle,
   useSharedValue,
   withTiming,
-  withSpring,
 } from 'react-native-reanimated';
 
 import { Text } from '@/components/atoms/Text';
@@ -27,7 +24,7 @@ import { CompactExerciseRow } from '@/components/molecules/CompactExerciseRow';
 import { ExerciseSearchModal } from '@/components/molecules/ExerciseSearchModal';
 import { triggerHaptic } from '@/utils/haptics';
 import { colors, radius, spacing, typography, sizing } from '@/constants/theme';
-import { timingFast, springBouncy } from '@/constants/animations';
+import { timingFast } from '@/constants/animations';
 import type { Exercise } from '@/constants/exercises';
 
 interface WorkoutBuilderCardProps {
