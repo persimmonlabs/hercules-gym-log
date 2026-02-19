@@ -114,7 +114,7 @@ const WorkoutEditScreen: React.FC = () => {
   // Merge custom exercises with filtered exercises and apply search
   const allFilteredExercises = useMemo(() => {
     const customCatalogItems = customExercises.map((ce) =>
-      createCustomExerciseCatalogItem(ce.id, ce.name, ce.exerciseType)
+      createCustomExerciseCatalogItem(ce.id, ce.name, ce.exerciseType, ce.supportsGpsTracking)
     );
     const combinedExercises = [...filteredExercises, ...customCatalogItems];
     // Use unified search with fuzzy matching and relevance ranking
@@ -232,6 +232,32 @@ const WorkoutEditScreen: React.FC = () => {
               keyExtractor={(item) => item.id}
               style={styles.modalList}
               keyboardShouldPersistTaps="handled"
+              ListEmptyComponent={(
+                <View style={{ alignItems: 'center', paddingVertical: spacing.xl, gap: spacing.md }}>
+                  <Text variant="body" color="secondary">
+                    No exercises match that search yet.
+                  </Text>
+                  <Pressable
+                    style={styles.createExerciseButton}
+                    onPress={() => {
+                      triggerHaptic('selection');
+                      setIsPickerVisible(false);
+                      setIsCreateExerciseModalVisible(true);
+                    }}
+                    accessibilityRole="button"
+                    accessibilityLabel="Create a new custom exercise"
+                  >
+                    <MaterialCommunityIcons
+                      name="plus-circle-outline"
+                      size={sizing.iconMD}
+                      color={colors.accent.primary}
+                    />
+                    <Text variant="bodySemibold" style={{ color: colors.accent.primary }}>
+                      Create Exercise
+                    </Text>
+                  </Pressable>
+                </View>
+              )}
               renderItem={({ item }) => {
                 const musclesLabel = getExerciseDisplayTagText({
                   muscles: item.muscles,
@@ -283,13 +309,12 @@ const WorkoutEditScreen: React.FC = () => {
         visible={isCreateExerciseModalVisible}
         onClose={() => setIsCreateExerciseModalVisible(false)}
         onExerciseCreated={(exerciseName, exerciseType) => {
-          // Find the newly created exercise and add it
-          const newExercise = customExercises.find(e => e.name === exerciseName);
-          if (newExercise) {
+          // Read latest custom exercises directly from store (memo may be stale)
+          const latestCustom = useCustomExerciseStore.getState().customExercises;
+          const created = latestCustom.find(e => e.name === exerciseName);
+          if (created) {
             const catalogItem = createCustomExerciseCatalogItem(
-              newExercise.id,
-              newExercise.name,
-              newExercise.exerciseType
+              created.id, created.name, created.exerciseType, created.supportsGpsTracking
             );
             handleSelectExercise(catalogItem);
           }
@@ -403,6 +428,7 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     paddingVertical: spacing.md,
     marginTop: spacing.sm,
+    marginBottom: spacing.xl,
     borderTopWidth: 1,
     borderTopColor: colors.border.light,
   },

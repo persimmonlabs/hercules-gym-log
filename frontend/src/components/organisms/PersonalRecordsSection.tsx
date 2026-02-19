@@ -171,7 +171,7 @@ export const PersonalRecordsSection: React.FC = () => {
   // Merge custom exercises into catalog for the exercise picker
   const allExercises = useMemo<ExerciseCatalogItem[]>(() => {
     const customCatalogItems = customExercises.map((ce) =>
-      createCustomExerciseCatalogItem(ce.id, ce.name, ce.exerciseType)
+      createCustomExerciseCatalogItem(ce.id, ce.name, ce.exerciseType, ce.supportsGpsTracking)
     );
     return [...exerciseCatalog, ...customCatalogItems];
   }, [customExercises]);

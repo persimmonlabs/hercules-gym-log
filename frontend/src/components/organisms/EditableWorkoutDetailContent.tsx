@@ -13,6 +13,7 @@ import { Text } from '@/components/atoms/Text';
 import { SurfaceCard } from '@/components/atoms/SurfaceCard';
 import { TimePickerModal } from '@/components/molecules/TimePickerModal';
 import { SheetModal } from '@/components/molecules/SheetModal';
+import { CreateExerciseModal } from '@/components/molecules/CreateExerciseModal';
 import { spacing, colors, radius, sizing } from '@/constants/theme';
 import { useTheme } from '@/hooks/useTheme';
 import { exercises as exerciseCatalog, getExerciseTypeByName, createCustomExerciseCatalogItem } from '@/constants/exercises';
@@ -21,6 +22,7 @@ import { triggerHaptic } from '@/utils/haptics';
 import { formatDurationLabel, getWorkoutTotals, getWorkoutVolume } from '@/utils/workout';
 import { searchExercises } from '@/utils/exerciseSearch';
 import { useSettingsStore } from '@/store/settingsStore';
+import { useUserProfileStore } from '@/store/userProfileStore';
 import type { Workout, WorkoutExercise, SetLog } from '@/types/workout';
 import type { ExerciseType, ExerciseCatalogItem } from '@/types/exercise';
 
@@ -409,11 +411,12 @@ const AddExerciseModal: React.FC<AddExerciseModalProps> = ({
 }) => {
   const { theme } = useTheme();
   const [searchTerm, setSearchTerm] = useState('');
+  const [isCreateModalVisible, setIsCreateModalVisible] = useState(false);
   
   const customExercises = useCustomExerciseStore((state) => state.customExercises);
   const allExercises = useMemo<ExerciseCatalogItem[]>(() => {
     const customCatalogItems = customExercises.map((ce) =>
-      createCustomExerciseCatalogItem(ce.id, ce.name, ce.exerciseType)
+      createCustomExerciseCatalogItem(ce.id, ce.name, ce.exerciseType, ce.supportsGpsTracking)
     );
     return [...exerciseCatalog, ...customCatalogItems];
   }, [customExercises]);
@@ -424,56 +427,95 @@ const AddExerciseModal: React.FC<AddExerciseModalProps> = ({
       .map(ex => ex.id);
     return searchExercises(searchTerm, allExercises, { excludeIds, limit: 50 });
   }, [searchTerm, existingExerciseNames, allExercises]);
+
+  const handleOpenCreateModal = useCallback(() => {
+    triggerHaptic('selection');
+    setIsCreateModalVisible(true);
+  }, []);
+
+  const handleExerciseCreated = useCallback((exerciseName: string, exerciseType: ExerciseType) => {
+    // Auto-add the newly created exercise to the workout
+    onSelectExercise({ name: exerciseName, exerciseType });
+    setSearchTerm('');
+    setIsCreateModalVisible(false);
+    onClose();
+  }, [onSelectExercise, onClose]);
   
   return (
-    <SheetModal
-      visible={visible}
-      onClose={onClose}
-      title="Add Exercise"
-      headerContent={
-        <TextInput
-          style={[styles.searchInput, { backgroundColor: theme.surface.elevated, color: theme.text.primary, borderColor: theme.border.light }]}
-          placeholder="Search by name or category"
-          placeholderTextColor={theme.text.tertiary}
-          value={searchTerm}
-          onChangeText={setSearchTerm}
-          autoCapitalize="none"
-          autoCorrect={false}
-        />
-      }
-    >
-      <FlatList
-        data={filteredExercises}
-        keyExtractor={(item) => item.id}
-        style={styles.modalList}
-        contentContainerStyle={styles.modalListContent}
-        showsVerticalScrollIndicator
-        keyboardShouldPersistTaps="handled"
-        keyboardDismissMode="on-drag"
-        ListEmptyComponent={
-          <View style={styles.modalEmptyState}>
-            <Text variant="body" color="secondary">
-              No exercises match that search yet.
-            </Text>
-          </View>
+    <>
+      <SheetModal
+        visible={visible}
+        onClose={onClose}
+        title="Add Exercise"
+        headerContent={
+          <TextInput
+            style={[styles.searchInput, { backgroundColor: theme.surface.elevated, color: theme.text.primary, borderColor: theme.border.light }]}
+            placeholder="Search by name or category"
+            placeholderTextColor={theme.text.tertiary}
+            value={searchTerm}
+            onChangeText={setSearchTerm}
+            autoCapitalize="none"
+            autoCorrect={false}
+          />
         }
-        ListFooterComponent={<View style={styles.spacer} />}
-        renderItem={({ item }) => (
-          <Pressable
-            style={styles.modalItem}
-            onPress={() => {
-              triggerHaptic('selection');
-              onSelectExercise({ name: item.name, exerciseType: item.exerciseType });
-              setSearchTerm('');
-              onClose();
-            }}
-          >
-            <Text variant="bodySemibold" color="primary">{item.name}</Text>
-            <Text variant="caption" color="secondary">{item.muscleGroup}</Text>
-          </Pressable>
-        )}
+      >
+        <FlatList
+          data={filteredExercises}
+          keyExtractor={(item) => item.id}
+          style={styles.modalList}
+          contentContainerStyle={styles.modalListContent}
+          showsVerticalScrollIndicator
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+          ListEmptyComponent={
+            <View style={styles.modalEmptyState}>
+              <Text variant="body" color="secondary">
+                No exercises match that search yet.
+              </Text>
+              <Pressable
+                onPress={handleOpenCreateModal}
+                style={styles.createExerciseRow}
+              >
+                <MaterialCommunityIcons name="plus-circle-outline" size={sizing.iconSM} color={theme.accent.orange} />
+                <Text variant="bodySemibold" style={{ color: theme.accent.orange }}>
+                  Create Custom Exercise
+                </Text>
+              </Pressable>
+            </View>
+          }
+          ListFooterComponent={
+            <Pressable
+              onPress={handleOpenCreateModal}
+              style={styles.createExerciseRow}
+            >
+              <MaterialCommunityIcons name="plus-circle-outline" size={sizing.iconSM} color={theme.accent.orange} />
+              <Text variant="bodySemibold" style={{ color: theme.accent.orange }}>
+                Create Custom Exercise
+              </Text>
+            </Pressable>
+          }
+          renderItem={({ item }) => (
+            <Pressable
+              style={styles.modalItem}
+              onPress={() => {
+                triggerHaptic('selection');
+                onSelectExercise({ name: item.name, exerciseType: item.exerciseType });
+                setSearchTerm('');
+                onClose();
+              }}
+            >
+              <Text variant="bodySemibold" color="primary">{item.name}</Text>
+              <Text variant="caption" color="secondary">{item.muscleGroup}</Text>
+            </Pressable>
+          )}
+        />
+      </SheetModal>
+      <CreateExerciseModal
+        visible={isCreateModalVisible}
+        onClose={() => setIsCreateModalVisible(false)}
+        onExerciseCreated={handleExerciseCreated}
       />
-    </SheetModal>
+    </>
   );
 };
 
@@ -487,7 +529,8 @@ export const EditableWorkoutDetailContent: React.FC<EditableWorkoutDetailContent
   const [isAddExerciseModalVisible, setIsAddExerciseModalVisible] = useState(false);
   const durationLabel = useMemo(() => formatDurationLabel(workout.duration), [workout.duration]);
   const { completedSets } = useMemo(() => getWorkoutTotals(workout), [workout]);
-  const totalVolume = useMemo(() => getWorkoutVolume(workout), [workout]);
+  const userBodyWeight = useUserProfileStore((state) => state.profile?.weightLbs);
+  const totalVolume = useMemo(() => getWorkoutVolume(workout, userBodyWeight), [workout, userBodyWeight]);
   const volumeLabel = useMemo(() => {
     if (totalVolume === 0) return '—';
     return formatWeight(totalVolume);
@@ -916,12 +959,22 @@ const styles = StyleSheet.create({
   modalEmptyState: {
     paddingVertical: spacing['2xl'],
     alignItems: 'center',
+    gap: spacing.md,
   },
   modalItem: {
     paddingVertical: spacing.md,
     borderBottomWidth: 1,
     borderBottomColor: colors.border.light,
     gap: spacing.xxs,
+  },
+  createExerciseRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingVertical: spacing.md,
+    marginTop: spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: colors.border.light,
   },
   spacer: {
     height: spacing.xl * 2,

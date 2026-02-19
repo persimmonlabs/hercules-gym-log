@@ -20,9 +20,11 @@ import { usePlanBuilderContext } from '@/providers/PlanBuilderProvider';
 import { usePlansStore, type PlansState } from '@/store/plansStore';
 import { useProgramsStore } from '@/store/programsStore';
 import { useSessionStore } from '@/store/sessionStore';
+import { useOutdoorSessionStore } from '@/store/outdoorSessionStore';
 import { useWorkoutSessionsStore, type WorkoutSessionsState } from '@/store/workoutSessionsStore';
-import type { WorkoutExercise } from '@/types/workout';
-import { createSetsWithHistory } from '@/utils/workout';
+import type { WorkoutExercise, SetLog } from '@/types/workout';
+import { createSetsWithSmartSuggestions } from '@/utils/workout';
+import { useSettingsStore } from '@/store/settingsStore';
 import { useCustomExerciseStore } from '@/store/customExerciseStore';
 
 const styles = StyleSheet.create({
@@ -234,6 +236,9 @@ const PlansScreen: React.FC = () => {
   const currentSession = useSessionStore((state) => state.currentSession);
   const allWorkouts = useWorkoutSessionsStore((state: WorkoutSessionsState) => state.workouts);
   const customExercises = useCustomExerciseStore((state) => state.customExercises);
+  const outdoorSessionStatus = useOutdoorSessionStore((state) => state.status);
+  const outdoorExerciseName = useOutdoorSessionStore((state) => state.exerciseName);
+  const isOutdoorSessionActive = outdoorSessionStatus === 'active' || outdoorSessionStatus === 'paused';
   const [expandedPlanId, setExpandedPlanId] = useState<string | null>(null);
   const [isDeleteDialogVisible, setIsDeleteDialogVisible] = useState<boolean>(false);
   const [itemToDelete, setItemToDelete] = useState<any>(null);
@@ -497,26 +502,37 @@ const PlansScreen: React.FC = () => {
     return userPrograms;
   }, [userPrograms]);
 
+  const smartSuggestionsEnabled = useSettingsStore((state) => state.smartSuggestionsEnabled);
+
   const handleStartWorkoutItem = useCallback((item: any) => {
     triggerHaptic('selection');
+
+    if (isOutdoorSessionActive) {
+      router.push({ pathname: '/outdoor-session', params: { exercise: outdoorExerciseName ?? '' } });
+      return;
+    }
 
     const doStartSession = () => {
       setCompletionOverlayVisible(false);
 
       const historySetCounts: Record<string, number> = {};
+      const suggestedSetsMap: Record<string, SetLog[]> = {};
       const workoutExercises: WorkoutExercise[] = item.exercises.map((exercise: any) => {
-        const { sets, historySetCount } = createSetsWithHistory(exercise.name, allWorkouts, undefined, undefined, customExercises);
-        historySetCounts[exercise.name] = historySetCount;
+        const result = createSetsWithSmartSuggestions(exercise.name, allWorkouts, smartSuggestionsEnabled, undefined, undefined, customExercises);
+        historySetCounts[exercise.name] = result.historySetCount;
+        if (result.smartSuggestedSets.length > 0) {
+          suggestedSetsMap[exercise.name] = result.smartSuggestedSets;
+        }
         return {
           name: exercise.name,
-          sets,
+          sets: result.sets,
         };
       });
 
       const planId = item.type === 'program' ? (item.programId || item.programIds?.[0]) : item.id;
       const sessionName = item.name;
 
-      startSession(planId, workoutExercises, sessionName, historySetCounts);
+      startSession(planId, workoutExercises, sessionName, historySetCounts, suggestedSetsMap);
       setExpandedPlanId(null);
       router.push('/(tabs)/workout');
     };
@@ -527,7 +543,7 @@ const PlansScreen: React.FC = () => {
     }
 
     doStartSession();
-  }, [router, startSession, setCompletionOverlayVisible, allWorkouts, isSessionActive, currentSession, setWorkoutInProgressVisible, setExpandedPlanId]);
+  }, [router, startSession, setCompletionOverlayVisible, allWorkouts, isSessionActive, currentSession, setWorkoutInProgressVisible, setExpandedPlanId, isOutdoorSessionActive, outdoorExerciseName]);
 
 
   return (

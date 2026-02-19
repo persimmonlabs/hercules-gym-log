@@ -904,6 +904,7 @@ export interface CustomExerciseDB {
     id: string;
     name: string;
     exercise_type: string;
+    supports_gps_tracking: boolean;
     created_at: string;
     updated_at: string;
 }
@@ -929,6 +930,7 @@ export async function fetchCustomExercises(userId: string): Promise<CustomExerci
                 id: row.id,
                 name: row.name,
                 exercise_type: row.exercise_type,
+                supports_gps_tracking: row.supports_gps_tracking ?? false,
                 created_at: row.created_at,
                 updated_at: row.updated_at,
             }));
@@ -940,7 +942,7 @@ export async function fetchCustomExercises(userId: string): Promise<CustomExerci
 
 export async function createCustomExercise(
     userId: string,
-    exercise: { name: string; exerciseType: string }
+    exercise: { name: string; exerciseType: string; supportsGpsTracking?: boolean }
 ): Promise<string> {
     return withRetry(async () => {
         const { data, error } = await supabaseClient
@@ -949,6 +951,7 @@ export async function createCustomExercise(
                 user_id: userId,
                 name: exercise.name,
                 exercise_type: exercise.exerciseType,
+                supports_gps_tracking: exercise.supportsGpsTracking ?? false,
             })
             .select('id')
             .single();

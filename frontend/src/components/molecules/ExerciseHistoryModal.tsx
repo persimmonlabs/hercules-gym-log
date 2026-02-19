@@ -117,9 +117,26 @@ export const ExerciseHistoryModal: React.FC<ExerciseHistoryModalProps> = ({
                         {exerciseType === 'duration' && (
                           formatDurationDisplay(set.duration ?? 0)
                         )}
-                        {exerciseType === 'cardio' && (
-                          `${formatDistanceForExercise(set.distance ?? 0, effectiveDistanceUnit)} • ${formatDurationDisplay(set.duration ?? 0)}`
-                        )}
+                        {exerciseType === 'cardio' && (() => {
+                          const distance = set.distance ?? 0;
+                          const duration = set.duration ?? 0;
+                          const distanceStr = formatDistanceForExercise(distance, effectiveDistanceUnit);
+                          const durationStr = formatDurationDisplay(duration);
+                          
+                          // Calculate pace if both distance and duration exist
+                          if (distance > 0 && duration > 0) {
+                            const hours = duration / 3600;
+                            const paceMinPerMile = hours / distance * 60;
+                            const pacePerUnit = distanceUnitPref === 'km' ? paceMinPerMile * 1.60934 : paceMinPerMile;
+                            const mins = Math.floor(pacePerUnit);
+                            const secs = Math.floor((pacePerUnit - mins) * 60);
+                            const paceUnit = distanceUnitPref === 'km' ? '/km' : '/mi';
+                            const paceStr = `${mins}:${secs.toString().padStart(2, '0')} ${paceUnit}`;
+                            return `${distanceStr} • ${durationStr} • ${paceStr}`;
+                          }
+                          
+                          return `${distanceStr} • ${durationStr}`;
+                        })()}
                         {(exerciseType === 'bodyweight' || exerciseType === 'reps_only') && (
                           `${set.reps ?? 0} reps`
                         )}

@@ -7,7 +7,7 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import type { Workout, WorkoutExercise } from '@/types/workout';
+import type { Workout, WorkoutExercise, SetLog } from '@/types/workout';
 
 interface SessionDraft {
   planId: string | null;
@@ -15,14 +15,17 @@ interface SessionDraft {
   startTime: number;
   exercises: WorkoutExercise[];
   historySetCounts: Record<string, number>;
+  /** Original smart-suggested sets per exercise (keyed by exercise name). */
+  suggestedSets: Record<string, SetLog[]>;
 }
 
 export interface SessionState {
   currentSession: SessionDraft | null;
   isSessionActive: boolean;
-  startSession: (planId: string | null, exercises?: WorkoutExercise[], name?: string | null, historySetCounts?: Record<string, number>) => void;
-  addExercise: (exercise: WorkoutExercise, historySetCount?: number) => void;
+  startSession: (planId: string | null, exercises?: WorkoutExercise[], name?: string | null, historySetCounts?: Record<string, number>, suggestedSets?: Record<string, SetLog[]>) => void;
+  addExercise: (exercise: WorkoutExercise, historySetCount?: number, suggested?: SetLog[]) => void;
   getHistorySetCount: (exerciseName: string) => number;
+  getSuggestedSets: (exerciseName: string) => SetLog[] | null;
   updateExercise: (exerciseName: string, updatedExercise: WorkoutExercise) => void;
   removeExercise: (exerciseName: string) => void;
   reorderExercises: (fromIndex: number, toIndex: number) => void;
@@ -49,22 +52,28 @@ export const useSessionStore = create<SessionState>()(
       setHasHydrated: (state) => {
         set({ _hasHydrated: state });
       },
-      startSession: (planId, exercises = [], name = null, historySetCounts = {}) => {
+      startSession: (planId, exercises = [], name = null, historySetCounts = {}, suggestedSets = {}) => {
         const nextSession: SessionDraft = {
           planId,
           name,
           startTime: Date.now(),
           exercises: [...exercises],
           historySetCounts: { ...historySetCounts },
+          suggestedSets: { ...suggestedSets },
         };
 
         set({ currentSession: nextSession, isSessionActive: true, isCompletionOverlayVisible: false });
       },
-      addExercise: (exercise, historySetCount = 0) => {
+      addExercise: (exercise, historySetCount = 0, suggested) => {
         const { currentSession } = get();
 
         if (!currentSession) {
           return;
+        }
+
+        const nextSuggested = { ...currentSession.suggestedSets };
+        if (suggested && suggested.length > 0) {
+          nextSuggested[exercise.name] = suggested;
         }
 
         const nextSession: SessionDraft = {
@@ -74,6 +83,7 @@ export const useSessionStore = create<SessionState>()(
             ...currentSession.historySetCounts,
             [exercise.name]: historySetCount,
           },
+          suggestedSets: nextSuggested,
         };
 
         set({ currentSession: nextSession });
@@ -81,6 +91,10 @@ export const useSessionStore = create<SessionState>()(
       getHistorySetCount: (exerciseName) => {
         const { currentSession } = get();
         return currentSession?.historySetCounts[exerciseName] ?? 0;
+      },
+      getSuggestedSets: (exerciseName) => {
+        const { currentSession } = get();
+        return currentSession?.suggestedSets[exerciseName] ?? null;
       },
       updateExercise: (exerciseName, updatedExercise) => {
         const { currentSession } = get();
@@ -145,10 +159,16 @@ export const useSessionStore = create<SessionState>()(
         const durationMilliseconds = endTime - currentSession.startTime;
         const durationSeconds = Math.max(Math.floor(durationMilliseconds / 1000), 0);
 
+        // Generate session name if null and only one exercise
+        let sessionName = currentSession.name;
+        if (!sessionName && currentSession.exercises.length === 1) {
+          sessionName = currentSession.exercises[0].name;
+        }
+
         const workout: Workout = {
           id: generateWorkoutId(),
           planId: currentSession.planId,
-          name: currentSession.name,
+          name: sessionName,
           date: new Date(currentSession.startTime).toISOString(),
           startTime: currentSession.startTime,
           endTime,

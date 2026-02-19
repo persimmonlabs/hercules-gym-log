@@ -27,6 +27,8 @@ interface RawExercise {
   distance_unit?: 'miles' | 'meters' | 'floors';
   // For outdoor cardio exercises - enables GPS-based tracking
   supports_gps_tracking?: boolean;
+  // Fraction of bodyweight that contributes to volume (0–1)
+  effectiveBodyweightMultiplier?: number;
 }
 
 // --- Hierarchy Mapping Logic ---
@@ -193,6 +195,7 @@ const toExercise = (exercise: RawExercise): ExerciseCatalogItem => {
     exerciseType: exercise.exercise_type || 'weight',
     distanceUnit: exercise.distance_unit,
     supportsGpsTracking: exercise.supports_gps_tracking,
+    effectiveBodyweightMultiplier: exercise.effectiveBodyweightMultiplier ?? 0,
     searchIndex: buildSearchIndex(exercise, primaryMuscleName, muscleGroup, filterMuscleGroup, secondaryMuscleGroups),
   };
 };
@@ -225,10 +228,20 @@ export type { Exercise, ExerciseCatalogItem } from '@/types/exercise';
  * Creates an ExerciseCatalogItem from a custom exercise.
  * Custom exercises have minimal metadata since they're user-defined.
  */
+const DEFAULT_BW_MULTIPLIER: Record<ExerciseType, number> = {
+  bodyweight: 0.10,
+  weight: 0.02,
+  assisted: 0.02,
+  cardio: 0,
+  duration: 0,
+  reps_only: 0,
+};
+
 export const createCustomExerciseCatalogItem = (
   id: string,
   name: string,
-  exerciseType: ExerciseType
+  exerciseType: ExerciseType,
+  supportsGpsTracking: boolean = false,
 ): ExerciseCatalogItem => ({
   id,
   name,
@@ -237,12 +250,15 @@ export const createCustomExerciseCatalogItem = (
   filterMuscleGroup: 'Upper Body' as FilterMuscleGroup,
   secondaryMuscleGroups: [],
   equipment: [] as EquipmentType[],
-  movementPattern: 'Isometric' as MovementPattern,
+  movementPattern: supportsGpsTracking ? 'Cardio' as MovementPattern : 'Isometric' as MovementPattern,
   difficulty: 'Intermediate' as DifficultyLevel,
   isCompound: false,
   isBodyweight: exerciseType === 'bodyweight',
   exerciseType,
-  searchIndex: normalizeSearchText(`${name} custom`),
+  distanceUnit: supportsGpsTracking ? 'miles' : undefined,
+  supportsGpsTracking,
+  effectiveBodyweightMultiplier: DEFAULT_BW_MULTIPLIER[exerciseType] ?? 0,
+  searchIndex: normalizeSearchText(`${name} custom${supportsGpsTracking ? ' outdoor gps' : ''}`),
 });
 
 /**

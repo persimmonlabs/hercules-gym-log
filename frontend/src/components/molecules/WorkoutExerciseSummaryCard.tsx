@@ -44,20 +44,36 @@ const formatDuration = (seconds: number): string => {
 
 /**
  * Get the effort label for a set based on exercise type
- * For cardio: distance on left, time on right
+ * For cardio: distance, time, and avg pace
  */
 const getSetEffortLabel = (
   set: SetLog,
   exerciseType: ExerciseType,
   formatWeight: (lbs: number) => string,
-  formatDistanceForExercise: (miles: number, distanceUnit?: 'miles' | 'meters' | 'floors') => string,
-  distanceUnit?: 'miles' | 'meters' | 'floors'
+  formatDistanceForExercise: (miles: number, distanceUnit?: 'miles' | 'meters' | 'floors', decimals?: number) => string,
+  distanceUnit?: 'miles' | 'meters' | 'floors',
+  distanceUnitPref?: 'mi' | 'km'
 ): string => {
   switch (exerciseType) {
     case 'cardio':
-      const distance = formatDistanceForExercise(set.distance ?? 0, distanceUnit);
+      const distance = formatDistanceForExercise(set.distance ?? 0, distanceUnit, 2);
       const duration = set.duration ? formatDuration(set.duration) : '0min';
-      return `${distance} • ${duration}`;
+      
+      // Calculate pace
+      let paceStr = '--:--';
+      const distanceMiles = set.distance ?? 0;
+      const durationSeconds = set.duration ?? 0;
+      if (distanceMiles > 0 && durationSeconds > 0) {
+        const hours = durationSeconds / 3600;
+        const paceMinPerMile = hours / distanceMiles * 60;
+        const pacePerUnit = distanceUnitPref === 'km' ? paceMinPerMile * 1.60934 : paceMinPerMile;
+        const mins = Math.floor(pacePerUnit);
+        const secs = Math.floor((pacePerUnit - mins) * 60);
+        const paceUnit = distanceUnitPref === 'km' ? '/km' : '/mi';
+        paceStr = `${mins}:${secs.toString().padStart(2, '0')} ${paceUnit}`;
+      }
+      
+      return `${distance} • ${duration} • ${paceStr}`;
     
     case 'duration':
       return formatDuration(set.duration ?? 0);
@@ -129,7 +145,7 @@ export const WorkoutExerciseSummaryCard: React.FC<WorkoutExerciseSummaryCardProp
 
         <View style={styles.setList}>
           {completedSets.map(({ set, originalIndex }, displayIndex) => {
-            const effortLabel = getSetEffortLabel(set, exerciseType, formatWeight, formatDistanceForExercise, exerciseDistanceUnit);
+            const effortLabel = getSetEffortLabel(set, exerciseType, formatWeight, formatDistanceForExercise, exerciseDistanceUnit, distanceUnitPref);
 
             return (
               <View key={`${exercise.name}-${originalIndex}`} style={styles.setRow}>

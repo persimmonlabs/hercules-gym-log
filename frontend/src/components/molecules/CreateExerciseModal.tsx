@@ -23,12 +23,15 @@ interface CreateExerciseModalProps {
   onExerciseCreated?: (exerciseName: string, exerciseType: ExerciseType) => void;
 }
 
-const EXERCISE_TYPE_OPTIONS: { value: ExerciseType; label: string; description: string }[] = [
+type TypeOptionValue = ExerciseType | 'outdoor';
+
+const EXERCISE_TYPE_OPTIONS: { value: TypeOptionValue; label: string; description: string }[] = [
   { value: 'weight', label: 'Weight + Reps', description: 'Track weight and reps (e.g., Bench Press)' },
   { value: 'bodyweight', label: 'Bodyweight', description: 'Track reps only (e.g., Push-ups)' },
   { value: 'assisted', label: 'Assisted', description: 'Track assistance weight and reps (e.g., Assisted Pull-ups)' },
   { value: 'duration', label: 'Timed', description: 'Track duration (e.g., Plank)' },
-  { value: 'cardio', label: 'Cardio', description: 'Track distance and time (e.g., Running)' },
+  { value: 'cardio', label: 'Cardio', description: 'Track distance and time (e.g., Treadmill)' },
+  { value: 'outdoor', label: 'Outdoor', description: 'GPS tracking for distance, time, and pace' },
   { value: 'reps_only', label: 'Resistance Band', description: 'Track reps with band resistance' },
 ];
 
@@ -42,19 +45,19 @@ export const CreateExerciseModal: React.FC<CreateExerciseModalProps> = ({
   const customExercises = useCustomExerciseStore((state) => state.customExercises);
 
   const [name, setName] = useState('');
-  const [selectedType, setSelectedType] = useState<ExerciseType>('weight');
+  const [selectedType, setSelectedType] = useState<TypeOptionValue>('weight');
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleClose = useCallback(() => {
     setName('');
-    setSelectedType('weight');
+    setSelectedType('weight' as TypeOptionValue);
     setError(null);
     setIsSubmitting(false);
     onClose();
   }, [onClose]);
 
-  const handleSelectType = useCallback((type: ExerciseType) => {
+  const handleSelectType = useCallback((type: TypeOptionValue) => {
     triggerHaptic('selection');
     setSelectedType(type);
     setError(null);
@@ -88,10 +91,15 @@ export const CreateExerciseModal: React.FC<CreateExerciseModalProps> = ({
     setIsSubmitting(true);
     setError(null);
 
+    // Resolve outdoor pseudo-type to cardio + GPS flag
+    const isOutdoor = selectedType === 'outdoor';
+    const actualExerciseType: ExerciseType = isOutdoor ? 'cardio' : selectedType as ExerciseType;
+
     try {
       const result = await addCustomExercise({
         name: trimmedName,
-        exerciseType: selectedType,
+        exerciseType: actualExerciseType,
+        supportsGpsTracking: isOutdoor,
       });
 
       if (result) {

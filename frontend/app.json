@@ -13,14 +13,21 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.ocreynolds.hercules",
       "infoPlist": {
-        "UIBackgroundModes": ["fetch", "remote-notification"]
+        "UIBackgroundModes": ["fetch", "remote-notification", "location"],
+        "NSLocationWhenInUseUsageDescription": "Hercules uses your location to track your outdoor exercise route, distance, and pace.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Hercules uses your location in the background to continue tracking your outdoor exercise route."
       }
     },
     "android": {
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
       "softwareKeyboardLayoutMode": "resize",
-      "package": "com.ocreynolds.hercules"
+      "package": "com.ocreynolds.hercules",
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyBfoPqdk3GoFzs4LFBQhHsx8QzaKN_4ZX4"
+        }
+      }
     },
     "web": {
       "output": "static",
@@ -29,6 +36,13 @@
     "plugins": [
       "expo-router",
       "expo-sqlite",
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Hercules uses your location to track your outdoor exercise route, distance, and pace.",
+          "locationWhenInUsePermission": "Hercules uses your location to track your outdoor exercise route, distance, and pace."
+        }
+      ],
       [
         "expo-notifications",
         {

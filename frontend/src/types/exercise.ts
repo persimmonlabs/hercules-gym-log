@@ -155,6 +155,8 @@ export interface Exercise {
   distanceUnit?: 'miles' | 'meters' | 'floors';
   // For outdoor cardio exercises - enables GPS-based tracking
   supportsGpsTracking?: boolean;
+  // Fraction of bodyweight that contributes to volume (0–1)
+  effectiveBodyweightMultiplier: number;
 }
 
 export interface ExerciseCatalogItem extends Exercise {

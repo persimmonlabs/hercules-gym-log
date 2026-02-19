@@ -12,7 +12,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { Text } from '@/components/atoms/Text';
 import { SurfaceCard } from '@/components/atoms/SurfaceCard';
-import { spacing, colors } from '@/constants/theme';
+import { spacing, colors, radius } from '@/constants/theme';
 import { useTheme } from '@/hooks/useTheme';
 import type { Insight } from '@/hooks/useInsightsData';
 
@@ -125,7 +125,6 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.xs,
   },
   title: {
-    width: '100%',
     textAlign: 'center',
   },
   insightItem: {

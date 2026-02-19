@@ -35,6 +35,8 @@ import {
 } from '@/hooks/useTrainingBalanceMetrics';
 import exercisesData from '@/data/exercises.json';
 import hierarchyData from '@/data/hierarchy.json';
+import { exercises as exerciseCatalog } from '@/constants/exercises';
+import { computeSetVolume, DEFAULT_BW_MULTIPLIER_BY_TYPE } from '@/utils/volumeCalculation';
 import type { ExerciseType } from '@/types/exercise';
 
 // ============================================================================
@@ -192,32 +194,11 @@ const fmtLbs = (n: number): string => {
   return n.toFixed(1);
 };
 
-const computeSetVolume = (
-  set: any,
-  exerciseType: ExerciseType,
-  userBodyWeight: number | undefined | null,
-): number => {
-  const reps = set.reps ?? 0;
-  if (reps <= 0) return 0;
-
-  switch (exerciseType) {
-    case 'bodyweight': {
-      if (!userBodyWeight || userBodyWeight <= 0) return 0;
-      return userBodyWeight * reps;
-    }
-    case 'assisted': {
-      if (!userBodyWeight || userBodyWeight <= 0) return 0;
-      const effective = Math.max(0, userBodyWeight - (set.assistanceWeight ?? 0));
-      return effective > 0 ? effective * reps : 0;
-    }
-    case 'weight': {
-      const w = set.weight ?? 0;
-      return w > 0 ? w * reps : 0;
-    }
-    default:
-      return 0;
-  }
-};
+// BW multiplier lookup built from catalog
+const BW_MULTIPLIER_MAP = exerciseCatalog.reduce((acc, ex) => {
+  acc[ex.name] = ex.effectiveBodyweightMultiplier;
+  return acc;
+}, {} as Record<string, number>);
 
 // ============================================================================
 // MUSCLE NAME ALIASES (exercises.json -> hierarchy.json)
@@ -367,10 +348,11 @@ export const useInsightsData = () => {
         if (et === 'cardio' || et === 'duration') return;
 
         const muscleWeights = EXERCISE_MUSCLES[exercise.name];
+        const bwMult = BW_MULTIPLIER_MAP[exercise.name] ?? DEFAULT_BW_MULTIPLIER_BY_TYPE[et] ?? 0;
 
         exercise.sets.forEach((set: any) => {
           if (!isCompletedSet(set)) return;
-          const vol = computeSetVolume(set, et, userBodyWeight);
+          const vol = computeSetVolume(set, et, userBodyWeight, bwMult);
 
           // Push / Pull
           if (meta.push_pull === 'push') { balSets.push += 1; bal.pushVol += vol; }
@@ -491,10 +473,19 @@ export const useInsightsData = () => {
     const exerciseRangeE1RM: Record<string, Record<RepRange, number[]>> = {};
     const exerciseRangeSessions: Record<string, Record<RepRange, number>> = {};
     const exerciseWeeklyVolume: Record<string, number[]> = {};
+    // Track the most recent workout date each exercise was performed (ms timestamp)
+    const exerciseLastSeenMs: Record<string, number> = {};
+
+    // An exercise is considered "active" (still in routine) only if performed
+    // within the last PLATEAU_ACTIVE_WINDOW_DAYS days. Beyond that, a volume
+    // drop or E1RM stall is not a plateau — the exercise was simply removed.
+    const PLATEAU_ACTIVE_WINDOW_DAYS = 14;
+    const plateauActiveCutoffMs = nowMs - PLATEAU_ACTIVE_WINDOW_DAYS * DAY_MS;
 
     fourWeekWorkouts.forEach((workout) => {
       const wDate = new Date(workout.date);
-      const weekIdx = Math.floor((nowMs - wDate.getTime()) / WEEK_MS);
+      const wDateMs = wDate.getTime();
+      const weekIdx = Math.floor((nowMs - wDateMs) / WEEK_MS);
       if (weekIdx >= PLATEAU_WEEKS) return;
 
       workout.exercises.forEach((exercise: any) => {
@@ -510,6 +501,11 @@ export const useInsightsData = () => {
           };
           exerciseRangeSessions[exercise.name] = { strength: 0, hypertrophy: 0, endurance: 0 };
           exerciseWeeklyVolume[exercise.name] = Array(PLATEAU_WEEKS).fill(0);
+        }
+
+        // Update last-seen timestamp for this exercise
+        if ((exerciseLastSeenMs[exercise.name] ?? 0) < wDateMs) {
+          exerciseLastSeenMs[exercise.name] = wDateMs;
         }
 
         let sessionHasData = false;
@@ -546,6 +542,9 @@ export const useInsightsData = () => {
 
     // E1RM stall detection (per rep range)
     Object.entries(exerciseRangeE1RM).forEach(([exName, ranges]) => {
+      // Skip exercises that haven't been performed recently — they're out of routine,
+      // not plateauing. Only flag active exercises.
+      if ((exerciseLastSeenMs[exName] ?? 0) < plateauActiveCutoffMs) return;
       (['strength', 'hypertrophy', 'endurance'] as RepRange[]).forEach((range) => {
         const weekBest = ranges[range];
         const sessions = exerciseRangeSessions[exName]?.[range] ?? 0;
@@ -576,6 +575,10 @@ export const useInsightsData = () => {
 
     // Volume decline detection (per exercise, all rep ranges combined)
     Object.entries(exerciseWeeklyVolume).forEach(([exName, weekVols]) => {
+      // Skip exercises not performed recently — volume drop means it was removed
+      // from the routine, not that the user is declining on an active exercise.
+      if ((exerciseLastSeenMs[exName] ?? 0) < plateauActiveCutoffMs) return;
+
       const recentWeeks = weekVols.slice(0, 2).filter((v) => v > 0);
       const baselineWeeks = weekVols.slice(2, 4).filter((v) => v > 0);
       if (recentWeeks.length === 0 || baselineWeeks.length === 0) return;
@@ -645,7 +648,8 @@ export const useInsightsData = () => {
       if (!muscleWeights) return;
 
       const et = meta.exercise_type || 'weight';
-      const vol = computeSetVolume(set, et, userBodyWeight);
+      const bwMult = BW_MULTIPLIER_MAP[exercise.name] ?? DEFAULT_BW_MULTIPLIER_BY_TYPE[et] ?? 0;
+      const vol = computeSetVolume(set, et, userBodyWeight, bwMult);
 
       let wSum = 0;
       Object.entries(muscleWeights).forEach(([m, w]) => {

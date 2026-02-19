@@ -4,14 +4,23 @@
  */
 
 import type { SetLog, Workout } from '@/types/workout';
-import type { ExerciseType } from '@/types/exercise';
+import type { ExerciseType, EquipmentType } from '@/types/exercise';
 import { exercises as exerciseCatalog, getExerciseTypeByName } from '@/constants/exercises';
+import { createSmartSuggestionSets } from '@/utils/smartSuggestions';
+import type { PatternType } from '@/types/smartSuggestions';
 
 const DEFAULT_SET_COUNT = 3;
 
 export interface SetsWithHistoryResult {
     sets: SetLog[];
     historySetCount: number;
+}
+
+export interface SmartSetsResult extends SetsWithHistoryResult {
+    /** The originally suggested sets (for intra-session comparison). Empty if smart suggestions not used. */
+    smartSuggestedSets: SetLog[];
+    /** The detected pattern type, if smart suggestions were used. */
+    pattern?: PatternType;
 }
 
 /**
@@ -100,10 +109,10 @@ export const createSetsWithHistory = (
     const supportsGpsTracking = exercise?.supportsGpsTracking ?? false;
 
     // GPS-enabled exercises should never be pre-populated with history
-    // They always start fresh with the GPS tracker
+    // They always start fresh with the GPS tracker which creates sets on completion
     if (supportsGpsTracking) {
         return { 
-            sets: [{ duration: 0, distance: 0, completed: false }], 
+            sets: [], 
             historySetCount: 0 
         };
     }
@@ -174,4 +183,94 @@ export const createSetsWithHistory = (
     }
 
     return { sets: defaultSets, historySetCount: 0 };
+};
+
+/**
+ * Creates sets with smart suggestion support.
+ * When smartSuggestionsEnabled is true, attempts pattern-based suggestions first.
+ * Falls back to standard history-based prepopulation if smart analysis has
+ * insufficient data or the exercise type doesn't support it.
+ *
+ * @param exerciseName - The name of the exercise
+ * @param workouts - All historical workouts
+ * @param smartSuggestionsEnabled - Whether the user has smart suggestions toggled on
+ * @param currentWorkoutId - Optional ID to exclude current workout from history
+ * @param requestedSetCount - Optional number of sets to create
+ * @param customExercises - Optional custom exercise definitions
+ * @returns SmartSetsResult with sets, history count, and original suggestions
+ */
+export const createSetsWithSmartSuggestions = (
+    exerciseName: string,
+    workouts: Workout[],
+    smartSuggestionsEnabled: boolean,
+    currentWorkoutId?: string,
+    requestedSetCount?: number,
+    customExercises?: { name: string; exerciseType: ExerciseType }[],
+): SmartSetsResult => {
+    // Always run the standard logic first to get baseline sets and set count
+    const baseline = createSetsWithHistory(
+        exerciseName,
+        workouts,
+        currentWorkoutId,
+        requestedSetCount,
+        customExercises,
+    );
+
+    // If smart suggestions are off, return baseline with empty suggested sets
+    if (!smartSuggestionsEnabled) {
+        return {
+            ...baseline,
+            smartSuggestedSets: [],
+        };
+    }
+
+    // Smart suggestions only apply to weight-based exercises
+    const exerciseType: ExerciseType = getExerciseTypeByName(exerciseName, customExercises ?? []);
+    if (exerciseType !== 'weight') {
+        return {
+            ...baseline,
+            smartSuggestedSets: [],
+        };
+    }
+
+    // Look up exercise metadata for compound/equipment info
+    const catalogEntry = exerciseCatalog.find(e => e.name === exerciseName);
+    const isCompound = catalogEntry?.isCompound ?? false;
+    const equipment: EquipmentType[] = catalogEntry?.equipment ?? [];
+
+    // Get history sets for fallback data
+    const historicalWorkouts = currentWorkoutId
+        ? workouts.filter((w) => w.id !== currentWorkoutId)
+        : workouts;
+    const historySets = getLastCompletedSetsForExercise(exerciseName, historicalWorkouts);
+
+    // Determine target set count from baseline
+    const targetSetCount = baseline.sets.length || DEFAULT_SET_COUNT;
+
+    // Attempt smart suggestion
+    const smartResult = createSmartSuggestionSets(
+        exerciseName,
+        workouts,
+        isCompound,
+        equipment,
+        historySets,
+        targetSetCount,
+        currentWorkoutId,
+    );
+
+    // If smart engine returned fallback (insufficient data), use baseline
+    if (smartResult.pattern === 'fallback' || smartResult.sets.length === 0) {
+        return {
+            ...baseline,
+            smartSuggestedSets: [],
+        };
+    }
+
+    // Use smart-suggested sets, store originals for intra-session comparison
+    return {
+        sets: smartResult.sets,
+        historySetCount: smartResult.historySetCount,
+        smartSuggestedSets: smartResult.sets.map(s => ({ ...s })),
+        pattern: smartResult.pattern,
+    };
 };

@@ -14,6 +14,7 @@ import { spacing, typography, colors } from '@/constants/theme';
 import type { Workout } from '@/types/workout';
 import { formatDurationLabel, getWorkoutTotals, getWorkoutVolume } from '@/utils/workout';
 import { useSettingsStore } from '@/store/settingsStore';
+import { useUserProfileStore } from '@/store/userProfileStore';
 
 interface WorkoutDetailContentProps {
   workout: Workout;
@@ -30,7 +31,8 @@ export const WorkoutDetailContent: React.FC<WorkoutDetailContentProps> = ({ work
   const { formatWeight } = useSettingsStore();
   const durationLabel = useMemo(() => formatDurationLabel(workout.duration), [workout.duration]);
   const { completedSets } = useMemo(() => getWorkoutTotals(workout), [workout]);
-  const totalVolume = useMemo(() => getWorkoutVolume(workout), [workout]);
+  const userBodyWeight = useUserProfileStore((state) => state.profile?.weightLbs);
+  const totalVolume = useMemo(() => getWorkoutVolume(workout, userBodyWeight), [workout, userBodyWeight]);
   const volumeLabel = useMemo(() => {
     if (totalVolume === 0) return '—';
     return formatWeight(totalVolume);

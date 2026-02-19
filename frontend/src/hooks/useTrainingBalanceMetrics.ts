@@ -20,6 +20,8 @@ import { useUserProfileStore } from '@/store/userProfileStore';
 import type { PrimaryGoal } from '@/store/userProfileStore';
 import exercisesData from '@/data/exercises.json';
 import hierarchyData from '@/data/hierarchy.json';
+import { exercises as exerciseCatalog } from '@/constants/exercises';
+import { computeSetVolume as sharedComputeSetVolume, DEFAULT_BW_MULTIPLIER_BY_TYPE } from '@/utils/volumeCalculation';
 import type { TimeRange } from '@/types/analytics';
 import type { ExerciseType } from '@/types/exercise';
 
@@ -198,33 +200,13 @@ const buildLeafToL2 = (): Record<string, string> => {
 const LEAF_TO_L2 = buildLeafToL2();
 
 // ============================================================================
-// VOLUME HELPER
+// BW MULTIPLIER LOOKUP
 // ============================================================================
 
-const computeSetVolume = (
-  set: any,
-  exerciseType: ExerciseType,
-  userBodyWeight: number | undefined | null,
-): number => {
-  const reps = set.reps ?? 0;
-  if (reps <= 0) return 0;
-
-  switch (exerciseType) {
-    case 'bodyweight':
-      return userBodyWeight && userBodyWeight > 0 ? userBodyWeight * reps : 0;
-    case 'assisted': {
-      if (!userBodyWeight || userBodyWeight <= 0) return 0;
-      const effective = Math.max(0, userBodyWeight - (set.assistanceWeight ?? 0));
-      return effective > 0 ? effective * reps : 0;
-    }
-    case 'weight': {
-      const w = set.weight ?? 0;
-      return w > 0 ? w * reps : 0;
-    }
-    default:
-      return 0;
-  }
-};
+const BW_MULTIPLIER_MAP = exerciseCatalog.reduce((acc, ex) => {
+  acc[ex.name] = ex.effectiveBodyweightMultiplier;
+  return acc;
+}, {} as Record<string, number>);
 
 const isCompletedSet = (set: any): boolean => {
   if (!set?.completed) return false;
@@ -304,11 +286,12 @@ export const useTrainingBalanceMetrics = (timeRange: TimeRange): BalanceMetricsR
         if (et === 'cardio' || et === 'duration') return;
 
         const muscleWeights = EXERCISE_MUSCLES[exercise.name];
+        const bwMult = BW_MULTIPLIER_MAP[exercise.name] ?? DEFAULT_BW_MULTIPLIER_BY_TYPE[et] ?? 0;
 
         exercise.sets.forEach((set: any) => {
           if (!isCompletedSet(set)) return;
 
-          const vol = computeSetVolume(set, et, userBodyWeight);
+          const vol = sharedComputeSetVolume(set, et, userBodyWeight, bwMult);
           totalSets += 1;
           totalVolume += vol;
 

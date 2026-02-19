@@ -4,6 +4,7 @@
  */
 import React from 'react';
 import { Platform, StyleSheet, View, TouchableOpacity } from 'react-native';
+import { useRouter } from 'expo-router';
 import type { ColorValue } from 'react-native';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import Animated, {
@@ -22,6 +23,7 @@ import { useTheme } from '@/hooks/useTheme';
 import { springBouncy } from '@/constants/animations';
 import { TAB_META } from '@/constants/navigation';
 import { useSessionStore } from '@/store/sessionStore';
+import { useOutdoorSessionStore } from '@/store/outdoorSessionStore';
 import { useNavigationStore } from '@/store/navigationStore';
 import { triggerHaptic } from '@/utils/haptics';
 
@@ -100,8 +102,12 @@ const TabBarItem: React.FC<TabBarItemProps> = ({
 
 export const CustomTabBar: React.FC<BottomTabBarProps> = ({ state, navigation }) => {
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const { theme, isDarkMode } = useTheme();
   const isSessionActive = useSessionStore((store) => store.isSessionActive);
+  const outdoorSessionStatus = useOutdoorSessionStore((store) => store.status);
+  const isOutdoorSessionActive = outdoorSessionStatus === 'active' || outdoorSessionStatus === 'paused';
+  const outdoorExerciseName = useOutdoorSessionStore((store) => store.exerciseName);
   const workoutDetailSource = useNavigationStore((store) => store.workoutDetailSource);
 
   const TAB_SURFACE_COLOR = theme.surface.card;
@@ -123,8 +129,14 @@ export const CustomTabBar: React.FC<BottomTabBarProps> = ({ state, navigation })
   const isWorkoutSessionPage = isSessionActive && currentRouteName === 'workout';
   const fillBackgroundColor = isWorkoutSessionPage ? 'transparent' : theme.primary.bg;
 
-
   const focusTab = (routeKey: string, routeName: string) => {
+    // If tapping the workout tab while an outdoor session is active, go directly to the session screen
+    if (routeName === 'workout' && isOutdoorSessionActive) {
+      triggerHaptic('light');
+      router.push({ pathname: '/outdoor-session', params: { exercise: outdoorExerciseName ?? '' } });
+      return;
+    }
+
     const event = navigation.emit({
       type: 'tabPress',
       target: routeKey,
@@ -233,7 +245,7 @@ export const CustomTabBar: React.FC<BottomTabBarProps> = ({ state, navigation })
                     || (isWorkoutDetailScreen && workoutDetailSource === 'dashboard' && route.name === 'index')
                     || (isWorkoutDetailScreen && workoutDetailSource === 'calendar' && route.name === 'calendar');
                   const isWorkoutRoute = route.name === 'workout';
-                  const showActiveSessionGlow = isWorkoutRoute && isSessionActive;
+                  const showActiveSessionGlow = isWorkoutRoute && (isSessionActive || isOutdoorSessionActive);
 
                   return (
                     <TabBarItem

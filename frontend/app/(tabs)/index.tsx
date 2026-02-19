@@ -31,14 +31,16 @@ import { WEEKDAY_LABELS } from '@/constants/schedule';
 import type { ScheduleDayKey } from '@/types/schedule';
 import { triggerHaptic } from '@/utils/haptics';
 import { useWorkoutSessionsStore, type WorkoutSessionsState } from '@/store/workoutSessionsStore';
-import type { Workout, WorkoutExercise } from '@/types/workout';
+import type { Workout, WorkoutExercise, SetLog } from '@/types/workout';
 import { useSessionStore } from '@/store/sessionStore';
 import { useUserProfileStore } from '@/store/userProfileStore';
 import { WorkoutInProgressModal } from '@/components/molecules/WorkoutInProgressModal';
 import type { ProgramWorkout } from '@/types/premadePlan';
-import { createSetsWithHistory } from '@/utils/workout';
+import { createSetsWithSmartSuggestions } from '@/utils/workout';
+import { useSettingsStore } from '@/store/settingsStore';
 import { useActiveScheduleStore, computeTodaysWorkout } from '@/store/activeScheduleStore';
 import { useCustomExerciseStore } from '@/store/customExerciseStore';
+import { useOutdoorSessionStore } from '@/store/outdoorSessionStore';
 import { formatDateToLocalISO } from '@/utils/date';
 
 
@@ -489,11 +491,16 @@ const DashboardScreen: React.FC = () => {
   const activeScheduleState = useActiveScheduleStore((state) => state.state);
   const activeScheduleRule = activeScheduleState.activeRule;
   const activeScheduleResult = useMemo(() => computeTodaysWorkout(activeScheduleState), [activeScheduleState]);
+  const smartSuggestionsEnabled = useSettingsStore((state) => state.smartSuggestionsEnabled);
   const startSession = useSessionStore((state) => state.startSession);
   const setCompletionOverlayVisible = useSessionStore((state) => state.setCompletionOverlayVisible);
   const isSessionActive = useSessionStore((state) => state.isSessionActive);
   const currentSession = useSessionStore((state) => state.currentSession);
   const customExercises = useCustomExerciseStore((state) => state.customExercises);
+  const outdoorSessionStatus = useOutdoorSessionStore((state) => state.status);
+  const outdoorExerciseName = useOutdoorSessionStore((state) => state.exerciseName);
+  const outdoorElapsedSeconds = useOutdoorSessionStore((state) => state.elapsedSeconds);
+  const isOutdoorSessionActive = outdoorSessionStatus === 'active' || outdoorSessionStatus === 'paused';
 
   // Helper function to get workout name from ID
   const getWorkoutName = (workoutId: string | null): string => {
@@ -573,10 +580,20 @@ const DashboardScreen: React.FC = () => {
     | { variant: 'standaloneRotation'; dayLabel: string; plan: Plan; dayNumber: number }
     | { variant: 'completed'; workout: Workout }
     | { variant: 'ongoing'; sessionName: string | null; exerciseCount: number; elapsedMinutes: number }
-    | { variant: 'activeSchedule'; dayLabel: string; workoutId: string | null; context?: string };
+    | { variant: 'activeSchedule'; dayLabel: string; workoutId: string | null; context?: string }
+    | { variant: 'outdoorOngoing'; exerciseName: string; elapsedSeconds: number };
 
   const todaysCardState: TodaysCardState = useMemo((): TodaysCardState => {
-    // PRIORITY 1: Check for ongoing workout session (highest priority)
+    // PRIORITY 0: Check for ongoing outdoor session (highest priority)
+    if (isOutdoorSessionActive && outdoorExerciseName) {
+      return {
+        variant: 'outdoorOngoing',
+        exerciseName: outdoorExerciseName,
+        elapsedSeconds: outdoorElapsedSeconds,
+      };
+    }
+
+    // PRIORITY 1: Check for ongoing workout session
     if (isSessionActive && currentSession) {
       const elapsedMs = Date.now() - currentSession.startTime;
       const elapsedMinutes = Math.floor(elapsedMs / 60000);
@@ -637,7 +654,7 @@ const DashboardScreen: React.FC = () => {
     }
 
     return { variant: 'noSchedule' };
-  }, [plans.length, userPrograms, workouts, isSessionActive, currentSession, activeScheduleRule, activeScheduleResult, getWorkoutName, getExerciseCount, todayLabel]);
+  }, [plans.length, userPrograms, workouts, isSessionActive, currentSession, activeScheduleRule, activeScheduleResult, getWorkoutName, getExerciseCount, todayLabel, isOutdoorSessionActive, outdoorExerciseName, outdoorElapsedSeconds]);
 
   const todaysPlan = todaysCardState.variant === 'plan'
     ? todaysCardState.plan
@@ -652,6 +669,11 @@ const DashboardScreen: React.FC = () => {
     }
 
     triggerHaptic('selection');
+
+    if (todaysCardState.variant === 'outdoorOngoing') {
+      router.push({ pathname: '/outdoor-session', params: { exercise: todaysCardState.exerciseName } });
+      return;
+    }
 
     if (todaysCardState.variant === 'ongoing') {
       router.push('/(tabs)/workout');
@@ -676,6 +698,11 @@ const DashboardScreen: React.FC = () => {
       return;
     }
 
+    if (isOutdoorSessionActive) {
+      router.push({ pathname: '/outdoor-session', params: { exercise: outdoorExerciseName ?? '' } });
+      return;
+    }
+
     triggerHaptic('selection');
 
     const doStartSession = () => {
@@ -685,12 +712,16 @@ const DashboardScreen: React.FC = () => {
       if (!target) return;
 
       const historySetCounts: Record<string, number> = {};
+      const suggestedSetsMap: Record<string, SetLog[]> = {};
       const workoutExercises: WorkoutExercise[] = target.exercises.map((exercise) => {
-        const { sets, historySetCount } = createSetsWithHistory(exercise.name, workouts, undefined, undefined, customExercises);
-        historySetCounts[exercise.name] = historySetCount;
+        const result = createSetsWithSmartSuggestions(exercise.name, workouts, smartSuggestionsEnabled, undefined, undefined, customExercises);
+        historySetCounts[exercise.name] = result.historySetCount;
+        if (result.smartSuggestedSets.length > 0) {
+          suggestedSetsMap[exercise.name] = result.smartSuggestedSets;
+        }
         return {
           name: exercise.name,
-          sets,
+          sets: result.sets,
         };
       });
 
@@ -703,7 +734,7 @@ const DashboardScreen: React.FC = () => {
           ? `${todaysCardState.dayLabel}: ${todaysPlan?.name ?? 'Workout'}`
           : (todaysPlan?.name ?? null);
 
-      startSession(planId, workoutExercises, sessionName, historySetCounts);
+      startSession(planId, workoutExercises, sessionName, historySetCounts, suggestedSetsMap);
       router.push('/(tabs)/workout');
     };
 
@@ -713,7 +744,7 @@ const DashboardScreen: React.FC = () => {
     }
 
     doStartSession();
-  }, [todaysPlan, rotationWorkout, startSession, router, setCompletionOverlayVisible, todaysCardState, workouts, isSessionActive, currentSession]);
+  }, [todaysPlan, rotationWorkout, startSession, router, setCompletionOverlayVisible, todaysCardState, workouts, isSessionActive, currentSession, isOutdoorSessionActive, outdoorExerciseName]);
 
   const recentWorkouts = useMemo<Workout[]>(() => {
     if (workouts.length === 0) {
@@ -883,7 +914,43 @@ const DashboardScreen: React.FC = () => {
                     </Text>
                   </View>
                   <View style={styles.todaysPlanBody}>
-                      {todaysCardState.variant === 'ongoing' ? (
+                      {todaysCardState.variant === 'outdoorOngoing' ? (
+                        <SurfaceCard
+                          tone="neutral"
+                          padding="lg"
+                          showAccentStripe={false}
+                          style={styles.inlineCard}
+                        >
+                          <View style={styles.quickLinkRow}>
+                            <View style={styles.quickLinkInfo}>
+                              <Text variant="bodySemibold" color="primary">
+                                {todaysCardState.exerciseName}
+                              </Text>
+                              <Text variant="body" color="secondary">
+                                Outdoor session in progress · {formatElapsedForSubcard(Math.floor(todaysCardState.elapsedSeconds / 60))} elapsed
+                              </Text>
+                            </View>
+                            <Pressable
+                              style={styles.planStartButton}
+                              onPress={handleTodaysCardPress}
+                              accessibilityRole="button"
+                              accessibilityLabel="Return to outdoor session"
+                            >
+                              <View style={styles.quickLinkButton}>
+                                <LinearGradient
+                                  colors={[theme.accent.gradientStart, theme.accent.gradientEnd]}
+                                  start={{ x: 0, y: 0 }}
+                                  end={{ x: 1, y: 1 }}
+                                  style={styles.planStartButtonGradient}
+                                />
+                                <Text variant="bodySemibold" color="onAccent">
+                                  →
+                                </Text>
+                              </View>
+                            </Pressable>
+                          </View>
+                        </SurfaceCard>
+                      ) : todaysCardState.variant === 'ongoing' ? (
                         <SurfaceCard
                           tone="neutral"
                           padding="lg"
@@ -939,6 +1006,12 @@ const DashboardScreen: React.FC = () => {
                               <Pressable
                                 style={styles.planStartButton}
                                 onPress={() => {
+                                  if (isOutdoorSessionActive) {
+                                    triggerHaptic('selection');
+                                    router.push({ pathname: '/outdoor-session', params: { exercise: outdoorExerciseName ?? '' } });
+                                    return;
+                                  }
+
                                   triggerHaptic('selection');
 
                                   // Find the workout from either plans or user programs
@@ -965,16 +1038,20 @@ const DashboardScreen: React.FC = () => {
 
                                   if (targetWorkout) {
                                     const historySetCounts: Record<string, number> = {};
+                                    const suggestedSetsMap2: Record<string, SetLog[]> = {};
                                     const workoutExercises: WorkoutExercise[] = targetWorkout.exercises.map((exercise) => {
-                                      const { sets, historySetCount } = createSetsWithHistory(exercise.name, workouts, undefined, undefined, customExercises);
-                                      historySetCounts[exercise.name] = historySetCount;
+                                      const result = createSetsWithSmartSuggestions(exercise.name, workouts, smartSuggestionsEnabled, undefined, undefined, customExercises);
+                                      historySetCounts[exercise.name] = result.historySetCount;
+                                      if (result.smartSuggestedSets.length > 0) {
+                                        suggestedSetsMap2[exercise.name] = result.smartSuggestedSets;
+                                      }
                                       return {
                                         name: exercise.name,
-                                        sets,
+                                        sets: result.sets,
                                       };
                                     });
 
-                                    startSession(planId, workoutExercises, sessionName, historySetCounts);
+                                    startSession(planId, workoutExercises, sessionName, historySetCounts, suggestedSetsMap2);
                                   }
 
                                   router.push('/(tabs)/workout');

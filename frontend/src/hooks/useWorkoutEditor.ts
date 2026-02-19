@@ -93,7 +93,7 @@ export const useWorkoutEditor = (workoutId?: string): WorkoutEditorHook => {
   // Merge base catalog with custom exercises
   const allExercises = useMemo<ExerciseCatalogItem[]>(() => {
     const customCatalogItems = customExercises.map((ce) =>
-      createCustomExerciseCatalogItem(ce.id, ce.name, ce.exerciseType)
+      createCustomExerciseCatalogItem(ce.id, ce.name, ce.exerciseType, ce.supportsGpsTracking)
     );
     return [...baseExerciseCatalog, ...customCatalogItems];
   }, [customExercises]);

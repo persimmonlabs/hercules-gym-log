@@ -471,14 +471,12 @@ const AddExercisesScreen: React.FC = () => {
         visible={isCreateExerciseModalVisible}
         onClose={() => setIsCreateExerciseModalVisible(false)}
         onExerciseCreated={(exerciseName, exerciseType) => {
-          // Create a catalog item for the new exercise and select it
-          // Find the actual exercise from the store (it will have the real ID)
-          const actualExercise = customExercises.find(e => e.name === exerciseName);
-          if (actualExercise) {
+          // Read latest custom exercises directly from store (memo may be stale)
+          const latestCustom = useCustomExerciseStore.getState().customExercises;
+          const created = latestCustom.find(e => e.name === exerciseName);
+          if (created) {
             const catalogItem = createCustomExerciseCatalogItem(
-              actualExercise.id,
-              actualExercise.name,
-              actualExercise.exerciseType
+              created.id, created.name, created.exerciseType, created.supportsGpsTracking
             );
             setSelectedMap((prev) => ({
               ...prev,

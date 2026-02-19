@@ -27,6 +27,7 @@ export interface CustomExercise {
   id: string;
   name: string;
   exerciseType: ExerciseType;
+  supportsGpsTracking: boolean;
   isCustom: true;
   createdAt: number;
 }
@@ -34,7 +35,7 @@ export interface CustomExercise {
 export interface CustomExerciseState {
   customExercises: CustomExercise[];
   isLoading: boolean;
-  addCustomExercise: (input: { name: string; exerciseType: ExerciseType }) => Promise<CustomExercise | null>;
+  addCustomExercise: (input: { name: string; exerciseType: ExerciseType; supportsGpsTracking?: boolean }) => Promise<CustomExercise | null>;
   removeCustomExercise: (id: string) => Promise<void>;
   hydrateCustomExercises: (userId?: string) => Promise<void>;
   getCustomExerciseByName: (name: string) => CustomExercise | undefined;
@@ -44,7 +45,7 @@ export const useCustomExerciseStore = create<CustomExerciseState>((set, get) => 
   customExercises: [],
   isLoading: false,
 
-  addCustomExercise: async ({ name, exerciseType }) => {
+  addCustomExercise: async ({ name, exerciseType, supportsGpsTracking = false }) => {
     const trimmedName = name.trim();
     if (!trimmedName) return null;
 
@@ -71,12 +72,14 @@ export const useCustomExerciseStore = create<CustomExerciseState>((set, get) => 
       const newId = await createCustomExercise(user.id, {
         name: trimmedName,
         exerciseType,
+        supportsGpsTracking,
       });
 
       const customExercise: CustomExercise = {
         id: newId,
         name: trimmedName,
         exerciseType,
+        supportsGpsTracking,
         isCustom: true,
         createdAt: Date.now(),
       };
@@ -136,6 +139,7 @@ export const useCustomExerciseStore = create<CustomExerciseState>((set, get) => 
         id: item.id,
         name: item.name,
         exerciseType: item.exercise_type as ExerciseType,
+        supportsGpsTracking: item.supports_gps_tracking ?? false,
         isCustom: true,
         createdAt: new Date(item.created_at).getTime(),
       }));

@@ -32,11 +32,13 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Text } from '@/components/atoms/Text';
 import { Button } from '@/components/atoms/Button';
 import { IconSymbol } from '@/components/ui/icon-symbol';
+import { CreateExerciseModal } from '@/components/molecules/CreateExerciseModal';
 import { triggerHaptic } from '@/utils/haptics';
 import { colors, radius, spacing, typography, sizing, shadows } from '@/constants/theme';
 import { springGentle } from '@/constants/animations';
 import { useSemanticExerciseSearch } from '@/hooks/useSemanticExerciseSearch';
-import { exercises as exerciseCatalog, type Exercise } from '@/constants/exercises';
+import { exercises as baseExerciseCatalog, createCustomExerciseCatalogItem, type Exercise } from '@/constants/exercises';
+import { useCustomExerciseStore } from '@/store/customExerciseStore';
 import { getExerciseDisplayTags } from '@/utils/exerciseDisplayTags';
 
 const SCREEN_HEIGHT = Dimensions.get('window').height;
@@ -73,9 +75,19 @@ export const ExerciseSearchModal: React.FC<ExerciseSearchModalProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedMap, setSelectedMap] = useState<Map<string, Exercise>>(new Map());
   const [isModalVisible, setIsModalVisible] = useState(visible);
+  const [isCreateModalVisible, setIsCreateModalVisible] = useState(false);
   
   // Animation values
   const sheetTranslateY = useSharedValue(SCREEN_HEIGHT);
+
+  // Merge custom exercises into catalog
+  const customExercises = useCustomExerciseStore((state) => state.customExercises);
+  const exerciseCatalog = useMemo(() => {
+    const customCatalogItems = customExercises.map((ce) =>
+      createCustomExerciseCatalogItem(ce.id, ce.name, ce.exerciseType, ce.supportsGpsTracking)
+    );
+    return [...baseExerciseCatalog, ...customCatalogItems];
+  }, [customExercises]);
 
   // Get suggestions based on search term — cap at 50 for performance, still plenty of results
   const suggestions = useSemanticExerciseSearch(searchTerm, exerciseCatalog, {
@@ -91,7 +103,7 @@ export const ExerciseSearchModal: React.FC<ExerciseSearchModalProps> = ({
       .filter(ex => !excluded.has(ex.id))
       .sort((a, b) => a.name.localeCompare(b.name))
       .slice(0, 50);
-  }, [excludeIds, searchTerm]);
+  }, [excludeIds, searchTerm, exerciseCatalog]);
 
   // Sort selected exercises to top
   const displayExercises = useMemo(() => {
@@ -200,6 +212,28 @@ export const ExerciseSearchModal: React.FC<ExerciseSearchModalProps> = ({
   const handleClearSearch = useCallback(() => {
     setSearchTerm('');
     inputRef.current?.focus();
+  }, []);
+
+  const handleOpenCreateModal = useCallback(() => {
+    triggerHaptic('selection');
+    setIsCreateModalVisible(true);
+  }, []);
+
+  const handleExerciseCreated = useCallback((exerciseName: string) => {
+    // Find the newly created exercise from the store and auto-select it
+    const latest = useCustomExerciseStore.getState().customExercises;
+    const created = latest.find(e => e.name === exerciseName);
+    if (created) {
+      const catalogItem = createCustomExerciseCatalogItem(
+        created.id, created.name, created.exerciseType, created.supportsGpsTracking
+      );
+      setSelectedMap(prev => {
+        const next = new Map(prev);
+        next.set(catalogItem.id, catalogItem);
+        return next;
+      });
+    }
+    setIsCreateModalVisible(false);
   }, []);
 
   const handleClose = useCallback(() => {
@@ -317,6 +351,9 @@ export const ExerciseSearchModal: React.FC<ExerciseSearchModalProps> = ({
                     onToggle={handleToggleExercise}
                   />
                 )}
+                ListFooterComponent={
+                  <CreateExerciseRow onPress={handleOpenCreateModal} />
+                }
                 style={styles.scrollView}
                 contentContainerStyle={[
                   styles.scrollContent,
@@ -335,9 +372,18 @@ export const ExerciseSearchModal: React.FC<ExerciseSearchModalProps> = ({
                 <Text variant="body" color="secondary">
                   No exercises found for &quot;{searchTerm}&quot;
                 </Text>
-                <Text variant="caption" color="tertiary">
-                  Try a different search term
+                <Text variant="caption" color="tertiary" style={styles.emptyStateHint}>
+                  Try a different search term or create a custom exercise
                 </Text>
+                <Pressable
+                  onPress={handleOpenCreateModal}
+                  style={styles.emptyStateCreateButton}
+                >
+                  <IconSymbol name="add" size={sizing.iconSM} color={colors.accent.orange} />
+                  <Text variant="bodySemibold" style={{ color: colors.accent.orange }}>
+                    Create "{searchTerm.trim()}"
+                  </Text>
+                </Pressable>
               </View>
             )}
 
@@ -359,6 +405,11 @@ export const ExerciseSearchModal: React.FC<ExerciseSearchModalProps> = ({
           </Animated.View>
         </View>
       </GestureHandlerRootView>
+      <CreateExerciseModal
+        visible={isCreateModalVisible}
+        onClose={() => setIsCreateModalVisible(false)}
+        onExerciseCreated={handleExerciseCreated}
+      />
     </Modal>
   );
 };
@@ -412,6 +463,20 @@ const ExerciseRow: React.FC<ExerciseRowProps> = React.memo(({
     </Pressable>
   );
 });
+
+// Create Exercise Footer Row
+interface CreateExerciseRowProps {
+  onPress: () => void;
+}
+
+const CreateExerciseRow: React.FC<CreateExerciseRowProps> = React.memo(({ onPress }) => (
+  <Pressable onPress={onPress} style={styles.createExerciseFooter}>
+    <IconSymbol name="add" size={sizing.iconSM} color={colors.accent.orange} />
+    <Text variant="bodySemibold" style={{ color: colors.accent.orange }}>
+      Create Custom Exercise
+    </Text>
+  </Pressable>
+));
 
 const styles = StyleSheet.create({
   gestureRoot: {
@@ -549,6 +614,31 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingVertical: spacing['2xl'],
     gap: spacing.sm,
+  },
+  emptyStateHint: {
+    marginBottom: spacing.sm,
+  },
+  emptyStateCreateButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.lg,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.accent.orange,
+    borderStyle: 'dashed',
+    backgroundColor: colors.accent.orangeMuted,
+  },
+  createExerciseFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingVertical: spacing.md,
+    marginTop: spacing.sm,
+    marginBottom: spacing.xl,
+    borderTopWidth: 1,
+    borderTopColor: colors.border.light,
   },
   bottomAction: {
     paddingHorizontal: spacing.lg,

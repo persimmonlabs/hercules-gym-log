@@ -52,7 +52,7 @@ const ProfileModal: React.FC = () => {
   const [isFeedbackModalVisible, setIsFeedbackModalVisible] = useState(false);
   const [isDeleteAccountModalVisible, setIsDeleteAccountModalVisible] = useState(false);
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
-  const { weightUnit, distanceUnit, sizeUnit, formatWeight, hapticsEnabled, setHapticsEnabled, themePreference, setThemePreference } = useSettingsStore();
+  const { weightUnit, distanceUnit, sizeUnit, formatWeight, hapticsEnabled, setHapticsEnabled, smartSuggestionsEnabled, setSmartSuggestionsEnabled, themePreference, setThemePreference } = useSettingsStore();
   const { notificationsEnabled, configs } = useNotificationStore();
   const { isPremium, isLoading: isPremiumLoading } = usePremiumStatus();
   const { premiumOverride, setPremiumOverride } = useDevToolsStore();
@@ -393,6 +393,16 @@ const ProfileModal: React.FC = () => {
               onPress={() => {
                 triggerHaptic('selection');
                 setIsUnitsModalVisible(true);
+              }}
+              showDivider
+            />
+            <ToggleSettingsItem
+              title="Smart Set Suggestions"
+              subtitle="Suggests weights and reps based on your training patterns"
+              value={smartSuggestionsEnabled}
+              onValueChange={(val) => {
+                setSmartSuggestionsEnabled(val);
+                triggerHaptic('selection');
               }}
               showDivider
             />

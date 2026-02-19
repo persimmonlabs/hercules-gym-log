@@ -6,9 +6,10 @@
 import type { Workout, SetLog } from '@/types/workout';
 import type { ExerciseType } from '@/types/exercise';
 import { exercises as exerciseCatalog } from '@/constants/exercises';
-import { createSetsWithHistory, SetsWithHistoryResult } from '@/utils/exerciseHistory';
+import { computeSetVolume, DEFAULT_BW_MULTIPLIER_BY_TYPE } from '@/utils/volumeCalculation';
+import { createSetsWithHistory, createSetsWithSmartSuggestions, SetsWithHistoryResult, SmartSetsResult } from '@/utils/exerciseHistory';
 
-export { createSetsWithHistory, SetsWithHistoryResult };
+export { createSetsWithHistory, createSetsWithSmartSuggestions, SetsWithHistoryResult, SmartSetsResult };
 
 const DEFAULT_SET_COUNT = 3;
 
@@ -144,31 +145,35 @@ export const getWorkoutTotals = (
 };
 
 /**
- * Calculates total volume for weight exercises in a workout.
- * Volume is calculated as weight × reps for each completed set of weight exercises.
+ * Calculates total volume for a workout using BW-adjusted formula.
+ * Volume = (userBodyWeight × effectiveBodyweightMultiplier + addedWeight) × reps
+ * for each completed set of weight, bodyweight, and assisted exercises.
  */
-export const getWorkoutVolume = (workout: Workout | null): number => {
+export const getWorkoutVolume = (
+  workout: Workout | null,
+  userBodyWeight?: number | null,
+): number => {
   if (!workout) {
     return 0;
   }
 
   return workout.exercises.reduce((totalVolume, exercise) => {
-    // Look up exercise type from catalog
     const catalogEntry = exerciseCatalog.find(e => e.name === exercise.name);
     const exerciseType: ExerciseType = catalogEntry?.exerciseType || 'weight';
 
-    // Only calculate volume for weight exercises
-    if (exerciseType !== 'weight') {
+    // Skip cardio, duration, and reps_only exercises
+    if (exerciseType === 'cardio' || exerciseType === 'duration' || exerciseType === 'reps_only') {
       return totalVolume;
     }
 
-    // Calculate volume for completed sets only
+    const bwMult = catalogEntry?.effectiveBodyweightMultiplier
+      ?? DEFAULT_BW_MULTIPLIER_BY_TYPE[exerciseType]
+      ?? 0;
+
     const exerciseVolume = exercise.sets
       .filter(set => set.completed)
       .reduce((exerciseTotal, set) => {
-        const weight = set.weight ?? 0;
-        const reps = set.reps ?? 0;
-        return exerciseTotal + (weight * reps);
+        return exerciseTotal + computeSetVolume(set, exerciseType, userBodyWeight, bwMult);
       }, 0);
 
     return totalVolume + exerciseVolume;

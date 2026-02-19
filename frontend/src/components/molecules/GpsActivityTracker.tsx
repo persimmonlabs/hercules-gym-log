@@ -3,8 +3,8 @@
  * GPS-based activity tracker for outdoor cardio exercises.
  * Shows Start button initially, then live timer/distance with Pause/Stop controls.
  */
-import React, { useCallback } from 'react';
-import { StyleSheet, View } from 'react-native';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { StyleSheet, View, Pressable } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -17,13 +17,14 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Text } from '@/components/atoms/Text';
 import { radius, spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/useTheme';
-import { useGpsTracking } from '@/hooks/useGpsTracking';
+import { useGpsTrackingLegacy as useGpsTracking } from '@/hooks/useGpsTrackingLegacy';
 import { springBouncy } from '@/constants/animations';
 import { useSettingsStore } from '@/store/settingsStore';
 
 interface GpsActivityTrackerProps {
   onComplete: (durationSeconds: number, distanceMiles: number) => void;
   distanceUnit?: 'miles' | 'meters' | 'floors';
+  setNumber?: number;
 }
 
 const formatTime = (seconds: number): string => {
@@ -37,11 +38,23 @@ const formatTime = (seconds: number): string => {
   return `${mins}:${secs.toString().padStart(2, '0')}`;
 };
 
+const formatPace = (paceMinutesPerMile: number, distanceUnit: 'mi' | 'km'): string => {
+  if (paceMinutesPerMile === 0 || !isFinite(paceMinutesPerMile)) {
+    return '--:--';
+  }
+
+  const pacePerUnit = distanceUnit === 'km' ? paceMinutesPerMile * 1.60934 : paceMinutesPerMile;
+  const mins = Math.floor(pacePerUnit);
+  const secs = Math.floor((pacePerUnit - mins) * 60);
+
+  return `${mins}:${secs.toString().padStart(2, '0')}`;
+};
+
 interface ActionButtonProps {
   iconName: keyof typeof MaterialCommunityIcons.glyphMap;
   label: string;
   onPress: () => void;
-  variant: 'start' | 'pause' | 'resume' | 'stop';
+  variant: 'start' | 'pause' | 'resume' | 'stop' | 'done';
 }
 
 const ActionButton: React.FC<ActionButtonProps> = ({ iconName, label, onPress, variant }) => {
@@ -89,6 +102,11 @@ const ActionButton: React.FC<ActionButtonProps> = ({ iconName, label, onPress, v
           borderWidth: 2,
           borderColor: '#FF0000',
         };
+      case 'done':
+        return { 
+          backgroundColor: theme.accent.orange,
+          borderWidth: 0,
+        };
       default:
         return { 
           backgroundColor: theme.accent.orange,
@@ -103,6 +121,8 @@ const ActionButton: React.FC<ActionButtonProps> = ({ iconName, label, onPress, v
         return theme.accent.orange;
       case 'stop':
         return '#FF0000';
+      case 'done':
+        return '#FFFFFF';
       default:
         return '#FFFFFF';
     }
@@ -114,6 +134,8 @@ const ActionButton: React.FC<ActionButtonProps> = ({ iconName, label, onPress, v
         return theme.accent.orange;
       case 'stop':
         return '#FF0000';
+      case 'done':
+        return '#FFFFFF';
       default:
         return '#FFFFFF';
     }
@@ -145,7 +167,7 @@ const ActionButton: React.FC<ActionButtonProps> = ({ iconName, label, onPress, v
   );
 };
 
-export const GpsActivityTracker: React.FC<GpsActivityTrackerProps> = ({ onComplete }) => {
+export const GpsActivityTracker: React.FC<GpsActivityTrackerProps> = ({ onComplete, setNumber = 1 }) => {
   const { theme } = useTheme();
   // Subscribe to distanceUnit to trigger re-renders when units change
   useSettingsStore((state) => state.distanceUnit);
@@ -154,20 +176,61 @@ export const GpsActivityTracker: React.FC<GpsActivityTrackerProps> = ({ onComple
     state,
     elapsedSeconds,
     distanceMiles,
+    currentPace,
     permissionDenied,
     start,
     pause,
     resume,
     stop,
+    reset,
   } = useGpsTracking();
 
+  // After stopping, briefly show a "Resume" option before finalizing
+  const [justStopped, setJustStopped] = useState(false);
+  const resumeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const stoppedDataRef = useRef<{ elapsed: number; distance: number }>({ elapsed: 0, distance: 0 });
+
   const handleStop = useCallback(() => {
+    // Capture data before stopping
+    stoppedDataRef.current = { elapsed: elapsedSeconds, distance: distanceMiles };
     stop();
-    onComplete(elapsedSeconds, distanceMiles);
-  }, [stop, onComplete, elapsedSeconds, distanceMiles]);
+    setJustStopped(true);
+  }, [stop, elapsedSeconds, distanceMiles]);
+
+  // Auto-finalize after 5 seconds if user doesn't resume
+  useEffect(() => {
+    if (justStopped) {
+      resumeTimerRef.current = setTimeout(() => {
+        const { elapsed, distance } = stoppedDataRef.current;
+        onComplete(elapsed, distance);
+        reset();
+        setJustStopped(false);
+      }, 5000);
+    }
+    return () => {
+      if (resumeTimerRef.current) clearTimeout(resumeTimerRef.current);
+    };
+  }, [justStopped, onComplete, reset]);
+
+  const handleResume = useCallback(() => {
+    if (resumeTimerRef.current) clearTimeout(resumeTimerRef.current);
+    setJustStopped(false);
+    resume();
+  }, [resume]);
+
+  const handleConfirmStop = useCallback(() => {
+    if (resumeTimerRef.current) clearTimeout(resumeTimerRef.current);
+    const { elapsed, distance } = stoppedDataRef.current;
+    onComplete(elapsed, distance);
+    reset();
+    setJustStopped(false);
+  }, [onComplete, reset]);
 
   const displayDistance = convertDistance(distanceMiles);
   const unitLabel = getDistanceUnitShort();
+  const distanceUnit = useSettingsStore((state) => state.distanceUnit);
+  const displayPace = formatPace(currentPace, distanceUnit);
+  const paceUnit = distanceUnit === 'km' ? '/km' : '/mi';
 
   if (permissionDenied) {
     return (
@@ -188,42 +251,74 @@ export const GpsActivityTracker: React.FC<GpsActivityTrackerProps> = ({ onComple
 
   if (state === 'idle') {
     return (
-      <View style={[styles.container, { backgroundColor: theme.surface.elevated }]}>
-        <ActionButton
-          iconName="play"
-          label="Start Activity"
-          onPress={start}
-          variant="start"
-        />
-      </View>
+      <Pressable
+        style={styles.startButton}
+        onPress={start}
+        accessibilityRole="button"
+        accessibilityLabel="Start Activity"
+      >
+        <Text style={styles.startButtonText}>Start Activity</Text>
+      </Pressable>
     );
   }
 
-  if (state === 'stopped') {
+  // "Just stopped" state: show metrics with Resume / Done buttons
+  if (justStopped && state === 'stopped') {
+    const stoppedDistance = convertDistance(stoppedDataRef.current.distance);
+    const stoppedElapsed = stoppedDataRef.current.elapsed;
+    const stoppedPaceRaw = stoppedDataRef.current.distance > 0 && stoppedElapsed > 0
+      ? (stoppedElapsed / 3600) / stoppedDataRef.current.distance * 60
+      : 0;
+    const stoppedPace = formatPace(stoppedPaceRaw, distanceUnit);
+
     return (
       <Animated.View
         entering={FadeIn.duration(200)}
         style={[styles.container, { backgroundColor: theme.surface.elevated }]}
       >
-        <View style={styles.completedContainer}>
-          <MaterialCommunityIcons
-            name="check-circle"
-            size={28}
-            color={theme.accent.success}
-          />
-          <View style={styles.completedStats}>
-            <View style={styles.statItem}>
-              <Text variant="label" color="tertiary">Time</Text>
-              <Text variant="heading3" color="primary">{formatTime(elapsedSeconds)}</Text>
-            </View>
-            <View style={styles.statDivider} />
-            <View style={styles.statItem}>
-              <Text variant="label" color="tertiary">Distance</Text>
-              <Text variant="heading3" color="primary">
-                {displayDistance.toFixed(2)} {unitLabel}
-              </Text>
-            </View>
+        <View style={styles.setIndicator}>
+          <Text style={[styles.setIndicatorText, { color: theme.accent.orange }]}>
+            Set {setNumber}
+          </Text>
+          <View style={[styles.setIndicatorLine, { backgroundColor: theme.accent.orange }]} />
+        </View>
+
+        <View style={styles.liveStats}>
+          <View style={styles.statRow}>
+            <Text variant="label" color="tertiary" style={styles.statLabel}>Time</Text>
+            <Text style={[styles.liveValue, { color: theme.text.primary }]}>
+              {formatTime(stoppedElapsed)}
+            </Text>
           </View>
+          <View style={[styles.statDivider, { backgroundColor: theme.border.light }]} />
+          <View style={styles.statRow}>
+            <Text variant="label" color="tertiary" style={styles.statLabel}>Distance</Text>
+            <Text style={[styles.liveValue, { color: theme.text.primary }]}>
+              {stoppedDistance.toFixed(2)} {unitLabel}
+            </Text>
+          </View>
+          <View style={[styles.statDivider, { backgroundColor: theme.border.light }]} />
+          <View style={styles.statRow}>
+            <Text variant="label" color="tertiary" style={styles.statLabel}>Avg Pace</Text>
+            <Text style={[styles.liveValue, { color: theme.text.primary }]}>
+              {stoppedPace} <Text variant="label" color="tertiary">{paceUnit}</Text>
+            </Text>
+          </View>
+        </View>
+
+        <View style={styles.controls}>
+          <ActionButton
+            iconName="play"
+            label="Resume"
+            onPress={handleResume}
+            variant="resume"
+          />
+          <ActionButton
+            iconName="check"
+            label="Done"
+            onPress={handleConfirmStop}
+            variant="done"
+          />
         </View>
       </Animated.View>
     );
@@ -234,18 +329,36 @@ export const GpsActivityTracker: React.FC<GpsActivityTrackerProps> = ({ onComple
       entering={FadeIn.duration(200)}
       style={[styles.container, { backgroundColor: theme.surface.elevated }]}
     >
+      <View style={styles.setIndicator}>
+        <Text style={[styles.setIndicatorText, { color: theme.accent.orange }]}>
+          Set {setNumber}
+        </Text>
+        <View style={[styles.setIndicatorLine, { backgroundColor: theme.accent.orange }]} />
+      </View>
+
       <View style={styles.liveStats}>
-        <View style={styles.statItem}>
-          <Text variant="label" color="tertiary">Time</Text>
+        <View style={styles.statRow}>
+          <Text variant="label" color="tertiary" style={styles.statLabel}>Time</Text>
           <Text style={[styles.liveValue, { color: theme.text.primary }]}>
             {formatTime(elapsedSeconds)}
           </Text>
         </View>
+        
         <View style={[styles.statDivider, { backgroundColor: theme.border.light }]} />
-        <View style={styles.statItem}>
-          <Text variant="label" color="tertiary">Distance</Text>
+        
+        <View style={styles.statRow}>
+          <Text variant="label" color="tertiary" style={styles.statLabel}>Distance</Text>
           <Text style={[styles.liveValue, { color: theme.text.primary }]}>
             {displayDistance.toFixed(2)} {unitLabel}
+          </Text>
+        </View>
+        
+        <View style={[styles.statDivider, { backgroundColor: theme.border.light }]} />
+        
+        <View style={styles.statRow}>
+          <Text variant="label" color="tertiary" style={styles.statLabel}>Pace</Text>
+          <Text style={[styles.liveValue, { color: theme.text.primary }]}>
+            {displayPace} <Text variant="label" color="tertiary">{paceUnit}</Text>
           </Text>
         </View>
       </View>
@@ -294,20 +407,23 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   liveStats: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    alignItems: 'center',
+    flexDirection: 'column',
     marginBottom: spacing.lg,
     width: '100%',
+    gap: spacing.md,
+  },
+  statRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     paddingHorizontal: spacing.md,
   },
-  statItem: {
-    alignItems: 'center',
-    flex: 1,
+  statLabel: {
+    minWidth: 80,
   },
   statDivider: {
-    width: 1,
-    height: 40,
+    width: '100%',
+    height: 1,
     backgroundColor: 'rgba(255,255,255,0.2)',
   },
   liveValue: {
@@ -345,17 +461,40 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
-  completedContainer: {
+  setIndicator: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.md,
+    gap: spacing.sm,
     width: '100%',
-    paddingHorizontal: spacing.sm,
+    marginBottom: spacing.md,
+    paddingHorizontal: spacing.md,
   },
-  completedStats: {
+  setIndicatorText: {
+    fontSize: 13,
+    fontWeight: '700',
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
+  },
+  setIndicatorLine: {
     flex: 1,
-    flexDirection: 'row',
-    justifyContent: 'space-around',
+    height: 1,
+    opacity: 0.3,
+  },
+  startButton: {
+    marginTop: spacing.md,
+    marginBottom: spacing.lg,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: '#FF6B35',
+    backgroundColor: 'transparent',
     alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: spacing.sm,
+    minHeight: 44,
+  },
+  startButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FF6B35',
   },
 });

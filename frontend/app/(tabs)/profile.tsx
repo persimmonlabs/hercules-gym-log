@@ -240,49 +240,34 @@ const volumeTrendFilterStyles = StyleSheet.create({
   },
 });
 
-// Hercules AI card styles
-const herculesAiStyles = StyleSheet.create({
-  dashboardCardHeader: {
+// Insights tab card styles
+const insightsStyles = StyleSheet.create({
+  content: {
+    gap: spacing.sm,
+    paddingHorizontal: spacing.lg,
+  },
+  headerSection: {
     width: '100%',
-    gap: spacing.xs,
+    alignItems: 'center',
+    paddingTop: spacing.sm,
     paddingBottom: spacing.xs,
-    marginBottom: spacing.md,
   },
-  pressableStretch: {
-    width: '100%',
+  title: {
+    textAlign: 'center',
   },
-  inlineCard: {
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border.light,
-    borderRadius: radius.lg,
+  linksList: {
+    gap: spacing.xs,
+    paddingVertical: spacing.xs,
   },
-  quickLinkRow: {
+  linkItem: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: spacing.lg,
+    paddingVertical: spacing.md,
   },
-  quickLinkInfo: {
-    flex: 1,
-    gap: spacing.xs,
-  },
-  quickLinkButton: {
-    width: 44,
-    height: 44,
-    borderRadius: radius.full,
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
-  },
-  planStartButtonGradient: {
+  divider: {
+    height: 1,
     width: '100%',
-    height: '100%',
-    borderRadius: radius.full,
-    alignItems: 'center',
-    justifyContent: 'center',
-    position: 'absolute',
-    top: 0,
-    left: 0,
   },
 });
 
@@ -909,127 +894,76 @@ const StatsScreen: React.FC = () => {
         featureName="Deep Dive Analytics"
         onUnlock={() => router.push('/premium')}
       >
-        <AnalyticsCard
-          title="Detailed Strength Charts"
-          showAccentStripe={false}
-          titleCentered={true}
-          showHorizontalAccentBar={false}
-          showChevron={false}
-          padding="sm"
-        >
-          <View style={{ gap: spacing.md, paddingBottom: spacing.lg }}>
-            <View style={{ gap: spacing.sm }}>
+        <SurfaceCard tone="neutral" padding="md" showAccentStripe={false}>
+          <View style={insightsStyles.content}>
+            {/* Header */}
+            <View style={insightsStyles.headerSection}>
+              <Text variant="heading3" color="primary" style={insightsStyles.title}>
+                Detailed Strength Charts
+              </Text>
+            </View>
+
+            {/* Chart links */}
+            <View style={insightsStyles.linksList}>
               <Pressable
-                onPress={handleVolumePress}
-                style={herculesAiStyles.pressableStretch}
+                onPress={() => {
+                  triggerHaptic('selection');
+                  handleVolumePress();
+                }}
+                style={insightsStyles.linkItem}
               >
-                <SurfaceCard
-                  tone="neutral"
-                  padding="lg"
-                  showAccentStripe={false}
-                  style={herculesAiStyles.inlineCard}
-                >
-                  <View style={herculesAiStyles.quickLinkRow}>
-                    <View style={herculesAiStyles.quickLinkInfo}>
-                      <Text variant="body" color="primary">
-                        Volume Totals Breakdown
-                      </Text>
-                    </View>
-                    <View style={herculesAiStyles.quickLinkButton}>
-                      <LinearGradient
-                        colors={[theme.accent.gradientStart, theme.accent.gradientEnd]}
-                        start={{ x: 0, y: 0 }}
-                        end={{ x: 1, y: 1 }}
-                        style={herculesAiStyles.planStartButtonGradient}
-                      />
-                      <Text variant="bodySemibold" color="onAccent">
-                        →
-                      </Text>
-                    </View>
-                  </View>
-                </SurfaceCard>
+                <Text variant="body" color="primary">
+                  Volume Totals Breakdown
+                </Text>
+                <Ionicons name="chevron-forward" size={20} color={theme.accent.orange} />
               </Pressable>
 
+              <View style={[insightsStyles.divider, { backgroundColor: theme.border.light }]} />
+
               <Pressable
-                onPress={handleDistributionPress}
-                style={herculesAiStyles.pressableStretch}
+                onPress={() => {
+                  triggerHaptic('selection');
+                  handleDistributionPress();
+                }}
+                style={insightsStyles.linkItem}
               >
-                <SurfaceCard
-                  tone="neutral"
-                  padding="lg"
-                  showAccentStripe={false}
-                  style={herculesAiStyles.inlineCard}
-                >
-                  <View style={herculesAiStyles.quickLinkRow}>
-                    <View style={herculesAiStyles.quickLinkInfo}>
-                      <Text variant="body" color="primary">
-                        Volume Distribution Map
-                      </Text>
-                    </View>
-                    <View style={herculesAiStyles.quickLinkButton}>
-                      <LinearGradient
-                        colors={[theme.accent.gradientStart, theme.accent.gradientEnd]}
-                        start={{ x: 0, y: 0 }}
-                        end={{ x: 1, y: 1 }}
-                        style={herculesAiStyles.planStartButtonGradient}
-                      />
-                      <Text variant="bodySemibold" color="onAccent">
-                        →
-                      </Text>
-                    </View>
-                  </View>
-                </SurfaceCard>
+                <Text variant="body" color="primary">
+                  Volume Distribution Map
+                </Text>
+                <Ionicons name="chevron-forward" size={20} color={theme.accent.orange} />
               </Pressable>
             </View>
           </View>
-        </AnalyticsCard>
+        </SurfaceCard>
       </PremiumLock>
 
       {/* Hercules AI Card */}
-      <AnalyticsCard
-        title="Hercules AI"
-        showAccentStripe={false}
-        titleCentered={true}
-        showHorizontalAccentBar={false}
-        showChevron={false}
-        padding="sm"
-      >
-        <View style={{ paddingBottom: spacing.sm }}>
-          <Pressable
-            style={herculesAiStyles.pressableStretch}
-            onPress={() => {
-              triggerHaptic('selection');
-              router.push('/hercules-ai');
-            }}
-          >
-          <SurfaceCard
-            tone="neutral"
-            padding="lg"
-            showAccentStripe={false}
-            style={herculesAiStyles.inlineCard}
-          >
-            <View style={herculesAiStyles.quickLinkRow}>
-              <View style={herculesAiStyles.quickLinkInfo}>
-                <Text variant="body" color="primary">
-                  Chat with your AI Coach
-                </Text>
-              </View>
-              <View style={herculesAiStyles.quickLinkButton}>
-                <LinearGradient
-                  colors={[theme.accent.gradientStart, theme.accent.gradientEnd]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={herculesAiStyles.planStartButtonGradient}
-                />
-                <Text variant="bodySemibold" color="onAccent">
-                  →
-                </Text>
-              </View>
-            </View>
-          </SurfaceCard>
-        </Pressable>
+      <SurfaceCard tone="neutral" padding="md" showAccentStripe={false}>
+        <View style={insightsStyles.content}>
+          {/* Header */}
+          <View style={insightsStyles.headerSection}>
+            <Text variant="heading3" color="primary" style={insightsStyles.title}>
+              Hercules AI
+            </Text>
+          </View>
+
+          {/* AI link */}
+          <View style={insightsStyles.linksList}>
+            <Pressable
+              onPress={() => {
+                triggerHaptic('selection');
+                router.push('/hercules-ai');
+              }}
+              style={insightsStyles.linkItem}
+            >
+              <Text variant="body" color="primary">
+                Chat with your AI Coach
+              </Text>
+              <Ionicons name="chevron-forward" size={20} color={theme.accent.orange} />
+            </Pressable>
+          </View>
         </View>
-      </AnalyticsCard>
+      </SurfaceCard>
     </>
   );
 

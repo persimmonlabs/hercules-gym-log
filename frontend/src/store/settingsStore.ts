@@ -52,6 +52,10 @@ interface SettingsState {
   hapticsEnabled: boolean;
   /** Set haptics enabled status */
   setHapticsEnabled: (enabled: boolean) => void;
+  /** Whether smart set suggestions are enabled */
+  smartSuggestionsEnabled: boolean;
+  /** Set smart suggestions enabled status */
+  setSmartSuggestionsEnabled: (enabled: boolean) => void;
   /** Get weight unit label */
   getWeightUnit: () => string;
   /** Get height unit label */
@@ -207,6 +211,19 @@ export const useSettingsStore = create<SettingsState>()(
       },
 
       hapticsEnabled: true,
+      smartSuggestionsEnabled: false,
+
+      setSmartSuggestionsEnabled: async (enabled: boolean) => {
+        set({ smartSuggestionsEnabled: enabled });
+        try {
+          const { data: { user } } = await supabaseClient.auth.getUser();
+          if (user) {
+            await supabaseClient.from('profiles').update({ smart_suggestions_enabled: enabled }).eq('id', user.id);
+          }
+        } catch (error) {
+          // Silently handle — local persistence is sufficient
+        }
+      },
 
       setHapticsEnabled: async (enabled: boolean) => {
         set({ hapticsEnabled: enabled });
@@ -415,6 +432,7 @@ export const useSettingsStore = create<SettingsState>()(
         themePreference: state.themePreference,
         isPro: state.isPro,
         hapticsEnabled: state.hapticsEnabled,
+        smartSuggestionsEnabled: state.smartSuggestionsEnabled,
         weeklyCardioTimeGoal: state.weeklyCardioTimeGoal,
         weeklyCardioDistanceGoal: state.weeklyCardioDistanceGoal,
       }),

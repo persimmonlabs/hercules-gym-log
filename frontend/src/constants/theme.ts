@@ -40,7 +40,8 @@ export const colors = {
     orange: '#FF6B4A',    // Primary orange energy
     red: '#FF4581',       // Pink-red complement
     orangeLight: '#FFB88C', // Lighter orange (hover, subtle)
-    orangeMuted: 'rgba(255, 107, 74, 0.15)', // Muted orange for selection backgrounds
+    orangeMuted: 'rgba(255, 107, 74, 0.20)', // Muted orange for selection backgrounds
+    orangeSolid: '#FF9070',  // Mid-tone orange between peach and primary (white text readable)
     success: '#2A9D8F',   // Teal (completed, achievements)
     warning: '#E76F51',   // Burnt orange (caution)
     info: '#457B9D',      // Muted blue (information)
@@ -115,7 +116,8 @@ export const darkColors = {
     orange: '#FF6B4A',      // Primary orange energy
     red: '#FF4581',         // Pink-red complement
     orangeLight: '#FFB88C', // Lighter orange (hover, subtle)
-    orangeMuted: 'rgba(255, 107, 74, 0.25)', // Muted orange for selection backgrounds (more visible in dark mode)
+    orangeMuted: 'rgba(255, 107, 74, 0.20)', // Muted orange for selection backgrounds (more visible in dark mode)
+    orangeSolid: '#FF9070',  // Mid-tone orange for solid button fills in dark mode
     success: '#30D158',     // Bright green for dark mode
     warning: '#FF9F0A',     // Bright orange (caution)
     info: '#64D2FF',        // Bright blue for dark mode

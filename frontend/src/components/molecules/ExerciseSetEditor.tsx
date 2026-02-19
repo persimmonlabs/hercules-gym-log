@@ -14,8 +14,9 @@ import { TimePickerModal } from '@/components/molecules/TimePickerModal';
 import { GpsActivityTracker } from '@/components/molecules/GpsActivityTracker';
 import { colors, radius, shadows, sizing, spacing, zIndex } from '@/constants/theme';
 import type { SetLog } from '@/types/workout';
-import type { ExerciseType } from '@/types/exercise';
+import type { ExerciseType, EquipmentType } from '@/types/exercise';
 import { useSettingsStore } from '@/store/settingsStore';
+import { adaptNextSet } from '@/utils/smartSuggestions';
 
 interface ExerciseSetEditorProps {
   isExpanded: boolean;
@@ -28,6 +29,12 @@ interface ExerciseSetEditorProps {
   distanceUnit?: 'miles' | 'meters' | 'floors';
   historySetCount?: number;
   supportsGpsTracking?: boolean;
+  /** Original smart-suggested sets for intra-session comparison */
+  suggestedSets?: SetLog[];
+  /** Equipment types for this exercise (for equipment-aware rounding) */
+  exerciseEquipment?: EquipmentType[];
+  /** Whether the exercise is a compound movement */
+  isCompound?: boolean;
   // Controlled menu state props (optional)
   activeSetMenuIndex?: number | null;
   onOpenSetMenu?: (index: number) => void;
@@ -190,12 +197,17 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
   distanceUnit = 'miles',
   historySetCount = 0,
   supportsGpsTracking = false,
+  suggestedSets,
+  exerciseEquipment = [],
+  isCompound = false,
   activeSetMenuIndex,
   onOpenSetMenu,
   onCloseSetMenu,
   onShowHistory,
   onInputFocus,
 }) => {
+  // Subscribe to smart suggestions setting
+  const smartSuggestionsEnabled = useSettingsStore((state) => state.smartSuggestionsEnabled);
   // Subscribe to unit values to trigger re-renders when units change
   const distanceUnitPref = useSettingsStore((state) => state.distanceUnit);
   const {
@@ -440,8 +452,10 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
       return;
     }
 
-    onProgressChangeRef.current({ completedSets: completedSetsRef.current, totalSets: totalSetsRef.current });
-  }, []);
+    // For GPS exercises, count the active tracker as a set in progress
+    const totalSets = supportsGpsTracking && totalSetsRef.current === 0 ? 1 : totalSetsRef.current;
+    onProgressChangeRef.current({ completedSets: completedSetsRef.current, totalSets });
+  }, [supportsGpsTracking]);
 
   useEffect(() => {
     if (skipNextEmitRef.current) {
@@ -832,19 +846,53 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
       const nextUncompletedIndex = updatedSets.findIndex((set, idx) => idx > index && !set.completed);
       if (nextUncompletedIndex !== -1 && nextUncompletedIndex >= historySetCount) {
         const nextSet = updatedSets[nextUncompletedIndex];
-        updatedSets[nextUncompletedIndex] = {
-          ...nextSet,
-          weight: completedSet.weight ?? 0,
-          reps: completedSet.reps ?? 8,
-          weightInput: formatWeightInputValue(completedSet.weight ?? 0),
-          repsInput: String(completedSet.reps ?? 8),
-          duration: completedSet.duration,
-          distance: completedSet.distance,
-          durationInput: completedSet.durationInput,
-          distanceInput: completedSet.distanceInput,
-          assistanceWeight: completedSet.assistanceWeight,
-          assistanceWeightInput: completedSet.assistanceWeightInput,
-        };
+
+        // Smart intra-session adaptation: compare actual vs. original suggestion
+        const hasSmart = smartSuggestionsEnabled && suggestedSets && suggestedSets.length > 0;
+        if (hasSmart && exerciseType === 'weight') {
+          const originalSuggestion = suggestedSets[index];
+          const originalWeight = originalSuggestion?.weight ?? completedSet.weight ?? 0;
+          const originalReps = originalSuggestion?.reps ?? completedSet.reps ?? 8;
+          const actualWeight = completedSet.weight ?? 0;
+          const actualReps = completedSet.reps ?? 0;
+
+          const adapted = adaptNextSet(
+            originalWeight,
+            originalReps,
+            actualWeight,
+            actualReps,
+            exerciseEquipment,
+            isCompound,
+          );
+
+          updatedSets[nextUncompletedIndex] = {
+            ...nextSet,
+            weight: adapted.weight,
+            reps: adapted.reps,
+            weightInput: formatWeightInputValue(adapted.weight),
+            repsInput: String(adapted.reps),
+            duration: completedSet.duration,
+            distance: completedSet.distance,
+            durationInput: completedSet.durationInput,
+            distanceInput: completedSet.distanceInput,
+            assistanceWeight: completedSet.assistanceWeight,
+            assistanceWeightInput: completedSet.assistanceWeightInput,
+          };
+        } else {
+          updatedSets[nextUncompletedIndex] = {
+            ...nextSet,
+            weight: completedSet.weight ?? 0,
+            reps: completedSet.reps ?? 8,
+            weightInput: formatWeightInputValue(completedSet.weight ?? 0),
+            repsInput: String(completedSet.reps ?? 8),
+            duration: completedSet.duration,
+            distance: completedSet.distance,
+            durationInput: completedSet.durationInput,
+            distanceInput: completedSet.distanceInput,
+            assistanceWeight: completedSet.assistanceWeight,
+            assistanceWeightInput: completedSet.assistanceWeightInput,
+          };
+        }
       }
     }
 
@@ -853,7 +901,7 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
     completedSetsRef.current = updatedSets.filter((set) => set.completed).length;
     setSets(updatedSets);
     emitProgress();
-  }, [emitProgress, exerciseType, historySetCount, runningTimers, pausedTimers]);
+  }, [emitProgress, exerciseType, historySetCount, runningTimers, pausedTimers, smartSuggestionsEnabled, suggestedSets, exerciseEquipment, isCompound]);
 
   const handleCompleteSetPress = useCallback((index: number) => {
     toggleSetCompletion(index);
@@ -885,12 +933,14 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
       assistanceWeightInput: '0',
     };
 
-    const updatedSets = [completedSet];
-    setsRef.current = updatedSets;
-    totalSetsRef.current = 1;
-    completedSetsRef.current = 1;
-    setSets(updatedSets);
-    emitProgress();
+    setSets((prev) => {
+      const next = [...prev, completedSet];
+      setsRef.current = next;
+      totalSetsRef.current = next.length;
+      completedSetsRef.current = next.filter((s) => s.completed).length;
+      setTimeout(emitProgress, 0);
+      return next;
+    });
   }, [emitProgress, convertDistanceForExercise, distanceUnit]);
 
   const openTimePicker = useCallback((index: number) => {
@@ -1076,19 +1126,90 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
           </View>
         )}
         {supportsGpsTracking ? (
-          <GpsActivityTracker
-            onComplete={handleGpsActivityComplete}
-            distanceUnit={distanceUnit}
-          />
+          <>
+            {/* Completed GPS sets */}
+            {sets.filter((s) => s.completed).map((set, setIndex) => {
+              // Find the actual index in the full sets array
+              const actualIndex = sets.findIndex((s, i) => s === set && i >= setIndex);
+              const distance = set.distance ?? 0;
+              const duration = set.duration ?? 0;
+              let paceStr = '--:--';
+              let paceUnitStr = distanceUnitPref === 'km' ? '/km' : '/mi';
+              if (distance > 0 && duration > 0) {
+                const hours = duration / 3600;
+                const paceMinPerMile = hours / distance * 60;
+                const pacePerUnit = distanceUnitPref === 'km' ? paceMinPerMile * 1.60934 : paceMinPerMile;
+                const mins = Math.floor(pacePerUnit);
+                const secs = Math.floor((pacePerUnit - mins) * 60);
+                paceStr = `${mins}:${secs.toString().padStart(2, '0')}`;
+              }
+
+              return (
+                <View
+                  key={`gps-set-${actualIndex}`}
+                  style={[
+                    styles.gpsCompletedSet,
+                    setIndex > 0 ? styles.setCardSpacer : null,
+                  ]}
+                >
+                  <View style={styles.gpsSetHeader}>
+                    <View style={styles.gpsSetIndicator}>
+                      <Text style={styles.gpsSetIndicatorText}>
+                        Set {setIndex + 1}
+                      </Text>
+                      <View style={styles.gpsSetIndicatorLine} />
+                    </View>
+                    <Pressable
+                      onPress={() => removeSet(actualIndex)}
+                      hitSlop={spacing.xs}
+                      style={styles.gpsDeleteButton}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Delete set ${setIndex + 1}`}
+                    >
+                      <MaterialCommunityIcons
+                        name="trash-can-outline"
+                        size={20}
+                        color={colors.accent.warning}
+                      />
+                    </Pressable>
+                  </View>
+                  <View style={styles.gpsMetricRow}>
+                    <Text variant="label" color="tertiary" style={styles.gpsMetricLabel}>Time</Text>
+                    <Text variant="bodySemibold" color="primary">{formatDurationForSummary(duration)}</Text>
+                  </View>
+                  <View style={styles.gpsMetricRow}>
+                    <Text variant="label" color="tertiary" style={styles.gpsMetricLabel}>Distance</Text>
+                    <Text variant="bodySemibold" color="primary">{formatDistanceForExercise(distance, distanceUnit, 2)}</Text>
+                  </View>
+                  <View style={styles.gpsMetricRow}>
+                    <Text variant="label" color="tertiary" style={styles.gpsMetricLabel}>Avg Pace</Text>
+                    <Text variant="bodySemibold" color="primary">{paceStr} {paceUnitStr}</Text>
+                  </View>
+                </View>
+              );
+            })}
+            {/* Active GPS tracker for next set */}
+            <GpsActivityTracker
+              onComplete={handleGpsActivityComplete}
+              distanceUnit={distanceUnit}
+              setNumber={sets.filter((s) => s.completed).length + 1}
+            />
+          </>
         ) : hasSets ? (
           sets.map((set, index) => {
             const isCompleted = set.completed;
 
             // Generate summary text based on exercise type
             let summaryText = '';
+            let isCardioWithMetrics = false;
             switch (exerciseType) {
               case 'cardio':
-                summaryText = `${formatDistanceForExercise(set.distance ?? 0, distanceUnit)} • ${formatDurationForSummary(set.duration ?? 0)}`;
+                // Check if this is a GPS-tracked cardio with distance and time
+                if ((set.distance ?? 0) > 0 && (set.duration ?? 0) > 0) {
+                  isCardioWithMetrics = true;
+                } else {
+                  summaryText = `${formatDistanceForExercise(set.distance ?? 0, distanceUnit)} • ${formatDurationForSummary(set.duration ?? 0)}`;
+                }
                 break;
               case 'bodyweight':
               case 'reps_only':
@@ -1115,16 +1236,53 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
                 ]}
               >
                 {isCompleted ? (
-                  <Pressable
-                    style={styles.completedRow}
-                    onPress={() => toggleSetCompletion(index)}
-                    accessibilityRole="button"
-                    accessibilityLabel={`Edit set ${index + 1}`}
-                  >
-                    <Text variant="bodySemibold" color="onAccent">
-                      {summaryText}
-                    </Text>
-                  </Pressable>
+                  isCardioWithMetrics ? (
+                    <Pressable
+                      style={styles.completedCardioRow}
+                      onPress={() => toggleSetCompletion(index)}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Edit set ${index + 1}`}
+                    >
+                      <View style={styles.completedCardioMetric}>
+                        <Text variant="label" color="onAccent" style={styles.completedCardioLabel}>Time</Text>
+                        <Text variant="bodySemibold" color="onAccent">{formatDurationForSummary(set.duration ?? 0)}</Text>
+                      </View>
+                      <View style={styles.completedCardioMetric}>
+                        <Text variant="label" color="onAccent" style={styles.completedCardioLabel}>Distance</Text>
+                        <Text variant="bodySemibold" color="onAccent">{formatDistanceForExercise(set.distance ?? 0, distanceUnit)}</Text>
+                      </View>
+                      <View style={styles.completedCardioMetric}>
+                        <Text variant="label" color="onAccent" style={styles.completedCardioLabel}>Avg Pace</Text>
+                        <Text variant="bodySemibold" color="onAccent">
+                          {(() => {
+                            const distance = set.distance ?? 0;
+                            const duration = set.duration ?? 0;
+                            if (distance > 0 && duration > 0) {
+                              const hours = duration / 3600;
+                              const paceMinPerMile = hours / distance * 60;
+                              const pacePerUnit = distanceUnitPref === 'km' ? paceMinPerMile * 1.60934 : paceMinPerMile;
+                              const mins = Math.floor(pacePerUnit);
+                              const secs = Math.floor((pacePerUnit - mins) * 60);
+                              const paceUnit = distanceUnitPref === 'km' ? '/km' : '/mi';
+                              return `${mins}:${secs.toString().padStart(2, '0')} ${paceUnit}`;
+                            }
+                            return '--:--';
+                          })()}
+                        </Text>
+                      </View>
+                    </Pressable>
+                  ) : (
+                    <Pressable
+                      style={styles.completedRow}
+                      onPress={() => toggleSetCompletion(index)}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Edit set ${index + 1}`}
+                    >
+                      <Text variant="bodySemibold" color="onAccent">
+                        {summaryText}
+                      </Text>
+                    </Pressable>
+                  )
                 ) : (
                   <>
                     <View style={styles.setHeader} pointerEvents="box-none">
@@ -1445,16 +1603,18 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
             <Text color="secondary">No sets yet.</Text>
           </View>
         )}
-        <Pressable
-          style={styles.addSetButton}
-          onPress={addSet}
-          accessibilityRole="button"
-          accessibilityLabel="Add set"
-        >
-          <Text variant="bodySemibold" color="orange">
-            Add set
-          </Text>
-        </Pressable>
+        {!supportsGpsTracking && (
+          <Pressable
+            style={styles.addSetButton}
+            onPress={addSet}
+            accessibilityRole="button"
+            accessibilityLabel="Add set"
+          >
+            <Text variant="bodySemibold" color="orange">
+              Add set
+            </Text>
+          </Pressable>
+        )}
       </ScrollView>
       <TimePickerModal
         visible={timePickerVisible}
@@ -1511,6 +1671,67 @@ const styles = StyleSheet.create({
     paddingHorizontal: 0,
     borderRadius: radius.md,
     backgroundColor: 'transparent',
+  },
+  completedCardioRow: {
+    flexDirection: 'column',
+    gap: spacing.sm,
+    paddingVertical: spacing.xs,
+  },
+  completedCardioMetric: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  completedCardioLabel: {
+    fontSize: 12,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  gpsCompletedSet: {
+    borderWidth: 1,
+    borderColor: colors.border.light,
+    borderRadius: radius.lg,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
+    backgroundColor: colors.surface.card,
+    gap: spacing.sm,
+  },
+  gpsSetHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: spacing.xs,
+  },
+  gpsSetIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    flex: 1,
+  },
+  gpsDeleteButton: {
+    padding: spacing.xs,
+    marginLeft: spacing.sm,
+  },
+  gpsSetIndicatorText: {
+    fontSize: 13,
+    fontWeight: '700',
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
+    color: colors.accent.orange,
+  },
+  gpsSetIndicatorLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: colors.accent.orange,
+    opacity: 0.3,
+  },
+  gpsMetricRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  gpsMetricLabel: {
+    minWidth: 80,
   },
   setHeader: {
     flexDirection: 'row',

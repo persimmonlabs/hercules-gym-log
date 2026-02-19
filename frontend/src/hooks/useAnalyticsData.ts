@@ -15,6 +15,7 @@ import { exercises as exerciseCatalog } from '@/constants/exercises';
 import exercisesData from '@/data/exercises.json';
 import hierarchyData from '@/data/hierarchy.json';
 import { formatLocalDate } from '@/utils/chartUtils';
+import { computeSetVolume, DEFAULT_BW_MULTIPLIER_BY_TYPE } from '@/utils/volumeCalculation';
 import type {
   TieredVolumeData,
   TieredSetData,
@@ -33,6 +34,12 @@ const BASE_EXERCISE_TYPE_MAP = exerciseCatalog.reduce((acc, ex) => {
   acc[ex.name] = ex.exerciseType;
   return acc;
 }, {} as Record<string, ExerciseType>);
+
+// Build base BW multiplier lookup map (static catalog)
+const BASE_BW_MULTIPLIER_MAP = exerciseCatalog.reduce((acc, ex) => {
+  acc[ex.name] = ex.effectiveBodyweightMultiplier;
+  return acc;
+}, {} as Record<string, number>);
 
 // Alias map: translates exercises.json muscle names to new hierarchy names.
 // exercises.json still uses old detailed names; this rolls them up for charts.
@@ -173,6 +180,15 @@ export const useAnalyticsData = (options: UseAnalyticsDataOptions = {}) => {
     return map;
   }, [customExercises]);
 
+  // Merge custom exercises into BW multiplier map
+  const BW_MULTIPLIER_MAP = useMemo(() => {
+    const map = { ...BASE_BW_MULTIPLIER_MAP };
+    customExercises.forEach((ce) => {
+      map[ce.name] = DEFAULT_BW_MULTIPLIER_BY_TYPE[ce.exerciseType] ?? 0;
+    });
+    return map;
+  }, [customExercises]);
+
   // Filter workouts based on time range
   const filteredWorkouts = useMemo(() => {
     return filterByTimeRange(workouts, timeRange);
@@ -226,39 +242,13 @@ export const useAnalyticsData = (options: UseAnalyticsDataOptions = {}) => {
         // Skip cardio and duration exercises for volume calculations
         if (exerciseType === 'cardio' || exerciseType === 'duration') return;
 
+        const bwMult = BW_MULTIPLIER_MAP[exercise.name] ?? DEFAULT_BW_MULTIPLIER_BY_TYPE[exerciseType] ?? 0;
+
         exercise.sets.forEach((set: any) => {
           if (!set.completed) return;
 
-          // Calculate set volume based on exercise type
-          let setVolume = 0;
-          const reps = set.reps ?? 0;
-
-          switch (exerciseType) {
-            case 'bodyweight':
-              // Use body weight if available, otherwise skip
-              if (userBodyWeight && reps > 0) {
-                setVolume = userBodyWeight * reps;
-              }
-              break;
-            case 'assisted':
-              // Effective weight = body weight - assistance weight
-              if (userBodyWeight && reps > 0) {
-                const effectiveWeight = Math.max(0, userBodyWeight - (set.assistanceWeight ?? 0));
-                setVolume = effectiveWeight * reps;
-              }
-              break;
-            case 'reps_only':
-              // Resistance bands - just count reps (no weight volume)
-              // Skip for volume calculations
-              return;
-            case 'weight':
-            default:
-              // Standard weight × reps
-              if ((set.weight ?? 0) > 0 && reps > 0) {
-                setVolume = set.weight * reps;
-              }
-              break;
-          }
+          // Calculate set volume using shared BW-adjusted formula
+          let setVolume = computeSetVolume(set, exerciseType, userBodyWeight, bwMult);
 
           // Convert volume to user's preferred unit (LBS -> User Unit)
           setVolume = convertWeight(setVolume);
@@ -307,29 +297,15 @@ export const useAnalyticsData = (options: UseAnalyticsDataOptions = {}) => {
 
         const exerciseType = EXERCISE_TYPE_MAP[exercise.name] || 'weight';
 
-        // Only include weight and assisted exercises (exclude bodyweight and cardio from distribution)
-        if (exerciseType !== 'weight' && exerciseType !== 'assisted') return;
+        // Only include weight, assisted, and bodyweight exercises (exclude cardio/duration/reps_only)
+        if (exerciseType === 'cardio' || exerciseType === 'duration' || exerciseType === 'reps_only') return;
+
+        const bwMult = BW_MULTIPLIER_MAP[exercise.name] ?? DEFAULT_BW_MULTIPLIER_BY_TYPE[exerciseType] ?? 0;
 
         exercise.sets.forEach((set: any) => {
           if (!set.completed) return;
 
-          const reps = set.reps ?? 0;
-          if (reps <= 0) return;
-
-          let setVolume = 0;
-
-          if (exerciseType === 'weight') {
-            const weight = set.weight ?? 0;
-            if (weight <= 0) return;
-            setVolume = weight * reps;
-          } else if (exerciseType === 'assisted') {
-            // Effective weight = body weight - assistance, clamped to avoid negatives
-            if (!userBodyWeight) return;
-            const assistanceWeight = set.assistanceWeight ?? 0;
-            const effectiveWeight = Math.max(0, userBodyWeight - assistanceWeight);
-            if (effectiveWeight <= 0) return;
-            setVolume = effectiveWeight * reps;
-          }
+          let setVolume = computeSetVolume(set, exerciseType, userBodyWeight, bwMult);
 
           // Convert volume to user's preferred unit
           setVolume = convertWeight(setVolume);
@@ -394,29 +370,15 @@ export const useAnalyticsData = (options: UseAnalyticsDataOptions = {}) => {
 
         const exerciseType = EXERCISE_TYPE_MAP[exercise.name] || 'weight';
 
-        // Only include weight and assisted exercises (exclude bodyweight and cardio from distribution)
-        if (exerciseType !== 'weight' && exerciseType !== 'assisted') return;
+        // Only include weight, assisted, and bodyweight exercises (exclude cardio/duration/reps_only)
+        if (exerciseType === 'cardio' || exerciseType === 'duration' || exerciseType === 'reps_only') return;
+
+        const bwMult = BW_MULTIPLIER_MAP[exercise.name] ?? DEFAULT_BW_MULTIPLIER_BY_TYPE[exerciseType] ?? 0;
 
         exercise.sets.forEach((set: any) => {
           if (!set.completed) return;
 
-          const reps = set.reps ?? 0;
-          if (reps <= 0) return;
-
-          let setVolume = 0;
-
-          if (exerciseType === 'weight') {
-            const weight = set.weight ?? 0;
-            if (weight <= 0) return;
-            setVolume = weight * reps;
-          } else if (exerciseType === 'assisted') {
-            // Effective weight = body weight - assistance, clamped to avoid negatives
-            if (!userBodyWeight) return;
-            const assistanceWeight = set.assistanceWeight ?? 0;
-            const effectiveWeight = Math.max(0, userBodyWeight - assistanceWeight);
-            if (effectiveWeight <= 0) return;
-            setVolume = effectiveWeight * reps;
-          }
+          let setVolume = computeSetVolume(set, exerciseType, userBodyWeight, bwMult);
 
           // Convert volume to user's preferred unit
           setVolume = convertWeight(setVolume);
@@ -619,41 +581,12 @@ export const useAnalyticsData = (options: UseAnalyticsDataOptions = {}) => {
           return;
         }
 
+        const bwMult = BW_MULTIPLIER_MAP[exercise.name] ?? DEFAULT_BW_MULTIPLIER_BY_TYPE[exerciseType] ?? 0;
+
         exercise.sets.forEach((set: any) => {
           if (!set.completed) return;
-          
-          const reps = set.reps ?? 0;
-          if (reps <= 0) return;
 
-          let setVolume = 0;
-
-          switch (exerciseType) {
-            case 'bodyweight':
-              if (userBodyWeight && userBodyWeight > 0) {
-                setVolume = userBodyWeight * reps;
-              }
-              break;
-            case 'assisted':
-              if (userBodyWeight && userBodyWeight > 0) {
-                const assistance = set.assistanceWeight ?? 0;
-                const effective = Math.max(0, userBodyWeight - assistance);
-                if (effective > 0) {
-                  setVolume = effective * reps;
-                }
-              }
-              break;
-            case 'reps_only':
-              // Bands etc – do not contribute to volume
-              setVolume = 0;
-              break;
-            case 'weight':
-            default:
-              const weight = set.weight ?? 0;
-              if (weight > 0) {
-                setVolume = weight * reps;
-              }
-              break;
-          }
+          const setVolume = computeSetVolume(set, exerciseType, userBodyWeight, bwMult);
 
           if (setVolume > 0) {
             // Convert to user's preferred unit

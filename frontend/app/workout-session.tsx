@@ -39,7 +39,7 @@ import { CreateExerciseModal } from '@/components/molecules/CreateExerciseModal'
 import { FinishConfirmationModal } from '@/components/molecules/FinishConfirmationModal';
 import { DeleteConfirmationModal } from '@/components/molecules/DeleteConfirmationModal';
 import { normalizeSearchText } from '@/utils/strings';
-import { createSetsWithHistory } from '@/utils/exerciseHistory';
+import { createSetsWithSmartSuggestions } from '@/utils/exerciseHistory';
 import { getExerciseDisplayTagText } from '@/utils/exerciseDisplayTags';
 import type { Exercise, ExerciseCatalogItem } from '@/constants/exercises';
 import type { SetLog, WorkoutExercise } from '@/types/workout';
@@ -222,7 +222,7 @@ const WorkoutSessionScreen: React.FC = () => {
   // Merge custom exercises with base catalog
   const exerciseCatalog = useMemo<ExerciseCatalogItem[]>(() => {
     const customCatalogItems = customExercises.map((ce) =>
-      createCustomExerciseCatalogItem(ce.id, ce.name, ce.exerciseType)
+      createCustomExerciseCatalogItem(ce.id, ce.name, ce.exerciseType, ce.supportsGpsTracking)
     );
     return [...baseExerciseCatalog, ...customCatalogItems];
   }, [customExercises]);
@@ -296,32 +296,40 @@ const WorkoutSessionScreen: React.FC = () => {
     [],
   );
 
+  const smartSuggestionsEnabled = useSettingsStore((state) => state.smartSuggestionsEnabled);
+
   const handleSelectExercise = (exercise: Exercise) => {
     const targetName = replaceTargetName;
     const allWorkouts = useWorkoutSessionsStore.getState().workouts;
 
     if (targetName) {
       // Always fetch new exercise's history when replacing
-      const { sets, historySetCount } = createSetsWithHistory(exercise.name, allWorkouts, undefined, undefined, customExercises);
+      const result = createSetsWithSmartSuggestions(exercise.name, allWorkouts, smartSuggestionsEnabled, undefined, undefined, customExercises);
 
       const nextExercise: WorkoutExercise = {
         name: exercise.name,
-        sets,
+        sets: result.sets,
       };
 
       updateExercise(targetName, nextExercise);
 
-      // Update history set counts: remove old exercise, add new exercise
+      // Update history set counts and suggested sets: remove old exercise, add new exercise
       const currentSession = useSessionStore.getState().currentSession;
       if (currentSession) {
         const { [targetName]: _removed, ...remainingCounts } = currentSession.historySetCounts;
+        const { [targetName]: _removedSuggested, ...remainingSuggested } = currentSession.suggestedSets;
+        const nextSuggested = { ...remainingSuggested };
+        if (result.smartSuggestedSets.length > 0) {
+          nextSuggested[exercise.name] = result.smartSuggestedSets;
+        }
         useSessionStore.setState({
           currentSession: {
             ...currentSession,
             historySetCounts: {
               ...remainingCounts,
-              [exercise.name]: historySetCount,
+              [exercise.name]: result.historySetCount,
             },
+            suggestedSets: nextSuggested,
           },
         });
       }
@@ -345,13 +353,13 @@ const WorkoutSessionScreen: React.FC = () => {
         return rest;
       });
     } else {
-      const { sets, historySetCount } = createSetsWithHistory(exercise.name, allWorkouts, undefined, undefined, customExercises);
+      const result = createSetsWithSmartSuggestions(exercise.name, allWorkouts, smartSuggestionsEnabled, undefined, undefined, customExercises);
       const nextExercise: WorkoutExercise = {
         name: exercise.name,
-        sets,
+        sets: result.sets,
       };
 
-      addExerciseToSession(nextExercise, historySetCount);
+      addExerciseToSession(nextExercise, result.historySetCount, result.smartSuggestedSets.length > 0 ? result.smartSuggestedSets : undefined);
       hasUserAddedExerciseRef.current = true;
     }
 
@@ -456,10 +464,20 @@ const WorkoutSessionScreen: React.FC = () => {
       };
     });
 
+    // Generate session name if null and only one exercise with completed sets
+    let sessionName = currentSessionData.name;
+    if (!sessionName && exercisesInLbs.length === 1) {
+      const exercise = exercisesInLbs[0];
+      const hasCompletedSets = exercise.sets.some(set => set.completed);
+      if (hasCompletedSets) {
+        sessionName = exercise.name;
+      }
+    }
+
     const workout = {
       id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
       planId: currentSessionData.planId,
-      name: currentSessionData.name,
+      name: sessionName,
       date: new Date(currentSessionData.startTime).toISOString(),
       startTime: currentSessionData.startTime,
       endTime,
@@ -887,6 +905,9 @@ const WorkoutSessionScreen: React.FC = () => {
                         distanceUnit={exerciseCatalog.find(e => e.name === item.name)?.distanceUnit}
                         historySetCount={sessionToDisplay?.historySetCounts?.[item.name] ?? 0}
                         supportsGpsTracking={exerciseCatalog.find(e => e.name === item.name)?.supportsGpsTracking ?? false}
+                        suggestedSets={sessionToDisplay?.suggestedSets?.[item.name]}
+                        exerciseEquipment={exerciseCatalog.find(e => e.name === item.name)?.equipment}
+                        isCompound={exerciseCatalog.find(e => e.name === item.name)?.isCompound ?? false}
                         activeSetMenuIndex={activeMenu?.type === 'set' && activeMenu.exerciseName === item.name ? activeMenu.setIndex : null}
                         onOpenSetMenu={(index) => handleOpenSetMenu(item.name, index)}
                         onCloseSetMenu={closeAllMenus}
@@ -933,6 +954,25 @@ const WorkoutSessionScreen: React.FC = () => {
               <Text variant="body" color="secondary">
                 No exercises match that search yet.
               </Text>
+              <Pressable
+                style={styles.createExerciseButton}
+                onPress={() => {
+                  triggerHaptic('selection');
+                  dismissPicker();
+                  setCreateExerciseModalVisible(true);
+                }}
+                accessibilityRole="button"
+                accessibilityLabel="Create a new custom exercise"
+              >
+                <MaterialCommunityIcons
+                  name="plus-circle-outline"
+                  size={sizing.iconMD}
+                  color={colors.accent.primary}
+                />
+                <Text variant="bodySemibold" style={{ color: colors.accent.primary }}>
+                  Create Exercise
+                </Text>
+              </Pressable>
             </View>
           )}
           renderItem={({ item }) => {
@@ -1046,10 +1086,14 @@ const WorkoutSessionScreen: React.FC = () => {
         visible={createExerciseModalVisible}
         onClose={() => setCreateExerciseModalVisible(false)}
         onExerciseCreated={(exerciseName, exerciseType) => {
-          // Find the newly created exercise and add it to the session
-          const newExercise = exerciseCatalog.find(e => e.name === exerciseName);
-          if (newExercise) {
-            handleSelectExercise(newExercise);
+          // Read latest custom exercises directly from store (memo may be stale)
+          const latestCustom = useCustomExerciseStore.getState().customExercises;
+          const created = latestCustom.find(e => e.name === exerciseName);
+          if (created) {
+            const catalogItem = createCustomExerciseCatalogItem(
+              created.id, created.name, created.exerciseType, created.supportsGpsTracking
+            );
+            handleSelectExercise(catalogItem);
           }
           setCreateExerciseModalVisible(false);
         }}
@@ -1272,7 +1316,7 @@ const styles = StyleSheet.create({
   },
   modalListContent: {
     paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.lg,
+    paddingBottom: spacing['2xl'] * 2,
     paddingTop: spacing.xs,
     gap: spacing.xs,
     flexGrow: 1,
@@ -1287,6 +1331,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.lg,
     paddingHorizontal: spacing.lg,
     alignItems: 'center',
+    gap: spacing.md,
   },
   createExerciseButton: {
     flexDirection: 'row',

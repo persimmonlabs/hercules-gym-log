@@ -31,7 +31,8 @@
     "difficulty": "Intermediate",
     "is_compound": true,
     "push_pull": "push",
-    "upper_lower": "upper"
+    "upper_lower": "upper",
+    "effectiveBodyweightMultiplier": 0.03
   },
   {
     "id": "exercise_002",
@@ -66,7 +67,8 @@
     "difficulty": "Beginner",
     "is_compound": true,
     "push_pull": "push",
-    "upper_lower": "upper"
+    "upper_lower": "upper",
+    "effectiveBodyweightMultiplier": 0.02
   },
   {
     "id": "exercise_003",
@@ -74,25 +76,21 @@
     "exercise_type": "weight",
     "distance_unit": null,
     "muscles": {
-      "Mid Chest": 0.247,
-      "Front Delts": 0.228,
-      "Upper Chest": 0.2,
-      "Lower Chest": 0.1,
-      "Triceps - Long Head": 0.07,
-      "Triceps - Lateral Head": 0.055,
-      "Triceps - Medial Head": 0.055,
+      "Mid Chest": 0.35,
+      "Upper Chest": 0.25,
+      "Lower Chest": 0.15,
+      "Front Delts": 0.12,
+      "Biceps - Short Head": 0.03,
+      "Biceps - Long Head": 0.03,
+      "Brachialis": 0.02,
+      "Flexors": 0.02,
       "Rear Delts": 0.01,
-      "Biceps - Long Head": 0.005,
-      "Biceps - Short Head": 0.005,
-      "Brachialis": 0.005,
+      "Upper Abs": 0.005,
+      "Lower Abs": 0.005,
+      "Obliques": 0.005,
       "Lats": 0.003,
-      "Flexors": 0.003,
-      "Extensors": 0.003,
-      "Upper Abs": 0.003,
-      "Mid Back": 0.002,
-      "Upper Back": 0.002,
-      "Lower Abs": 0.002,
-      "Obliques": 0.002
+      "Mid Back": 0.001,
+      "Upper Back": 0.001
     },
     "equipment": [
       "Machine"
@@ -101,7 +99,8 @@
     "difficulty": "Beginner",
     "is_compound": false,
     "push_pull": "push",
-    "upper_lower": "upper"
+    "upper_lower": "upper",
+    "effectiveBodyweightMultiplier": 0.02
   },
   {
     "id": "exercise_004",
@@ -109,26 +108,16 @@
     "exercise_type": "weight",
     "distance_unit": null,
     "muscles": {
-      "Lateral Delts": 0.545,
-      "Front Delts": 0.275,
-      "Rear Delts": 0.05,
-      "Upper Chest": 0.01,
-      "Biceps - Long Head": 0.01,
-      "Biceps - Short Head": 0.01,
-      "Brachialis": 0.01,
-      "Triceps - Long Head": 0.01,
-      "Triceps - Lateral Head": 0.01,
-      "Triceps - Medial Head": 0.01,
-      "Flexors": 0.01,
+      "Lateral Delts": 0.65,
+      "Front Delts": 0.13,
+      "Rear Delts": 0.06,
+      "Upper Back": 0.06,
+      "Flexors": 0.03,
+      "Upper Abs": 0.02,
+      "Obliques": 0.02,
+      "Lower Back": 0.01,
       "Extensors": 0.01,
-      "Mid Chest": 0.005,
-      "Lats": 0.005,
-      "Mid Back": 0.005,
-      "Upper Back": 0.005,
-      "Lower Back": 0.005,
-      "Upper Abs": 0.005,
-      "Lower Abs": 0.005,
-      "Obliques": 0.005
+      "Mid Back": 0.01
     },
     "equipment": [
       "Dumbbell"
@@ -137,7 +126,8 @@
     "difficulty": "Beginner",
     "is_compound": false,
     "push_pull": null,
-    "upper_lower": "upper"
+    "upper_lower": "upper",
+    "effectiveBodyweightMultiplier": 0.03
   },
   {
     "id": "exercise_005",
@@ -173,7 +163,8 @@
     "difficulty": "Intermediate",
     "is_compound": true,
     "push_pull": "push",
-    "upper_lower": "upper"
+    "upper_lower": "upper",
+    "effectiveBodyweightMultiplier": 0.03
   },
   {
     "id": "exercise_006",
@@ -181,9 +172,9 @@
     "exercise_type": "weight",
     "distance_unit": null,
     "muscles": {
-      "Triceps - Long Head": 0.283,
-      "Triceps - Medial Head": 0.283,
-      "Triceps - Lateral Head": 0.218,
+      "Triceps - Long Head": 0.295,
+      "Triceps - Medial Head": 0.295,
+      "Triceps - Lateral Head": 0.23,
       "Front Delts": 0.03,
       "Upper Chest": 0.018,
       "Flexors": 0.018,
@@ -193,9 +184,6 @@
       "Obliques": 0.018,
       "Lower Back": 0.012,
       "Rear Delts": 0.012,
-      "Biceps - Long Head": 0.012,
-      "Biceps - Short Head": 0.012,
-      "Brachialis": 0.012,
       "Lats": 0.006,
       "Mid Back": 0.006,
       "Upper Back": 0.006
@@ -207,7 +195,8 @@
     "difficulty": "Beginner",
     "is_compound": false,
     "push_pull": "push",
-    "upper_lower": "upper"
+    "upper_lower": "upper",
+    "effectiveBodyweightMultiplier": 0.02
   },
   {
     "id": "exercise_007",
@@ -242,7 +231,8 @@
     "difficulty": "Beginner",
     "is_compound": true,
     "push_pull": "push",
-    "upper_lower": "upper"
+    "upper_lower": "upper",
+    "effectiveBodyweightMultiplier": 0.02
   },
   {
     "id": "exercise_008",
@@ -272,7 +262,8 @@
     "difficulty": "Beginner",
     "is_compound": true,
     "push_pull": "pull",
-    "upper_lower": "upper"
+    "upper_lower": "upper",
+    "effectiveBodyweightMultiplier": 0.02
   },
   {
     "id": "exercise_009",
@@ -304,7 +295,8 @@
     "difficulty": "Beginner",
     "is_compound": false,
     "push_pull": "pull",
-    "upper_lower": "upper"
+    "upper_lower": "upper",
+    "effectiveBodyweightMultiplier": 0.02
   },
   {
     "id": "exercise_010",
@@ -335,7 +327,8 @@
     "difficulty": "Beginner",
     "is_compound": true,
     "push_pull": "pull",
-    "upper_lower": "upper"
+    "upper_lower": "upper",
+    "effectiveBodyweightMultiplier": 0.02
   },
   {
     "id": "exercise_011",
@@ -367,7 +360,8 @@
     "difficulty": "Beginner",
     "is_compound": false,
     "push_pull": "pull",
-    "upper_lower": "upper"
+    "upper_lower": "upper",
+    "effectiveBodyweightMultiplier": 0.03
   },
   {
     "id": "exercise_012",
@@ -400,7 +394,8 @@
     "difficulty": "Beginner",
     "is_compound": false,
     "push_pull": "pull",
-    "upper_lower": "upper"
+    "upper_lower": "upper",
+    "effectiveBodyweightMultiplier": 0.03
   },
   {
     "id": "exercise_013",
@@ -430,7 +425,8 @@
     "difficulty": "Intermediate",
     "is_compound": true,
     "push_pull": null,
-    "upper_lower": "upper"
+    "upper_lower": "upper",
+    "effectiveBodyweightMultiplier": 0.02
   },
   {
     "id": "exercise_014",
@@ -461,7 +457,8 @@
     "difficulty": "Beginner",
     "is_compound": true,
     "push_pull": "push",
-    "upper_lower": "lower"
+    "upper_lower": "lower",
+    "effectiveBodyweightMultiplier": 0.02
   },
   {
     "id": "exercise_015",
@@ -488,7 +485,8 @@
     "difficulty": "Beginner",
     "is_compound": false,
     "push_pull": "push",
-    "upper_lower": "lower"
+    "upper_lower": "lower",
+    "effectiveBodyweightMultiplier": 0.02
   },
   {
     "id": "exercise_016",
@@ -496,14 +494,12 @@
     "exercise_type": "weight",
     "distance_unit": null,
     "muscles": {
-      "Hamstrings": 0.85,
-      "Calves - Medial Head": 0.03,
-      "Calves - Lateral Head": 0.025,
+      "Hamstrings": 0.855,
+      "Calves - Medial Head": 0.033,
+      "Calves - Lateral Head": 0.027,
       "Soleus": 0.015,
       "Quads": 0.015,
       "Lower Back": 0.015,
-      "Mid Back": 0.005,
-      "Upper Back": 0.005,
       "Flexors": 0.01,
       "Extensors": 0.01,
       "Upper Abs": 0.01,
@@ -516,7 +512,8 @@
     "difficulty": "Beginner",
     "is_compound": false,
     "push_pull": "pull",
-    "upper_lower": "lower"
+    "upper_lower": "lower",
+    "effectiveBodyweightMultiplier": 0.02
   },
   {
     "id": "exercise_017",
@@ -542,7 +539,8 @@
     "difficulty": "Beginner",
     "is_compound": false,
     "push_pull": null,
-    "upper_lower": "lower"
+    "upper_lower": "lower",
+    "effectiveBodyweightMultiplier": 0.02
   },
   {
     "id": "exercise_018",
@@ -569,7 +567,8 @@
     "difficulty": "Beginner",
     "is_compound": false,
     "push_pull": null,
-    "upper_lower": "lower"
+    "upper_lower": "lower",
+    "effectiveBodyweightMultiplier": 0.02
   },
   {
     "id": "exercise_019",
@@ -606,7 +605,8 @@
     "difficulty": "Intermediate",
     "is_compound": true,
     "push_pull": "push",
-    "upper_lower": "lower"
+    "upper_lower": "lower",
+    "effectiveBodyweightMultiplier": 0.03
   },
   {
     "id": "exercise_020",
@@ -638,7 +638,8 @@
     "difficulty": "Intermediate",
     "is_compound": true,
     "push_pull": "pull",
-    "upper_lower": "lower"
+    "upper_lower": "lower",
+    "effectiveBodyweightMultiplier": 0.03
   },
   {
     "id": "exercise_021",
@@ -671,7 +672,8 @@
     "difficulty": "Beginner",
     "is_compound": false,
     "push_pull": "pull",
-    "upper_lower": "upper"
+    "upper_lower": "upper",
+    "effectiveBodyweightMultiplier": 0.02
   },
   {
     "id": "exercise_022",
@@ -707,7 +709,8 @@
     "difficulty": "Beginner",
     "is_compound": true,
     "push_pull": "push",
-    "upper_lower": "upper"
+    "upper_lower": "upper",
+    "effectiveBodyweightMultiplier": 0.02
   },
   {
     "id": "exercise_023",
@@ -742,7 +745,8 @@
     "difficulty": "Intermediate",
     "is_compound": true,
     "push_pull": "push",
-    "upper_lower": "lower"
+    "upper_lower": "lower",
+    "effectiveBodyweightMultiplier": 0.03
   },
   {
     "id": "exercise_024",
@@ -768,7 +772,8 @@
     "difficulty": "Beginner",
     "is_compound": false,
     "push_pull": "push",
-    "upper_lower": "lower"
+    "upper_lower": "lower",
+    "effectiveBodyweightMultiplier": 0.02
   },
   {
     "id": "exercise_025",
@@ -776,14 +781,12 @@
     "exercise_type": "weight",
     "distance_unit": null,
     "muscles": {
-      "Hamstrings": 0.85,
-      "Calves - Medial Head": 0.03,
-      "Calves - Lateral Head": 0.025,
+      "Hamstrings": 0.855,
+      "Calves - Medial Head": 0.033,
+      "Calves - Lateral Head": 0.027,
       "Soleus": 0.015,
       "Quads": 0.015,
       "Lower Back": 0.015,
-      "Mid Back": 0.005,
-      "Upper Back": 0.005,
       "Flexors": 0.01,
       "Extensors": 0.01,
       "Upper Abs": 0.01,
@@ -796,7 +799,8 @@
     "difficulty": "Beginner",
     "is_compound": false,
     "push_pull": "pull",
-    "upper_lower": "lower"
+    "upper_lower": "lower",
+    "effectiveBodyweightMultiplier": 0.02
   },
   {
     "id": "exercise_026",
@@ -829,7 +833,8 @@
     "difficulty": "Beginner",
     "is_compound": false,
     "push_pull": "push",
-    "upper_lower": "upper"
+    "upper_lower": "upper",
+    "effectiveBodyweightMultiplier": 0.02
   },
   {
     "id": "exercise_027",
@@ -860,7 +865,8 @@
     "difficulty": "Beginner",
     "is_compound": false,
     "push_pull": "pull",
-    "upper_lower": "upper"
+    "upper_lower": "upper",
+    "effectiveBodyweightMultiplier": 0.03
   },
   {
     "id": "exercise_028",
@@ -868,20 +874,15 @@
     "exercise_type": "weight",
     "distance_unit": null,
     "muscles": {
-      "Front Delts": 0.8325,
-      "Upper Chest": 0.0525,
-      "Lateral Delts": 0.02,
-      "Upper Back": 0.015,
-      "Flexors": 0.015,
-      "Rear Delts": 0.015,
+      "Front Delts": 0.73,
+      "Upper Chest": 0.1,
+      "Lateral Delts": 0.06,
+      "Upper Back": 0.04,
+      "Flexors": 0.03,
+      "Rear Delts": 0.02,
       "Mid Back": 0.01,
-      "Lower Back": 0.01,
-      "Mid Chest": 0.005,
-      "Triceps - Long Head": 0.005,
-      "Extensors": 0.005,
-      "Upper Abs": 0.005,
-      "Lower Abs": 0.005,
-      "Obliques": 0.005
+      "Lower Back": 0.005,
+      "Extensors": 0.005
     },
     "equipment": [
       "Dumbbell"
@@ -890,7 +891,8 @@
     "difficulty": "Beginner",
     "is_compound": false,
     "push_pull": null,
-    "upper_lower": "upper"
+    "upper_lower": "upper",
+    "effectiveBodyweightMultiplier": 0.03
   },
   {
     "id": "exercise_029",
@@ -923,7 +925,8 @@
     "difficulty": "Beginner",
     "is_compound": false,
     "push_pull": "pull",
-    "upper_lower": "upper"
+    "upper_lower": "upper",
+    "effectiveBodyweightMultiplier": 0.03
   },
   {
     "id": "exercise_030",
@@ -959,7 +962,8 @@
     "difficulty": "Intermediate",
     "is_compound": true,
     "push_pull": "push",
-    "upper_lower": "upper"
+    "upper_lower": "upper",
+    "effectiveBodyweightMultiplier": 0.03
   },
   {
     "id": "exercise_031",
@@ -993,7 +997,8 @@
     "difficulty": "Beginner",
     "is_compound": false,
     "push_pull": "pull",
-    "upper_lower": "upper"
+    "upper_lower": "upper",
+    "effectiveBodyweightMultiplier": 0.03
   },
   {
     "id": "exercise_032",
@@ -1026,7 +1031,8 @@
     "difficulty": "Intermediate",
     "is_compound": true,
     "push_pull": "push",
-    "upper_lower": "lower"
+    "upper_lower": "lower",
+    "effectiveBodyweightMultiplier": 0.03
   },
   {
     "id": "exercise_033",
@@ -1068,7 +1074,8 @@
     "difficulty": "Advanced",
     "is_compound": true,
     "push_pull": "pull",
-    "upper_lower": "lower"
+    "upper_lower": "lower",
+    "effectiveBodyweightMultiplier": 0.03
   },
   {
     "id": "exercise_034",
@@ -1113,7 +1120,8 @@
     "difficulty": "Advanced",
     "is_compound": true,
     "push_pull": "push",
-    "upper_lower": "upper"
+    "upper_lower": "upper",
+    "effectiveBodyweightMultiplier": 0.03
   },
   {
     "id": "exercise_035",
@@ -1144,7 +1152,8 @@
     "difficulty": "Intermediate",
     "is_compound": false,
     "push_pull": "pull",
-    "upper_lower": "upper"
+    "upper_lower": "upper",
+    "effectiveBodyweightMultiplier": 0.03
   },
   {
     "id": "exercise_036",
@@ -1181,7 +1190,8 @@
     "difficulty": "Intermediate",
     "is_compound": true,
     "push_pull": "push",
-    "upper_lower": "upper"
+    "upper_lower": "upper",
+    "effectiveBodyweightMultiplier": 0.03
   },
   {
     "id": "exercise_037",
@@ -1208,7 +1218,8 @@
     "difficulty": "Beginner",
     "is_compound": false,
     "push_pull": null,
-    "upper_lower": "upper"
+    "upper_lower": "upper",
+    "effectiveBodyweightMultiplier": 0.03
   },
   {
     "id": "exercise_038",
@@ -1246,7 +1257,8 @@
     "difficulty": "Intermediate",
     "is_compound": true,
     "push_pull": "push",
-    "upper_lower": "lower"
+    "upper_lower": "lower",
+    "effectiveBodyweightMultiplier": 0.03
   },
   {
     "id": "exercise_039",
@@ -1277,7 +1289,8 @@
     "difficulty": "Intermediate",
     "is_compound": true,
     "push_pull": null,
-    "upper_lower": "lower"
+    "upper_lower": "lower",
+    "effectiveBodyweightMultiplier": 0.03
   },
   {
     "id": "exercise_040",
@@ -1311,7 +1324,8 @@
     "difficulty": "Intermediate",
     "is_compound": true,
     "push_pull": null,
-    "upper_lower": "lower"
+    "upper_lower": "lower",
+    "effectiveBodyweightMultiplier": 0.03
   },
   {
     "id": "exercise_041",
@@ -1344,7 +1358,8 @@
     "difficulty": "Intermediate",
     "is_compound": true,
     "push_pull": "push",
-    "upper_lower": "lower"
+    "upper_lower": "lower",
+    "effectiveBodyweightMultiplier": 0.03
   },
   {
     "id": "exercise_042",
@@ -1374,7 +1389,8 @@
     "difficulty": "Intermediate",
     "is_compound": true,
     "push_pull": null,
-    "upper_lower": "lower"
+    "upper_lower": "lower",
+    "effectiveBodyweightMultiplier": 0.03
   },
   {
     "id": "exercise_043",
@@ -1415,7 +1431,8 @@
     "difficulty": "Intermediate",
     "is_compound": true,
     "push_pull": "push",
-    "upper_lower": "lower"
+    "upper_lower": "lower",
+    "effectiveBodyweightMultiplier": 0.03
   },
   {
     "id": "exercise_044",
@@ -1456,7 +1473,8 @@
     "difficulty": "Advanced",
     "is_compound": true,
     "push_pull": "push",
-    "upper_lower": "lower"
+    "upper_lower": "lower",
+    "effectiveBodyweightMultiplier": 0.03
   },
   {
     "id": "exercise_045",
@@ -1493,7 +1511,8 @@
     "difficulty": "Advanced",
     "is_compound": true,
     "push_pull": "pull",
-    "upper_lower": "lower"
+    "upper_lower": "lower",
+    "effectiveBodyweightMultiplier": 0.03
   },
   {
     "id": "exercise_046",
@@ -1521,7 +1540,8 @@
     "difficulty": "Beginner",
     "is_compound": false,
     "push_pull": "pull",
-    "upper_lower": "upper"
+    "upper_lower": "upper",
+    "effectiveBodyweightMultiplier": 0.03
   },
   {
     "id": "exercise_047",
@@ -1555,7 +1575,8 @@
     "difficulty": "Intermediate",
     "is_compound": true,
     "push_pull": "pull",
-    "upper_lower": "lower"
+    "upper_lower": "lower",
+    "effectiveBodyweightMultiplier": 0.03
   },
   {
     "id": "exercise_048",
@@ -1563,16 +1584,16 @@
     "exercise_type": "weight",
     "distance_unit": null,
     "muscles": {
-      "Upper Back": 0.4,
-      "Flexors": 0.35,
-      "Lower Back": 0.15,
-      "Mid Back": 0.04,
-      "Upper Abs": 0.01,
-      "Lats": 0.01,
-      "Front Delts": 0.01,
+      "Upper Back": 0.7,
+      "Mid Back": 0.08,
+      "Flexors": 0.08,
+      "Lower Back": 0.03,
+      "Lateral Delts": 0.02,
+      "Rear Delts": 0.02,
+      "Front Delts": 0.02,
+      "Lats": 0.02,
       "Extensors": 0.01,
-      "Lateral Delts": 0.005,
-      "Rear Delts": 0.005,
+      "Upper Abs": 0.01,
       "Lower Abs": 0.005,
       "Obliques": 0.005
     },
@@ -1583,7 +1604,8 @@
     "difficulty": "Beginner",
     "is_compound": false,
     "push_pull": "pull",
-    "upper_lower": "upper"
+    "upper_lower": "upper",
+    "effectiveBodyweightMultiplier": 0.03
   },
   {
     "id": "exercise_049",
@@ -1623,7 +1645,8 @@
     "difficulty": "Advanced",
     "is_compound": true,
     "push_pull": "pull",
-    "upper_lower": "lower"
+    "upper_lower": "lower",
+    "effectiveBodyweightMultiplier": 0.03
   },
   {
     "id": "exercise_050",
@@ -1659,7 +1682,8 @@
     "difficulty": "Intermediate",
     "is_compound": true,
     "push_pull": "push",
-    "upper_lower": "lower"
+    "upper_lower": "lower",
+    "effectiveBodyweightMultiplier": 0.03
   },
   {
     "id": "exercise_051",
@@ -1667,22 +1691,22 @@
     "exercise_type": "weight",
     "distance_unit": null,
     "muscles": {
-      "Lateral Delts": 0.25,
-      "Upper Back": 0.22,
-      "Front Delts": 0.2,
-      "Flexors": 0.12,
+      "Lateral Delts": 0.3,
+      "Upper Back": 0.25,
+      "Front Delts": 0.18,
       "Biceps - Long Head": 0.06,
       "Biceps - Short Head": 0.04,
-      "Rear Delts": 0.03,
+      "Rear Delts": 0.04,
+      "Brachialis": 0.03,
+      "Flexors": 0.03,
       "Lower Back": 0.02,
-      "Brachialis": 0.02,
       "Extensors": 0.01,
       "Mid Back": 0.01,
-      "Triceps - Long Head": 0.005,
-      "Upper Abs": 0.005,
+      "Upper Abs": 0.01,
       "Upper Chest": 0.005,
-      "Lower Abs": 0.003,
-      "Obliques": 0.002
+      "Triceps - Long Head": 0.005,
+      "Lower Abs": 0.005,
+      "Obliques": 0.005
     },
     "equipment": [
       "Barbell"
@@ -1691,7 +1715,8 @@
     "difficulty": "Intermediate",
     "is_compound": true,
     "push_pull": "pull",
-    "upper_lower": "upper"
+    "upper_lower": "upper",
+    "effectiveBodyweightMultiplier": 0.03
   },
   {
     "id": "exercise_052",
@@ -1699,27 +1724,26 @@
     "exercise_type": "weight",
     "distance_unit": null,
     "muscles": {
-      "Lats": 0.22,
-      "Mid Back": 0.15,
-      "Lower Back": 0.15,
-      "Upper Back": 0.1,
-      "Flexors": 0.1,
-      "Rear Delts": 0.07,
-      "Biceps - Long Head": 0.04,
-      "Biceps - Short Head": 0.035,
-      "Brachialis": 0.025,
-      "Upper Abs": 0.015,
+      "Lats": 0.305,
+      "Mid Back": 0.18,
+      "Upper Back": 0.12,
+      "Rear Delts": 0.08,
+      "Biceps - Long Head": 0.06,
+      "Biceps - Short Head": 0.05,
+      "Lower Back": 0.06,
+      "Brachialis": 0.03,
+      "Flexors": 0.04,
+      "Upper Abs": 0.02,
       "Lower Abs": 0.015,
-      "Quads": 0.01,
-      "Hamstrings": 0.01,
-      "Glutes": 0.01,
       "Obliques": 0.01,
-      "Front Delts": 0.01,
-      "Extensors": 0.01,
-      "Lateral Delts": 0.005,
-      "Calves - Medial Head": 0.005,
-      "Calves - Lateral Head": 0.005,
-      "Soleus": 0.005
+      "Quads": 0.005,
+      "Hamstrings": 0.005,
+      "Glutes": 0.005,
+      "Front Delts": 0.005,
+      "Extensors": 0.005,
+      "Lateral Delts": 0.003,
+      "Calves - Medial Head": 0.001,
+      "Calves - Lateral Head": 0.001
     },
     "equipment": [
       "Barbell"
@@ -1728,7 +1752,8 @@
     "difficulty": "Intermediate",
     "is_compound": true,
     "push_pull": "pull",
-    "upper_lower": "upper"
+    "upper_lower": "upper",
+    "effectiveBodyweightMultiplier": 0.03
   },
   {
     "id": "exercise_053",
@@ -1758,7 +1783,8 @@
     "difficulty": "Beginner",
     "is_compound": false,
     "push_pull": "push",
-    "upper_lower": "upper"
+    "upper_lower": "upper",
+    "effectiveBodyweightMultiplier": 0.03
   },
   {
     "id": "exercise_054",
@@ -1793,7 +1819,8 @@
     "difficulty": "Beginner",
     "is_compound": false,
     "push_pull": null,
-    "upper_lower": "upper"
+    "upper_lower": "upper",
+    "effectiveBodyweightMultiplier": 0.02
   },
   {
     "id": "exercise_055",
@@ -1830,7 +1857,8 @@
     "difficulty": "Beginner",
     "is_compound": false,
     "push_pull": "push",
-    "upper_lower": "upper"
+    "upper_lower": "upper",
+    "effectiveBodyweightMultiplier": 0.02
   },
   {
     "id": "exercise_056",
@@ -1864,7 +1892,8 @@
     "difficulty": "Beginner",
     "is_compound": false,
     "push_pull": null,
-    "upper_lower": "upper"
+    "upper_lower": "upper",
+    "effectiveBodyweightMultiplier": 0.02
   },
   {
     "id": "exercise_057",
@@ -1893,7 +1922,8 @@
     "difficulty": "Beginner",
     "is_compound": false,
     "push_pull": "pull",
-    "upper_lower": "upper"
+    "upper_lower": "upper",
+    "effectiveBodyweightMultiplier": 0.02
   },
   {
     "id": "exercise_058",
@@ -1922,7 +1952,8 @@
     "difficulty": "Beginner",
     "is_compound": false,
     "push_pull": null,
-    "upper_lower": "lower"
+    "upper_lower": "lower",
+    "effectiveBodyweightMultiplier": 0.02
   },
   {
     "id": "exercise_059",
@@ -1951,7 +1982,8 @@
     "difficulty": "Beginner",
     "is_compound": false,
     "push_pull": null,
-    "upper_lower": "lower"
+    "upper_lower": "lower",
+    "effectiveBodyweightMultiplier": 0.02
   },
   {
     "id": "exercise_060",
@@ -1983,7 +2015,8 @@
     "difficulty": "Beginner",
     "is_compound": false,
     "push_pull": "push",
-    "upper_lower": "upper"
+    "upper_lower": "upper",
+    "effectiveBodyweightMultiplier": 0.02
   },
   {
     "id": "exercise_061",
@@ -2008,7 +2041,8 @@
     "difficulty": "Beginner",
     "is_compound": false,
     "push_pull": "pull",
-    "upper_lower": "upper"
+    "upper_lower": "upper",
+    "effectiveBodyweightMultiplier": 0.02
   },
   {
     "id": "exercise_062",
@@ -2037,7 +2071,8 @@
     "difficulty": "Beginner",
     "is_compound": true,
     "push_pull": "pull",
-    "upper_lower": "lower"
+    "upper_lower": "lower",
+    "effectiveBodyweightMultiplier": 0.02
   },
   {
     "id": "exercise_063",
@@ -2061,7 +2096,8 @@
     "difficulty": "Beginner",
     "is_compound": false,
     "push_pull": "push",
-    "upper_lower": "upper"
+    "upper_lower": "upper",
+    "effectiveBodyweightMultiplier": 0.02
   },
   {
     "id": "exercise_064",
@@ -2091,7 +2127,8 @@
     "difficulty": "Beginner",
     "is_compound": true,
     "push_pull": "pull",
-    "upper_lower": "upper"
+    "upper_lower": "upper",
+    "effectiveBodyweightMultiplier": 0.02
   },
   {
     "id": "exercise_065",
@@ -2124,7 +2161,8 @@
     "difficulty": "Intermediate",
     "is_compound": true,
     "push_pull": "pull",
-    "upper_lower": "upper"
+    "upper_lower": "upper",
+    "effectiveBodyweightMultiplier": 0.02
   },
   {
     "id": "exercise_066",
@@ -2155,7 +2193,8 @@
     "difficulty": "Beginner",
     "is_compound": false,
     "push_pull": "push",
-    "upper_lower": "lower"
+    "upper_lower": "lower",
+    "effectiveBodyweightMultiplier": 0.02
   },
   {
     "id": "exercise_067",
@@ -2184,7 +2223,8 @@
     "difficulty": "Intermediate",
     "is_compound": true,
     "push_pull": "pull",
-    "upper_lower": "upper"
+    "upper_lower": "upper",
+    "effectiveBodyweightMultiplier": 0.03
   },
   {
     "id": "exercise_068",
@@ -2218,7 +2258,8 @@
     "difficulty": "Intermediate",
     "is_compound": true,
     "push_pull": "push",
-    "upper_lower": "upper"
+    "upper_lower": "upper",
+    "effectiveBodyweightMultiplier": 0.03
   },
   {
     "id": "exercise_069",
@@ -2249,7 +2290,8 @@
     "difficulty": "Beginner",
     "is_compound": true,
     "push_pull": "pull",
-    "upper_lower": "upper"
+    "upper_lower": "upper",
+    "effectiveBodyweightMultiplier": 0.02
   },
   {
     "id": "exercise_070",
@@ -2282,7 +2324,8 @@
     "difficulty": "Intermediate",
     "is_compound": true,
     "push_pull": "push",
-    "upper_lower": "upper"
+    "upper_lower": "upper",
+    "effectiveBodyweightMultiplier": 0.03
   },
   {
     "id": "exercise_071",
@@ -2314,7 +2357,8 @@
     "difficulty": "Beginner",
     "is_compound": true,
     "push_pull": "push",
-    "upper_lower": "upper"
+    "upper_lower": "upper",
+    "effectiveBodyweightMultiplier": 0.02
   },
   {
     "id": "exercise_072",
@@ -2349,7 +2393,8 @@
     "difficulty": "Intermediate",
     "is_compound": true,
     "push_pull": "push",
-    "upper_lower": "upper"
+    "upper_lower": "upper",
+    "effectiveBodyweightMultiplier": 0.03
   },
   {
     "id": "exercise_073",
@@ -2357,14 +2402,14 @@
     "exercise_type": "weight",
     "distance_unit": null,
     "muscles": {
-      "Lower Chest": 0.3725,
-      "Mid Chest": 0.3225,
+      "Lower Chest": 0.3925,
+      "Mid Chest": 0.3425,
       "Front Delts": 0.06,
       "Upper Chest": 0.05,
       "Flexors": 0.05,
-      "Upper Abs": 0.05,
       "Lateral Delts": 0.03,
       "Rear Delts": 0.02,
+      "Upper Abs": 0.01,
       "Mid Back": 0.01,
       "Upper Back": 0.01,
       "Biceps - Long Head": 0.005,
@@ -2381,7 +2426,8 @@
     "difficulty": "Beginner",
     "is_compound": false,
     "push_pull": "push",
-    "upper_lower": "upper"
+    "upper_lower": "upper",
+    "effectiveBodyweightMultiplier": 0.03
   },
   {
     "id": "exercise_074",
@@ -2404,7 +2450,8 @@
     "difficulty": "Beginner",
     "is_compound": false,
     "push_pull": null,
-    "upper_lower": "upper"
+    "upper_lower": "upper",
+    "effectiveBodyweightMultiplier": 0.02
   },
   {
     "id": "exercise_075",
@@ -2429,7 +2476,8 @@
     "difficulty": "Beginner",
     "is_compound": false,
     "push_pull": "push",
-    "upper_lower": "upper"
+    "upper_lower": "upper",
+    "effectiveBodyweightMultiplier": 0.02
   },
   {
     "id": "exercise_076",
@@ -2459,7 +2507,8 @@
     "difficulty": "Beginner",
     "is_compound": true,
     "push_pull": "push",
-    "upper_lower": "upper"
+    "upper_lower": "upper",
+    "effectiveBodyweightMultiplier": 0.03
   },
   {
     "id": "exercise_077",
@@ -2489,7 +2538,8 @@
     "difficulty": "Intermediate",
     "is_compound": true,
     "push_pull": "push",
-    "upper_lower": "lower"
+    "upper_lower": "lower",
+    "effectiveBodyweightMultiplier": 0.03
   },
   {
     "id": "exercise_078",
@@ -2513,7 +2563,8 @@
     "difficulty": "Beginner",
     "is_compound": false,
     "push_pull": "pull",
-    "upper_lower": "upper"
+    "upper_lower": "upper",
+    "effectiveBodyweightMultiplier": 0.03
   },
   {
     "id": "exercise_079",
@@ -2544,7 +2595,8 @@
     "difficulty": "Intermediate",
     "is_compound": true,
     "push_pull": "push",
-    "upper_lower": "upper"
+    "upper_lower": "upper",
+    "effectiveBodyweightMultiplier": 0.03
   },
   {
     "id": "exercise_080",
@@ -2576,7 +2628,8 @@
     "difficulty": "Intermediate",
     "is_compound": true,
     "push_pull": "pull",
-    "upper_lower": "lower"
+    "upper_lower": "lower",
+    "effectiveBodyweightMultiplier": 0.03
   },
   {
     "id": "exercise_081",
@@ -2584,21 +2637,20 @@
     "exercise_type": "weight",
     "distance_unit": null,
     "muscles": {
-      "Mid Chest": 0.3,
-      "Upper Abs": 0.25,
-      "Upper Chest": 0.2,
+      "Mid Chest": 0.36,
+      "Upper Chest": 0.315,
+      "Lower Chest": 0.12,
       "Front Delts": 0.1,
-      "Flexors": 0.05,
-      "Lateral Delts": 0.02,
-      "Rear Delts": 0.02,
-      "Upper Back": 0.015,
-      "Obliques": 0.01,
-      "Mid Back": 0.01,
-      "Biceps - Long Head": 0.005,
-      "Biceps - Short Head": 0.005,
-      "Triceps - Long Head": 0.005,
-      "Lats": 0.005,
-      "Lower Back": 0.005
+      "Biceps - Long Head": 0.02,
+      "Biceps - Short Head": 0.02,
+      "Flexors": 0.02,
+      "Lateral Delts": 0.01,
+      "Upper Abs": 0.01,
+      "Rear Delts": 0.005,
+      "Upper Back": 0.005,
+      "Mid Back": 0.005,
+      "Lower Abs": 0.005,
+      "Obliques": 0.005
     },
     "equipment": [
       "Dumbbell",
@@ -2608,7 +2660,8 @@
     "difficulty": "Beginner",
     "is_compound": false,
     "push_pull": "push",
-    "upper_lower": "upper"
+    "upper_lower": "upper",
+    "effectiveBodyweightMultiplier": 0.03
   },
   {
     "id": "exercise_082",
@@ -2640,7 +2693,8 @@
     "difficulty": "Intermediate",
     "is_compound": true,
     "push_pull": "push",
-    "upper_lower": "lower"
+    "upper_lower": "lower",
+    "effectiveBodyweightMultiplier": 0.03
   },
   {
     "id": "exercise_083",
@@ -2665,7 +2719,8 @@
     "difficulty": "Beginner",
     "is_compound": false,
     "push_pull": "pull",
-    "upper_lower": "upper"
+    "upper_lower": "upper",
+    "effectiveBodyweightMultiplier": 0.03
   },
   {
     "id": "exercise_084",
@@ -2694,7 +2749,8 @@
     "difficulty": "Beginner",
     "is_compound": true,
     "push_pull": "push",
-    "upper_lower": "lower"
+    "upper_lower": "lower",
+    "effectiveBodyweightMultiplier": 0.03
   },
   {
     "id": "exercise_085",
@@ -2724,7 +2780,8 @@
     "difficulty": "Beginner",
     "is_compound": true,
     "push_pull": "push",
-    "upper_lower": "lower"
+    "upper_lower": "lower",
+    "effectiveBodyweightMultiplier": 0.03
   },
   {
     "id": "exercise_086",
@@ -2755,7 +2812,8 @@
     "difficulty": "Intermediate",
     "is_compound": true,
     "push_pull": "pull",
-    "upper_lower": "lower"
+    "upper_lower": "lower",
+    "effectiveBodyweightMultiplier": 0.03
   },
   {
     "id": "exercise_087",
@@ -2781,7 +2839,8 @@
     "difficulty": "Beginner",
     "is_compound": false,
     "push_pull": "pull",
-    "upper_lower": "upper"
+    "upper_lower": "upper",
+    "effectiveBodyweightMultiplier": 0.03
   },
   {
     "id": "exercise_088",
@@ -2805,7 +2864,8 @@
     "difficulty": "Beginner",
     "is_compound": false,
     "push_pull": "pull",
-    "upper_lower": "upper"
+    "upper_lower": "upper",
+    "effectiveBodyweightMultiplier": 0.03
   },
   {
     "id": "exercise_089",
@@ -2838,7 +2898,8 @@
     "difficulty": "Beginner",
     "is_compound": true,
     "push_pull": "push",
-    "upper_lower": "lower"
+    "upper_lower": "lower",
+    "effectiveBodyweightMultiplier": 0.03
   },
   {
     "id": "exercise_090",
@@ -2872,7 +2933,8 @@
     "difficulty": "Beginner",
     "is_compound": true,
     "push_pull": "push",
-    "upper_lower": "lower"
+    "upper_lower": "lower",
+    "effectiveBodyweightMultiplier": 0.03
   },
   {
     "id": "exercise_091",
@@ -2899,7 +2961,8 @@
     "difficulty": "Beginner",
     "is_compound": false,
     "push_pull": "push",
-    "upper_lower": "upper"
+    "upper_lower": "upper",
+    "effectiveBodyweightMultiplier": 0.03
   },
   {
     "id": "exercise_092",
@@ -2930,7 +2993,8 @@
     "difficulty": "Intermediate",
     "is_compound": true,
     "push_pull": "pull",
-    "upper_lower": "upper"
+    "upper_lower": "upper",
+    "effectiveBodyweightMultiplier": 0.03
   },
   {
     "id": "exercise_093",
@@ -2953,7 +3017,8 @@
     "difficulty": "Beginner",
     "is_compound": false,
     "push_pull": "pull",
-    "upper_lower": "upper"
+    "upper_lower": "upper",
+    "effectiveBodyweightMultiplier": 0.03
   },
   {
     "id": "exercise_094",
@@ -2979,7 +3044,8 @@
     "difficulty": "Intermediate",
     "is_compound": false,
     "push_pull": "push",
-    "upper_lower": "upper"
+    "upper_lower": "upper",
+    "effectiveBodyweightMultiplier": 0.03
   },
   {
     "id": "exercise_095",
@@ -3007,7 +3073,8 @@
     "difficulty": "Beginner",
     "is_compound": false,
     "push_pull": "pull",
-    "upper_lower": "upper"
+    "upper_lower": "upper",
+    "effectiveBodyweightMultiplier": 0.02
   },
   {
     "id": "exercise_096",
@@ -3036,7 +3103,8 @@
     "difficulty": "Beginner",
     "is_compound": true,
     "push_pull": "push",
-    "upper_lower": "lower"
+    "upper_lower": "lower",
+    "effectiveBodyweightMultiplier": 0.02
   },
   {
     "id": "exercise_097",
@@ -3062,7 +3130,8 @@
     "difficulty": "Beginner",
     "is_compound": true,
     "push_pull": null,
-    "upper_lower": "lower"
+    "upper_lower": "lower",
+    "effectiveBodyweightMultiplier": 0.02
   },
   {
     "id": "exercise_098",
@@ -3093,7 +3162,8 @@
     "difficulty": "Intermediate",
     "is_compound": true,
     "push_pull": "push",
-    "upper_lower": "upper"
+    "upper_lower": "upper",
+    "effectiveBodyweightMultiplier": 0.03
   },
   {
     "id": "exercise_099",
@@ -3119,7 +3189,8 @@
     "difficulty": "Intermediate",
     "is_compound": false,
     "push_pull": "push",
-    "upper_lower": "upper"
+    "upper_lower": "upper",
+    "effectiveBodyweightMultiplier": 0.03
   },
   {
     "id": "exercise_100",
@@ -3151,7 +3222,8 @@
     "difficulty": "Beginner",
     "is_compound": false,
     "push_pull": "push",
-    "upper_lower": "upper"
+    "upper_lower": "upper",
+    "effectiveBodyweightMultiplier": 0.02
   },
   {
     "id": "exercise_101",
@@ -3178,7 +3250,8 @@
     "difficulty": "Beginner",
     "is_compound": true,
     "push_pull": "push",
-    "upper_lower": "upper"
+    "upper_lower": "upper",
+    "effectiveBodyweightMultiplier": 0.02
   },
   {
     "id": "exercise_102",
@@ -3211,7 +3284,8 @@
     "difficulty": "Beginner",
     "is_compound": true,
     "push_pull": "push",
-    "upper_lower": "upper"
+    "upper_lower": "upper",
+    "effectiveBodyweightMultiplier": 0.03
   },
   {
     "id": "exercise_103",
@@ -3245,7 +3319,8 @@
     "difficulty": "Beginner",
     "is_compound": false,
     "push_pull": "push",
-    "upper_lower": "upper"
+    "upper_lower": "upper",
+    "effectiveBodyweightMultiplier": 0.03
   },
   {
     "id": "exercise_104",
@@ -3271,7 +3346,8 @@
     "difficulty": "Beginner",
     "is_compound": false,
     "push_pull": "push",
-    "upper_lower": "upper"
+    "upper_lower": "upper",
+    "effectiveBodyweightMultiplier": 0.03
   },
   {
     "id": "exercise_105",
@@ -3303,7 +3379,8 @@
     "difficulty": "Intermediate",
     "is_compound": true,
     "push_pull": "push",
-    "upper_lower": "lower"
+    "upper_lower": "lower",
+    "effectiveBodyweightMultiplier": 0.03
   },
   {
     "id": "exercise_106",
@@ -3334,7 +3411,8 @@
     "difficulty": "Beginner",
     "is_compound": true,
     "push_pull": "push",
-    "upper_lower": "lower"
+    "upper_lower": "lower",
+    "effectiveBodyweightMultiplier": 0.03
   },
   {
     "id": "exercise_107",
@@ -3359,7 +3437,8 @@
     "difficulty": "Intermediate",
     "is_compound": true,
     "push_pull": "pull",
-    "upper_lower": "lower"
+    "upper_lower": "lower",
+    "effectiveBodyweightMultiplier": 0.03
   },
   {
     "id": "exercise_108",
@@ -3382,7 +3461,8 @@
     "difficulty": "Beginner",
     "is_compound": false,
     "push_pull": null,
-    "upper_lower": "upper"
+    "upper_lower": "upper",
+    "effectiveBodyweightMultiplier": 0.03
   },
   {
     "id": "exercise_109",
@@ -3412,7 +3492,8 @@
     "difficulty": "Intermediate",
     "is_compound": true,
     "push_pull": null,
-    "upper_lower": "lower"
+    "upper_lower": "lower",
+    "effectiveBodyweightMultiplier": 0.03
   },
   {
     "id": "exercise_110",
@@ -3439,7 +3520,8 @@
     "difficulty": "Beginner",
     "is_compound": false,
     "push_pull": "push",
-    "upper_lower": "upper"
+    "upper_lower": "upper",
+    "effectiveBodyweightMultiplier": 0.02
   },
   {
     "id": "exercise_111",
@@ -3466,7 +3548,8 @@
     "difficulty": "Beginner",
     "is_compound": true,
     "push_pull": "pull",
-    "upper_lower": "upper"
+    "upper_lower": "upper",
+    "effectiveBodyweightMultiplier": 0.02
   },
   {
     "id": "exercise_112",
@@ -3501,7 +3584,8 @@
     "difficulty": "Intermediate",
     "is_compound": true,
     "push_pull": "push",
-    "upper_lower": "upper"
+    "upper_lower": "upper",
+    "effectiveBodyweightMultiplier": 0.03
   },
   {
     "id": "exercise_113",
@@ -3530,7 +3614,8 @@
     "difficulty": "Beginner",
     "is_compound": false,
     "push_pull": null,
-    "upper_lower": "upper"
+    "upper_lower": "upper",
+    "effectiveBodyweightMultiplier": 0.02
   },
   {
     "id": "exercise_114",
@@ -3556,7 +3641,8 @@
     "difficulty": "Intermediate",
     "is_compound": false,
     "push_pull": "push",
-    "upper_lower": "upper"
+    "upper_lower": "upper",
+    "effectiveBodyweightMultiplier": 0.03
   },
   {
     "id": "exercise_115",
@@ -3582,7 +3668,8 @@
     "difficulty": "Beginner",
     "is_compound": true,
     "push_pull": "push",
-    "upper_lower": "upper"
+    "upper_lower": "upper",
+    "effectiveBodyweightMultiplier": 0.02
   },
   {
     "id": "exercise_116",
@@ -3609,7 +3696,8 @@
     "difficulty": "Beginner",
     "is_compound": false,
     "push_pull": "push",
-    "upper_lower": "upper"
+    "upper_lower": "upper",
+    "effectiveBodyweightMultiplier": 0.02
   },
   {
     "id": "exercise_117",
@@ -3627,7 +3715,8 @@
     "difficulty": "Beginner",
     "is_compound": false,
     "push_pull": null,
-    "upper_lower": "upper"
+    "upper_lower": "upper",
+    "effectiveBodyweightMultiplier": 0.03
   },
   {
     "id": "exercise_118",
@@ -3654,7 +3743,8 @@
     "difficulty": "Beginner",
     "is_compound": false,
     "push_pull": "pull",
-    "upper_lower": "upper"
+    "upper_lower": "upper",
+    "effectiveBodyweightMultiplier": 0.02
   },
   {
     "id": "exercise_119",
@@ -3681,7 +3771,8 @@
     "difficulty": "Beginner",
     "is_compound": false,
     "push_pull": "pull",
-    "upper_lower": "upper"
+    "upper_lower": "upper",
+    "effectiveBodyweightMultiplier": 0.03
   },
   {
     "id": "exercise_120",
@@ -3708,7 +3799,8 @@
     "difficulty": "Beginner",
     "is_compound": false,
     "push_pull": "pull",
-    "upper_lower": "upper"
+    "upper_lower": "upper",
+    "effectiveBodyweightMultiplier": 0.03
   },
   {
     "id": "exercise_121",
@@ -3734,7 +3826,8 @@
     "difficulty": "Beginner",
     "is_compound": false,
     "push_pull": "pull",
-    "upper_lower": "upper"
+    "upper_lower": "upper",
+    "effectiveBodyweightMultiplier": 0.02
   },
   {
     "id": "exercise_122",
@@ -3766,7 +3859,8 @@
     "difficulty": "Intermediate",
     "is_compound": true,
     "push_pull": "pull",
-    "upper_lower": "upper"
+    "upper_lower": "upper",
+    "effectiveBodyweightMultiplier": 0.03
   },
   {
     "id": "exercise_123",
@@ -3793,7 +3887,8 @@
     "difficulty": "Beginner",
     "is_compound": false,
     "push_pull": "push",
-    "upper_lower": "upper"
+    "upper_lower": "upper",
+    "effectiveBodyweightMultiplier": 0.02
   },
   {
     "id": "exercise_124",
@@ -3802,17 +3897,17 @@
     "distance_unit": null,
     "muscles": {
       "Lower Back": 0.55,
-      "Upper Abs": 0.15,
-      "Lower Abs": 0.08,
-      "Obliques": 0.055,
-      "Hamstrings": 0.05,
-      "Glutes": 0.05,
-      "Mid Back": 0.02,
-      "Upper Back": 0.02,
-      "Lats": 0.01,
+      "Glutes": 0.15,
+      "Hamstrings": 0.12,
+      "Mid Back": 0.06,
+      "Upper Back": 0.04,
+      "Lats": 0.02,
+      "Upper Abs": 0.02,
+      "Lower Abs": 0.015,
+      "Obliques": 0.015,
       "Quads": 0.005,
-      "Front Delts": 0.005,
-      "Flexors": 0.005
+      "Front Delts": 0.003,
+      "Flexors": 0.002
     },
     "equipment": [
       "Machine"
@@ -3821,7 +3916,8 @@
     "difficulty": "Beginner",
     "is_compound": true,
     "push_pull": null,
-    "upper_lower": "upper"
+    "upper_lower": "upper",
+    "effectiveBodyweightMultiplier": 0.02
   },
   {
     "id": "exercise_125",
@@ -3848,7 +3944,8 @@
     "difficulty": "Beginner",
     "is_compound": false,
     "push_pull": "push",
-    "upper_lower": "lower"
+    "upper_lower": "lower",
+    "effectiveBodyweightMultiplier": 0.03
   },
   {
     "id": "exercise_126",
@@ -3874,7 +3971,8 @@
     "difficulty": "Intermediate",
     "is_compound": true,
     "push_pull": "push",
-    "upper_lower": "upper"
+    "upper_lower": "upper",
+    "effectiveBodyweightMultiplier": 0.03
   },
   {
     "id": "exercise_127",
@@ -3905,7 +4003,8 @@
     "difficulty": "Beginner",
     "is_compound": false,
     "push_pull": "pull",
-    "upper_lower": "upper"
+    "upper_lower": "upper",
+    "effectiveBodyweightMultiplier": 0.03
   },
   {
     "id": "exercise_128",
@@ -3932,7 +4031,8 @@
     "difficulty": "Beginner",
     "is_compound": false,
     "push_pull": "push",
-    "upper_lower": "upper"
+    "upper_lower": "upper",
+    "effectiveBodyweightMultiplier": 0.02
   },
   {
     "id": "exercise_129",
@@ -3962,7 +4062,8 @@
     "difficulty": "Beginner",
     "is_compound": true,
     "push_pull": "pull",
-    "upper_lower": "upper"
+    "upper_lower": "upper",
+    "effectiveBodyweightMultiplier": 0.02
   },
   {
     "id": "exercise_130",
@@ -3991,7 +4092,8 @@
     "difficulty": "Beginner",
     "is_compound": false,
     "push_pull": "push",
-    "upper_lower": "lower"
+    "upper_lower": "lower",
+    "effectiveBodyweightMultiplier": 0.02
   },
   {
     "id": "exercise_131",
@@ -4020,7 +4122,8 @@
     "difficulty": "Beginner",
     "is_compound": false,
     "push_pull": "pull",
-    "upper_lower": "upper"
+    "upper_lower": "upper",
+    "effectiveBodyweightMultiplier": 0.03
   },
   {
     "id": "exercise_132",
@@ -4049,7 +4152,8 @@
     "difficulty": "Beginner",
     "is_compound": false,
     "push_pull": "push",
-    "upper_lower": "upper"
+    "upper_lower": "upper",
+    "effectiveBodyweightMultiplier": 0.03
   },
   {
     "id": "exercise_133",
@@ -4078,7 +4182,8 @@
     "difficulty": "Beginner",
     "is_compound": true,
     "push_pull": "push",
-    "upper_lower": "upper"
+    "upper_lower": "upper",
+    "effectiveBodyweightMultiplier": 0.02
   },
   {
     "id": "exercise_134",
@@ -4104,7 +4209,8 @@
     "difficulty": "Beginner",
     "is_compound": true,
     "push_pull": "pull",
-    "upper_lower": "upper"
+    "upper_lower": "upper",
+    "effectiveBodyweightMultiplier": 0.02
   },
   {
     "id": "exercise_135",
@@ -4141,7 +4247,8 @@
     "difficulty": "Intermediate",
     "is_compound": true,
     "push_pull": "push",
-    "upper_lower": "lower"
+    "upper_lower": "lower",
+    "effectiveBodyweightMultiplier": 0.02
   },
   {
     "id": "exercise_136",
@@ -4172,7 +4279,8 @@
     "difficulty": "Intermediate",
     "is_compound": true,
     "push_pull": "push",
-    "upper_lower": "upper"
+    "upper_lower": "upper",
+    "effectiveBodyweightMultiplier": 0.02
   },
   {
     "id": "exercise_137",
@@ -4205,7 +4313,8 @@
     "difficulty": "Beginner",
     "is_compound": true,
     "push_pull": "pull",
-    "upper_lower": "lower"
+    "upper_lower": "lower",
+    "effectiveBodyweightMultiplier": 0.02
   },
   {
     "id": "exercise_138",
@@ -4235,7 +4344,8 @@
     "difficulty": "Intermediate",
     "is_compound": true,
     "push_pull": "push",
-    "upper_lower": "upper"
+    "upper_lower": "upper",
+    "effectiveBodyweightMultiplier": 0.02
   },
   {
     "id": "exercise_139",
@@ -4264,7 +4374,8 @@
     "difficulty": "Intermediate",
     "is_compound": true,
     "push_pull": null,
-    "upper_lower": "lower"
+    "upper_lower": "lower",
+    "effectiveBodyweightMultiplier": 0.02
   },
   {
     "id": "exercise_140",
@@ -4291,7 +4402,8 @@
     "difficulty": "Beginner",
     "is_compound": true,
     "push_pull": "push",
-    "upper_lower": "lower"
+    "upper_lower": "lower",
+    "effectiveBodyweightMultiplier": 0.02
   },
   {
     "id": "exercise_141",
@@ -4320,7 +4432,8 @@
     "difficulty": "Beginner",
     "is_compound": true,
     "push_pull": null,
-    "upper_lower": "lower"
+    "upper_lower": "lower",
+    "effectiveBodyweightMultiplier": 0.02
   },
   {
     "id": "exercise_142",
@@ -4352,7 +4465,8 @@
     "difficulty": "Beginner",
     "is_compound": true,
     "push_pull": "push",
-    "upper_lower": "upper"
+    "upper_lower": "upper",
+    "effectiveBodyweightMultiplier": 0.02
   },
   {
     "id": "exercise_153",
@@ -4382,7 +4496,8 @@
     "difficulty": "Beginner",
     "is_compound": true,
     "push_pull": "push",
-    "upper_lower": "lower"
+    "upper_lower": "lower",
+    "effectiveBodyweightMultiplier": 0.03
   },
   {
     "id": "exercise_154",
@@ -4408,7 +4523,8 @@
     "difficulty": "Beginner",
     "is_compound": false,
     "push_pull": "push",
-    "upper_lower": "lower"
+    "upper_lower": "lower",
+    "effectiveBodyweightMultiplier": 0.02
   },
   {
     "id": "cardio_001",
@@ -4423,7 +4539,8 @@
     "difficulty": "Beginner",
     "is_compound": false,
     "push_pull": null,
-    "upper_lower": null
+    "upper_lower": null,
+    "effectiveBodyweightMultiplier": 0
   },
   {
     "id": "cardio_002",
@@ -4438,7 +4555,8 @@
     "difficulty": "Beginner",
     "is_compound": false,
     "push_pull": null,
-    "upper_lower": null
+    "upper_lower": null,
+    "effectiveBodyweightMultiplier": 0
   },
   {
     "id": "cardio_003",
@@ -4453,7 +4571,8 @@
     "difficulty": "Beginner",
     "is_compound": true,
     "push_pull": null,
-    "upper_lower": null
+    "upper_lower": null,
+    "effectiveBodyweightMultiplier": 0
   },
   {
     "id": "cardio_004",
@@ -4468,7 +4587,8 @@
     "difficulty": "Beginner",
     "is_compound": false,
     "push_pull": null,
-    "upper_lower": null
+    "upper_lower": null,
+    "effectiveBodyweightMultiplier": 0
   },
   {
     "id": "cardio_005",
@@ -4483,7 +4603,8 @@
     "difficulty": "Beginner",
     "is_compound": true,
     "push_pull": null,
-    "upper_lower": null
+    "upper_lower": null,
+    "effectiveBodyweightMultiplier": 0
   },
   {
     "id": "cardio_006",
@@ -4499,7 +4620,8 @@
     "is_compound": false,
     "push_pull": null,
     "upper_lower": null,
-    "supports_gps_tracking": true
+    "supports_gps_tracking": true,
+    "effectiveBodyweightMultiplier": 0
   },
   {
     "id": "cardio_007",
@@ -4515,7 +4637,8 @@
     "is_compound": false,
     "push_pull": null,
     "upper_lower": null,
-    "supports_gps_tracking": true
+    "supports_gps_tracking": true,
+    "effectiveBodyweightMultiplier": 0
   },
   {
     "id": "cardio_008",
@@ -4531,7 +4654,8 @@
     "is_compound": false,
     "push_pull": null,
     "upper_lower": null,
-    "supports_gps_tracking": true
+    "supports_gps_tracking": true,
+    "effectiveBodyweightMultiplier": 0
   },
   {
     "id": "cardio_009",
@@ -4546,7 +4670,8 @@
     "difficulty": "Intermediate",
     "is_compound": true,
     "push_pull": null,
-    "upper_lower": null
+    "upper_lower": null,
+    "effectiveBodyweightMultiplier": 0
   },
   {
     "id": "bodyweight_001",
@@ -4575,7 +4700,8 @@
     "difficulty": "Beginner",
     "is_compound": true,
     "push_pull": "push",
-    "upper_lower": "upper"
+    "upper_lower": "upper",
+    "effectiveBodyweightMultiplier": 0.16
   },
   {
     "id": "bodyweight_002",
@@ -4603,7 +4729,8 @@
     "difficulty": "Intermediate",
     "is_compound": true,
     "push_pull": "pull",
-    "upper_lower": "upper"
+    "upper_lower": "upper",
+    "effectiveBodyweightMultiplier": 0.22
   },
   {
     "id": "bodyweight_003",
@@ -4633,7 +4760,8 @@
     "difficulty": "Intermediate",
     "is_compound": true,
     "push_pull": "pull",
-    "upper_lower": "upper"
+    "upper_lower": "upper",
+    "effectiveBodyweightMultiplier": 0.22
   },
   {
     "id": "bodyweight_004",
@@ -4662,7 +4790,8 @@
     "difficulty": "Intermediate",
     "is_compound": true,
     "push_pull": "push",
-    "upper_lower": "upper"
+    "upper_lower": "upper",
+    "effectiveBodyweightMultiplier": 0.2
   },
   {
     "id": "bodyweight_005",
@@ -4683,7 +4812,8 @@
     "difficulty": "Beginner",
     "is_compound": false,
     "push_pull": null,
-    "upper_lower": "upper"
+    "upper_lower": "upper",
+    "effectiveBodyweightMultiplier": 0.05
   },
   {
     "id": "bodyweight_006",
@@ -4704,7 +4834,8 @@
     "difficulty": "Beginner",
     "is_compound": false,
     "push_pull": null,
-    "upper_lower": "upper"
+    "upper_lower": "upper",
+    "effectiveBodyweightMultiplier": 0.06
   },
   {
     "id": "bodyweight_007",
@@ -4712,15 +4843,15 @@
     "exercise_type": "bodyweight",
     "distance_unit": null,
     "muscles": {
-      "Quads": 0.2975,
-      "Lower Abs": 0.255,
-      "Upper Abs": 0.17,
-      "Obliques": 0.068,
-      "Abductors": 0.017,
-      "Lower Back": 0.017,
-      "Glutes": 0.017,
-      "Hamstrings": 0.0085,
-      "Hip Flexors": 0.15
+      "Lower Abs": 0.35,
+      "Upper Abs": 0.22,
+      "Hip Flexors": 0.22,
+      "Obliques": 0.1,
+      "Quads": 0.05,
+      "Lower Back": 0.03,
+      "Glutes": 0.015,
+      "Abductors": 0.01,
+      "Hamstrings": 0.005
     },
     "equipment": [
       "Bodyweight"
@@ -4729,7 +4860,8 @@
     "difficulty": "Intermediate",
     "is_compound": false,
     "push_pull": null,
-    "upper_lower": "upper"
+    "upper_lower": "upper",
+    "effectiveBodyweightMultiplier": 0.06
   },
   {
     "id": "bodyweight_008",
@@ -4759,7 +4891,8 @@
     "difficulty": "Beginner",
     "is_compound": true,
     "push_pull": null,
-    "upper_lower": "lower"
+    "upper_lower": "lower",
+    "effectiveBodyweightMultiplier": 0.1
   },
   {
     "id": "bodyweight_009",
@@ -4786,7 +4919,8 @@
     "difficulty": "Beginner",
     "is_compound": true,
     "push_pull": null,
-    "upper_lower": "lower"
+    "upper_lower": "lower",
+    "effectiveBodyweightMultiplier": 0.1
   },
   {
     "id": "bodyweight_010",
@@ -4794,12 +4928,20 @@
     "exercise_type": "bodyweight",
     "distance_unit": null,
     "muscles": {
-      "Lower Abs": 0.36,
-      "Upper Abs": 0.18,
-      "Obliques": 0.18,
-      "Front Delts": 0.09,
-      "Quads": 0.09,
-      "Hip Flexors": 0.1
+      "Lower Abs": 0.21,
+      "Upper Abs": 0.15,
+      "Hip Flexors": 0.15,
+      "Obliques": 0.12,
+      "Quads": 0.1,
+      "Front Delts": 0.06,
+      "Glutes": 0.05,
+      "Hamstrings": 0.04,
+      "Triceps - Long Head": 0.03,
+      "Lower Back": 0.03,
+      "Upper Chest": 0.02,
+      "Calves - Medial Head": 0.02,
+      "Calves - Lateral Head": 0.01,
+      "Soleus": 0.01
     },
     "equipment": [
       "Bodyweight"
@@ -4808,7 +4950,8 @@
     "difficulty": "Beginner",
     "is_compound": true,
     "push_pull": null,
-    "upper_lower": "upper"
+    "upper_lower": "upper",
+    "effectiveBodyweightMultiplier": 0.05
   },
   {
     "id": "bodyweight_011",
@@ -4816,11 +4959,23 @@
     "exercise_type": "bodyweight",
     "distance_unit": null,
     "muscles": {
-      "Quads": 0.3,
-      "Glutes": 0.2,
-      "Mid Chest": 0.2,
-      "Front Delts": 0.2,
-      "Triceps - Long Head": 0.1
+      "Quads": 0.16,
+      "Glutes": 0.13,
+      "Mid Chest": 0.1,
+      "Front Delts": 0.1,
+      "Hamstrings": 0.09,
+      "Triceps - Long Head": 0.06,
+      "Upper Abs": 0.06,
+      "Lower Abs": 0.06,
+      "Hip Flexors": 0.05,
+      "Triceps - Lateral Head": 0.04,
+      "Triceps - Medial Head": 0.03,
+      "Calves - Medial Head": 0.03,
+      "Lower Back": 0.03,
+      "Upper Chest": 0.02,
+      "Calves - Lateral Head": 0.02,
+      "Soleus": 0.01,
+      "Obliques": 0.01
     },
     "equipment": [
       "Bodyweight"
@@ -4829,7 +4984,8 @@
     "difficulty": "Intermediate",
     "is_compound": true,
     "push_pull": null,
-    "upper_lower": "upper"
+    "upper_lower": "upper",
+    "effectiveBodyweightMultiplier": 0.06
   },
   {
     "id": "bodyweight_012",
@@ -4861,7 +5017,8 @@
     "difficulty": "Beginner",
     "is_compound": true,
     "push_pull": "pull",
-    "upper_lower": "upper"
+    "upper_lower": "upper",
+    "effectiveBodyweightMultiplier": 0.18
   },
   {
     "id": "assisted_001",
@@ -4891,7 +5048,8 @@
     "difficulty": "Beginner",
     "is_compound": true,
     "push_pull": "pull",
-    "upper_lower": "upper"
+    "upper_lower": "upper",
+    "effectiveBodyweightMultiplier": 0.02
   },
   {
     "id": "assisted_002",
@@ -4920,7 +5078,8 @@
     "difficulty": "Beginner",
     "is_compound": true,
     "push_pull": "push",
-    "upper_lower": "upper"
+    "upper_lower": "upper",
+    "effectiveBodyweightMultiplier": 0.02
   },
   {
     "id": "assisted_003",
@@ -4948,7 +5107,8 @@
     "difficulty": "Beginner",
     "is_compound": true,
     "push_pull": "pull",
-    "upper_lower": "upper"
+    "upper_lower": "upper",
+    "effectiveBodyweightMultiplier": 0.02
   },
   {
     "id": "band_001",
@@ -4956,8 +5116,14 @@
     "exercise_type": "reps_only",
     "distance_unit": null,
     "muscles": {
-      "Rear Delts": 0.7,
-      "Upper Back": 0.3
+      "Rear Delts": 0.45,
+      "Upper Back": 0.21,
+      "Mid Back": 0.19,
+      "Lateral Delts": 0.06,
+      "Biceps - Long Head": 0.03,
+      "Flexors": 0.03,
+      "Biceps - Short Head": 0.02,
+      "Brachialis": 0.01
     },
     "equipment": [
       "Bands"
@@ -4966,7 +5132,8 @@
     "difficulty": "Beginner",
     "is_compound": false,
     "push_pull": "pull",
-    "upper_lower": null
+    "upper_lower": null,
+    "effectiveBodyweightMultiplier": 0
   },
   {
     "id": "band_002",
@@ -4974,9 +5141,16 @@
     "exercise_type": "reps_only",
     "distance_unit": null,
     "muscles": {
-      "Lats": 0.5,
-      "Mid Back": 0.3,
-      "Rear Delts": 0.2
+      "Lats": 0.31,
+      "Mid Back": 0.21,
+      "Upper Back": 0.12,
+      "Rear Delts": 0.1,
+      "Biceps - Long Head": 0.08,
+      "Biceps - Short Head": 0.06,
+      "Brachialis": 0.04,
+      "Flexors": 0.04,
+      "Lower Back": 0.03,
+      "Extensors": 0.01
     },
     "equipment": [
       "Bands"
@@ -4985,7 +5159,8 @@
     "difficulty": "Beginner",
     "is_compound": true,
     "push_pull": "pull",
-    "upper_lower": null
+    "upper_lower": null,
+    "effectiveBodyweightMultiplier": 0
   },
   {
     "id": "band_003",
@@ -4993,8 +5168,12 @@
     "exercise_type": "reps_only",
     "distance_unit": null,
     "muscles": {
-      "Biceps - Long Head": 0.5,
-      "Biceps - Short Head": 0.5
+      "Biceps - Long Head": 0.35,
+      "Biceps - Short Head": 0.3,
+      "Brachialis": 0.18,
+      "Flexors": 0.1,
+      "Front Delts": 0.04,
+      "Extensors": 0.03
     },
     "equipment": [
       "Bands"
@@ -5003,7 +5182,8 @@
     "difficulty": "Beginner",
     "is_compound": false,
     "push_pull": "pull",
-    "upper_lower": null
+    "upper_lower": null,
+    "effectiveBodyweightMultiplier": 0
   },
   {
     "id": "band_004",
@@ -5011,9 +5191,14 @@
     "exercise_type": "reps_only",
     "distance_unit": null,
     "muscles": {
-      "Triceps - Long Head": 0.4,
-      "Triceps - Lateral Head": 0.3,
-      "Triceps - Medial Head": 0.3
+      "Triceps - Long Head": 0.35,
+      "Triceps - Lateral Head": 0.28,
+      "Triceps - Medial Head": 0.25,
+      "Flexors": 0.04,
+      "Front Delts": 0.03,
+      "Upper Abs": 0.025,
+      "Lower Abs": 0.015,
+      "Obliques": 0.01
     },
     "equipment": [
       "Bands"
@@ -5022,7 +5207,8 @@
     "difficulty": "Beginner",
     "is_compound": false,
     "push_pull": "push",
-    "upper_lower": null
+    "upper_lower": null,
+    "effectiveBodyweightMultiplier": 0
   },
   {
     "id": "band_005",
@@ -5030,9 +5216,16 @@
     "exercise_type": "reps_only",
     "distance_unit": null,
     "muscles": {
-      "Rear Delts": 0.6,
-      "Upper Back": 0.3,
-      "Lateral Delts": 0.1
+      "Rear Delts": 0.35,
+      "Upper Back": 0.21,
+      "Mid Back": 0.18,
+      "Lateral Delts": 0.08,
+      "Biceps - Long Head": 0.05,
+      "Biceps - Short Head": 0.04,
+      "Flexors": 0.04,
+      "Brachialis": 0.03,
+      "Extensors": 0.01,
+      "Front Delts": 0.01
     },
     "equipment": [
       "Bands"
@@ -5041,7 +5234,8 @@
     "difficulty": "Beginner",
     "is_compound": false,
     "push_pull": "pull",
-    "upper_lower": null
+    "upper_lower": null,
+    "effectiveBodyweightMultiplier": 0
   },
   {
     "id": "band_006",
@@ -5049,8 +5243,16 @@
     "exercise_type": "reps_only",
     "distance_unit": null,
     "muscles": {
-      "Abductors": 0.7,
-      "Glutes": 0.3
+      "Abductors": 0.4,
+      "Glutes": 0.25,
+      "Quads": 0.1,
+      "Hamstrings": 0.06,
+      "Adductors": 0.05,
+      "Hip Flexors": 0.04,
+      "Upper Abs": 0.03,
+      "Lower Abs": 0.03,
+      "Obliques": 0.02,
+      "Lower Back": 0.02
     },
     "equipment": [
       "Bands"
@@ -5059,7 +5261,8 @@
     "difficulty": "Beginner",
     "is_compound": false,
     "push_pull": null,
-    "upper_lower": null
+    "upper_lower": null,
+    "effectiveBodyweightMultiplier": 0
   },
   {
     "id": "duration_001",
@@ -5067,10 +5270,18 @@
     "exercise_type": "duration",
     "distance_unit": null,
     "muscles": {
-      "Upper Abs": 0.39,
-      "Lower Abs": 0.39,
-      "Obliques": 0.2,
-      "Hip Flexors": 0.02
+      "Upper Abs": 0.25,
+      "Lower Abs": 0.25,
+      "Obliques": 0.15,
+      "Front Delts": 0.1,
+      "Lower Back": 0.06,
+      "Quads": 0.05,
+      "Glutes": 0.05,
+      "Upper Chest": 0.03,
+      "Triceps - Long Head": 0.02,
+      "Hip Flexors": 0.02,
+      "Mid Back": 0.01,
+      "Upper Back": 0.01
     },
     "equipment": [
       "Bodyweight"
@@ -5079,7 +5290,8 @@
     "difficulty": "Beginner",
     "is_compound": true,
     "push_pull": null,
-    "upper_lower": null
+    "upper_lower": null,
+    "effectiveBodyweightMultiplier": 0
   },
   {
     "id": "duration_002",
@@ -5087,10 +5299,18 @@
     "exercise_type": "duration",
     "distance_unit": null,
     "muscles": {
-      "Obliques": 0.78,
+      "Obliques": 0.45,
       "Upper Abs": 0.1,
       "Lower Abs": 0.1,
-      "Hip Flexors": 0.02
+      "Glutes": 0.1,
+      "Front Delts": 0.07,
+      "Abductors": 0.05,
+      "Lower Back": 0.04,
+      "Quads": 0.03,
+      "Hip Flexors": 0.02,
+      "Upper Back": 0.02,
+      "Mid Back": 0.01,
+      "Adductors": 0.01
     },
     "equipment": [
       "Bodyweight"
@@ -5099,7 +5319,8 @@
     "difficulty": "Beginner",
     "is_compound": false,
     "push_pull": null,
-    "upper_lower": null
+    "upper_lower": null,
+    "effectiveBodyweightMultiplier": 0
   },
   {
     "id": "duration_003",
@@ -5107,9 +5328,17 @@
     "exercise_type": "duration",
     "distance_unit": null,
     "muscles": {
-      "Quads": 0.6,
-      "Glutes": 0.3,
-      "Hamstrings": 0.1
+      "Quads": 0.52,
+      "Glutes": 0.19,
+      "Hamstrings": 0.1,
+      "Calves - Medial Head": 0.04,
+      "Calves - Lateral Head": 0.03,
+      "Soleus": 0.03,
+      "Lower Back": 0.03,
+      "Upper Abs": 0.02,
+      "Lower Abs": 0.02,
+      "Adductors": 0.01,
+      "Abductors": 0.01
     },
     "equipment": [
       "Bodyweight"
@@ -5118,7 +5347,8 @@
     "difficulty": "Beginner",
     "is_compound": false,
     "push_pull": null,
-    "upper_lower": null
+    "upper_lower": null,
+    "effectiveBodyweightMultiplier": 0
   },
   {
     "id": "duration_004",
@@ -5126,9 +5356,16 @@
     "exercise_type": "duration",
     "distance_unit": null,
     "muscles": {
-      "Flexors": 0.6,
-      "Lats": 0.3,
-      "Upper Back": 0.1
+      "Flexors": 0.45,
+      "Lats": 0.2,
+      "Upper Back": 0.12,
+      "Mid Back": 0.06,
+      "Rear Delts": 0.04,
+      "Biceps - Long Head": 0.04,
+      "Biceps - Short Head": 0.03,
+      "Brachialis": 0.02,
+      "Extensors": 0.02,
+      "Front Delts": 0.02
     },
     "equipment": [
       "Bodyweight"
@@ -5137,7 +5374,8 @@
     "difficulty": "Beginner",
     "is_compound": false,
     "push_pull": null,
-    "upper_lower": null
+    "upper_lower": null,
+    "effectiveBodyweightMultiplier": 0
   },
   {
     "id": "duration_005",
@@ -5145,9 +5383,16 @@
     "exercise_type": "duration",
     "distance_unit": null,
     "muscles": {
-      "Glutes": 0.7,
+      "Glutes": 0.55,
       "Hamstrings": 0.2,
-      "Lower Back": 0.1
+      "Lower Back": 0.08,
+      "Upper Abs": 0.05,
+      "Lower Abs": 0.04,
+      "Adductors": 0.03,
+      "Calves - Medial Head": 0.02,
+      "Calves - Lateral Head": 0.01,
+      "Soleus": 0.01,
+      "Obliques": 0.01
     },
     "equipment": [
       "Bodyweight"
@@ -5156,7 +5401,8 @@
     "difficulty": "Beginner",
     "is_compound": false,
     "push_pull": null,
-    "upper_lower": null
+    "upper_lower": null,
+    "effectiveBodyweightMultiplier": 0
   },
   {
     "id": "duration_006",
@@ -5164,9 +5410,13 @@
     "exercise_type": "duration",
     "distance_unit": null,
     "muscles": {
-      "Upper Abs": 0.4,
-      "Lower Abs": 0.5,
-      "Obliques": 0.1
+      "Lower Abs": 0.35,
+      "Upper Abs": 0.3,
+      "Hip Flexors": 0.15,
+      "Obliques": 0.1,
+      "Quads": 0.05,
+      "Front Delts": 0.03,
+      "Lower Back": 0.02
     },
     "equipment": [
       "Bodyweight"
@@ -5175,7 +5425,8 @@
     "difficulty": "Intermediate",
     "is_compound": true,
     "push_pull": null,
-    "upper_lower": null
+    "upper_lower": null,
+    "effectiveBodyweightMultiplier": 0
   },
   {
     "id": "bodyweight_013",
@@ -5186,7 +5437,9 @@
       "Quads": 0.35,
       "Glutes": 0.25,
       "Hamstrings": 0.15,
-      "Calves": 0.1,
+      "Calves - Medial Head": 0.045,
+      "Calves - Lateral Head": 0.035,
+      "Soleus": 0.02,
       "Upper Abs": 0.05,
       "Lower Abs": 0.05,
       "Obliques": 0.05
@@ -5198,7 +5451,8 @@
     "difficulty": "Advanced",
     "is_compound": true,
     "push_pull": null,
-    "upper_lower": "lower"
+    "upper_lower": "lower",
+    "effectiveBodyweightMultiplier": 0.03
   },
   {
     "id": "bodyweight_014",
@@ -5209,7 +5463,9 @@
       "Quads": 0.35,
       "Glutes": 0.25,
       "Hamstrings": 0.15,
-      "Calves": 0.1,
+      "Calves - Medial Head": 0.045,
+      "Calves - Lateral Head": 0.035,
+      "Soleus": 0.02,
       "Upper Abs": 0.05,
       "Lower Abs": 0.05,
       "Obliques": 0.05
@@ -5221,7 +5477,8 @@
     "difficulty": "Advanced",
     "is_compound": true,
     "push_pull": null,
-    "upper_lower": "lower"
+    "upper_lower": "lower",
+    "effectiveBodyweightMultiplier": 0.14
   },
   {
     "id": "bodyweight_015",
@@ -5247,7 +5504,8 @@
     "difficulty": "Advanced",
     "is_compound": true,
     "push_pull": "push",
-    "upper_lower": "upper"
+    "upper_lower": "upper",
+    "effectiveBodyweightMultiplier": 0.22
   },
   {
     "id": "bodyweight_016",
@@ -5276,7 +5534,8 @@
     "difficulty": "Advanced",
     "is_compound": true,
     "push_pull": null,
-    "upper_lower": "upper"
+    "upper_lower": "upper",
+    "effectiveBodyweightMultiplier": 0.25
   },
   {
     "id": "duration_007",
@@ -5300,7 +5559,8 @@
     "difficulty": "Advanced",
     "is_compound": true,
     "push_pull": null,
-    "upper_lower": null
+    "upper_lower": null,
+    "effectiveBodyweightMultiplier": 0
   },
   {
     "id": "bodyweight_017",
@@ -5311,7 +5571,9 @@
       "Quads": 0.3,
       "Glutes": 0.25,
       "Hamstrings": 0.2,
-      "Calves": 0.15,
+      "Calves - Medial Head": 0.0675,
+      "Calves - Lateral Head": 0.0525,
+      "Soleus": 0.03,
       "Lower Back": 0.05,
       "Upper Abs": 0.025,
       "Lower Abs": 0.025
@@ -5323,7 +5585,8 @@
     "difficulty": "Intermediate",
     "is_compound": true,
     "push_pull": null,
-    "upper_lower": "lower"
+    "upper_lower": "lower",
+    "effectiveBodyweightMultiplier": 0.12
   },
   {
     "id": "bodyweight_018",
@@ -5349,7 +5612,8 @@
     "difficulty": "Advanced",
     "is_compound": true,
     "push_pull": "push",
-    "upper_lower": "upper"
+    "upper_lower": "upper",
+    "effectiveBodyweightMultiplier": 0.17
   },
   {
     "id": "bodyweight_019",
@@ -5359,7 +5623,9 @@
     "muscles": {
       "Hip Flexors": 0.3,
       "Quads": 0.25,
-      "Calves": 0.15,
+      "Calves - Medial Head": 0.0675,
+      "Calves - Lateral Head": 0.0525,
+      "Soleus": 0.03,
       "Glutes": 0.1,
       "Hamstrings": 0.1,
       "Upper Abs": 0.05,
@@ -5372,7 +5638,8 @@
     "difficulty": "Beginner",
     "is_compound": true,
     "push_pull": null,
-    "upper_lower": "lower"
+    "upper_lower": "lower",
+    "effectiveBodyweightMultiplier": 0.04
   },
   {
     "id": "bodyweight_020",
@@ -5397,7 +5664,8 @@
     "difficulty": "Intermediate",
     "is_compound": true,
     "push_pull": null,
-    "upper_lower": "upper"
+    "upper_lower": "upper",
+    "effectiveBodyweightMultiplier": 0.15
   },
   {
     "id": "bodyweight_021",
@@ -5408,7 +5676,9 @@
       "Quads": 0.35,
       "Glutes": 0.3,
       "Hamstrings": 0.2,
-      "Calves": 0.08,
+      "Calves - Medial Head": 0.036,
+      "Calves - Lateral Head": 0.028,
+      "Soleus": 0.016,
       "Upper Abs": 0.025,
       "Lower Abs": 0.025,
       "Obliques": 0.02
@@ -5420,7 +5690,8 @@
     "difficulty": "Intermediate",
     "is_compound": true,
     "push_pull": null,
-    "upper_lower": "lower"
+    "upper_lower": "lower",
+    "effectiveBodyweightMultiplier": 0.12
   },
   {
     "id": "bodyweight_022",
@@ -5446,7 +5717,8 @@
     "difficulty": "Advanced",
     "is_compound": true,
     "push_pull": "push",
-    "upper_lower": "upper"
+    "upper_lower": "upper",
+    "effectiveBodyweightMultiplier": 0.2
   },
   {
     "id": "bodyweight_023",
@@ -5472,7 +5744,8 @@
     "difficulty": "Advanced",
     "is_compound": true,
     "push_pull": "pull",
-    "upper_lower": "upper"
+    "upper_lower": "upper",
+    "effectiveBodyweightMultiplier": 0.25
   },
   {
     "id": "bodyweight_024",
@@ -5497,7 +5770,8 @@
     "difficulty": "Advanced",
     "is_compound": true,
     "push_pull": null,
-    "upper_lower": null
+    "upper_lower": null,
+    "effectiveBodyweightMultiplier": 0.1
   },
   {
     "id": "bodyweight_025",
@@ -5519,7 +5793,8 @@
     "difficulty": "Beginner",
     "is_compound": false,
     "push_pull": null,
-    "upper_lower": null
+    "upper_lower": null,
+    "effectiveBodyweightMultiplier": 0.04
   },
   {
     "id": "bodyweight_026",
@@ -5545,7 +5820,8 @@
     "difficulty": "Intermediate",
     "is_compound": true,
     "push_pull": "push",
-    "upper_lower": "upper"
+    "upper_lower": "upper",
+    "effectiveBodyweightMultiplier": 0.18
   },
   {
     "id": "bodyweight_027",
@@ -5570,7 +5846,8 @@
     "difficulty": "Beginner",
     "is_compound": true,
     "push_pull": "push",
-    "upper_lower": "upper"
+    "upper_lower": "upper",
+    "effectiveBodyweightMultiplier": 0.12
   },
   {
     "id": "bodyweight_028",
@@ -5596,7 +5873,8 @@
     "difficulty": "Beginner",
     "is_compound": true,
     "push_pull": null,
-    "upper_lower": null
+    "upper_lower": null,
+    "effectiveBodyweightMultiplier": 0.03
   },
   {
     "id": "bodyweight_029",
@@ -5620,7 +5898,8 @@
     "difficulty": "Beginner",
     "is_compound": true,
     "push_pull": null,
-    "upper_lower": "lower"
+    "upper_lower": "lower",
+    "effectiveBodyweightMultiplier": 0.03
   },
   {
     "id": "bodyweight_030",
@@ -5641,7 +5920,8 @@
     "difficulty": "Beginner",
     "is_compound": false,
     "push_pull": null,
-    "upper_lower": null
+    "upper_lower": null,
+    "effectiveBodyweightMultiplier": 0.04
   },
   {
     "id": "bodyweight_031",
@@ -5664,7 +5944,8 @@
     "difficulty": "Beginner",
     "is_compound": true,
     "push_pull": null,
-    "upper_lower": null
+    "upper_lower": null,
+    "effectiveBodyweightMultiplier": 0.04
   },
   {
     "id": "bodyweight_032",
@@ -5684,7 +5965,8 @@
     "difficulty": "Beginner",
     "is_compound": false,
     "push_pull": null,
-    "upper_lower": null
+    "upper_lower": null,
+    "effectiveBodyweightMultiplier": 0.05
   },
   {
     "id": "bodyweight_033",
@@ -5709,7 +5991,8 @@
     "difficulty": "Beginner",
     "is_compound": true,
     "push_pull": null,
-    "upper_lower": "lower"
+    "upper_lower": "lower",
+    "effectiveBodyweightMultiplier": 0.1
   },
   {
     "id": "bodyweight_034",
@@ -5734,7 +6017,8 @@
     "difficulty": "Beginner",
     "is_compound": true,
     "push_pull": null,
-    "upper_lower": "lower"
+    "upper_lower": "lower",
+    "effectiveBodyweightMultiplier": 0.1
   },
   {
     "id": "bodyweight_035",
@@ -5759,7 +6043,8 @@
     "difficulty": "Intermediate",
     "is_compound": true,
     "push_pull": null,
-    "upper_lower": "lower"
+    "upper_lower": "lower",
+    "effectiveBodyweightMultiplier": 0.12
   },
   {
     "id": "bodyweight_036",
@@ -5784,7 +6069,8 @@
     "difficulty": "Intermediate",
     "is_compound": true,
     "push_pull": null,
-    "upper_lower": null
+    "upper_lower": null,
+    "effectiveBodyweightMultiplier": 0.05
   },
   {
     "id": "bodyweight_037",
@@ -5805,7 +6091,8 @@
     "difficulty": "Beginner",
     "is_compound": true,
     "push_pull": null,
-    "upper_lower": "lower"
+    "upper_lower": "lower",
+    "effectiveBodyweightMultiplier": 0.08
   },
   {
     "id": "exercise_143",
@@ -5828,7 +6115,8 @@
     "difficulty": "Beginner",
     "is_compound": false,
     "push_pull": "push",
-    "upper_lower": "upper"
+    "upper_lower": "upper",
+    "effectiveBodyweightMultiplier": 0.03
   },
   {
     "id": "exercise_144",
@@ -5852,7 +6140,8 @@
     "difficulty": "Beginner",
     "is_compound": true,
     "push_pull": null,
-    "upper_lower": "lower"
+    "upper_lower": "lower",
+    "effectiveBodyweightMultiplier": 0.03
   },
   {
     "id": "exercise_145",
@@ -5878,7 +6167,8 @@
     "difficulty": "Beginner",
     "is_compound": true,
     "push_pull": "pull",
-    "upper_lower": "upper"
+    "upper_lower": "upper",
+    "effectiveBodyweightMultiplier": 0.03
   },
   {
     "id": "exercise_146",
@@ -5903,7 +6193,8 @@
     "difficulty": "Intermediate",
     "is_compound": true,
     "push_pull": "pull",
-    "upper_lower": "lower"
+    "upper_lower": "lower",
+    "effectiveBodyweightMultiplier": 0.03
   },
   {
     "id": "exercise_147",
@@ -5928,7 +6219,8 @@
     "difficulty": "Beginner",
     "is_compound": false,
     "push_pull": "pull",
-    "upper_lower": "upper"
+    "upper_lower": "upper",
+    "effectiveBodyweightMultiplier": 0.02
   },
   {
     "id": "exercise_148",
@@ -5952,7 +6244,8 @@
     "difficulty": "Beginner",
     "is_compound": false,
     "push_pull": "pull",
-    "upper_lower": "upper"
+    "upper_lower": "upper",
+    "effectiveBodyweightMultiplier": 0.02
   },
   {
     "id": "exercise_149",
@@ -5973,7 +6266,8 @@
     "difficulty": "Beginner",
     "is_compound": false,
     "push_pull": null,
-    "upper_lower": "lower"
+    "upper_lower": "lower",
+    "effectiveBodyweightMultiplier": 0.02
   },
   {
     "id": "exercise_150",
@@ -6000,7 +6294,8 @@
     "difficulty": "Advanced",
     "is_compound": true,
     "push_pull": "pull",
-    "upper_lower": "upper"
+    "upper_lower": "upper",
+    "effectiveBodyweightMultiplier": 0.03
   },
   {
     "id": "exercise_151",
@@ -6028,7 +6323,8 @@
     "difficulty": "Advanced",
     "is_compound": true,
     "push_pull": "push",
-    "upper_lower": "upper"
+    "upper_lower": "upper",
+    "effectiveBodyweightMultiplier": 0.03
   },
   {
     "id": "exercise_152",
@@ -6054,7 +6350,8 @@
     "difficulty": "Intermediate",
     "is_compound": true,
     "push_pull": null,
-    "upper_lower": null
+    "upper_lower": null,
+    "effectiveBodyweightMultiplier": 0.03
   },
   {
     "id": "exercise_155",
@@ -6079,7 +6376,8 @@
     "difficulty": "Intermediate",
     "is_compound": true,
     "push_pull": "push",
-    "upper_lower": "upper"
+    "upper_lower": "upper",
+    "effectiveBodyweightMultiplier": 0.03
   },
   {
     "id": "exercise_156",
@@ -6107,7 +6405,8 @@
     "difficulty": "Intermediate",
     "is_compound": true,
     "push_pull": "pull",
-    "upper_lower": "lower"
+    "upper_lower": "lower",
+    "effectiveBodyweightMultiplier": 0.03
   },
   {
     "id": "exercise_157",
@@ -6135,7 +6434,8 @@
     "difficulty": "Intermediate",
     "is_compound": true,
     "push_pull": "pull",
-    "upper_lower": "lower"
+    "upper_lower": "lower",
+    "effectiveBodyweightMultiplier": 0.03
   },
   {
     "id": "exercise_158",
@@ -6146,7 +6446,7 @@
       "Glutes": 0.22,
       "Quads": 0.18,
       "Hamstrings": 0.14,
-      "Hip Adductors": 0.1,
+      "Adductors": 0.1,
       "Lower Back": 0.1,
       "Upper Back": 0.06,
       "Mid Back": 0.05,
@@ -6164,7 +6464,8 @@
     "difficulty": "Intermediate",
     "is_compound": true,
     "push_pull": "pull",
-    "upper_lower": "lower"
+    "upper_lower": "lower",
+    "effectiveBodyweightMultiplier": 0.03
   },
   {
     "id": "exercise_159",
@@ -6192,7 +6493,8 @@
     "difficulty": "Beginner",
     "is_compound": true,
     "push_pull": null,
-    "upper_lower": null
+    "upper_lower": null,
+    "effectiveBodyweightMultiplier": 0.03
   },
   {
     "id": "exercise_160",
@@ -6215,7 +6517,8 @@
     "difficulty": "Beginner",
     "is_compound": false,
     "push_pull": "push",
-    "upper_lower": "lower"
+    "upper_lower": "lower",
+    "effectiveBodyweightMultiplier": 0.02
   },
   {
     "id": "exercise_161",
@@ -6243,7 +6546,8 @@
     "difficulty": "Intermediate",
     "is_compound": true,
     "push_pull": "pull",
-    "upper_lower": "upper"
+    "upper_lower": "upper",
+    "effectiveBodyweightMultiplier": 0.03
   },
   {
     "id": "exercise_162",
@@ -6261,7 +6565,8 @@
     "difficulty": "Beginner",
     "is_compound": false,
     "push_pull": "pull",
-    "upper_lower": "upper"
+    "upper_lower": "upper",
+    "effectiveBodyweightMultiplier": 0.03
   },
   {
     "id": "exercise_163",
@@ -6284,7 +6589,8 @@
     "difficulty": "Beginner",
     "is_compound": false,
     "push_pull": "push",
-    "upper_lower": "upper"
+    "upper_lower": "upper",
+    "effectiveBodyweightMultiplier": 0.02
   },
   {
     "id": "exercise_164",
@@ -6307,7 +6613,8 @@
     "difficulty": "Intermediate",
     "is_compound": true,
     "push_pull": null,
-    "upper_lower": null
+    "upper_lower": null,
+    "effectiveBodyweightMultiplier": 0.07
   },
   {
     "id": "exercise_165",
@@ -6336,7 +6643,8 @@
     "difficulty": "Intermediate",
     "is_compound": true,
     "push_pull": "pull",
-    "upper_lower": "upper"
+    "upper_lower": "upper",
+    "effectiveBodyweightMultiplier": 0.03
   },
   {
     "id": "exercise_166",
@@ -6362,7 +6670,8 @@
     "difficulty": "Intermediate",
     "is_compound": true,
     "push_pull": null,
-    "upper_lower": null
+    "upper_lower": null,
+    "effectiveBodyweightMultiplier": 0.02
   },
   {
     "id": "exercise_167",
@@ -6385,6 +6694,7 @@
     "difficulty": "Beginner",
     "is_compound": false,
     "push_pull": "pull",
-    "upper_lower": "upper"
+    "upper_lower": "upper",
+    "effectiveBodyweightMultiplier": 0.03
   }
 ]
