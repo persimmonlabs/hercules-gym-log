@@ -136,7 +136,7 @@ export const darkColors = {
 
   // Text hierarchy (white/light on dark background)
   text: {
-    primary: '#FFFFFF',    // Pure white for main text
+    primary: '#E5E5EA',    // Light gray for main text (softer than pure white)
     secondary: '#8E8E93',  // Medium gray (secondary info)
     tertiary: '#636366',   // Muted gray (captions, hints)
     muted: '#48484A',      // Very muted for inactive states

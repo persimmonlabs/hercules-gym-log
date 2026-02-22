@@ -854,14 +854,15 @@ export const useInsightsData = () => {
     insights.forEach((ins) => groupedInsights[ins.type].push(ins));
 
     const typeOrder: InsightType[] = ['plateau', 'balance', 'focus'];
-    const orderedTypes = typeOrder.filter((t) => groupedInsights[t].length > 0);
+    const orderedTypes = typeOrder;
+    const hasAnyInsights = typeOrder.some((t) => groupedInsights[t].length > 0);
 
     return {
       insights,
       groupedInsights,
       orderedTypes,
       hasData: true,
-      emptyReason: orderedTypes.length === 0 ? ('all-good' as EmptyReason) : undefined,
+      emptyReason: hasAnyInsights ? undefined : ('all-good' as EmptyReason),
     };
   }, [rawWorkouts, forceEmptyAnalytics, userBodyWeight]);
 };

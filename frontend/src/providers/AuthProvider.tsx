@@ -7,6 +7,7 @@ import React, {
   useState,
 } from 'react';
 import * as Linking from 'expo-linking';
+import * as WebBrowser from 'expo-web-browser';
 import { Session, User } from '@supabase/supabase-js';
 
 import { supabaseClient } from '@/lib/supabaseClient';
@@ -25,6 +26,8 @@ interface AuthContextValue {
   session: Session | null;
   user: User | null;
   signInWithOtp: (email: string) => Promise<void>;
+  signInWithGoogle: () => Promise<void>;
+  signInWithApple: (identityToken: string, nonce: string) => Promise<void>;
   signOut: () => Promise<void>;
 }
 
@@ -194,6 +197,50 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   }, []);
 
+  const signInWithGoogle = useCallback(async () => {
+    const redirectUrl = Linking.createURL('auth/callback');
+    const { data, error } = await supabaseClient.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: redirectUrl,
+        skipBrowserRedirect: true,
+      },
+    });
+
+    if (error) throw error;
+    if (!data?.url) throw new Error('No OAuth URL returned');
+
+    const result = await WebBrowser.openAuthSessionAsync(data.url, redirectUrl);
+
+    if (result.type === 'success' && result.url) {
+      const url = new URL(result.url);
+      const params = Object.fromEntries(url.searchParams.entries());
+      // Handle hash fragment params (Supabase returns tokens in hash)
+      const hashParams = url.hash
+        ? Object.fromEntries(new URLSearchParams(url.hash.substring(1)).entries())
+        : {};
+      const accessToken = params.access_token || hashParams.access_token;
+      const refreshToken = params.refresh_token || hashParams.refresh_token;
+
+      if (accessToken && refreshToken) {
+        const { error: sessionError } = await supabaseClient.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken,
+        });
+        if (sessionError) throw sessionError;
+      }
+    }
+  }, []);
+
+  const signInWithApple = useCallback(async (identityToken: string, nonce: string) => {
+    const { error } = await supabaseClient.auth.signInWithIdToken({
+      provider: 'apple',
+      token: identityToken,
+      nonce,
+    });
+    if (error) throw error;
+  }, []);
+
   const signOut = useCallback(async () => {
     resetHydrationState();
     await supabaseClient.auth.signOut();
@@ -205,9 +252,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       session,
       user: session?.user ?? null,
       signInWithOtp,
+      signInWithGoogle,
+      signInWithApple,
       signOut,
     }),
-    [isLoading, session, signInWithOtp, signOut],
+    [isLoading, session, signInWithOtp, signInWithGoogle, signInWithApple, signOut],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

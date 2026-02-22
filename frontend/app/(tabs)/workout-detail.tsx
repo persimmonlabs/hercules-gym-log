@@ -254,11 +254,11 @@ const WorkoutDetailScreen: React.FC = () => {
                 returnKeyType="done"
               />
             ) : (
-              <Text variant="heading1" color="primary">
+              <Text variant="heading1" style={{ color: theme.text.secondary }}>
                 {workoutTitle}
               </Text>
             )}
-            <Text style={{ fontSize: 16, fontWeight: '500', color: theme.text.primary, marginTop: spacing.xxs }}>
+            <Text style={{ fontSize: 16, fontWeight: '500', color: theme.text.secondary, marginTop: spacing.xxs }}>
               {sessionDateTime}
             </Text>
           </View>
@@ -273,7 +273,7 @@ const WorkoutDetailScreen: React.FC = () => {
                     hitSlop={spacing.sm}
                     style={styles.backButtonPressable}
                   >
-                    <IconSymbol name="arrow-back" color={theme.text.primary} size={24} />
+                    <IconSymbol name="arrow-back" color={theme.text.secondary} size={24} />
                   </Pressable>
                 </Animated.View>
                 {workout ? (

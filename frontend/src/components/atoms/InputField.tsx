@@ -13,6 +13,7 @@ import Animated, {
 import { Text } from '@/components/atoms/Text';
 import { colors, radius, spacing, typography } from '@/constants/theme';
 import { timingFast } from '@/constants/animations';
+import { useTheme } from '@/hooks/useTheme';
 
 interface InputFieldProps {
   label: string;
@@ -51,11 +52,12 @@ export const InputField: React.FC<InputFieldProps> = ({
   autoCapitalize = 'sentences',
   editable = true,
 }) => {
+  const { theme } = useTheme();
   const [isFocused, setIsFocused] = useState<boolean>(false);
   const focusProgress = useSharedValue(0);
 
   const animatedBorderStyle = useAnimatedStyle(() => ({
-    borderColor: focusProgress.value > 0 ? colors.accent.primary : colors.accent.orange,
+    borderColor: focusProgress.value > 0 ? theme.accent.primary : theme.accent.orange,
   }));
 
   const handleFocus = useCallback(() => {
@@ -75,7 +77,7 @@ export const InputField: React.FC<InputFieldProps> = ({
       <View style={styles.labelRow}>
         <Text
           variant="bodySemibold"
-          style={[styles.labelText, isFocused ? styles.labelTextFocused : null]}
+          style={[styles.labelText, { color: isFocused ? theme.accent.primary : theme.text.secondary }]}
         >
           {label}
         </Text>
@@ -86,16 +88,16 @@ export const InputField: React.FC<InputFieldProps> = ({
         ) : null}
       </View>
 
-      <Animated.View style={[styles.inputContainer, animatedBorderStyle]}>
+      <Animated.View style={[styles.inputContainer, { backgroundColor: theme.surface.card, borderColor: focusProgress.value > 0 ? theme.accent.primary : theme.border.light }, animatedBorderStyle]}>
         <TextInput
           ref={inputRef as unknown as React.Ref<TextInput> | undefined}
           value={value}
           onChangeText={onChangeText}
           placeholder={placeholder}
-          placeholderTextColor={colors.text.muted}
-          selectionColor={colors.accent.primary}
-          cursorColor={colors.accent.primary}
-          style={styles.textInput}
+          placeholderTextColor={theme.text.muted}
+          selectionColor={theme.accent.primary}
+          cursorColor={theme.accent.primary}
+          style={[styles.textInput, { color: theme.text.primary }]}
           onFocus={handleFocus}
           onBlur={handleBlur}
           autoFocus={autoFocus}
@@ -133,19 +135,18 @@ const styles = StyleSheet.create<Styles>({
   inputContainer: {
     borderWidth: 1,
     borderRadius: radius.md,
-    backgroundColor: colors.surface.card,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
   },
   labelText: {
-    color: colors.text.primary,
+    // Color is now applied dynamically via theme
   },
   labelTextFocused: {
-    color: colors.accent.primary,
+    // Color is now applied dynamically via theme
   },
   textInput: {
     ...typography.body,
     fontWeight: typography.body.fontWeight as TextStyle['fontWeight'],
-    color: colors.text.primary,
+    // Color is now applied dynamically via theme
   },
 });

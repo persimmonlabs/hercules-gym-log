@@ -77,19 +77,13 @@ const OutdoorSessionScreen: React.FC = () => {
     void fetchInitialLocation();
   }, []);
 
-  // Subscribe to coordinate updates to keep currentLocation in sync while tracking
+  // Keep currentLocation in sync with the latest GPS coordinate while tracking
   useEffect(() => {
-    const unsubscribe = useOutdoorSessionStore.subscribe(
-      (state) => state.coordinates,
-      (coords) => {
-        if (coords.length > 0) {
-          const latest = coords[coords.length - 1];
-          setCurrentLocation({ latitude: latest.latitude, longitude: latest.longitude });
-        }
-      }
-    );
-    return unsubscribe;
-  }, []);
+    if (coordinates.length > 0) {
+      const latest = coordinates[coordinates.length - 1];
+      setCurrentLocation({ latitude: latest.latitude, longitude: latest.longitude });
+    }
+  }, [coordinates]);
 
   // Initialize session on mount if coming from exercise picker
   useEffect(() => {

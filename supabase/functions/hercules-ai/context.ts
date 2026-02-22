@@ -23,7 +23,7 @@ export const buildUserContext = async (
 ): Promise<HerculesAIContext> => {
   const { data: profileData, error: profileError } = await supabase
     .from('profiles')
-    .select('id, first_name, last_name, full_name, height_feet, height_inches, weight_lbs, is_pro')
+    .select('id, first_name, height_feet, height_inches, weight_lbs, is_pro, date_of_birth, gender, experience_level, primary_goal, available_equipment, training_days_per_week, weight_unit, distance_unit, size_unit, weekly_cardio_time_goal, weekly_cardio_distance_goal')
     .eq('id', userId)
     .maybeSingle();
 

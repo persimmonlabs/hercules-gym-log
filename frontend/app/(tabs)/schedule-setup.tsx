@@ -537,7 +537,7 @@ const ScheduleSetupScreen: React.FC = () => {
             key={type}
             style={[
               styles.typeCard,
-              { backgroundColor: theme.surface.elevated },
+              { backgroundColor: theme.surface.elevated, borderColor: theme.border.light },
               isSelected && { borderColor: theme.accent.orange, borderWidth: 2 },
             ]}
             onPress={() => handleTypeSelect(type)}
@@ -594,7 +594,7 @@ const ScheduleSetupScreen: React.FC = () => {
             return (
               <Pressable
                 key={key}
-                style={[styles.dayRow, { backgroundColor: theme.surface.elevated }]}
+                style={[styles.dayRow, { backgroundColor: theme.surface.elevated, borderColor: theme.border.light }]}
                 onPress={() => openWorkoutPicker('weekly', key)}
               >
                 <Text variant="bodySemibold" color="primary" style={styles.dayLabel}>
@@ -634,7 +634,7 @@ const ScheduleSetupScreen: React.FC = () => {
 
     return (
       <View style={{ gap: spacing.md, marginTop: spacing.md }}>
-        <View style={[styles.cycleRow, { backgroundColor: theme.surface.elevated }]}>
+        <View style={[styles.cycleRow, { backgroundColor: theme.surface.elevated, borderColor: theme.border.light }]}>
           <Text variant="bodySemibold" color="primary" style={styles.cycleDayNum}>
             Start Date
           </Text>
@@ -657,7 +657,7 @@ const ScheduleSetupScreen: React.FC = () => {
             <IconSymbol name="calendar-today" size={16} color={theme.text.tertiary} />
           </Pressable>
         </View>
-        
+
         <View style={styles.daysList}>
           {normalizedCycle.map((workoutId, visualIndex) => {
             const workoutName = getWorkoutName(workoutId);
@@ -666,7 +666,7 @@ const ScheduleSetupScreen: React.FC = () => {
             return (
               <View
                 key={`cycle-${visualIndex}-${workoutId ?? 'rest'}`}
-                style={[styles.cycleRow, { backgroundColor: theme.surface.elevated }]}
+                style={[styles.cycleRow, { backgroundColor: theme.surface.elevated, borderColor: theme.border.light }]}
               >
                 <Text variant="bodySemibold" color="primary" style={styles.cycleDayNum}>
                   Day {visualIndex + 1}
@@ -718,180 +718,6 @@ const ScheduleSetupScreen: React.FC = () => {
     );
   };
 
-  const renderPlanDrivenEditor = () => {
-    if (draftRule?.type !== 'plan-driven') return null;
-
-    const cycleWorkouts = draftRule.cycleWorkouts || [];
-    const effectiveSelectedPlanId = draftRule.planId || (cycleWorkouts.length > 1 ? newestPlan?.id || '' : '');
-
-    return (
-      <View style={{ gap: spacing.md, marginTop: spacing.md }}>
-        {/* Plan Selection */}
-        <View style={styles.planList}>
-          {allPlans.length === 0 ? (
-            <SurfaceCard tone="neutral" padding="lg" showAccentStripe={false}>
-              <View style={{ gap: spacing.md, alignItems: 'center' }}>
-                <Text variant="body" color="tertiary" style={styles.emptyText}>
-                  No plans available. Create a plan first.
-                </Text>
-                <Button
-                  label="Create a Plan"
-                  variant="ghost"
-                  size="md"
-                  onPress={() => {
-                    triggerHaptic('selection');
-                    router.push({ pathname: '/(tabs)/plans', params: { scrollTo: 'plans' } });
-                  }}
-                />
-              </View>
-            </SurfaceCard>
-          ) : (
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.planScrollView}>
-              {allPlans.map((plan) => {
-                const isSelected = effectiveSelectedPlanId === plan.id;
-                return (
-                  <Pressable
-                    key={plan.id}
-                    style={[
-                      styles.planChip,
-                      {
-                        backgroundColor: isSelected ? theme.accent.orange : theme.surface.elevated,
-                        borderColor: isSelected ? theme.accent.orange : theme.border.light,
-                      },
-                    ]}
-                    onPress={() => updatePlanDrivenPlan(plan.id)}
-                  >
-                    <Text 
-                      variant="bodySemibold" 
-                      color={isSelected ? 'onAccent' : 'primary'}
-                    >
-                      {plan.name}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </ScrollView>
-          )}
-        </View>
-
-        {/* Start Date */}
-        <View style={[styles.cycleRow, { backgroundColor: theme.surface.elevated }]}>
-          <Text variant="bodySemibold" color="primary" style={styles.cycleDayNum}>
-            Start Date
-          </Text>
-          <Pressable
-            style={styles.cycleWorkoutPicker}
-            onPress={() => {
-              setDatePickerViewDate(startDate);
-              setPendingStartDate(startDate);
-              setDatePickerVisible(true);
-            }}
-          >
-            <Text
-              variant="body"
-              color="primary"
-              numberOfLines={1}
-              style={[styles.cycleWorkoutText, { textAlignVertical: 'center' }]}
-            >
-              {startDate.toLocaleDateString()}
-            </Text>
-            <IconSymbol name="calendar-today" size={16} color={theme.text.tertiary} />
-          </Pressable>
-        </View>
-
-        {/* Cycle Days */}
-        <View style={styles.daysList}>
-          {cycleWorkouts.map((workoutId, visualIndex) => {
-            const workoutName = getWorkoutName(workoutId);
-            const isRest = workoutId === null || workoutName === 'Rest Day';
-            const canMoveUp = visualIndex > 0;
-            const canMoveDown = visualIndex < cycleWorkouts.length - 1;
-
-            return (
-              <View
-                key={`plan-cycle-${visualIndex}-${workoutId ?? 'rest'}`}
-                style={[styles.cycleRow, { backgroundColor: theme.surface.elevated }]}
-              >
-                <Text variant="bodySemibold" color="primary" style={styles.cycleDayNum}>
-                  Day {visualIndex + 1}
-                </Text>
-                <View style={styles.reorderButtonsContainer}>
-                  <Pressable
-                    style={[styles.reorderButton, !canMoveUp && styles.reorderButtonDisabled]}
-                    disabled={!canMoveUp}
-                    onPress={() => movePlanDrivenDay(visualIndex, visualIndex - 1)}
-                    hitSlop={8}
-                  >
-                    <IconSymbol
-                      name="keyboard-arrow-up"
-                      size={20}
-                      color={canMoveUp ? theme.text.secondary : theme.text.tertiary}
-                    />
-                  </Pressable>
-                  <Pressable
-                    style={[styles.reorderButton, !canMoveDown && styles.reorderButtonDisabled]}
-                    disabled={!canMoveDown}
-                    onPress={() => movePlanDrivenDay(visualIndex, visualIndex + 1)}
-                    hitSlop={8}
-                  >
-                    <IconSymbol
-                      name="keyboard-arrow-down"
-                      size={20}
-                      color={canMoveDown ? theme.text.secondary : theme.text.tertiary}
-                    />
-                  </Pressable>
-                </View>
-                <Pressable
-                  style={styles.cycleWorkoutPicker}
-                  onPress={() => openWorkoutPicker('plan-driven', visualIndex)}
-                >
-                  <Text
-                    variant="body"
-                    color={isRest ? 'tertiary' : 'primary'}
-                    numberOfLines={1}
-                    style={styles.cycleWorkoutText}
-                  >
-                    {workoutName}
-                  </Text>
-                  <IconSymbol name="chevron-right" size={16} color={theme.text.tertiary} />
-                </Pressable>
-                {cycleWorkouts.length > 1 && (
-                  <Pressable
-                    style={styles.removeButton}
-                    onPress={() => removePlanDrivenDay(visualIndex)}
-                  >
-                    <IconSymbol name="close" size={18} color={theme.accent.warning} />
-                  </Pressable>
-                )}
-              </View>
-            );
-          })}
-        </View>
-
-        {/* Add Day Button */}
-        <Pressable
-          style={[styles.addDayButton, { backgroundColor: theme.surface.elevated }]}
-          onPress={addPlanDrivenDay}
-          disabled={cycleWorkouts.length >= MAX_ROTATING_CYCLE_DAYS}
-        >
-          <IconSymbol name="add" size={24} color={theme.accent.warning} />
-        </Pressable>
-
-        {/* Save Button */}
-        {allPlans.length > 0 && (
-          <View style={styles.saveButtonWrapper}>
-            <Button
-              label="Save Schedule"
-              variant="primary"
-              size="lg"
-              onPress={handleSave}
-            />
-          </View>
-        )}
-      </View>
-    );
-  };
-
   const renderConfigureStep = () => {
     switch (selectedType) {
       case 'weekly':
@@ -912,9 +738,9 @@ const ScheduleSetupScreen: React.FC = () => {
       animationType="fade"
       onRequestClose={() => setPickerVisible(false)}
     >
-      <View style={[styles.pickerOverlay, { backgroundColor: colors.overlay.scrim }]}>
+      <View style={[styles.pickerOverlay, { backgroundColor: theme.overlay.scrim }]}>
         <View style={[styles.pickerPopup, { backgroundColor: theme.surface.card }]}>
-          <View style={styles.pickerHeader}>
+          <View style={[styles.pickerHeader, { borderBottomColor: theme.border.light }]}>
             <Text variant="heading3" color="primary">
               {pickerTitle}
             </Text>
@@ -1038,12 +864,12 @@ const ScheduleSetupScreen: React.FC = () => {
         onRequestClose={() => setDatePickerVisible(false)}
       >
         <Pressable 
-          style={[styles.pickerOverlay, { backgroundColor: colors.overlay.scrim }]} 
+          style={[styles.pickerOverlay, { backgroundColor: theme.overlay.scrim }]} 
           onPress={() => setDatePickerVisible(false)}
         >
           <View style={[styles.datePickerPopup, { backgroundColor: theme.surface.card }]}>
-            <View style={styles.pickerHeader}>
-              <Text variant="heading3" color="primary">
+            <View style={[styles.pickerHeader, { borderBottomColor: theme.border.light }]}>
+              <Text variant="heading3" color={theme.text.primary}>
                 Select Start Date
               </Text>
               <Pressable onPress={() => setDatePickerVisible(false)}>
@@ -1130,7 +956,7 @@ const ScheduleSetupScreen: React.FC = () => {
 
   return (
     <TabSwipeContainer>
-      <View style={styles.container}>
+      <View style={[styles.container, { backgroundColor: theme.primary.bg }]}>
         {/* Header */}
         <View style={styles.header}>
           <View style={styles.titleContainer}>
@@ -1142,7 +968,7 @@ const ScheduleSetupScreen: React.FC = () => {
             </Text>
           </View>
           <Pressable onPress={handleBack} style={styles.backButton} hitSlop={8}>
-            <IconSymbol name="arrow-back" size={24} color={colors.text.primary} />
+            <IconSymbol name="arrow-back" size={24} color={theme.text.primary} />
           </Pressable>
         </View>
         
@@ -1165,7 +991,6 @@ const ScheduleSetupScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.primary.bg,
   },
   header: {
     flexDirection: 'row',
@@ -1212,8 +1037,6 @@ const styles = StyleSheet.create({
   typeCard: {
     borderRadius: radius.lg,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border.light,
-    backgroundColor: colors.surface.card,
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.lg,
     flexDirection: 'row',
@@ -1242,8 +1065,6 @@ const styles = StyleSheet.create({
   dayRow: {
     borderRadius: radius.lg,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border.light,
-    backgroundColor: colors.surface.card,
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.lg,
     flexDirection: 'row',
@@ -1264,8 +1085,6 @@ const styles = StyleSheet.create({
   cycleRow: {
     borderRadius: radius.lg,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border.light,
-    backgroundColor: colors.surface.card,
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.lg,
     flexDirection: 'row',
@@ -1328,8 +1147,6 @@ const styles = StyleSheet.create({
   planCard: {
     borderRadius: radius.lg,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border.light,
-    backgroundColor: colors.surface.card,
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.lg,
     flexDirection: 'row',
@@ -1359,7 +1176,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: spacing.lg,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.border.light,
   },
   pickerScroll: {
     maxHeight: 420,

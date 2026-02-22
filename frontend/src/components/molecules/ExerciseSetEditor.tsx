@@ -16,7 +16,9 @@ import { colors, radius, shadows, sizing, spacing, zIndex } from '@/constants/th
 import type { SetLog } from '@/types/workout';
 import type { ExerciseType, EquipmentType } from '@/types/exercise';
 import { useSettingsStore } from '@/store/settingsStore';
-import { adaptNextSet } from '@/utils/smartSuggestions';
+import { adaptNextSet, detectPatternShift } from '@/utils/smartSuggestions';
+import type { ExerciseDataPoint } from '@/types/smartSuggestions';
+import { SMART_CONFIG } from '@/types/smartSuggestions';
 
 interface ExerciseSetEditorProps {
   isExpanded: boolean;
@@ -35,6 +37,12 @@ interface ExerciseSetEditorProps {
   exerciseEquipment?: EquipmentType[];
   /** Whether the exercise is a compound movement */
   isCompound?: boolean;
+  /** Cached historical data points for intra-session pattern shift detection */
+  exerciseDataPoints?: ExerciseDataPoint[];
+  /** Current pattern shift count for this exercise (from session store) */
+  patternShiftCount?: number;
+  /** Callback when a pattern shift is detected (to increment counter in store) */
+  onPatternShift?: () => void;
   // Controlled menu state props (optional)
   activeSetMenuIndex?: number | null;
   onOpenSetMenu?: (index: number) => void;
@@ -200,6 +208,9 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
   suggestedSets,
   exerciseEquipment = [],
   isCompound = false,
+  exerciseDataPoints = [],
+  patternShiftCount = 0,
+  onPatternShift,
   activeSetMenuIndex,
   onOpenSetMenu,
   onCloseSetMenu,
@@ -843,55 +854,108 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
       }
 
       const completedSet = updatedSets[index];
-      const nextUncompletedIndex = updatedSets.findIndex((set, idx) => idx > index && !set.completed);
-      if (nextUncompletedIndex !== -1 && nextUncompletedIndex >= historySetCount) {
-        const nextSet = updatedSets[nextUncompletedIndex];
 
-        // Smart intra-session adaptation: compare actual vs. original suggestion
+      // Collect all remaining uncompleted set indices after the just-completed set
+      const remainingIndices: number[] = [];
+      for (let ri = index + 1; ri < updatedSets.length; ri++) {
+        if (!updatedSets[ri].completed) {
+          remainingIndices.push(ri);
+        }
+      }
+
+      if (remainingIndices.length > 0) {
         const hasSmart = smartSuggestionsEnabled && suggestedSets && suggestedSets.length > 0;
+        const actualWeight = completedSet.weight ?? 0;
+        const actualReps = completedSet.reps ?? 0;
+
         if (hasSmart && exerciseType === 'weight') {
-          const originalSuggestion = suggestedSets[index];
-          const originalWeight = originalSuggestion?.weight ?? completedSet.weight ?? 0;
-          const originalReps = originalSuggestion?.reps ?? completedSet.reps ?? 8;
-          const actualWeight = completedSet.weight ?? 0;
-          const actualReps = completedSet.reps ?? 0;
+          // Check for pattern shift FIRST (significant deviation from suggestion)
+          let didShift = false;
 
-          const adapted = adaptNextSet(
-            originalWeight,
-            originalReps,
-            actualWeight,
-            actualReps,
-            exerciseEquipment,
-            isCompound,
-          );
+          if (
+            patternShiftCount < SMART_CONFIG.MAX_PATTERN_SHIFTS_PER_SESSION &&
+            exerciseDataPoints.length > 0
+          ) {
+            const shiftResult = detectPatternShift(
+              index,
+              actualWeight,
+              actualReps,
+              suggestedSets,
+              exerciseDataPoints,
+              remainingIndices.length,
+              exerciseEquipment,
+              isCompound,
+            );
 
-          updatedSets[nextUncompletedIndex] = {
-            ...nextSet,
-            weight: adapted.weight,
-            reps: adapted.reps,
-            weightInput: formatWeightInputValue(adapted.weight),
-            repsInput: String(adapted.reps),
-            duration: completedSet.duration,
-            distance: completedSet.distance,
-            durationInput: completedSet.durationInput,
-            distanceInput: completedSet.distanceInput,
-            assistanceWeight: completedSet.assistanceWeight,
-            assistanceWeightInput: completedSet.assistanceWeightInput,
-          };
+            if (shiftResult.shifted && shiftResult.newTargets.length > 0) {
+              didShift = true;
+              onPatternShift?.();
+
+              // Apply new targets to ALL remaining uncompleted sets
+              for (let ti = 0; ti < Math.min(shiftResult.newTargets.length, remainingIndices.length); ti++) {
+                const targetIdx = remainingIndices[ti];
+                const target = shiftResult.newTargets[ti];
+                updatedSets[targetIdx] = {
+                  ...updatedSets[targetIdx],
+                  weight: target.weight,
+                  reps: target.reps,
+                  weightInput: formatWeightInputValue(target.weight),
+                  repsInput: String(target.reps),
+                };
+              }
+            }
+          }
+
+          // If no pattern shift, use standard micro-adjustment on next uncompleted set only
+          if (!didShift) {
+            const nextIdx = remainingIndices[0];
+            if (nextIdx >= historySetCount) {
+              const originalSuggestion = suggestedSets[index];
+              const originalWeight = originalSuggestion?.weight ?? actualWeight;
+              const originalReps = originalSuggestion?.reps ?? actualReps;
+
+              const adapted = adaptNextSet(
+                originalWeight,
+                originalReps,
+                actualWeight,
+                actualReps,
+                exerciseEquipment,
+                isCompound,
+              );
+
+              updatedSets[nextIdx] = {
+                ...updatedSets[nextIdx],
+                weight: adapted.weight,
+                reps: adapted.reps,
+                weightInput: formatWeightInputValue(adapted.weight),
+                repsInput: String(adapted.reps),
+                duration: completedSet.duration,
+                distance: completedSet.distance,
+                durationInput: completedSet.durationInput,
+                distanceInput: completedSet.distanceInput,
+                assistanceWeight: completedSet.assistanceWeight,
+                assistanceWeightInput: completedSet.assistanceWeightInput,
+              };
+            }
+          }
         } else {
-          updatedSets[nextUncompletedIndex] = {
-            ...nextSet,
-            weight: completedSet.weight ?? 0,
-            reps: completedSet.reps ?? 8,
-            weightInput: formatWeightInputValue(completedSet.weight ?? 0),
-            repsInput: String(completedSet.reps ?? 8),
-            duration: completedSet.duration,
-            distance: completedSet.distance,
-            durationInput: completedSet.durationInput,
-            distanceInput: completedSet.distanceInput,
-            assistanceWeight: completedSet.assistanceWeight,
-            assistanceWeightInput: completedSet.assistanceWeightInput,
-          };
+          // Non-smart path: propagate completed values to next uncompleted set beyond history
+          const nextIdx = remainingIndices[0];
+          if (nextIdx >= historySetCount) {
+            updatedSets[nextIdx] = {
+              ...updatedSets[nextIdx],
+              weight: completedSet.weight ?? 0,
+              reps: completedSet.reps ?? 8,
+              weightInput: formatWeightInputValue(completedSet.weight ?? 0),
+              repsInput: String(completedSet.reps ?? 8),
+              duration: completedSet.duration,
+              distance: completedSet.distance,
+              durationInput: completedSet.durationInput,
+              distanceInput: completedSet.distanceInput,
+              assistanceWeight: completedSet.assistanceWeight,
+              assistanceWeightInput: completedSet.assistanceWeightInput,
+            };
+          }
         }
       }
     }
@@ -901,7 +965,7 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
     completedSetsRef.current = updatedSets.filter((set) => set.completed).length;
     setSets(updatedSets);
     emitProgress();
-  }, [emitProgress, exerciseType, historySetCount, runningTimers, pausedTimers, smartSuggestionsEnabled, suggestedSets, exerciseEquipment, isCompound]);
+  }, [emitProgress, exerciseType, historySetCount, runningTimers, pausedTimers, smartSuggestionsEnabled, suggestedSets, exerciseEquipment, isCompound, exerciseDataPoints, patternShiftCount, onPatternShift]);
 
   const handleCompleteSetPress = useCallback((index: number) => {
     toggleSetCompletion(index);

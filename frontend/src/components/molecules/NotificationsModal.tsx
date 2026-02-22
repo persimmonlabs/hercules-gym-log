@@ -3,7 +3,7 @@
  * Main modal for managing workout reminder notifications.
  */
 
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, View, Alert } from 'react-native';
 import { triggerHaptic } from '@/utils/haptics';
 
@@ -45,6 +45,9 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({ visible,
   const [hasPermission, setHasPermission] = useState(false);
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
   const [configToDelete, setConfigToDelete] = useState<NotificationConfig | null>(null);
+  // Track whether configs have changed after initial mount to avoid loading
+  // expo-notifications at startup when notifications are disabled.
+  const isMountedRef = useRef(false);
 
   // Check permissions on mount
   useEffect(() => {
@@ -53,12 +56,18 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({ visible,
     }
   }, [visible]);
 
-  // Reschedule notifications when configs change
+  // Reschedule notifications when configs change — only when the modal is
+  // open and skip the initial render so expo-notifications is never loaded
+  // at startup when notifications are disabled.
   useEffect(() => {
-    if (notificationsEnabled && hasPermission) {
+    if (!isMountedRef.current) {
+      isMountedRef.current = true;
+      return;
+    }
+    if (visible && notificationsEnabled && hasPermission) {
       scheduleNotifications(configs);
     }
-  }, [configs, notificationsEnabled, hasPermission]);
+  }, [visible, configs, notificationsEnabled, hasPermission]);
 
   const handleClose = useCallback(() => {
     triggerHaptic('selection');
@@ -135,7 +144,7 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({ visible,
 
   return (
     <Modal visible={visible} animationType="fade" transparent onRequestClose={handleClose}>
-      <Pressable style={styles.overlay} onPress={handleClose}>
+      <Pressable style={[styles.overlay, { backgroundColor: theme.overlay.scrim }]} onPress={handleClose}>
         {!deleteModalVisible && (
           <Pressable style={[styles.modalContent, { backgroundColor: theme.surface.card }]} onPress={(e) => e.stopPropagation()}>
             <View style={styles.header}>
@@ -248,7 +257,6 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({ visible,
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'center',
     alignItems: 'center',
     padding: spacing.lg,

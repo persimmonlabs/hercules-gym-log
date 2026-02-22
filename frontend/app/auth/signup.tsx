@@ -17,11 +17,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, typography, radius, sizing } from '@/constants/theme';
 import { useAuth } from '@/providers/AuthProvider';
 import { supabaseClient } from '@/lib/supabaseClient';
-import { useAuthStore } from '@/store/authStore';
+import { useUserProfileStore } from '@/store/userProfileStore';
 
 export default function SignupScreen() {
     const router = useRouter();
-    const setJustSignedUp = useAuthStore((state) => state.setJustSignedUp);
+    const updateProfileField = useUserProfileStore((state) => state.updateProfileField);
     const [firstName, setFirstName] = useState('');
     const [lastName, setLastName] = useState('');
     const [email, setEmail] = useState('');
@@ -56,21 +56,19 @@ export default function SignupScreen() {
             if (error) throw error;
 
             if (data.session) {
-                // User is signed in automatically — mark as just signed up and send to onboarding
-                setJustSignedUp(true);
-                router.replace('/onboarding');
+                // User signed up from login flow — skip onboarding, go straight to dashboard
+                await updateProfileField('onboardingCompleted', true);
+                router.replace('/(tabs)');
             } else {
                 // Email confirmation required
-                // Mark as just signed up so they see onboarding after confirming email and logging in
-                setJustSignedUp(true);
                 Alert.alert(
-                    'Success',
-                    'Please check your email to confirm your account.',
+                    'Check Your Email',
+                    'Please confirm your email address to complete registration.',
                     [{ text: 'OK', onPress: () => router.replace('/auth/login') }]
                 );
             }
         } catch (error: any) {
-            Alert.alert('Signup Failed', error.message);
+            Alert.alert('Sign Up Failed', error.message);
         } finally {
             setLoading(false);
         }

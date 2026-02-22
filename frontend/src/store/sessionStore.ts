@@ -8,6 +8,7 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import type { Workout, WorkoutExercise, SetLog } from '@/types/workout';
+import type { ExerciseDataPoint } from '@/types/smartSuggestions';
 
 interface SessionDraft {
   planId: string | null;
@@ -17,15 +18,22 @@ interface SessionDraft {
   historySetCounts: Record<string, number>;
   /** Original smart-suggested sets per exercise (keyed by exercise name). */
   suggestedSets: Record<string, SetLog[]>;
+  /** Cached historical data points per exercise for intra-session pattern shift detection. */
+  exerciseDataPoints: Record<string, ExerciseDataPoint[]>;
+  /** Tracks how many intra-session pattern shifts have occurred per exercise. */
+  patternShiftCounts: Record<string, number>;
 }
 
 export interface SessionState {
   currentSession: SessionDraft | null;
   isSessionActive: boolean;
-  startSession: (planId: string | null, exercises?: WorkoutExercise[], name?: string | null, historySetCounts?: Record<string, number>, suggestedSets?: Record<string, SetLog[]>) => void;
-  addExercise: (exercise: WorkoutExercise, historySetCount?: number, suggested?: SetLog[]) => void;
+  startSession: (planId: string | null, exercises?: WorkoutExercise[], name?: string | null, historySetCounts?: Record<string, number>, suggestedSets?: Record<string, SetLog[]>, exerciseDataPoints?: Record<string, ExerciseDataPoint[]>) => void;
+  addExercise: (exercise: WorkoutExercise, historySetCount?: number, suggested?: SetLog[], dataPoints?: ExerciseDataPoint[]) => void;
   getHistorySetCount: (exerciseName: string) => number;
   getSuggestedSets: (exerciseName: string) => SetLog[] | null;
+  getExerciseDataPoints: (exerciseName: string) => ExerciseDataPoint[];
+  getPatternShiftCount: (exerciseName: string) => number;
+  incrementPatternShiftCount: (exerciseName: string) => void;
   updateExercise: (exerciseName: string, updatedExercise: WorkoutExercise) => void;
   removeExercise: (exerciseName: string) => void;
   reorderExercises: (fromIndex: number, toIndex: number) => void;
@@ -52,7 +60,7 @@ export const useSessionStore = create<SessionState>()(
       setHasHydrated: (state) => {
         set({ _hasHydrated: state });
       },
-      startSession: (planId, exercises = [], name = null, historySetCounts = {}, suggestedSets = {}) => {
+      startSession: (planId, exercises = [], name = null, historySetCounts = {}, suggestedSets = {}, exerciseDataPoints = {}) => {
         const nextSession: SessionDraft = {
           planId,
           name,
@@ -60,11 +68,13 @@ export const useSessionStore = create<SessionState>()(
           exercises: [...exercises],
           historySetCounts: { ...historySetCounts },
           suggestedSets: { ...suggestedSets },
+          exerciseDataPoints: { ...exerciseDataPoints },
+          patternShiftCounts: {},
         };
 
         set({ currentSession: nextSession, isSessionActive: true, isCompletionOverlayVisible: false });
       },
-      addExercise: (exercise, historySetCount = 0, suggested) => {
+      addExercise: (exercise, historySetCount = 0, suggested, dataPoints) => {
         const { currentSession } = get();
 
         if (!currentSession) {
@@ -76,6 +86,11 @@ export const useSessionStore = create<SessionState>()(
           nextSuggested[exercise.name] = suggested;
         }
 
+        const nextDataPoints = { ...currentSession.exerciseDataPoints };
+        if (dataPoints && dataPoints.length > 0) {
+          nextDataPoints[exercise.name] = dataPoints;
+        }
+
         const nextSession: SessionDraft = {
           ...currentSession,
           exercises: [...currentSession.exercises, exercise],
@@ -84,6 +99,7 @@ export const useSessionStore = create<SessionState>()(
             [exercise.name]: historySetCount,
           },
           suggestedSets: nextSuggested,
+          exerciseDataPoints: nextDataPoints,
         };
 
         set({ currentSession: nextSession });
@@ -95,6 +111,27 @@ export const useSessionStore = create<SessionState>()(
       getSuggestedSets: (exerciseName) => {
         const { currentSession } = get();
         return currentSession?.suggestedSets[exerciseName] ?? null;
+      },
+      getExerciseDataPoints: (exerciseName) => {
+        const { currentSession } = get();
+        return currentSession?.exerciseDataPoints[exerciseName] ?? [];
+      },
+      getPatternShiftCount: (exerciseName) => {
+        const { currentSession } = get();
+        return currentSession?.patternShiftCounts[exerciseName] ?? 0;
+      },
+      incrementPatternShiftCount: (exerciseName) => {
+        const { currentSession } = get();
+        if (!currentSession) return;
+        set({
+          currentSession: {
+            ...currentSession,
+            patternShiftCounts: {
+              ...currentSession.patternShiftCounts,
+              [exerciseName]: (currentSession.patternShiftCounts[exerciseName] ?? 0) + 1,
+            },
+          },
+        });
       },
       updateExercise: (exerciseName, updatedExercise) => {
         const { currentSession } = get();

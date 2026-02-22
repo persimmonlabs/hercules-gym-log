@@ -6,8 +6,8 @@
 import type { SetLog, Workout } from '@/types/workout';
 import type { ExerciseType, EquipmentType } from '@/types/exercise';
 import { exercises as exerciseCatalog, getExerciseTypeByName } from '@/constants/exercises';
-import { createSmartSuggestionSets } from '@/utils/smartSuggestions';
-import type { PatternType } from '@/types/smartSuggestions';
+import { createSmartSuggestionSets, extractDataPoints } from '@/utils/smartSuggestions';
+import type { PatternType, ExerciseDataPoint } from '@/types/smartSuggestions';
 
 const DEFAULT_SET_COUNT = 3;
 
@@ -21,6 +21,8 @@ export interface SmartSetsResult extends SetsWithHistoryResult {
     smartSuggestedSets: SetLog[];
     /** The detected pattern type, if smart suggestions were used. */
     pattern?: PatternType;
+    /** Cached historical data points for intra-session pattern shift detection. */
+    dataPoints?: ExerciseDataPoint[];
 }
 
 /**
@@ -266,11 +268,15 @@ export const createSetsWithSmartSuggestions = (
         };
     }
 
+    // Extract data points for intra-session pattern shift detection cache
+    const dataPoints = extractDataPoints(exerciseName, workouts, currentWorkoutId);
+
     // Use smart-suggested sets, store originals for intra-session comparison
     return {
         sets: smartResult.sets,
         historySetCount: smartResult.historySetCount,
         smartSuggestedSets: smartResult.sets.map(s => ({ ...s })),
         pattern: smartResult.pattern,
+        dataPoints,
     };
 };

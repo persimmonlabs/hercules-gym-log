@@ -24,11 +24,13 @@ const ACTION_TYPE_LABELS: Record<string, string> = {
   create_workout_template: 'Create Workout',
   add_workout_session: 'Log Workout',
   update_user_profile: 'Update Profile',
+  update_profile: 'Update Profile',
   create_plan: 'Create Plan',
   create_program_plan: 'Create Program',
   create_schedule: 'Create Schedule',
   edit_workout_session: 'Edit Session',
   delete_workout_session: 'Delete Session',
+  create_custom_exercise: 'Create Custom Exercise',
 };
 
 export const ActionApprovalCard: React.FC<ActionApprovalCardProps> = ({

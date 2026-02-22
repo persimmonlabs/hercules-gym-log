@@ -9,6 +9,7 @@ import { triggerHaptic } from '@/utils/haptics';
 
 import { Text } from '@/components/atoms/Text';
 import { colors, radius, spacing } from '@/constants/theme';
+import { useTheme } from '@/hooks/useTheme';
 import { springBouncy, buttonPressAnimation } from '@/constants/animations';
 
 interface QuickFilterChipProps {
@@ -19,6 +20,7 @@ interface QuickFilterChipProps {
 }
 
 export const QuickFilterChip: React.FC<QuickFilterChipProps> = ({ label, active, onPress, testID }) => {
+  const { theme } = useTheme();
   const scale = useSharedValue(1);
 
   const animatedStyle = useAnimatedStyle(() => ({
@@ -40,7 +42,7 @@ export const QuickFilterChip: React.FC<QuickFilterChipProps> = ({ label, active,
       <Pressable
         accessibilityRole="button"
         accessibilityState={{ selected: active }}
-        style={[styles.chip, active ? styles.chipActive : null]}
+        style={[styles.chip, { backgroundColor: theme.surface.card, borderColor: theme.border.light }, active ? styles.chipActive : null]}
         onPress={handlePress}
         testID={testID}
       >
@@ -59,8 +61,6 @@ const styles = StyleSheet.create({
   chip: {
     borderRadius: radius.full,
     borderWidth: 1,
-    borderColor: colors.border.light,
-    backgroundColor: colors.surface.card,
     paddingVertical: spacing.xs,
     paddingHorizontal: spacing.sm,
   },

@@ -7,56 +7,23 @@ import {
   BackHandler,
 } from 'react-native';
 import { router } from 'expo-router';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
-import { triggerHaptic } from '@/utils/haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Text } from '@/components/atoms/Text';
 import { Button } from '@/components/atoms/Button';
-import { SurfaceCard } from '@/components/atoms/SurfaceCard';
-import { InputField } from '@/components/atoms/InputField';
+import { AnimatedChevron } from '@/components/atoms/AnimatedChevron';
+import { FeatureComparisonTable } from '@/components/molecules/FeatureComparisonTable';
 import { useTheme } from '@/hooks/useTheme';
-import { useSettingsStore } from '@/store/settingsStore';
-import { colors, spacing, radius, typography, shadows, sizing } from '@/constants/theme';
+import { triggerHaptic } from '@/utils/haptics';
+import { spacing } from '@/constants/theme';
 
-interface FeatureItemProps {
-  icon: keyof typeof Ionicons.glyphMap;
-  title: string;
-  description: string;
-  index: number;
-}
-
-const FeatureItem: React.FC<FeatureItemProps> = ({ icon, title, description, index }) => {
-  const { theme } = useTheme();
-
-  return (
-    <Animated.View entering={FadeInDown.delay(index * 100).springify()}>
-      <View style={styles.featureItem}>
-        <View style={[styles.iconContainer, { backgroundColor: theme.surface.tint }]}>
-          <Ionicons name={icon} size={24} color={theme.accent.orange} />
-        </View>
-        <View style={styles.featureText}>
-          <Text variant="heading4" style={{ marginBottom: spacing.xs }}>
-            {title}
-          </Text>
-          <Text variant="body" color="secondary">
-            {description}
-          </Text>
-        </View>
-      </View>
-    </Animated.View>
-  );
-};
+import { PREMIUM_FEATURES } from '@/constants/premiumFeatures';
 
 export default function PremiumScreen() {
-  const { theme, isDarkMode } = useTheme();
+  const { theme } = useTheme();
   const insets = useSafeAreaInsets();
-  const { isPro, setPro } = useSettingsStore();
-  const [promoCode, setPromoCode] = useState('');
-  const [isSubmittingPromo, setIsSubmittingPromo] = useState(false);
-  const [promoError, setPromoError] = useState('');
 
   const handlePurchase = () => {
     triggerHaptic('medium');
@@ -79,134 +46,63 @@ export default function PremiumScreen() {
     return () => backHandler.remove();
   }, [handleBack]);
 
-  const handlePromoCodeSubmit = async () => {
-    if (!promoCode.trim()) {
-      setPromoError('Please enter a promo code');
-      return;
-    }
-
-    setIsSubmittingPromo(true);
-    setPromoError('');
-
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
-    if (promoCode.toUpperCase() === 'OWEN2026') {
-      triggerHaptic('success');
-      await setPro(true);
-      router.back();
-    } else {
-      triggerHaptic('error');
-      setPromoError('Invalid promo code');
-    }
-
-    setIsSubmittingPromo(false);
-  };
-
-  const features = [
-    {
-      icon: 'analytics' as const,
-      title: 'Advanced Analytics',
-      description: 'Deep insights with detailed charts and progress tracking',
-    },
-    {
-      icon: 'create' as const,
-      title: 'Create Unlimited Workouts and Plans',
-      description: 'Build and save as many workouts and plans as you want',
-    },
-    {
-      icon: 'lock-open' as const,
-      title: 'Unlock all Premium Workouts and Plans',
-      description: 'Get full access to the entire premium library',
-    },
-    {
-      icon: 'sparkles' as const,
-      title: 'Access to all future premium updates',
-      description: 'All new premium features and content included',
-    },
-  ];
-
   return (
-    <View style={[styles.root, { paddingTop: insets.top, paddingBottom: insets.bottom, backgroundColor: theme.primary.bg }]}>
-      <LinearGradient
-        colors={[theme.accent.orange, theme.primary.bg]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 0, y: 0.6 }}
-        style={StyleSheet.absoluteFillObject}
-      />
-
+    <View style={[styles.root, { paddingTop: insets.top, backgroundColor: theme.primary.bg }]}>
+      {/* Close button */}
       <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={handleBack}
-          activeOpacity={0.7}
-        >
-          <Ionicons name="arrow-back" size={24} color={theme.text.primary} />
+        <TouchableOpacity style={styles.closeButton} onPress={handleBack} activeOpacity={0.7}>
+          <Ionicons name="close" size={28} color={theme.text.primary} />
         </TouchableOpacity>
       </View>
 
-      <ScrollView 
-        style={styles.container}
+      <ScrollView
+        style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
+        {/* Hero Section */}
         <Animated.View entering={FadeInUp.springify()} style={styles.heroSection}>
-          <Ionicons name="diamond" size={80} color={colors.text.primary} />
-          <Text variant="display1" style={[styles.heroTitle, { color: theme.text.primary }]}>
+          <Ionicons name="fitness" size={56} color={theme.accent.orange} />
+          <Text variant="heading1" style={styles.heroTitle}>
             Hercules Pro
           </Text>
-          <Text variant="body" style={[styles.heroSubtitle, { color: theme.text.secondary }]}>
+          <Text variant="body" color="secondary" style={styles.heroSubtitle}>
             Unlock your full potential
           </Text>
         </Animated.View>
 
-        <View style={styles.featuresSection}>
-          {features.map((feature, index) => (
-            <FeatureItem
-              key={feature.title}
-              icon={feature.icon}
-              title={feature.title}
-              description={feature.description}
-              index={index}
-            />
-          ))}
-        </View>
-
-        <Animated.View entering={FadeInDown.delay(500).springify()} style={styles.promoSection}>
-          <SurfaceCard tone="elevated" style={styles.promoCard}>
-            <Text variant="heading4" style={styles.promoTitle}>
-              Have a promo code?
-            </Text>
-            <InputField
-              label="Promo Code"
-              value={promoCode}
-              onChangeText={setPromoCode}
-              placeholder="Enter promo code"
-              autoCapitalize="characters"
-              editable={!isSubmittingPromo}
-              helperText={promoError}
-            />
-            <Button
-              label={isSubmittingPromo ? "Applying..." : "Apply Promo Code"}
-              onPress={handlePromoCodeSubmit}
-              variant="secondary"
-              size="md"
-              disabled={isSubmittingPromo}
-              style={styles.promoButton}
-            />
-          </SurfaceCard>
+        {/* "This is included" + animated chevron */}
+        <Animated.View entering={FadeInDown.delay(200).springify()} style={styles.includedSection}>
+          <Text variant="heading4" color="primary" style={styles.includedText}>
+            What's included
+          </Text>
+          <AnimatedChevron size={20} />
         </Animated.View>
 
-        <Animated.View entering={FadeInDown.delay(600).springify()} style={styles.footer}>
-          <Button
-            label="Unlock Hercules Pro"
-            onPress={handlePurchase}
-            variant="primary"
-            size="xl"
-            style={styles.purchaseButton}
-          />
+        {/* Feature Comparison Table */}
+        <Animated.View entering={FadeInDown.delay(300).springify()} style={styles.tableSection}>
+          <FeatureComparisonTable features={PREMIUM_FEATURES} />
         </Animated.View>
       </ScrollView>
+
+      {/* Sticky Footer */}
+      <View
+        style={[
+          styles.stickyFooter,
+          { paddingBottom: Math.max(insets.bottom, spacing.md), backgroundColor: theme.primary.bg },
+        ]}
+      >
+        <Button
+          label="Unlock Hercules Pro"
+          onPress={handlePurchase}
+          variant="primary"
+          size="xl"
+          style={styles.purchaseButton}
+        />
+        <Text variant="caption" color="tertiary" style={styles.cancelText}>
+          Cancel anytime.
+        </Text>
+      </View>
     </View>
   );
 }
@@ -219,73 +115,49 @@ const styles = StyleSheet.create({
     width: '100%',
     zIndex: 10,
   },
-  backButton: {
+  closeButton: {
     padding: spacing.md,
-    marginTop: spacing.sm,
   },
-  container: {
+  scrollView: {
     flex: 1,
-    paddingHorizontal: spacing.xl,
   },
   scrollContent: {
-    paddingTop: spacing.lg,
-    paddingBottom: spacing.xl,
-    justifyContent: 'space-between',
-    minHeight: '100%',
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.lg,
   },
   heroSection: {
     alignItems: 'center',
-    paddingTop: 0,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.xl,
   },
   heroTitle: {
-    marginTop: spacing.md,
-    marginBottom: spacing.xs,
+    marginTop: spacing.sm,
     textAlign: 'center',
   },
   heroSubtitle: {
     textAlign: 'center',
-    fontSize: 18,
-    opacity: 0.9,
+    marginTop: spacing.xs,
   },
-  featuresSection: {
-    gap: spacing.md,
-    marginVertical: spacing.xl,
-  },
-  featureItem: {
-    flexDirection: 'row',
+  includedSection: {
     alignItems: 'center',
-    gap: spacing.md,
+    marginBottom: spacing.sm,
   },
-  iconContainer: {
-    width: 44,
-    height: 44,
-    borderRadius: radius.md,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  featureText: {
-    flex: 1,
-  },
-  footer: {
-    width: '100%',
-    paddingTop: spacing.md,
-  },
-  promoSection: {
-    width: '100%',
-    marginBottom: spacing.lg,
-  },
-  promoCard: {
-    padding: spacing.lg,
-    gap: spacing.md,
-  },
-  promoTitle: {
+  includedText: {
     textAlign: 'center',
-    marginBottom: spacing.xs,
   },
-  promoButton: {
-    width: '100%',
+  tableSection: {
+    marginBottom: spacing.xl,
+  },
+  stickyFooter: {
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.sm,
+    alignItems: 'center',
   },
   purchaseButton: {
     width: '100%',
+  },
+  cancelText: {
+    marginTop: spacing.sm,
+    textAlign: 'center',
   },
 });

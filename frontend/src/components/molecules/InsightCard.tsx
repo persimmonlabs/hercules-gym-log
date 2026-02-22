@@ -14,36 +14,104 @@ import { Text } from '@/components/atoms/Text';
 import { SurfaceCard } from '@/components/atoms/SurfaceCard';
 import { spacing, colors, radius } from '@/constants/theme';
 import { useTheme } from '@/hooks/useTheme';
-import type { Insight } from '@/hooks/useInsightsData';
+import type { Insight, EmptyReason } from '@/hooks/useInsightsData';
 
 interface InsightCardProps {
   /** Array of insights of the same type - first one shown by default */
   insights: Insight[];
+  /** The insight type, used to show the correct header and empty state */
+  insightType: 'plateau' | 'balance' | 'focus';
+  /** Why insights are empty — drives the correct empty state message */
+  emptyReason?: EmptyReason;
 }
 
-export const InsightCard: React.FC<InsightCardProps> = ({ insights }) => {
+const HEADER_TITLES: Record<string, string> = {
+  plateau: 'Plateaus Detected',
+  balance: 'Balance Alerts',
+  focus: 'Focus Suggestions',
+};
+
+const EMPTY_STATE_MESSAGES: Record<string, { emoji: string; message: string }> = {
+  plateau: {
+    emoji: '📈',
+    message: "No plateaus detected — your lifts are progressing nicely. Keep pushing!",
+  },
+  balance: {
+    emoji: '⚖️',
+    message: "Your training balance looks great this week. Push, pull, upper, lower — all in check.",
+  },
+  focus: {
+    emoji: '🎯',
+    message: "You're hitting all the right muscle groups. Your coverage is well-rounded.",
+  },
+};
+
+const NO_WORKOUTS_MESSAGES: Record<string, { message: string }> = {
+  plateau: {
+    message: "Complete a few workouts and we'll track your strength progress to detect any plateaus.",
+  },
+  balance: {
+    message: "Log some sessions and we'll analyse your push/pull, upper/lower balance here.",
+  },
+  focus: {
+    message: "Once you've logged a few workouts, we'll suggest which muscle groups need more attention.",
+  },
+};
+
+const INSUFFICIENT_DATA_MESSAGES: Record<string, { message: string }> = {
+  plateau: {
+    message: "Keep logging — we need a few more sessions to start detecting plateaus.",
+  },
+  balance: {
+    message: "A few more sessions and we'll have enough data to check your training balance.",
+  },
+  focus: {
+    message: "Log a couple more workouts and we'll start surfacing muscle group suggestions.",
+  },
+};
+
+export const InsightCard: React.FC<InsightCardProps> = ({ insights, insightType, emptyReason }) => {
   const { theme } = useTheme();
   const [isExpanded, setIsExpanded] = useState(false);
 
-  if (insights.length === 0) return null;
+  const headerTitle = HEADER_TITLES[insightType] ?? insightType;
+
+  if (insights.length === 0) {
+    let emptyMessage: string;
+    if (emptyReason === 'no-workouts') {
+      emptyMessage = NO_WORKOUTS_MESSAGES[insightType]?.message ?? '';
+    } else if (emptyReason === 'insufficient-data') {
+      emptyMessage = INSUFFICIENT_DATA_MESSAGES[insightType]?.message ?? '';
+    } else {
+      emptyMessage = EMPTY_STATE_MESSAGES[insightType]?.message ?? '';
+    }
+    return (
+      <SurfaceCard tone="neutral" padding="md" showAccentStripe={false}>
+        <View style={styles.content}>
+          <View style={styles.headerSection}>
+            <Text variant="heading3" color="primary" style={styles.title}>
+              {headerTitle}
+            </Text>
+          </View>
+          <View style={styles.insightItem}>
+            <Text variant="body" color="secondary" style={styles.message}>
+              {emptyMessage}
+            </Text>
+          </View>
+          <View pointerEvents="none" style={[styles.expandButton, { opacity: 0 }]}>
+            <Text variant="caption" style={{ color: colors.accent.orange }}>
+              +0 more
+            </Text>
+            <Ionicons name="chevron-down" size={14} color={colors.accent.orange} />
+          </View>
+        </View>
+      </SurfaceCard>
+    );
+  }
 
   const primaryInsight = insights[0];
   const additionalInsights = insights.slice(1);
   const hasMore = additionalInsights.length > 0;
-
-  // Map insight types to consistent headers
-  const getHeaderTitle = (type: string): string => {
-    switch (type) {
-      case 'plateau':
-        return 'Plateaus Detected';
-      case 'balance':
-        return 'Balance Alerts';
-      case 'focus':
-        return 'Focus Suggestions';
-      default:
-        return primaryInsight.title;
-    }
-  };
 
   return (
     <SurfaceCard tone="neutral" padding="md" showAccentStripe={false}>
@@ -51,7 +119,7 @@ export const InsightCard: React.FC<InsightCardProps> = ({ insights }) => {
         {/* Header */}
         <View style={styles.headerSection}>
           <Text variant="heading3" color="primary" style={styles.title}>
-            {getHeaderTitle(primaryInsight.type)}
+            {headerTitle}
           </Text>
         </View>
 

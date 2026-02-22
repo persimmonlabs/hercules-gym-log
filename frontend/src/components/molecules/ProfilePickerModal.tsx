@@ -108,6 +108,7 @@ const styles = StyleSheet.create({
   },
   title: {
     marginBottom: spacing.md,
+    textAlign: 'center',
   },
   scrollContent: {
     flexGrow: 0,

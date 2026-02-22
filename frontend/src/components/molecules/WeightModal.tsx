@@ -70,7 +70,6 @@ export const WeightModal: React.FC<WeightModalProps> = ({
       <Pressable style={styles.overlay} onPress={handleClose}>
         <Pressable style={[styles.modal, { backgroundColor: theme.surface.card }]} onPress={(e) => e.stopPropagation()}>
           <Text variant="heading2" color="primary" style={styles.title}>Body Weight</Text>
-          <Text variant="body" color="secondary" style={styles.subtitle}>Used for accurate volume calculations</Text>
 
           <View style={styles.row}>
             <TextInput
@@ -86,7 +85,7 @@ export const WeightModal: React.FC<WeightModalProps> = ({
           </View>
 
           <View style={styles.buttons}>
-            <Button label="Cancel" variant="secondary" onPress={handleClose} style={styles.btn} />
+            <Button label="Cancel" variant="ghost" onPress={handleClose} style={styles.btn} />
             <Button label="Save" variant="primary" onPress={handleSave} style={styles.btn} />
           </View>
         </Pressable>
@@ -98,8 +97,7 @@ export const WeightModal: React.FC<WeightModalProps> = ({
 const styles = StyleSheet.create({
   overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: spacing.lg },
   modal: { borderRadius: radius.xl, padding: spacing.xl, width: '100%', maxWidth: 360, ...shadows.lg },
-  title: { textAlign: 'center', marginBottom: spacing.xs },
-  subtitle: { textAlign: 'center', marginBottom: spacing.lg },
+  title: { textAlign: 'center', marginBottom: spacing.lg },
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginBottom: spacing.lg },
   input: { flex: 1, height: 48, borderRadius: radius.md, borderWidth: 1, paddingHorizontal: spacing.md, fontSize: 18, textAlign: 'center' },
   buttons: { flexDirection: 'row', gap: spacing.md },

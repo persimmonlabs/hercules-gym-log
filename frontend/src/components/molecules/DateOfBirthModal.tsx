@@ -133,7 +133,7 @@ export const DateOfBirthModal: React.FC<DateOfBirthModalProps> = ({
           </View>
 
           <View style={styles.buttonContainer}>
-            <Button label="Cancel" variant="secondary" onPress={handleClose} style={styles.button} />
+            <Button label="Cancel" variant="ghost" onPress={handleClose} style={styles.button} />
             <Button label="Save" variant="primary" onPress={handleSave} style={styles.button} />
           </View>
         </Pressable>

@@ -55,8 +55,6 @@ export const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = (
                 label={cancelLabel}
                 onPress={onClose}
                 variant="ghost"
-                contentStyle={styles.cancelButton}
-                textColor={colors.accent.orange}
                 disabled={isLoading}
               />
               <Button
@@ -105,12 +103,6 @@ const styles = StyleSheet.create({
   buttonStack: {
     width: '100%',
     gap: spacing.md,
-  },
-  cancelButton: {
-    backgroundColor: '#FFFFFF',
-    borderWidth: 2,
-    borderColor: colors.accent.orange,
-    borderRadius: radius.lg,
   },
   deleteButton: {
     backgroundColor: colors.accent.orange,

@@ -34,6 +34,7 @@ import { useWorkoutSessionsStore, type WorkoutSessionsState } from '@/store/work
 import type { Workout, WorkoutExercise, SetLog } from '@/types/workout';
 import { useSessionStore } from '@/store/sessionStore';
 import { useUserProfileStore } from '@/store/userProfileStore';
+import { useBirthdayWelcome } from '@/hooks/useBirthdayWelcome';
 import { WorkoutInProgressModal } from '@/components/molecules/WorkoutInProgressModal';
 import type { ProgramWorkout } from '@/types/premadePlan';
 import { createSetsWithSmartSuggestions } from '@/utils/workout';
@@ -276,16 +277,13 @@ const styles = StyleSheet.create({
     width: 10,
     height: 10,
     borderRadius: radius.full,
-    backgroundColor: colors.accent.orange,
   },
   quickLinksList: {
     gap: spacing.lg,
   },
   inlineCard: {
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border.light,
     borderRadius: radius.lg,
-    backgroundColor: colors.surface.card,
     shadowColor: 'transparent',
     shadowOpacity: 0,
     shadowRadius: 0,
@@ -339,7 +337,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.xs,
     borderRadius: radius.md,
-    backgroundColor: colors.surface.card,
     paddingVertical: spacing.xs,
     paddingHorizontal: spacing.sm,
   },
@@ -372,12 +369,12 @@ const DashboardScreen: React.FC = () => {
   const { theme } = useTheme();
   const workouts = useWorkoutSessionsStore((state: WorkoutSessionsState) => state.workouts);
   const profile = useUserProfileStore((state) => state.profile);
+  const { welcomeMessage } = useBirthdayWelcome();
 
   const [workoutInProgressVisible, setWorkoutInProgressVisible] = useState<boolean>(false);
 
-  // Get firstName and userInitial reactively from store state
-  const firstName = profile?.firstName || null;
-  const userInitial = firstName ? firstName.charAt(0).toUpperCase() : null;
+  // Get userInitial reactively from store state
+  const userInitial = profile?.firstName ? profile.firstName.charAt(0).toUpperCase() : null;
 
   const weekTracker = useMemo<WeekDayTracker[]>(() => {
     return createWeekTracker(workouts);
@@ -713,11 +710,15 @@ const DashboardScreen: React.FC = () => {
 
       const historySetCounts: Record<string, number> = {};
       const suggestedSetsMap: Record<string, SetLog[]> = {};
+      const dataPointsMap: Record<string, any[]> = {};
       const workoutExercises: WorkoutExercise[] = target.exercises.map((exercise) => {
         const result = createSetsWithSmartSuggestions(exercise.name, workouts, smartSuggestionsEnabled, undefined, undefined, customExercises);
         historySetCounts[exercise.name] = result.historySetCount;
         if (result.smartSuggestedSets.length > 0) {
           suggestedSetsMap[exercise.name] = result.smartSuggestedSets;
+        }
+        if (result.dataPoints && result.dataPoints.length > 0) {
+          dataPointsMap[exercise.name] = result.dataPoints;
         }
         return {
           name: exercise.name,
@@ -734,7 +735,7 @@ const DashboardScreen: React.FC = () => {
           ? `${todaysCardState.dayLabel}: ${todaysPlan?.name ?? 'Workout'}`
           : (todaysPlan?.name ?? null);
 
-      startSession(planId, workoutExercises, sessionName, historySetCounts, suggestedSetsMap);
+      startSession(planId, workoutExercises, sessionName, historySetCounts, suggestedSetsMap, dataPointsMap);
       router.push('/(tabs)/workout');
     };
 
@@ -820,12 +821,11 @@ const DashboardScreen: React.FC = () => {
           />
           <View style={styles.contentContainer}>
             <ScreenHeader
-              title={firstName ? `Welcome, ${firstName}!` : 'Welcome!'}
-              subtitle="Your fitness journey starts here."
-              onProfilePress={() => router.push('/modals/profile')}
-              userInitial={userInitial}
-            />
-
+            title={welcomeMessage}
+            subtitle="Your fitness journey starts here."
+            onProfilePress={() => router.push('/modals/profile')}
+            userInitial={userInitial}
+          />
             <Animated.View style={weeklyTrackerAnimatedStyle}>
               <Pressable style={styles.pressableStretch}>
                 <SurfaceCard tone="card" padding="xl" showAccentStripe={true} style={{ borderWidth: 0, marginTop: -spacing.md }}>
@@ -919,7 +919,7 @@ const DashboardScreen: React.FC = () => {
                           tone="neutral"
                           padding="lg"
                           showAccentStripe={false}
-                          style={styles.inlineCard}
+                          style={[styles.inlineCard, { borderColor: theme.border.light }]}
                         >
                           <View style={styles.quickLinkRow}>
                             <View style={styles.quickLinkInfo}>
@@ -955,7 +955,7 @@ const DashboardScreen: React.FC = () => {
                           tone="neutral"
                           padding="lg"
                           showAccentStripe={false}
-                          style={styles.inlineCard}
+                          style={[styles.inlineCard, { borderColor: theme.border.light }]}
                         >
                           <View style={styles.quickLinkRow}>
                             <View style={styles.quickLinkInfo}>
@@ -991,7 +991,7 @@ const DashboardScreen: React.FC = () => {
                           tone="neutral"
                           padding="lg"
                           showAccentStripe={false}
-                          style={styles.inlineCard}
+                          style={[styles.inlineCard, { borderColor: theme.border.light }]}
                         >
                           <View style={styles.quickLinkRow}>
                             <View style={styles.quickLinkInfo}>
@@ -1039,11 +1039,15 @@ const DashboardScreen: React.FC = () => {
                                   if (targetWorkout) {
                                     const historySetCounts: Record<string, number> = {};
                                     const suggestedSetsMap2: Record<string, SetLog[]> = {};
+                                    const dataPointsMap2: Record<string, any[]> = {};
                                     const workoutExercises: WorkoutExercise[] = targetWorkout.exercises.map((exercise) => {
                                       const result = createSetsWithSmartSuggestions(exercise.name, workouts, smartSuggestionsEnabled, undefined, undefined, customExercises);
                                       historySetCounts[exercise.name] = result.historySetCount;
                                       if (result.smartSuggestedSets.length > 0) {
                                         suggestedSetsMap2[exercise.name] = result.smartSuggestedSets;
+                                      }
+                                      if (result.dataPoints && result.dataPoints.length > 0) {
+                                        dataPointsMap2[exercise.name] = result.dataPoints;
                                       }
                                       return {
                                         name: exercise.name,
@@ -1051,7 +1055,7 @@ const DashboardScreen: React.FC = () => {
                                       };
                                     });
 
-                                    startSession(planId, workoutExercises, sessionName, historySetCounts, suggestedSetsMap2);
+                                    startSession(planId, workoutExercises, sessionName, historySetCounts, suggestedSetsMap2, dataPointsMap2);
                                   }
 
                                   router.push('/(tabs)/workout');
@@ -1079,7 +1083,7 @@ const DashboardScreen: React.FC = () => {
                           tone="neutral"
                           padding="lg"
                           showAccentStripe={false}
-                          style={styles.inlineCard}
+                          style={[styles.inlineCard, { borderColor: theme.border.light }]}
                         >
                           <View style={styles.quickLinkRow}>
                             <View style={styles.quickLinkInfo}>
@@ -1154,7 +1158,7 @@ const DashboardScreen: React.FC = () => {
                           tone="neutral"
                           padding="lg"
                           showAccentStripe={false}
-                          style={styles.inlineCard}
+                          style={[styles.inlineCard, { borderColor: theme.border.light }]}
                         >
                           <View style={styles.quickLinkRow}>
                             <View style={styles.quickLinkInfo}>
@@ -1190,7 +1194,7 @@ const DashboardScreen: React.FC = () => {
                           tone="neutral"
                           padding="lg"
                           showAccentStripe={false}
-                          style={styles.inlineCard}
+                          style={[styles.inlineCard, { borderColor: theme.border.light }]}
                         >
                           <View style={styles.todaysPlanEmptyContent}>
                             <Text variant="bodySemibold" color="primary">
@@ -1206,7 +1210,7 @@ const DashboardScreen: React.FC = () => {
                           tone="neutral"
                           padding="lg"
                           showAccentStripe={false}
-                          style={styles.inlineCard}
+                          style={[styles.inlineCard, { borderColor: theme.border.light }]}
                         >
                           <View style={styles.quickLinkRow}>
                             <View style={styles.quickLinkInfo}>
@@ -1275,7 +1279,7 @@ const DashboardScreen: React.FC = () => {
                             tone="neutral"
                             padding="lg"
                             showAccentStripe={false}
-                            style={[styles.inlineCard, lift?.animatedStyle]}
+                            style={[styles.inlineCard, { borderColor: theme.border.light }, lift?.animatedStyle]}
                           >
                             <View style={styles.recentCardHeader}>
                               <Text variant="bodySemibold" color="primary">
@@ -1297,7 +1301,7 @@ const DashboardScreen: React.FC = () => {
                       tone="neutral"
                       padding="lg"
                       showAccentStripe={false}
-                      style={styles.inlineCard}
+                      style={[styles.inlineCard, { borderColor: theme.border.light }]}
                     >
                       <Text variant="bodySemibold" color="primary">
                         No workouts yet
@@ -1330,7 +1334,7 @@ const DashboardScreen: React.FC = () => {
                     tone="neutral"
                     padding="lg"
                     showAccentStripe={false}
-                    style={styles.inlineCard}
+                    style={[styles.inlineCard, { borderColor: theme.border.light }]}
                   >
                     <View style={styles.quickLinkRow}>
                       <View style={styles.quickLinkInfo}>

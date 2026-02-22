@@ -10,6 +10,7 @@ import { ProgramCard } from '@/components/molecules/ProgramCard';
 import { WorkoutFilters, type WorkoutFilterState } from '@/components/molecules/WorkoutFilters';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { colors, spacing, radius, sizing } from '@/constants/theme';
+import { useTheme } from '@/hooks/useTheme';
 import { useProgramsStore } from '@/store/programsStore';
 import { usePlansStore } from '@/store/plansStore';
 import { usePremiumStatus } from '@/hooks/usePremiumStatus';
@@ -37,7 +38,7 @@ class BrowseErrorBoundary extends Component<{ children: ReactNode; onReset: () =
   render() {
     if (this.state.hasError) {
       return (
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20, backgroundColor: colors.primary.bg }}>
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 }}>
           <Text variant="heading3" color="primary" style={{ marginBottom: 12 }}>Something went wrong</Text>
           <Text variant="body" color="secondary" style={{ marginBottom: 20, textAlign: 'center' }}>
             {this.state.error?.message || 'An unexpected error occurred'}
@@ -54,7 +55,6 @@ class BrowseErrorBoundary extends Component<{ children: ReactNode; onReset: () =
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.primary.bg,
   },
   header: {
     flexDirection: 'row',
@@ -91,6 +91,7 @@ const styles = StyleSheet.create({
 
 function BrowseProgramsScreen() {
   const router = useRouter();
+  const { theme } = useTheme();
   const insets = useSafeAreaInsets();
   const { mode } = useLocalSearchParams<{ mode?: 'program' | 'workout' }>();
   const modeString = Array.isArray(mode) ? mode[0] : mode;
@@ -250,7 +251,7 @@ function BrowseProgramsScreen() {
 
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
+    <View style={[styles.container, { paddingTop: insets.top, backgroundColor: theme.primary.bg }]}>
       <FlatList
         data={filteredItems as any}
         contentContainerStyle={[styles.listContent, { paddingBottom: insets.bottom + sizing.tabBarHeight + spacing.md }]}
@@ -268,7 +269,7 @@ function BrowseProgramsScreen() {
                 </Text>
               </View>
               <Pressable onPress={handleBack} style={styles.backButton} hitSlop={8}>
-                <IconSymbol name="arrow-back" size={24} color={colors.text.primary} />
+                <IconSymbol name="arrow-back" size={24} color={theme.text.primary} />
               </Pressable>
             </View>
 
@@ -305,7 +306,7 @@ function BrowseProgramsScreen() {
         }}
         ListEmptyComponent={
           <View style={styles.emptyState}>
-            <IconSymbol name="search" size={48} color={colors.neutral.gray400} />
+            <IconSymbol name="search" size={48} color={theme.text.muted} />
             <Text variant="body" color="secondary">
               {Object.values(filters).filter(v => v !== 'all').length > 0 
                 ? `No ${isWorkoutMode ? 'workouts' : 'programs'} found matching your filters.` 

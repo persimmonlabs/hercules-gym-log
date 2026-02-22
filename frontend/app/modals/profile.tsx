@@ -7,7 +7,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { StyleSheet, View, Pressable, ScrollView, Alert, ActivityIndicator, Switch } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import Animated, { useSharedValue, withSpring } from 'react-native-reanimated';
+import Animated, { useSharedValue, withSpring, useAnimatedStyle } from 'react-native-reanimated';
 import { triggerHaptic } from '@/utils/haptics';
 
 import { Text } from '@/components/atoms/Text';
@@ -57,6 +57,7 @@ const ProfileModal: React.FC = () => {
   const { isPremium, isLoading: isPremiumLoading } = usePremiumStatus();
   const { premiumOverride, setPremiumOverride } = useDevToolsStore();
   const backScale = useSharedValue(1);
+  const backScaleStyle = useAnimatedStyle(() => ({ transform: [{ scale: backScale.value }] }));
 
   const handleBackPress = () => {
     backScale.value = withSpring(0.9, { damping: 15, stiffness: 300 });
@@ -250,7 +251,7 @@ const ProfileModal: React.FC = () => {
   };
   const equipmentLabels: Record<string, string> = {
     'full-gym': 'Full Gym', 'dumbbells-only': 'Dumbbells Only', 'bodyweight': 'Bodyweight Only',
-    'home-gym': 'Home Gym', 'resistance-bands': 'Resistance Bands',
+    'resistance-bands': 'Resistance Bands',
   };
 
   const formatDob = (dob: string | null | undefined) => {
@@ -269,7 +270,7 @@ const ProfileModal: React.FC = () => {
     <SafeAreaView style={[styles.container, { backgroundColor: theme.primary.bg }]}>
       <View style={[styles.headerContainer, { backgroundColor: theme.primary.bg }]}>
         <View style={[styles.header, { backgroundColor: theme.primary.bg }]}>
-          <Animated.View style={{ transform: [{ scale: backScale.value }] }}>
+          <Animated.View style={backScaleStyle}>
             <Pressable
               style={styles.backButton}
               onPress={handleBackPress}
@@ -401,6 +402,11 @@ const ProfileModal: React.FC = () => {
               subtitle="Suggests weights and reps based on your training patterns"
               value={smartSuggestionsEnabled}
               onValueChange={(val) => {
+                if (val && !isPremium) {
+                  triggerHaptic('warning');
+                  router.push('/premium' as any);
+                  return;
+                }
                 setSmartSuggestionsEnabled(val);
                 triggerHaptic('selection');
               }}
@@ -516,46 +522,48 @@ const ProfileModal: React.FC = () => {
           </View>
         </View>
 
-        <View style={[styles.sectionDivider, { backgroundColor: theme.text.tertiary }]} />
-
         {/* Dev Tools (only in development) */}
         {__DEV__ && (
-          <View style={styles.section}>
-            <Text variant="caption" color="secondary" style={styles.sectionTitle}>
-              DEVELOPER TOOLS
-            </Text>
+          <>
+            <View style={[styles.sectionDivider, { backgroundColor: theme.text.tertiary }]} />
+            
+            <View style={styles.section}>
+              <Text variant="caption" color="secondary" style={styles.sectionTitle}>
+                DEVELOPER TOOLS
+              </Text>
 
-            <View style={[styles.settingsGroup, { backgroundColor: theme.surface.card }]}>
-              <Pressable
-                style={styles.devToggleRow}
-                onPress={() => {
-                  triggerHaptic('selection');
-                  const newValue = premiumOverride === 'premium' ? 'free' : 'premium';
-                  setPremiumOverride(newValue);
-                }}
-              >
-                <View style={styles.devToggleInfo}>
-                  <View style={{ flex: 1 }}>
-                    <Text variant="bodySemibold" color="primary">Premium Status</Text>
-                    <Text variant="caption" color="secondary" style={{ fontSize: 13 }}>
-                      {premiumOverride === 'premium' ? 'Premium' : 'Free'}
+              <View style={[styles.settingsGroup, { backgroundColor: theme.surface.card }]}>
+                <Pressable
+                  style={styles.devToggleRow}
+                  onPress={() => {
+                    triggerHaptic('selection');
+                    const newValue = premiumOverride === 'premium' ? 'free' : 'premium';
+                    setPremiumOverride(newValue);
+                  }}
+                >
+                  <View style={styles.devToggleInfo}>
+                    <View style={{ flex: 1 }}>
+                      <Text variant="bodySemibold" color="primary">Premium Status</Text>
+                      <Text variant="caption" color="secondary" style={{ fontSize: 13 }}>
+                        {premiumOverride === 'premium' ? 'Premium' : 'Free'}
+                      </Text>
+                    </View>
+                  </View>
+                  <View style={[
+                    styles.devToggleBadge,
+                    { backgroundColor: premiumOverride === 'premium' ? theme.accent.orange : theme.surface.elevated }
+                  ]}>
+                    <Text variant="captionSmall" style={{ color: premiumOverride === 'premium' ? '#FFF' : theme.text.secondary }}>
+                      {premiumOverride === 'premium' ? 'PRO' : 'FREE'}
                     </Text>
                   </View>
-                </View>
-                <View style={[
-                  styles.devToggleBadge,
-                  { backgroundColor: premiumOverride === 'premium' ? theme.accent.orange : theme.surface.elevated }
-                ]}>
-                  <Text variant="captionSmall" style={{ color: premiumOverride === 'premium' ? '#FFF' : theme.text.secondary }}>
-                    {premiumOverride === 'premium' ? 'PRO' : 'FREE'}
-                  </Text>
-                </View>
-              </Pressable>
+                </Pressable>
+              </View>
             </View>
-          </View>
-        )}
 
-        <View style={[styles.sectionDivider, { backgroundColor: theme.text.tertiary }]} />
+            <View style={[styles.sectionDivider, { backgroundColor: theme.text.tertiary }]} />
+          </>
+        )}
 
         {/* Account */}
         <View style={styles.section}>
@@ -660,7 +668,6 @@ const ProfileModal: React.FC = () => {
           { value: 'full-gym', label: 'Full Gym' },
           { value: 'dumbbells-only', label: 'Dumbbells Only' },
           { value: 'bodyweight', label: 'Bodyweight Only' },
-          { value: 'home-gym', label: 'Home Gym' },
           { value: 'resistance-bands', label: 'Resistance Bands' },
         ]}
         selectedValue={profile?.availableEquipment}

@@ -93,7 +93,7 @@ const TabBarItem: React.FC<TabBarItemProps> = ({
             createGradientIcon(iconName)
           )
         ) : (
-          <Ionicons name={iconName} size={ICON_SIZE} color={theme.text.primary} />
+          <Ionicons name={iconName} size={ICON_SIZE} color={theme.text.secondary} />
         )}
       </TouchableOpacity>
     </Animated.View>

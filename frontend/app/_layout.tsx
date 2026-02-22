@@ -18,7 +18,8 @@ import { useUserProfileStore } from '@/store/userProfileStore';
 import { useActiveScheduleStore } from '@/store/activeScheduleStore';
 import { useCustomExerciseStore } from '@/store/customExerciseStore';
 import { useSettingsStore } from '@/store/settingsStore';
-import { useAuthStore } from '@/store/authStore';
+import { useNotificationStore } from '@/store/notificationStore';
+import { scheduleNotifications } from '@/services/notificationService';
 
 import './add-exercises';
 
@@ -27,42 +28,31 @@ export const unstable_settings = {
   useNativeStack: true,
 };
 
-const useProtectedRoute = (session: any, isLoading: boolean) => {
+const useProtectedRoute = (session: any, isLoading: boolean, onboardingCompleted: boolean | undefined, profileLoading: boolean) => {
   const segments = useSegments();
   const router = useRouter();
-  const profile = useUserProfileStore((state) => state.profile);
-  const profileLoading = useUserProfileStore((state) => state.isLoading);
-  const justSignedUp = useAuthStore((state) => state.justSignedUp);
-  const setJustSignedUp = useAuthStore((state) => state.setJustSignedUp);
 
   useEffect(() => {
-    if (isLoading) return;
+    if (isLoading || profileLoading) return;
 
     const inAuthGroup = (segments[0] as string) === 'auth';
     const inOnboarding = (segments[0] as string) === 'onboarding';
+    const onboardingDone = onboardingCompleted === true;
 
-    if (!session && !inAuthGroup) {
-      // Redirect to the sign-in page.
-      router.replace('/auth/login' as any);
+    if (!session && !inAuthGroup && !inOnboarding) {
+      // Unauthenticated user not on auth or onboarding — send to welcome/onboarding
+      router.replace('/onboarding' as any);
     } else if (session && inAuthGroup) {
-      // Redirect away from the sign-in page.
-      if (justSignedUp) {
-        setJustSignedUp(false);
-        router.replace('/onboarding' as any);
-      } else {
-        router.replace('/(tabs)' as any);
-      }
-    } else if (session && !inOnboarding && !inAuthGroup && !profileLoading && profile) {
-      // Check if user just signed up (force onboarding even if they previously completed it)
-      if (justSignedUp) {
-        setJustSignedUp(false); // Clear the flag
-        router.replace('/onboarding' as any);
-      } else if (profile.onboardingCompleted === false) {
-        // New user who hasn't completed onboarding
-        router.replace('/onboarding' as any);
-      }
+      // Authenticated user on auth screens — send to dashboard
+      router.replace('/(tabs)' as any);
+    } else if (session && inOnboarding && onboardingDone) {
+      // Authenticated user on onboarding but already completed — send to dashboard
+      router.replace('/(tabs)' as any);
+    } else if (session && !inOnboarding && !inAuthGroup && !onboardingDone) {
+      // Authenticated user trying to access app but onboarding not complete — send back
+      router.replace('/onboarding' as any);
     }
-  }, [session, segments, isLoading, profile, profileLoading, justSignedUp, setJustSignedUp]);
+  }, [session, segments, isLoading, onboardingCompleted, profileLoading]);
 };
 
 const RootLayout: React.FC = () => {
@@ -183,6 +173,7 @@ const RootLayoutNav = ({
   const hydrateActiveSchedule = useActiveScheduleStore((state) => state.hydrateActiveSchedule);
   const hydrateCustomExercises = useCustomExerciseStore((state) => state.hydrateCustomExercises);
   const syncFromSupabase = useSettingsStore((state) => state.syncFromSupabase);
+  const { notificationsEnabled, configs: notificationConfigs } = useNotificationStore();
 
   // Fetch profile and hydrate stores when user session is established
   useEffect(() => {
@@ -194,25 +185,27 @@ const RootLayoutNav = ({
     }
   }, [user?.id, fetchProfile, hydrateActiveSchedule, hydrateCustomExercises, syncFromSupabase]);
 
-  const profile = useUserProfileStore((state) => state.profile);
-  const profileLoading = useUserProfileStore((state) => state.isLoading);
-  const justSignedUp = useAuthStore((state) => state.justSignedUp);
+  // Re-register scheduled notifications on login (survives app updates/reinstalls).
+  // Only runs when the user has notifications enabled — never loads expo-notifications
+  // for users who haven't opted in.
+  useEffect(() => {
+    if (user?.id && notificationsEnabled && notificationConfigs.length > 0) {
+      scheduleNotifications(notificationConfigs);
+    }
+  }, [user?.id]);
 
-  useProtectedRoute(session, isLoading);
+  const onboardingCompleted = useUserProfileStore((state) => state.profile?.onboardingCompleted);
+  const profileLoading = useUserProfileStore((state) => state.isLoading);
+
+  useProtectedRoute(session, isLoading, onboardingCompleted, profileLoading);
 
   const inAuthGroup = segments[0] === 'auth';
   const inOnboarding = segments[0] === 'onboarding';
 
   // Block rendering if:
   // 1. Auth is loading or fonts not loaded
-  // 2. No session and not on auth/onboarding screens
-  // 3. User needs onboarding but hasn't been redirected yet (prevents dashboard flash)
-  const needsOnboarding = session && !inOnboarding && !inAuthGroup && (
-    justSignedUp ||
-    (!profileLoading && profile && profile.onboardingCompleted === false)
-  );
-
-  if (isLoading || !fontsLoaded || (!session && !inAuthGroup && !inOnboarding) || needsOnboarding) {
+  // 2. No session and not on auth/onboarding screens (redirect pending)
+  if (isLoading || !fontsLoaded || (!session && !inAuthGroup && !inOnboarding)) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: theme.primary.bg }}>
         <ActivityIndicator size="large" color={theme.accent.primary} />
@@ -279,6 +272,14 @@ const RootLayoutNav = ({
             options={{
               headerShown: false,
               animation: 'slide_from_bottom',
+            }}
+          />
+          <Stack.Screen
+            name="premium"
+            options={{
+              headerShown: false,
+              animation: 'slide_from_bottom',
+              presentation: 'modal',
             }}
           />
           <Stack.Screen

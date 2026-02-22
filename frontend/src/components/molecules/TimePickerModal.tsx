@@ -9,6 +9,7 @@ import { triggerHaptic } from '@/utils/haptics';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 import { Text } from '@/components/atoms/Text';
+import { Button } from '@/components/atoms/Button';
 import { colors, radius, spacing, sizing } from '@/constants/theme';
 import { useTheme } from '@/hooks/useTheme';
 
@@ -191,16 +192,8 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
           </View>
 
           <View style={styles.actions}>
-            <Pressable style={styles.actionButton} onPress={handleCancel}>
-              <Text variant="bodySemibold" style={{ color: colors.accent.orange }}>
-                Cancel
-              </Text>
-            </Pressable>
-            <Pressable style={styles.actionButton} onPress={handleConfirm}>
-              <Text variant="bodySemibold" style={{ color: colors.accent.orange }}>
-                OK
-              </Text>
-            </Pressable>
+            <Button label="Cancel" variant="ghost" onPress={handleCancel} style={styles.actionButton} />
+            <Button label="OK" variant="ghost" onPress={handleConfirm} style={styles.actionButton} />
           </View>
         </View>
       </View>

@@ -11,12 +11,12 @@ import { WorkoutBuilderCard } from '@/components/molecules/WorkoutBuilderCard';
 import { PremiumLimitModal } from '@/components/molecules/PremiumLimitModal';
 import { usePlanBuilderContext } from '@/providers/PlanBuilderProvider';
 import { colors, radius, spacing, sizing } from '@/constants/theme';
+import { useTheme } from '@/hooks/useTheme';
 import type { Exercise } from '@/constants/exercises';
 
 const styles = StyleSheet.create({
   container: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: colors.primary.bg,
   },
   scrollContent: {
     flexGrow: 1,
@@ -51,7 +51,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     gap: spacing.md,
-    backgroundColor: colors.primary.bg,
   },
   loadingText: {
     textAlign: 'center',
@@ -67,6 +66,7 @@ const styles = StyleSheet.create({
  */
 const CreateWorkoutScreen: React.FC = () => {
   const router = useRouter();
+  const { theme } = useTheme();
   const insets = useSafeAreaInsets();
   const [showLimitModal, setShowLimitModal] = useState(false);
   const [hasSaved, setHasSaved] = useState(false);
@@ -216,10 +216,10 @@ const CreateWorkoutScreen: React.FC = () => {
         onClose={() => setShowLimitModal(false)}
         limitType="workout"
       />
-      <View style={[styles.container, { paddingTop: insets.top }]}>
+      <View style={[styles.container, { paddingTop: insets.top, backgroundColor: theme.primary.bg }]}>
         {isLoading ? (
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={colors.accent.primary} />
+            <ActivityIndicator size="large" color={theme.accent.primary} />
             <Text variant="body" color="secondary" style={styles.loadingText}>
               {isEditing ? 'Loading workout...' : 'Preparing...'}
             </Text>
@@ -251,7 +251,7 @@ const CreateWorkoutScreen: React.FC = () => {
                 onPress={handleBackPress}
                 style={styles.backButton}
               >
-                <IconSymbol name="arrow-back" size={sizing.iconMD} color={colors.text.primary} />
+                <IconSymbol name="arrow-back" size={sizing.iconMD} color={theme.text.primary} />
               </Pressable>
             </View>
 

@@ -11,13 +11,13 @@ import { Text } from '@/components/atoms/Text';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { WEEKDAY_LABELS } from '@/constants/schedule';
 import { colors, opacity, radius, spacing } from '@/constants/theme';
+import { useTheme } from '@/hooks/useTheme';
 import { useScheduleEditor } from '@/hooks/useScheduleEditor';
 import type { ScheduleType } from '@/types/schedule';
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.primary.bg,
   },
   scrollContent: {
     paddingHorizontal: spacing.md,
@@ -50,8 +50,6 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     borderRadius: radius.lg,
     borderWidth: 2,
-    borderColor: colors.border.light,
-    backgroundColor: colors.surface.card,
     alignItems: 'center',
     gap: spacing.sm,
   },
@@ -63,7 +61,6 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: radius.full,
-    backgroundColor: colors.surface.elevated,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -88,8 +85,6 @@ const styles = StyleSheet.create({
   dayPressable: {
     borderRadius: radius.lg,
     borderWidth: 1,
-    borderColor: colors.border.light,
-    backgroundColor: colors.surface.card,
     paddingVertical: spacing.sm + 2,
     paddingHorizontal: spacing.lg,
     flexDirection: 'row',
@@ -106,9 +101,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.md,
     borderRadius: radius.md,
-    backgroundColor: colors.surface.card,
     borderWidth: 1,
-    borderColor: colors.border.light,
   },
   rotatingDayReorderButtons: {
     gap: spacing.xxs,
@@ -152,9 +145,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.md,
     borderRadius: radius.md,
-    backgroundColor: colors.surface.card,
     borderWidth: 1,
-    borderColor: colors.border.light,
   },
   datePickerLabel: {
     flex: 1,
@@ -167,7 +158,6 @@ const styles = StyleSheet.create({
   datePickerControlWrapper: {
     borderRadius: radius.lg,
     overflow: 'hidden',
-    backgroundColor: colors.surface.card,
   },
   addDayButtons: {
     gap: spacing.sm,
@@ -181,15 +171,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: spacing.lg,
-    backgroundColor: colors.overlay.scrim,
   },
   modalCard: {
     width: '100%',
     maxWidth: 360,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border.light,
     borderRadius: radius.lg,
-    backgroundColor: colors.surface.card,
   },
   modalContent: { gap: spacing.md },
   modalSubtitle: { textAlign: 'left' },
@@ -197,8 +184,6 @@ const styles = StyleSheet.create({
   modalOption: {
     borderRadius: radius.md,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border.light,
-    backgroundColor: colors.surface.card,
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.lg,
   },
@@ -211,6 +196,7 @@ const styles = StyleSheet.create({
 
 const ScheduleEditorScreen: React.FC = () => {
   const router = useRouter();
+  const { theme } = useTheme();
   const insets = useSafeAreaInsets();
   const {
     scheduleType,
@@ -322,7 +308,7 @@ const ScheduleEditorScreen: React.FC = () => {
   const scrollBottomPadding = spacing['2xl'] * 2 + insets.bottom;
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
+    <View style={[styles.container, { paddingTop: insets.top, backgroundColor: theme.primary.bg }]}>
       <ScrollView
         contentContainerStyle={[styles.scrollContent, { paddingBottom: scrollBottomPadding }]}
         showsVerticalScrollIndicator={false}
@@ -344,7 +330,7 @@ const ScheduleEditorScreen: React.FC = () => {
             onPress={handleBack}
             hitSlop={8}
           >
-            <IconSymbol name="arrow-back" color={colors.text.primary} size={24} />
+            <IconSymbol name="arrow-back" color={theme.text.primary} size={24} />
           </Pressable>
         </View>
 
@@ -354,16 +340,16 @@ const ScheduleEditorScreen: React.FC = () => {
             <Text variant="heading3" color="primary">Schedule Type</Text>
             <View style={styles.scheduleTypeContainer}>
               <Pressable
-                style={[styles.scheduleTypeOption, scheduleType === 'weekly' && styles.scheduleTypeOptionSelected]}
+                style={[styles.scheduleTypeOption, { borderColor: theme.border.light, backgroundColor: theme.surface.card }, scheduleType === 'weekly' && styles.scheduleTypeOptionSelected]}
                 onPress={() => handleScheduleTypeChange('weekly')}
                 accessibilityRole="radio"
                 accessibilityState={{ selected: scheduleType === 'weekly' }}
               >
-                <View style={[styles.scheduleTypeIconContainer, scheduleType === 'weekly' && styles.scheduleTypeIconContainerSelected]}>
+                <View style={[styles.scheduleTypeIconContainer, { backgroundColor: theme.surface.elevated }, scheduleType === 'weekly' && styles.scheduleTypeIconContainerSelected]}>
                   <IconSymbol
                     name="calendar-today"
                     size={20}
-                    color={scheduleType === 'weekly' ? colors.text.onAccent : colors.text.secondary}
+                    color={scheduleType === 'weekly' ? colors.text.onAccent : theme.text.secondary}
                   />
                 </View>
                 <View style={styles.scheduleTypeTextContainer}>
@@ -378,16 +364,16 @@ const ScheduleEditorScreen: React.FC = () => {
               </Pressable>
 
               <Pressable
-                style={[styles.scheduleTypeOption, scheduleType === 'rotating' && styles.scheduleTypeOptionSelected]}
+                style={[styles.scheduleTypeOption, { borderColor: theme.border.light, backgroundColor: theme.surface.card }, scheduleType === 'rotating' && styles.scheduleTypeOptionSelected]}
                 onPress={() => handleScheduleTypeChange('rotating')}
                 accessibilityRole="radio"
                 accessibilityState={{ selected: scheduleType === 'rotating' }}
               >
-                <View style={[styles.scheduleTypeIconContainer, scheduleType === 'rotating' && styles.scheduleTypeIconContainerSelected]}>
+                <View style={[styles.scheduleTypeIconContainer, { backgroundColor: theme.surface.elevated }, scheduleType === 'rotating' && styles.scheduleTypeIconContainerSelected]}>
                   <IconSymbol
                     name="sync"
                     size={20}
-                    color={scheduleType === 'rotating' ? colors.text.onAccent : colors.text.secondary}
+                    color={scheduleType === 'rotating' ? colors.text.onAccent : theme.text.secondary}
                   />
                 </View>
                 <View style={styles.scheduleTypeTextContainer}>
@@ -420,7 +406,7 @@ const ScheduleEditorScreen: React.FC = () => {
                   return (
                     <Pressable
                       key={key}
-                      style={({ pressed }) => [styles.dayPressable, pressed ? styles.dayPressablePressed : null]}
+                      style={({ pressed }) => [styles.dayPressable, { borderColor: theme.border.light, backgroundColor: theme.surface.card }, pressed ? styles.dayPressablePressed : null]}
                       accessibilityRole="button"
                       accessibilityLabel={`Assign plan to ${label}`}
                       onPress={() => selectDay(key)}
@@ -435,7 +421,7 @@ const ScheduleEditorScreen: React.FC = () => {
               <>
                 {/* Start Date Picker */}
                 <View style={{ gap: spacing.sm }}>
-                  <Pressable style={styles.datePickerRow} onPress={handleOpenDatePicker}>
+                  <Pressable style={[styles.datePickerRow, { borderColor: theme.border.light, backgroundColor: theme.surface.card }]} onPress={handleOpenDatePicker}>
                     <Text variant="bodySemibold" color="primary" style={styles.datePickerLabel}>
                       Start Date
                     </Text>
@@ -450,13 +436,13 @@ const ScheduleEditorScreen: React.FC = () => {
                   {showDatePicker && (
                     Platform.OS === 'ios' ? (
                       <View style={{ alignItems: 'center', gap: spacing.sm }}>
-                        <View style={styles.datePickerControlWrapper}>
+                        <View style={[styles.datePickerControlWrapper, { backgroundColor: theme.surface.card }]}>
                           <DateTimePicker
                             value={draftRotating.startDate ? new Date(draftRotating.startDate) : new Date()}
                             mode="date"
                             display="spinner"
                             onChange={handleDateChange}
-                            textColor={colors.text.primary}
+                            textColor={theme.text.primary}
                             accentColor={colors.accent.primary}
                           />
                         </View>
@@ -497,7 +483,7 @@ const ScheduleEditorScreen: React.FC = () => {
                       const assignedName = day.planId ? planNameLookup[day.planId] : null;
 
                       return (
-                        <View key={day.id} style={styles.rotatingDayRow}>
+                        <View key={day.id} style={[styles.rotatingDayRow, { borderColor: theme.border.light, backgroundColor: theme.surface.card }]}>
                           <View style={styles.rotatingDayReorderButtons}>
                             <Pressable
                               style={[styles.rotatingDayReorderButton, isFirst && styles.rotatingDayReorderButtonDisabled]}
@@ -598,8 +584,8 @@ const ScheduleEditorScreen: React.FC = () => {
         statusBarTranslucent
         onRequestClose={closeModal}
       >
-        <View style={styles.modalOverlay}>
-          <SurfaceCard tone="neutral" padding="lg" style={styles.modalCard} showAccentStripe={false}>
+        <View style={[styles.modalOverlay, { backgroundColor: theme.overlay.scrim }]}>
+          <SurfaceCard tone="neutral" padding="lg" style={[styles.modalCard, { borderColor: theme.border.light }]} showAccentStripe={false}>
             <View style={styles.modalContent}>
               <Text variant="heading3" color="primary">
                 {modalDayLabel ? `Assign a plan for ${modalDayLabel}` : 'Select a plan'}
@@ -619,6 +605,7 @@ const ScheduleEditorScreen: React.FC = () => {
                         accessibilityLabel={`Select ${option.label}`}
                         style={({ pressed }) => [
                           styles.modalOption,
+                          { borderColor: theme.border.light, backgroundColor: theme.surface.card },
                           isActive ? styles.modalOptionActive : null,
                           pressed ? styles.dayPressablePressed : null
                         ]}

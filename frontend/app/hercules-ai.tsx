@@ -27,10 +27,10 @@ import Animated, {
   Easing,
 } from 'react-native-reanimated';
 
+import { Ionicons } from '@expo/vector-icons';
 import { Text } from '@/components/atoms/Text';
 import { Button } from '@/components/atoms/Button';
 import { SurfaceCard } from '@/components/atoms/SurfaceCard';
-import { PremiumLock } from '@/components/atoms/PremiumLock';
 import { ChatMessageBubble } from '@/components/molecules/ChatMessageBubble';
 import { ActionApprovalCard } from '@/components/molecules/ActionApprovalCard';
 import { ChatUsageBanner } from '@/components/molecules/ChatUsageBanner';
@@ -39,6 +39,8 @@ import { ChatHistoryModal } from '@/components/molecules/ChatHistoryModal';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { useTheme } from '@/hooks/useTheme';
 import { usePremiumStatus } from '@/hooks/usePremiumStatus';
+import { useUserProfileStore } from '@/store/userProfileStore';
+import { calculateAge } from '@/utils/date';
 import { spacing, radius, typography, shadows } from '@/constants/theme';
 import { triggerHaptic } from '@/utils/haptics';
 import {
@@ -147,6 +149,8 @@ const MissingActionFallback: React.FC<{
 const HerculesAIScreen: React.FC = () => {
   const { theme, isDarkMode } = useTheme();
   const { isPremium, isLoading: isPremiumLoading } = usePremiumStatus();
+  const profile = useUserProfileStore((s) => s.profile);
+  const userAge = calculateAge(profile?.dateOfBirth);
   const insets = useSafeAreaInsets();
   const flatListRef = useRef<FlatList>(null);
   const inputRef = useRef<TextInput>(null);
@@ -715,16 +719,103 @@ const HerculesAIScreen: React.FC = () => {
             <View style={{ width: 24 }} />
           </View>
           <View style={styles.premiumGate}>
-            <PremiumLock
-              isLocked={true}
-              featureName="Hercules AI"
-              ctaText="Unlock with Premium"
-              onUnlock={handleUpgrade}
-            >
-              <Text variant="body" color="secondary">
+            <View style={styles.premiumGateContent}>
+              <View style={styles.premiumLockBadge}>
+                <Ionicons name="lock-closed" size={28} color={theme.accent.orange} />
+              </View>
+              <Text variant="heading3" color="primary" style={{ textAlign: 'center' }}>
+                Hercules AI
+              </Text>
+              <Text variant="body" color="secondary" style={{ textAlign: 'center', lineHeight: 22 }}>
                 Get personalized workout advice, track your progress, and let AI help you reach your fitness goals.
               </Text>
-            </PremiumLock>
+                            <Pressable
+                style={[styles.premiumCtaButton, { backgroundColor: theme.accent.orange }]}
+                onPress={handleUpgrade}
+              >
+                <IconSymbol name="star" size={16} color="#FFFFFF" />
+                <Text variant="bodySemibold" style={{ color: '#FFFFFF' }}>
+                  Unlock with Pro
+                </Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </LinearGradient>
+    );
+  }
+
+  // Age gate: no birthdate set
+  if (!profile?.dateOfBirth) {
+    return (
+      <LinearGradient colors={gradientColors} style={styles.gradient}>
+        <View style={[styles.container, { paddingTop: insets.top }]}>
+          <View style={styles.header}>
+            <Pressable onPress={handleBack} hitSlop={12}>
+              <IconSymbol name="arrow-back" size={24} color={theme.text.primary} />
+            </Pressable>
+            <Text variant="heading3" color="primary" style={styles.headerTitle}>
+              Hercules AI
+            </Text>
+            <View style={{ width: 24 }} />
+          </View>
+          <View style={styles.premiumGate}>
+            <View style={styles.premiumGateContent}>
+              <View style={styles.premiumLockBadge}>
+                <Ionicons name="calendar-outline" size={28} color={theme.accent.orange} />
+              </View>
+              <Text variant="heading3" color="primary" style={{ textAlign: 'center' }}>
+                Date of Birth Required
+              </Text>
+              <Text variant="body" color="secondary" style={{ textAlign: 'center', lineHeight: 22 }}>
+                To use Hercules AI, please set your date of birth in Profile Settings.
+                This feature is available to users 18 and older.
+              </Text>
+              <Pressable
+                style={[styles.premiumCtaButton, { backgroundColor: theme.accent.orange }]}
+                onPress={() => {
+                  triggerHaptic('light');
+                  router.push('/modals/profile');
+                }}
+              >
+                <Ionicons name="settings-outline" size={16} color="#FFFFFF" />
+                <Text variant="bodySemibold" style={{ color: '#FFFFFF' }}>
+                  Go to Profile Settings
+                </Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </LinearGradient>
+    );
+  }
+
+  // Age gate: under 18
+  if (userAge !== null && userAge < 18) {
+    return (
+      <LinearGradient colors={gradientColors} style={styles.gradient}>
+        <View style={[styles.container, { paddingTop: insets.top }]}>
+          <View style={styles.header}>
+            <Pressable onPress={handleBack} hitSlop={12}>
+              <IconSymbol name="arrow-back" size={24} color={theme.text.primary} />
+            </Pressable>
+            <Text variant="heading3" color="primary" style={styles.headerTitle}>
+              Hercules AI
+            </Text>
+            <View style={{ width: 24 }} />
+          </View>
+          <View style={styles.premiumGate}>
+            <View style={styles.premiumGateContent}>
+              <View style={styles.premiumLockBadge}>
+                <Ionicons name="shield-outline" size={28} color={theme.accent.orange} />
+              </View>
+              <Text variant="heading3" color="primary" style={{ textAlign: 'center' }}>
+                Age Restriction
+              </Text>
+              <Text variant="body" color="secondary" style={{ textAlign: 'center', lineHeight: 22 }}>
+                Hercules AI is only available to users 18 years of age or older.
+              </Text>
+            </View>
           </View>
         </View>
       </LinearGradient>
@@ -955,7 +1046,30 @@ const styles = StyleSheet.create({
   premiumGate: {
     flex: 1,
     justifyContent: 'center',
+    alignItems: 'center',
     paddingHorizontal: spacing.lg,
+  },
+  premiumGateContent: {
+    alignItems: 'center',
+    gap: spacing.sm,
+    maxWidth: 300,
+  },
+  premiumLockBadge: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.xs,
+  },
+  premiumCtaButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.lg,
+    borderRadius: radius.full,
+    gap: spacing.xs,
+    marginTop: spacing.sm,
   },
   disclaimerContainer: {
     flex: 1,

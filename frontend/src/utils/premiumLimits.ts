@@ -4,6 +4,7 @@
  */
 
 import { useDevToolsStore } from '@/store/devToolsStore';
+import { useSettingsStore } from '@/store/settingsStore';
 import type { UserProgram } from '@/types/premadePlan';
 
 // Free tier limits
@@ -47,21 +48,21 @@ export const getTotalUniqueWorkoutCount = (
 
 /**
  * Check if user is premium (for use in stores/non-hook contexts)
- * Reads directly from devToolsStore
+ * Checks devToolsStore override first, then settingsStore.isPro (synced from Supabase)
  */
 export const isPremiumUser = (): boolean => {
   const premiumOverride = useDevToolsStore.getState().premiumOverride;
   
-  // Check dev tools override
+  // Check dev tools override first (highest priority, dev-only)
   if (premiumOverride === 'premium') {
     return true;
   } else if (premiumOverride === 'free') {
     return false;
   }
   
-  // Default to free tier
-  // TODO: Replace with actual Supabase check when payment is implemented
-  return false;
+  // Check real Pro status from settings store (synced from Supabase profiles.is_pro)
+  const isPro = useSettingsStore.getState().isPro;
+  return isPro === true;
 };
 
 /**

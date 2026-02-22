@@ -313,14 +313,19 @@ const WorkoutSessionScreen: React.FC = () => {
 
       updateExercise(targetName, nextExercise);
 
-      // Update history set counts and suggested sets: remove old exercise, add new exercise
+      // Update history set counts, suggested sets, and data points: remove old exercise, add new exercise
       const currentSession = useSessionStore.getState().currentSession;
       if (currentSession) {
         const { [targetName]: _removed, ...remainingCounts } = currentSession.historySetCounts;
         const { [targetName]: _removedSuggested, ...remainingSuggested } = currentSession.suggestedSets;
+        const { [targetName]: _removedDP, ...remainingDP } = (currentSession as any).exerciseDataPoints ?? {};
         const nextSuggested = { ...remainingSuggested };
         if (result.smartSuggestedSets.length > 0) {
           nextSuggested[exercise.name] = result.smartSuggestedSets;
+        }
+        const nextDP = { ...remainingDP };
+        if (result.dataPoints && result.dataPoints.length > 0) {
+          nextDP[exercise.name] = result.dataPoints;
         }
         useSessionStore.setState({
           currentSession: {
@@ -330,6 +335,7 @@ const WorkoutSessionScreen: React.FC = () => {
               [exercise.name]: result.historySetCount,
             },
             suggestedSets: nextSuggested,
+            exerciseDataPoints: nextDP,
           },
         });
       }
@@ -359,7 +365,7 @@ const WorkoutSessionScreen: React.FC = () => {
         sets: result.sets,
       };
 
-      addExerciseToSession(nextExercise, result.historySetCount, result.smartSuggestedSets.length > 0 ? result.smartSuggestedSets : undefined);
+      addExerciseToSession(nextExercise, result.historySetCount, result.smartSuggestedSets.length > 0 ? result.smartSuggestedSets : undefined, result.dataPoints && result.dataPoints.length > 0 ? result.dataPoints : undefined);
       hasUserAddedExerciseRef.current = true;
     }
 
@@ -892,33 +898,34 @@ const WorkoutSessionScreen: React.FC = () => {
                     </View>
                   </Pressable>
 
-                  {isExpanded ? (
-                    <View style={styles.exerciseContent} pointerEvents="box-none">
-                      <ExerciseSetEditor
-                        isExpanded
-                        embedded
-                        exerciseName={item.name}
-                        initialSets={item.sets}
-                        onSetsChange={(updatedSets) => handleExerciseSetsChange(item.name, updatedSets)}
-                        onProgressChange={(progress) => handleExerciseProgressChange(item.name, progress)}
-                        exerciseType={exerciseCatalog.find(e => e.name === item.name)?.exerciseType || 'weight'}
-                        distanceUnit={exerciseCatalog.find(e => e.name === item.name)?.distanceUnit}
-                        historySetCount={sessionToDisplay?.historySetCounts?.[item.name] ?? 0}
-                        supportsGpsTracking={exerciseCatalog.find(e => e.name === item.name)?.supportsGpsTracking ?? false}
-                        suggestedSets={sessionToDisplay?.suggestedSets?.[item.name]}
-                        exerciseEquipment={exerciseCatalog.find(e => e.name === item.name)?.equipment}
-                        isCompound={exerciseCatalog.find(e => e.name === item.name)?.isCompound ?? false}
-                        activeSetMenuIndex={activeMenu?.type === 'set' && activeMenu.exerciseName === item.name ? activeMenu.setIndex : null}
-                        onOpenSetMenu={(index) => handleOpenSetMenu(item.name, index)}
-                        onCloseSetMenu={closeAllMenus}
-                        onShowHistory={() => handleHistoryPress(item.name)}
-                        onInputFocus={(inputY, inputHeight) => {
-                          focusedInputYRef.current = inputY;
-                          focusedInputHeightRef.current = inputHeight;
-                        }}
-                      />
-                    </View>
-                  ) : null}
+                  <View style={[styles.exerciseContent, !isExpanded && styles.exerciseContentHidden]} pointerEvents={isExpanded ? 'box-none' : 'none'}>
+                    <ExerciseSetEditor
+                      isExpanded={isExpanded}
+                      embedded
+                      exerciseName={item.name}
+                      initialSets={item.sets}
+                      onSetsChange={(updatedSets) => handleExerciseSetsChange(item.name, updatedSets)}
+                      onProgressChange={(progress) => handleExerciseProgressChange(item.name, progress)}
+                      exerciseType={exerciseCatalog.find(e => e.name === item.name)?.exerciseType || 'weight'}
+                      distanceUnit={exerciseCatalog.find(e => e.name === item.name)?.distanceUnit}
+                      historySetCount={sessionToDisplay?.historySetCounts?.[item.name] ?? 0}
+                      supportsGpsTracking={exerciseCatalog.find(e => e.name === item.name)?.supportsGpsTracking ?? false}
+                      suggestedSets={sessionToDisplay?.suggestedSets?.[item.name]}
+                      exerciseEquipment={exerciseCatalog.find(e => e.name === item.name)?.equipment}
+                      isCompound={exerciseCatalog.find(e => e.name === item.name)?.isCompound ?? false}
+                      exerciseDataPoints={(sessionToDisplay as any)?.exerciseDataPoints?.[item.name] ?? []}
+                      patternShiftCount={(sessionToDisplay as any)?.patternShiftCounts?.[item.name] ?? 0}
+                      onPatternShift={() => useSessionStore.getState().incrementPatternShiftCount(item.name)}
+                      activeSetMenuIndex={activeMenu?.type === 'set' && activeMenu.exerciseName === item.name ? activeMenu.setIndex : null}
+                      onOpenSetMenu={(index) => handleOpenSetMenu(item.name, index)}
+                      onCloseSetMenu={closeAllMenus}
+                      onShowHistory={() => handleHistoryPress(item.name)}
+                      onInputFocus={(inputY, inputHeight) => {
+                        focusedInputYRef.current = inputY;
+                        focusedInputHeightRef.current = inputHeight;
+                      }}
+                    />
+                  </View>
                 </View>
               </View>
             );
@@ -1230,6 +1237,9 @@ const styles = StyleSheet.create({
   },
   exerciseContent: {
     paddingTop: spacing.sm,
+  },
+  exerciseContentHidden: {
+    display: 'none',
   },
   menuButton: {
     padding: spacing.sm,

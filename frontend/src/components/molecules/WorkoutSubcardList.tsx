@@ -6,6 +6,7 @@ import { Button } from '@/components/atoms/Button';
 import { SurfaceCard } from '@/components/atoms/SurfaceCard';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { colors, radius, spacing, shadows, sizing } from '@/constants/theme';
+import { useTheme } from '@/hooks/useTheme';
 
 interface Workout {
   id: string;
@@ -48,6 +49,7 @@ const WorkoutSubcardList: React.FC<WorkoutSubcardListProps> = ({
   showAll = false,
   onToggleShowAll,
 }) => {
+  const { theme } = useTheme();
   const displayWorkouts = showAll ? workouts : workouts.slice(0, maxVisible);
   const hasMore = workouts.length > maxVisible;
 
@@ -86,7 +88,7 @@ const WorkoutSubcardList: React.FC<WorkoutSubcardListProps> = ({
           tone="neutral"
           padding="md"
           showAccentStripe={false}
-          style={styles.emptyCard}
+          style={[styles.emptyCard, { borderColor: theme.border.light }]}
         >
           <View style={styles.emptyContent}>
             <Text variant="bodySemibold" color="primary" style={styles.emptyTitle}>
@@ -114,7 +116,7 @@ const WorkoutSubcardList: React.FC<WorkoutSubcardListProps> = ({
               tone="neutral"
               padding="md"
               showAccentStripe={false}
-              style={[styles.inlineCard, isExpanded && styles.expandedCard]}
+              style={[styles.inlineCard, { borderColor: theme.border.light }, isExpanded && styles.expandedCard]}
             >
             {isExpanded ? (
               <View style={styles.expandedActionsContainer}>
@@ -127,7 +129,7 @@ const WorkoutSubcardList: React.FC<WorkoutSubcardListProps> = ({
                       onStartWorkout(workout);
                     }}
                   >
-                    <View style={styles.iconCircle}>
+                    <View style={[styles.iconCircle, { borderColor: theme.accent.orange }]}>
                       <IconSymbol name="play-arrow" size={sizing.iconMD} color={colors.accent.orange} />
                     </View>
                     <Text variant="caption" color="primary">Start</Text>
@@ -142,7 +144,7 @@ const WorkoutSubcardList: React.FC<WorkoutSubcardListProps> = ({
                       onEditWorkout(workout);
                     }}
                   >
-                    <View style={styles.iconCircle}>
+                    <View style={[styles.iconCircle, { borderColor: theme.accent.orange }]}>
                       <IconSymbol name="edit" size={sizing.iconMD} color={colors.accent.orange} />
                     </View>
                     <Text variant="caption" color="primary">Edit</Text>
@@ -157,7 +159,7 @@ const WorkoutSubcardList: React.FC<WorkoutSubcardListProps> = ({
                       onDeleteWorkout(workout);
                     }}
                   >
-                    <View style={styles.iconCircle}>
+                    <View style={[styles.iconCircle, { borderColor: theme.accent.orange }]}>
                       <IconSymbol name="delete" size={sizing.iconMD} color={colors.accent.orange} />
                     </View>
                     <Text variant="caption" color="primary">Delete</Text>
@@ -172,7 +174,7 @@ const WorkoutSubcardList: React.FC<WorkoutSubcardListProps> = ({
                       onCloseExpanded();
                     }}
                   >
-                    <View style={styles.iconCircle}>
+                    <View style={[styles.iconCircle, { borderColor: theme.accent.orange }]}>
                       <IconSymbol name="close" size={sizing.iconMD} color={colors.accent.orange} />
                     </View>
                     <Text variant="caption" color="primary">Close</Text>
@@ -230,7 +232,7 @@ const WorkoutSubcardList: React.FC<WorkoutSubcardListProps> = ({
           label="Create Workout"
           variant="secondary"
           size="md"
-          textColor={colors.accent.orange}
+          textColor={theme.accent.orange}
           style={[styles.wideButton, { ...shadows.sm }]}
           onPress={() => {
             triggerHaptic('selection');
@@ -258,9 +260,7 @@ const styles = StyleSheet.create({
   },
   inlineCard: {
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border.light,
     borderRadius: radius.lg,
-    backgroundColor: colors.surface.card,
     shadowColor: 'transparent',
     shadowOpacity: 0,
     shadowRadius: 0,
@@ -297,9 +297,7 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: radius.full,
-    backgroundColor: colors.surface.card,
     borderWidth: 1,
-    borderColor: colors.accent.orange,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -329,9 +327,7 @@ const styles = StyleSheet.create({
   },
   emptyCard: {
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border.light,
     borderRadius: radius.lg,
-    backgroundColor: colors.surface.card,
     shadowColor: 'transparent',
     shadowOpacity: 0,
     shadowRadius: 0,

@@ -93,7 +93,7 @@ export const HeightModal: React.FC<HeightModalProps> = ({
           )}
 
           <View style={styles.buttons}>
-            <Button label="Cancel" variant="secondary" onPress={handleClose} style={styles.btn} />
+            <Button label="Cancel" variant="ghost" onPress={handleClose} style={styles.btn} />
             <Button label="Save" variant="primary" onPress={handleSave} style={styles.btn} />
           </View>
         </Pressable>

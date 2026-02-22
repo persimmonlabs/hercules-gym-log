@@ -384,6 +384,7 @@ const StatsScreen: React.FC = () => {
   // Independent state for each card
   const [generalTimeRange, setGeneralTimeRange] = useState<TimeRange>('week');
   const [volumeTimeRange, setVolumeTimeRange] = useState<TimeRange>('week');
+  const [topExercisesTimeRange, setTopExercisesTimeRange] = useState<TimeRange>('week');
   const [volumeTrendTimeRange, setVolumeTrendTimeRange] = useState<TimeRange>('week');
   const [cardioTimeRange, setCardioTimeRange] = useState<TimeRange>('week');
   const [activeTab, setActiveTab] = useState<PerformanceTab>('general');
@@ -401,6 +402,7 @@ const StatsScreen: React.FC = () => {
     useCallback(() => {
       setGeneralTimeRange('week');
       setVolumeTimeRange('week');
+      setTopExercisesTimeRange('week');
       setVolumeTrendTimeRange('week');
       setCardioTimeRange('week');
       setVolumeTrendExercise(null);
@@ -420,6 +422,7 @@ const StatsScreen: React.FC = () => {
   } = useAnalyticsData({ timeRange: generalTimeRange });
 
   const { hasFilteredData: hasVolumeData, filteredWorkouts: volumeFilteredWorkouts } = useAnalyticsData({ timeRange: volumeTimeRange });
+  const { filteredWorkouts: topExercisesFilteredWorkouts } = useAnalyticsData({ timeRange: topExercisesTimeRange });
   const { filteredWorkouts: volumeTrendFilteredWorkouts } = useAnalyticsData({ timeRange: volumeTrendTimeRange });
   const weightUnit = useSettingsStore((state) => state.weightUnit);
   const { cardioStats } = useAnalyticsData({ timeRange: cardioTimeRange });
@@ -492,7 +495,7 @@ const StatsScreen: React.FC = () => {
   const topExercisesByVolume = useMemo(() => {
     const volumes: Record<string, number> = {};
 
-    volumeFilteredWorkouts.forEach((workout) => {
+    topExercisesFilteredWorkouts.forEach((workout) => {
       workout.exercises.forEach((exercise: any) => {
         const catalogEntry = exerciseCatalog.find((e) => e.name === exercise.name);
         const exerciseType = catalogEntry?.exerciseType || 'weight';
@@ -558,7 +561,7 @@ const StatsScreen: React.FC = () => {
       .slice(0, 5);
 
     return entries.map(([name, volume]) => ({ name, volume }));
-  }, [volumeFilteredWorkouts, convertWeight, userBodyWeight]);
+  }, [topExercisesFilteredWorkouts, convertWeight, userBodyWeight]);
 
   const renderGeneralTab = () => {
     const cardioDurationHasHours = Math.floor(totalCardioTime / 3600) > 0;
@@ -574,14 +577,6 @@ const StatsScreen: React.FC = () => {
           <PersonalRecordsSection />
         </View>
 
-        <PremiumLock
-          isLocked={!isPremium}
-          featureName="Balance Score"
-          onUnlock={() => router.push('/premium')}
-        >
-          <BalanceScoreCard />
-        </PremiumLock>
-
         <AnalyticsCard
           title="Summary"
           showAccentStripe={false}
@@ -592,13 +587,7 @@ const StatsScreen: React.FC = () => {
             <TimeRangeSelector value={generalTimeRange} onChange={setGeneralTimeRange} />
           }
         >
-          {!hasAnyWorkoutData ? (
-            <View style={cardioStyles.emptyState}>
-              <Text variant="body" color="secondary" style={cardioStyles.emptyText}>
-                No workouts yet – start your first session to see stats here.
-              </Text>
-            </View>
-          ) : !hasGeneralFilteredData ? (
+          {!hasGeneralFilteredData ? (
             <View style={cardioStyles.emptyState}>
               <Text variant="body" color="secondary" style={cardioStyles.emptyText}>
                 {`No workout data for ${TIME_RANGE_SUBTITLES[generalTimeRange].toLowerCase()}.`}
@@ -652,6 +641,14 @@ const StatsScreen: React.FC = () => {
             </View>
           )}
         </AnalyticsCard>
+
+        <PremiumLock
+          isLocked={!isPremium}
+          featureName="Balance Score"
+          onUnlock={() => router.push('/premium')}
+        >
+          <BalanceScoreCard />
+        </PremiumLock>
       </>
     );
   };
@@ -765,13 +762,13 @@ const StatsScreen: React.FC = () => {
         showHorizontalAccentBar={false}
         showChevron={false}
         headerRight={
-          <TimeRangeSelector value={volumeTimeRange} onChange={setVolumeTimeRange} />
+          <TimeRangeSelector value={topExercisesTimeRange} onChange={setTopExercisesTimeRange} />
         }
       >
         {topExercisesByVolume.length === 0 ? (
           <View style={cardioStyles.emptyState}>
             <Text variant="body" color="secondary" style={cardioStyles.emptyText}>
-              No strength workouts in this time range.
+              {`No workout data for ${TIME_RANGE_SUBTITLES[topExercisesTimeRange].toLowerCase()}.`}
             </Text>
           </View>
         ) : (
@@ -838,55 +835,21 @@ const StatsScreen: React.FC = () => {
 
   const renderInsightsTab = () => (
     <>
-      {/* Insight Cards - one per category, each independently gated */}
-      {orderedTypes.length > 0 ? (
-        orderedTypes.map((type) => (
-          <PremiumLock
-            key={`${type}-${insightsCollapseNonce}`}
-            isLocked={!isPremium}
-            featureName={type === 'plateau' ? 'Plateaus Detected' : type === 'balance' ? 'Balance Alerts' : 'Focus Suggestions'}
-            onUnlock={() => router.push('/premium')}
-          >
-            <InsightCard
-              insights={groupedInsights[type]}
-            />
-          </PremiumLock>
-        ))
-      ) : (
-        <SurfaceCard tone="neutral" padding="md" showAccentStripe={false}>
-          {emptyReason === 'no-workouts' ? (
-            <View style={{ alignItems: 'center', gap: spacing.sm }}>
-              <Text style={{ fontSize: 32 }}>🏋️</Text>
-              <Text variant="heading3" color="primary" style={{ textAlign: 'center' }}>
-                No Workouts Yet
-              </Text>
-              <Text variant="body" color="secondary" style={{ textAlign: 'center' }}>
-                Complete your first workout to start getting personalized insights.
-              </Text>
-            </View>
-          ) : emptyReason === 'insufficient-data' ? (
-            <View style={{ alignItems: 'center', gap: spacing.sm }}>
-              <Text style={{ fontSize: 32 }}>📊</Text>
-              <Text variant="heading3" color="primary" style={{ textAlign: 'center' }}>
-                Building Your Profile
-              </Text>
-              <Text variant="body" color="secondary" style={{ textAlign: 'center' }}>
-                Complete a few more workouts and insights will appear here automatically.
-              </Text>
-            </View>
-          ) : (
-            <View style={{ alignItems: 'center', gap: spacing.sm }}>
-              <Text style={{ fontSize: 32 }}>✨</Text>
-              <Text variant="heading3" color="primary" style={{ textAlign: 'center' }}>
-                Looking Good!
-              </Text>
-              <Text variant="body" color="secondary" style={{ textAlign: 'center' }}>
-                Your training is well-balanced this week. Keep it up!
-              </Text>
-            </View>
-          )}
-        </SurfaceCard>
-      )}
+      {/* Insight Cards - always show all 3 categories with empty states or premium locks */}
+      {(['plateau', 'balance', 'focus'] as const).map((type) => (
+        <PremiumLock
+          key={`${type}-${insightsCollapseNonce}`}
+          isLocked={!isPremium}
+          featureName={type === 'plateau' ? 'Plateaus Detected' : type === 'balance' ? 'Balance Alerts' : 'Focus Suggestions'}
+          onUnlock={() => router.push('/premium')}
+        >
+          <InsightCard
+            insights={groupedInsights[type] ?? []}
+            insightType={type}
+            emptyReason={emptyReason}
+          />
+        </PremiumLock>
+      ))}
 
       {/* Deep Dive section */}
       <PremiumLock

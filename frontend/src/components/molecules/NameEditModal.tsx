@@ -19,6 +19,7 @@ import { Text } from '@/components/atoms/Text';
 import { Button } from '@/components/atoms/Button';
 import { InputField } from '@/components/atoms/InputField';
 import { colors, radius, spacing, shadows } from '@/constants/theme';
+import { useTheme } from '@/hooks/useTheme';
 import { supabaseClient } from '@/lib/supabaseClient';
 import { useUserProfileStore } from '@/store/userProfileStore';
 
@@ -37,6 +38,7 @@ export const NameEditModal: React.FC<NameEditModalProps> = ({
   onClose,
   onSave,
 }) => {
+  const { theme } = useTheme();
   const { updateProfile } = useUserProfileStore();
   const [tempFirstName, setTempFirstName] = useState(firstName);
   const [tempLastName, setTempLastName] = useState(lastName);
@@ -130,9 +132,9 @@ export const NameEditModal: React.FC<NameEditModalProps> = ({
       statusBarTranslucent
     >
       <TouchableWithoutFeedback onPress={handleCancel}>
-        <View style={styles.overlay}>
+        <View style={[styles.overlay, { backgroundColor: theme.overlay.scrim }]}>
           <TouchableWithoutFeedback>
-            <View style={styles.container}>
+            <View style={[styles.container, { backgroundColor: theme.surface.card }]}>
               <Text variant="heading2" color="primary" style={styles.title}>
                 Edit Name
               </Text>
@@ -187,13 +189,11 @@ export const NameEditModal: React.FC<NameEditModalProps> = ({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: colors.overlay.scrim,
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: spacing.lg,
   },
   container: {
-    backgroundColor: colors.surface.card,
     borderRadius: radius.xl,
     padding: spacing.xl,
     width: '100%',

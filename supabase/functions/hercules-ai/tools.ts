@@ -97,6 +97,24 @@ export const STAT_TOOLS: ToolDefinition[] = [
   {
     type: 'function',
     function: {
+      name: 'getSetsPerMuscleGroup',
+      description:
+        'Get the number of completed SETS per muscle group over a time period. Use this to answer questions like "how many sets per muscle group per week" or "am I doing enough sets for chest". Returns set counts broken down by muscle group with weekly averages. Default period is 7 days (1 week). Use days=30 for monthly analysis.',
+      parameters: {
+        type: 'object',
+        properties: {
+          days: {
+            type: 'number',
+            description: 'Number of days to analyze. Default is 7 (one week). Use 30 for monthly, 14 for biweekly.',
+          },
+        },
+        required: [],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
       name: 'getExercisesByMuscleGroup',
       description:
         'REQUIRED: Call this FIRST when creating a workout to discover available exercises. Returns all exercises for specified muscle groups with their IDs. Use this to pick NEW exercises - do NOT copy exercises from user\'s existing workouts in context.',

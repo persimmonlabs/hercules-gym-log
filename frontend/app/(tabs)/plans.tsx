@@ -15,6 +15,7 @@ import WorkoutSubcardList from '@/components/molecules/WorkoutSubcardList';
 import { WorkoutInProgressModal } from '@/components/molecules/WorkoutInProgressModal';
 import { TabSwipeContainer } from '@/components/templates/TabSwipeContainer';
 import { colors, radius, shadows, sizing, spacing } from '@/constants/theme';
+import { useTheme } from '@/hooks/useTheme';
 import { useActiveScheduleStore } from '@/store/activeScheduleStore';
 import { usePlanBuilderContext } from '@/providers/PlanBuilderProvider';
 import { usePlansStore, type PlansState } from '@/store/plansStore';
@@ -59,8 +60,6 @@ const styles = StyleSheet.create({
   planCardShell: {
     borderRadius: radius.lg,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border.light,
-    backgroundColor: colors.surface.card,
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.lg,
     ...shadows.cardSoft,
@@ -87,7 +86,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: colors.accent.primary,
   },
   planExpandedContent: {
     gap: spacing.md,
@@ -114,8 +112,6 @@ const styles = StyleSheet.create({
   scheduleSubCard: {
     borderRadius: radius.lg,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border.light,
-    backgroundColor: colors.surface.card,
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.lg,
     ...shadows.cardSoft,
@@ -143,7 +139,6 @@ const styles = StyleSheet.create({
   },
   dialogOverlay: {
     flex: 1,
-    backgroundColor: colors.overlay.scrim,
     justifyContent: 'center',
     alignItems: 'center',
     padding: spacing.lg,
@@ -153,9 +148,7 @@ const styles = StyleSheet.create({
     maxWidth: 360,
     gap: spacing.md,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border.light,
     borderRadius: radius.lg,
-    backgroundColor: colors.surface.card,
   },
   dialogContent: {
     gap: spacing.xs,
@@ -185,6 +178,7 @@ const styles = StyleSheet.create({
 
 const PlansScreen: React.FC = () => {
   const router = useRouter();
+  const { theme } = useTheme();
   const { scrollTo } = useLocalSearchParams<{ scrollTo?: string }>();
   const scrollRef = useRef<ScrollView>(null);
   const scheduleCardRef = useRef<View>(null);
@@ -517,11 +511,15 @@ const PlansScreen: React.FC = () => {
 
       const historySetCounts: Record<string, number> = {};
       const suggestedSetsMap: Record<string, SetLog[]> = {};
+      const dataPointsMap: Record<string, any[]> = {};
       const workoutExercises: WorkoutExercise[] = item.exercises.map((exercise: any) => {
         const result = createSetsWithSmartSuggestions(exercise.name, allWorkouts, smartSuggestionsEnabled, undefined, undefined, customExercises);
         historySetCounts[exercise.name] = result.historySetCount;
         if (result.smartSuggestedSets.length > 0) {
           suggestedSetsMap[exercise.name] = result.smartSuggestedSets;
+        }
+        if (result.dataPoints && result.dataPoints.length > 0) {
+          dataPointsMap[exercise.name] = result.dataPoints;
         }
         return {
           name: exercise.name,
@@ -532,7 +530,7 @@ const PlansScreen: React.FC = () => {
       const planId = item.type === 'program' ? (item.programId || item.programIds?.[0]) : item.id;
       const sessionName = item.name;
 
-      startSession(planId, workoutExercises, sessionName, historySetCounts, suggestedSetsMap);
+      startSession(planId, workoutExercises, sessionName, historySetCounts, suggestedSetsMap, dataPointsMap);
       setExpandedPlanId(null);
       router.push('/(tabs)/workout');
     };
@@ -636,12 +634,12 @@ const PlansScreen: React.FC = () => {
         onRequestClose={handleDismissDeleteDialog}
         animationType="fade"
       >
-        <Pressable style={styles.dialogOverlay} onPress={handleDismissDeleteDialog}>
+        <Pressable style={[styles.dialogOverlay, { backgroundColor: theme.overlay.scrim }]} onPress={handleDismissDeleteDialog}>
           <Pressable
             style={styles.dialogCardPressable}
             onPress={(event) => event.stopPropagation()}
           >
-            <SurfaceCard tone="neutral" padding="lg" showAccentStripe={false} style={styles.dialogCard}>
+            <SurfaceCard tone="neutral" padding="lg" showAccentStripe={false} style={[styles.dialogCard, { borderColor: theme.border.light }]}>
               <View style={styles.dialogContent}>
                 <Text variant="heading3" color="primary">
                   {itemToDelete?.type === 'program_deletion' ? 'Delete Plan' : 'Remove Workout'}
@@ -659,7 +657,7 @@ const PlansScreen: React.FC = () => {
                   variant="ghost"
                   onPress={handleDismissDeleteDialog}
                   size="md"
-                  textColor={colors.accent.orange}
+                  textColor={theme.accent.orange}
                   style={[styles.dialogActionButton, styles.dialogCancelButton]}
                 />
                 <Button

@@ -10,6 +10,7 @@ import Animated, { Layout } from 'react-native-reanimated';
 import { Text } from '@/components/atoms/Text';
 import { SurfaceCard } from '@/components/atoms/SurfaceCard';
 import { colors, radius, spacing, sizing } from '@/constants/theme';
+import { useTheme } from '@/hooks/useTheme';
 import { exercises as exerciseCatalog, getExerciseTypeByName } from '@/constants/exercises';
 import type { WorkoutExercise, SetLog } from '@/types/workout';
 import type { ExerciseType } from '@/types/exercise';
@@ -102,6 +103,7 @@ export const WorkoutExerciseSummaryCard: React.FC<WorkoutExerciseSummaryCardProp
   exercise,
   index,
 }) => {
+  const { theme } = useTheme();
   // Subscribe to unit values to trigger re-renders when units change
   const weightUnit = useSettingsStore((state) => state.weightUnit);
   const distanceUnitPref = useSettingsStore((state) => state.distanceUnit);
@@ -137,7 +139,7 @@ export const WorkoutExerciseSummaryCard: React.FC<WorkoutExerciseSummaryCardProp
       <SurfaceCard tone="card" padding="lg" showAccentStripe={false} style={styles.card}>
         <View style={styles.header}>
           <View style={styles.titleGroup}>
-            <Text style={{ fontSize: 18, fontWeight: '500', color: colors.text.primary }}>
+            <Text style={{ fontSize: 18, fontWeight: '500', color: theme.text.secondary }}>
               {exercise.name}
             </Text>
           </View>
@@ -149,12 +151,12 @@ export const WorkoutExerciseSummaryCard: React.FC<WorkoutExerciseSummaryCardProp
 
             return (
               <View key={`${exercise.name}-${originalIndex}`} style={styles.setRow}>
-                <View style={styles.setCircle}>
-                  <Text variant="bodySemibold" style={styles.setCircleText}>
+                <View style={[styles.setCircle, { backgroundColor: theme.surface.elevated }]}>
+                  <Text variant="bodySemibold" style={[styles.setCircleText, { color: theme.text.secondary }]}>
                     {displayIndex + 1}
                   </Text>
                 </View>
-                <Text variant="bodySemibold" color="primary" style={styles.setEffort}>
+                <Text variant="bodySemibold" style={[styles.setEffort, { color: theme.text.secondary }]}>
                   {effortLabel}
                 </Text>
               </View>
@@ -198,7 +200,6 @@ const styles = StyleSheet.create({
     width: sizing.iconLG,
     height: sizing.iconLG,
     borderRadius: radius.full,
-    backgroundColor: colors.surface.card,
     borderWidth: 1,
     borderColor: colors.accent.orange,
     justifyContent: 'center',
@@ -207,7 +208,6 @@ const styles = StyleSheet.create({
     display: 'flex',
   },
   setCircleText: {
-    color: colors.text.primary,
     fontSize: 16,
     fontWeight: '600',
     lineHeight: 16,

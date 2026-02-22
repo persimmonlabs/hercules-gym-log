@@ -7,6 +7,12 @@
 import type { SetLog } from '@/types/workout';
 import type { EquipmentType } from '@/types/exercise';
 
+/** Per-set-position weight and reps from a single session */
+export interface SetPositionData {
+  weight: number;
+  reps: number;
+}
+
 /** A single historical data point extracted from a past session for one exercise */
 export interface ExerciseDataPoint {
   date: number;
@@ -16,6 +22,8 @@ export interface ExerciseDataPoint {
   topSetReps: number;
   totalSets: number;
   totalVolume: number;
+  /** Per-set-position data (ordered: set 0, set 1, …) */
+  setDetails: SetPositionData[];
 }
 
 /** Detected training pattern for an exercise */
@@ -26,6 +34,16 @@ export type PatternType =
   | 'stable'
   | 'fallback';
 
+/** Rep-range cluster split for dual-progression tracking */
+export interface ClusterData {
+  heavy: ExerciseDataPoint[];
+  light: ExerciseDataPoint[];
+  nextIsHeavy: boolean;
+}
+
+/** Detected set arrangement across a session */
+export type SetArrangement = 'pyramid_up' | 'pyramid_down' | 'straight_across';
+
 /** Result of pattern analysis for a single exercise */
 export interface PatternAnalysis {
   pattern: PatternType;
@@ -33,6 +51,10 @@ export interface PatternAnalysis {
   dataPoints: ExerciseDataPoint[];
   slope?: number;
   rSquared?: number;
+  /** Rep-cycling cluster data (only present when pattern === 'rep_cycling') */
+  clusters?: ClusterData;
+  /** Detected set arrangement (pyramid, drop-set, straight) */
+  setPattern?: SetArrangement;
 }
 
 /** The smart suggestion output for a single exercise */
@@ -41,6 +63,17 @@ export interface SmartSuggestionResult {
   historySetCount: number;
   pattern: PatternType;
   confidence: number;
+  /** Cluster data passed through for intra-session re-targeting */
+  clusters?: ClusterData;
+  /** Set arrangement for reference */
+  setPattern?: SetArrangement;
+}
+
+/** Result of intra-session pattern shift detection */
+export interface PatternShiftResult {
+  shifted: boolean;
+  /** Replacement targets for all remaining (uncompleted) sets, indexed from 0 */
+  newTargets: { weight: number; reps: number }[];
 }
 
 /** Equipment-aware weight increment configuration */
@@ -110,4 +143,22 @@ export const SMART_CONFIG = {
   EASY_BUMP_PERCENT: 0.025,
   /** Intra-session: weight reduction for significant miss */
   MISS_REDUCE_PERCENT: 0.05,
+  /** Pattern shift: weight deviation threshold (fraction) */
+  PATTERN_SHIFT_WEIGHT_THRESHOLD: 0.15,
+  /** Pattern shift: reps deviation threshold (fraction) */
+  PATTERN_SHIFT_REPS_THRESHOLD: 0.30,
+  /** Pattern shift: max similarity score to accept a historical match */
+  PATTERN_SHIFT_MAX_SIMILARITY: 0.30,
+  /** Max pattern shifts allowed per session (prevents oscillation) */
+  MAX_PATTERN_SHIFTS_PER_SESSION: 1,
+  /** Pyramid detection: last set > first set by this fraction → pyramid_up */
+  PYRAMID_UP_THRESHOLD: 0.10,
+  /** Pyramid detection: first set > last set by this fraction → pyramid_down */
+  PYRAMID_DOWN_THRESHOLD: 0.10,
+  /** Straight-across: all sets within this fraction → straight */
+  STRAIGHT_ACROSS_THRESHOLD: 0.05,
+  /** Minimum cluster sessions for trend-line regression */
+  MIN_CLUSTER_SESSIONS: 2,
+  /** Progression bump for single-session clusters or straight-across rep increment */
+  SMALL_BUMP_PERCENT: 0.025,
 } as const;

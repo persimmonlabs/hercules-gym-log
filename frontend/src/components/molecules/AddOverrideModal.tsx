@@ -186,7 +186,7 @@ export const AddOverrideModal: React.FC<AddOverrideModalProps> = ({
                   key={date}
                   style={[
                     styles.dateChip,
-                    { backgroundColor: theme.surface.elevated },
+                    { backgroundColor: theme.surface.elevated, borderColor: theme.accent.orange },
                     isSelected && { backgroundColor: theme.accent.orange },
                     hasExistingOverride && !isSelected && { backgroundColor: theme.accent.warning + '20' },
                   ]}
@@ -217,7 +217,7 @@ export const AddOverrideModal: React.FC<AddOverrideModalProps> = ({
           <Pressable
             style={[
               styles.optionCard,
-              { backgroundColor: theme.surface.elevated },
+              { backgroundColor: theme.surface.elevated, borderColor: theme.border.light },
               isRest && { borderColor: theme.accent.orange, borderWidth: 2 },
             ]}
             onPress={() => handleWorkoutSelect(null)}
@@ -238,7 +238,7 @@ export const AddOverrideModal: React.FC<AddOverrideModalProps> = ({
                   key={workout.id}
                   style={[
                     styles.optionCard,
-                    { backgroundColor: theme.surface.elevated },
+                    { backgroundColor: theme.surface.elevated, borderColor: theme.border.light },
                     isSelected && { borderColor: theme.accent.orange, borderWidth: 2 },
                   ]}
                   onPress={() => handleWorkoutSelect(workout.id)}
@@ -255,7 +255,7 @@ export const AddOverrideModal: React.FC<AddOverrideModalProps> = ({
         </View>
       </ScrollView>
 
-      <View style={[styles.footer, { paddingBottom: spacing.sm + insets.bottom }]}>
+      <View style={[styles.footer, { paddingBottom: spacing.sm + insets.bottom, borderTopColor: theme.border.light }]}>
         {isEditing && (
           <Button
             label="Remove Override"
@@ -298,7 +298,6 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: colors.accent.orange,
   },
   optionCard: {
     flexDirection: 'row',
@@ -306,7 +305,6 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     borderRadius: radius.lg,
     borderWidth: 1,
-    borderColor: colors.accent.orange,
     gap: spacing.md,
   },
   optionContent: {
@@ -318,7 +316,6 @@ const styles = StyleSheet.create({
   footer: {
     padding: spacing.md,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.border.light,
     gap: spacing.sm,
   },
   removeButton: {

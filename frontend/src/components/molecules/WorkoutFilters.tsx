@@ -13,6 +13,7 @@ import { QuickFilterChip } from '@/components/atoms/QuickFilterChip';
 import { FilterChip } from '@/components/atoms/FilterChip';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { colors, spacing, radius, shadows } from '@/constants/theme';
+import { useTheme } from '@/hooks/useTheme';
 import { springBouncy } from '@/constants/animations';
 
 export type WorkoutFilterState = {
@@ -70,6 +71,7 @@ const EXPERIENCE_FILTERS = [
 ];
 
 export const WorkoutFilters: React.FC<WorkoutFiltersProps> = ({ filters, onFiltersChange, showDurationFilter = true, showWorkoutTypeFilter = true }) => {
+  const { theme } = useTheme();
   const [isExpanded, setIsExpanded] = useState(false);
   const rotation = useSharedValue(0);
   const contentHeight = useSharedValue(0);
@@ -146,9 +148,9 @@ export const WorkoutFilters: React.FC<WorkoutFiltersProps> = ({ filters, onFilte
   const activeFiltersCount = getActiveFiltersCount();
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.surface.card }]}>
       {/* Compact header with toggle */}
-      <Pressable style={styles.header} onPress={toggleExpanded}>
+      <Pressable style={[styles.header, { borderBottomColor: theme.border.light }]} onPress={toggleExpanded}>
         <View style={styles.headerContent}>
           <View style={styles.headerLeft}>
             <IconSymbol name="filter-list" size={20} color={colors.accent.primary} />
@@ -174,7 +176,7 @@ export const WorkoutFilters: React.FC<WorkoutFiltersProps> = ({ filters, onFilte
         <ScrollView 
           horizontal 
           showsHorizontalScrollIndicator={false}
-          style={styles.activeFiltersScroll}
+          style={[styles.activeFiltersScroll, { borderBottomColor: theme.border.light }]}
           contentContainerStyle={styles.activeFiltersContent}
         >
           {filters.experienceLevel !== 'all' && (
@@ -208,7 +210,7 @@ export const WorkoutFilters: React.FC<WorkoutFiltersProps> = ({ filters, onFilte
             />
           )}
           {activeFiltersCount > 1 && (
-            <Pressable onPress={clearAllFilters} style={styles.clearAllChip}>
+            <Pressable onPress={clearAllFilters} style={[styles.clearAllChip, { borderColor: theme.border.light, backgroundColor: theme.surface.subtle }]}>
               <Text variant="caption" color="secondary" style={styles.clearAllText}>Clear All</Text>
             </Pressable>
           )}
@@ -319,7 +321,7 @@ export const WorkoutFilters: React.FC<WorkoutFiltersProps> = ({ filters, onFilte
 
           {/* Clear all button */}
           {activeFiltersCount > 0 && (
-            <Pressable style={styles.clearAllButton} onPress={clearAllFilters}>
+            <Pressable style={[styles.clearAllButton, { borderColor: theme.border.light, backgroundColor: theme.surface.subtle }]} onPress={clearAllFilters}>
               <Text variant="bodySemibold" color="secondary">Clear All Filters</Text>
             </Pressable>
           )}
@@ -331,7 +333,6 @@ export const WorkoutFilters: React.FC<WorkoutFiltersProps> = ({ filters, onFilte
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: colors.surface.card,
     marginHorizontal: spacing.md,
     marginBottom: spacing.md,
     borderRadius: radius.lg,
@@ -342,7 +343,6 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.lg,
     borderBottomWidth: 1,
-    borderBottomColor: colors.border.light,
   },
   headerContent: {
     flexDirection: 'row',
@@ -372,7 +372,6 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.lg,
     borderBottomWidth: 1,
-    borderBottomColor: colors.border.light,
   },
   activeFiltersContent: {
     gap: spacing.sm,
@@ -383,8 +382,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     borderRadius: radius.full,
     borderWidth: 1,
-    borderColor: colors.border.light,
-    backgroundColor: colors.surface.subtle,
     justifyContent: 'center',
   },
   clearAllText: {
@@ -413,9 +410,7 @@ const styles = StyleSheet.create({
     marginTop: spacing.xs,
     paddingVertical: spacing.md,
     borderRadius: radius.md,
-    backgroundColor: colors.surface.subtle,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: colors.border.light,
   },
 });

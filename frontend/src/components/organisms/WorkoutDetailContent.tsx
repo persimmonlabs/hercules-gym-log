@@ -11,6 +11,7 @@ import { Text } from '@/components/atoms/Text';
 import { SurfaceCard } from '@/components/atoms/SurfaceCard';
 import { WorkoutExerciseSummaryCard } from '@/components/molecules/WorkoutExerciseSummaryCard';
 import { spacing, typography, colors } from '@/constants/theme';
+import { useTheme } from '@/hooks/useTheme';
 import type { Workout } from '@/types/workout';
 import { formatDurationLabel, getWorkoutTotals, getWorkoutVolume } from '@/utils/workout';
 import { useSettingsStore } from '@/store/settingsStore';
@@ -26,6 +27,7 @@ interface WorkoutDetailContentProps {
  * @param workout - Completed workout session to visualize.
  */
 export const WorkoutDetailContent: React.FC<WorkoutDetailContentProps> = ({ workout }) => {
+  const { theme } = useTheme();
   // Subscribe to weightUnit to trigger re-renders when units change
   const weightUnit = useSettingsStore((state) => state.weightUnit);
   const { formatWeight } = useSettingsStore();
@@ -41,13 +43,13 @@ export const WorkoutDetailContent: React.FC<WorkoutDetailContentProps> = ({ work
   return (
     <Animated.View layout={Layout.springify()} style={styles.container}>
       <View style={styles.summarySection}>
-        <Text style={{ fontSize: 24, fontWeight: '600', color: colors.text.primary }}>
+        <Text style={{ fontSize: 24, fontWeight: '600', color: theme.text.secondary }}>
           Summary
         </Text>
         <SurfaceCard tone="card" padding="xl" showAccentStripe={false} style={styles.metricsCard}>
           <View style={styles.metricsColumn}>
             <View style={styles.metricRow}>
-              <Text style={{ fontSize: 20, fontWeight: '500', color: colors.text.primary }}>
+              <Text style={{ fontSize: 20, fontWeight: '500', color: theme.text.secondary }}>
                 Duration:
               </Text>
               <Text style={{ fontSize: 20, fontWeight: '700', color: colors.accent.orange, textAlign: 'right', flexShrink: 0 }}>
@@ -55,7 +57,7 @@ export const WorkoutDetailContent: React.FC<WorkoutDetailContentProps> = ({ work
               </Text>
             </View>
             <View style={styles.metricRow}>
-              <Text style={{ fontSize: 20, fontWeight: '500', color: colors.text.primary }}>
+              <Text style={{ fontSize: 20, fontWeight: '500', color: theme.text.secondary }}>
                 Sets:
               </Text>
               <Text style={{ fontSize: 20, fontWeight: '700', color: colors.accent.orange, textAlign: 'right', flexShrink: 0 }}>
@@ -63,7 +65,7 @@ export const WorkoutDetailContent: React.FC<WorkoutDetailContentProps> = ({ work
               </Text>
             </View>
             <View style={styles.metricRow}>
-              <Text style={{ fontSize: 20, fontWeight: '500', color: colors.text.primary }}>
+              <Text style={{ fontSize: 20, fontWeight: '500', color: theme.text.secondary }}>
                 Volume:
               </Text>
               <Text style={{ fontSize: 20, fontWeight: '700', color: colors.accent.orange, textAlign: 'right', flexShrink: 0 }}>
@@ -75,7 +77,7 @@ export const WorkoutDetailContent: React.FC<WorkoutDetailContentProps> = ({ work
       </View>
 
       <View style={styles.exerciseSection}>
-        <Text style={{ fontSize: 24, fontWeight: '600', color: colors.text.primary }}>
+        <Text style={{ fontSize: 24, fontWeight: '600', color: theme.text.secondary }}>
           Exercises
         </Text>
         <View style={styles.exerciseList}>

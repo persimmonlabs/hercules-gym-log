@@ -120,7 +120,7 @@ export const ProgramCard: React.FC<ProgramCardProps> = ({ program, onPress, styl
           >
             <Ionicons name="star" size={16} color={colors.text.onAccent} />
             <Text variant="labelMedium" style={styles.ctaText}>
-              Unlock Premium
+              Unlock with Pro
             </Text>
           </TouchableOpacity>
         </View>

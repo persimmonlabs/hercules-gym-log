@@ -80,8 +80,6 @@ export const PremiumLimitModal: React.FC<PremiumLimitModalProps> = ({
                 label="Maybe Later"
                 onPress={handleClose}
                 variant="ghost"
-                contentStyle={styles.cancelButton}
-                textColor={colors.accent.orange}
               />
             </View>
           </View>
@@ -127,12 +125,6 @@ const styles = StyleSheet.create({
   },
   unlockButton: {
     backgroundColor: colors.accent.orange,
-    borderWidth: 2,
-    borderColor: colors.accent.orange,
-    borderRadius: radius.lg,
-  },
-  cancelButton: {
-    backgroundColor: 'transparent',
     borderWidth: 2,
     borderColor: colors.accent.orange,
     borderRadius: radius.lg,

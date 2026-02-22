@@ -88,14 +88,6 @@ export const SignOutConfirmationModal: React.FC<SignOutConfirmationModalProps> =
               label="Cancel"
               onPress={handleCancelPress}
               variant="ghost"
-              contentStyle={[
-                styles.cancelButton,
-                {
-                  backgroundColor: theme.surface.card,
-                  borderColor: theme.accent.orange,
-                }
-              ]}
-              textColor={theme.accent.orange}
               disabled={isLoading}
             />
             <Button
@@ -159,10 +151,6 @@ const styles = StyleSheet.create({
   buttonStack: {
     width: '100%',
     gap: spacing.md,
-  },
-  cancelButton: {
-    borderWidth: 2,
-    borderRadius: radius.lg,
   },
   signOutButton: {
     borderWidth: 2,

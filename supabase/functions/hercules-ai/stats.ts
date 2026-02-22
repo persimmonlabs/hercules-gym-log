@@ -764,6 +764,88 @@ export const getMuscleGroupVolume = async (
   };
 };
 
+export const getSetsPerMuscleGroup = async (
+  supabase: SupabaseClient,
+  userId: string,
+  days: number = 7
+): Promise<StatResult> => {
+  const cutoffDate = new Date();
+  cutoffDate.setDate(cutoffDate.getDate() - days);
+  const cutoffStr = cutoffDate.toISOString().split('T')[0];
+
+  const { data, error } = await supabase
+    .from('workout_sessions')
+    .select('id, name, date, exercises')
+    .eq('user_id', userId)
+    .gte('date', cutoffStr)
+    .order('date', { ascending: false });
+
+  if (error) {
+    return { success: false, data: null, error: error.message };
+  }
+
+  const sessions = (data || []) as Array<{ id: string; name: string; date: string; exercises: unknown }>;
+
+  const setsByMuscle: Record<string, number> = {};
+  const exercisesByMuscle: Record<string, Set<string>> = {};
+  let totalSets = 0;
+
+  for (const session of sessions) {
+    const exercises = parseExercises(session.exercises);
+    for (const exercise of exercises) {
+      const name = getExerciseName(exercise);
+      if (name === 'Unknown') continue;
+
+      const muscleGroup = getMuscleGroupForExercise(name);
+      const sets = exercise.sets ?? [];
+      let completedSets = 0;
+
+      for (const set of sets) {
+        if (set.completed !== false) {
+          completedSets++;
+        }
+      }
+
+      if (completedSets > 0) {
+        setsByMuscle[muscleGroup] = (setsByMuscle[muscleGroup] ?? 0) + completedSets;
+        totalSets += completedSets;
+        if (!exercisesByMuscle[muscleGroup]) {
+          exercisesByMuscle[muscleGroup] = new Set();
+        }
+        exercisesByMuscle[muscleGroup].add(name);
+      }
+    }
+  }
+
+  const sorted = Object.entries(setsByMuscle)
+    .map(([muscleGroup, sets]) => ({
+      muscleGroup,
+      totalSets: sets,
+      exercises: Array.from(exercisesByMuscle[muscleGroup] || []),
+    }))
+    .sort((a, b) => b.totalSets - a.totalSets);
+
+  // Compute weekly average if period > 7 days
+  const weeks = Math.max(days / 7, 1);
+  const weeklyAvg = sorted.map(item => ({
+    ...item,
+    avgSetsPerWeek: Math.round((item.totalSets / weeks) * 10) / 10,
+  }));
+
+  return {
+    success: true,
+    data: {
+      periodDays: days,
+      totalSessions: sessions.length,
+      totalSets,
+      muscleGroups: weeklyAvg,
+      mostTrainedMuscle: weeklyAvg[0]?.muscleGroup ?? null,
+      leastTrainedMuscle: weeklyAvg[weeklyAvg.length - 1]?.muscleGroup ?? null,
+      summary: `Over the last ${days} days (${sessions.length} sessions), you completed ${totalSets} total sets across ${weeklyAvg.length} muscle groups.`,
+    },
+  };
+};
+
 export const getWorkoutFrequency = async (
   supabase: SupabaseClient,
   userId: string,
@@ -1350,6 +1432,7 @@ export type StatFunction =
   | 'getWorkoutStats'
   | 'getExerciseProgress'
   | 'getMuscleGroupVolume'
+  | 'getSetsPerMuscleGroup'
   | 'getWorkoutFrequency'
   | 'getPersonalRecords'
   | 'getRecentWorkoutSummary'
@@ -1374,6 +1457,8 @@ export const executeStatFunction = async (
       return getExerciseProgress(supabase, userId, params.exerciseName as string);
     case 'getMuscleGroupVolume':
       return getMuscleGroupVolume(supabase, userId);
+    case 'getSetsPerMuscleGroup':
+      return getSetsPerMuscleGroup(supabase, userId, (params.days as number) ?? 7);
     case 'getWorkoutFrequency':
       return getWorkoutFrequency(supabase, userId, (params.days as number) ?? 30);
     case 'getPersonalRecords':

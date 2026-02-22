@@ -51,10 +51,7 @@ export const PremiumLock: React.FC<PremiumLockProps> = ({
           </Text>
         )}
 
-        <Text variant="caption" color="secondary" style={styles.description}>
-          Unlock premium features with Hercules Pro
-        </Text>
-
+        
         <TouchableOpacity
           style={styles.ctaButton}
           onPress={onUnlock}
@@ -103,6 +100,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     borderRadius: radius.full,
     gap: spacing.xs,
+    marginTop: spacing.lg,
     ...shadows.sm,
   },
   ctaText: {

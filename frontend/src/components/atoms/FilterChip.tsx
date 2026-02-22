@@ -10,6 +10,7 @@ import { triggerHaptic } from '@/utils/haptics';
 import { Text } from '@/components/atoms/Text';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { colors, radius, spacing, sizing } from '@/constants/theme';
+import { useTheme } from '@/hooks/useTheme';
 import { springBouncy, buttonPressAnimation } from '@/constants/animations';
 
 interface FilterChipProps {
@@ -19,6 +20,7 @@ interface FilterChipProps {
 }
 
 export const FilterChip: React.FC<FilterChipProps> = ({ label, onRemove, testID }) => {
+  const { theme } = useTheme();
   const scale = useSharedValue(1);
 
   const animatedStyle = useAnimatedStyle(() => ({
@@ -40,14 +42,14 @@ export const FilterChip: React.FC<FilterChipProps> = ({ label, onRemove, testID 
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={`Remove ${label} filter`}
-        style={styles.chip}
+        style={[styles.chip, { backgroundColor: theme.surface.subtle, borderColor: theme.border.light }]}
         onPress={handlePress}
         testID={testID}
       >
         <Text variant="caption" color="primary">
           {label}
         </Text>
-        <IconSymbol name="close" color={colors.text.primary} size={sizing.iconXS} />
+        <IconSymbol name="close" color={theme.text.primary} size={sizing.iconXS} />
       </Pressable>
     </Animated.View>
   );
@@ -63,8 +65,6 @@ const styles = StyleSheet.create({
     gap: spacing.xxs,
     borderRadius: radius.full,
     borderWidth: 1,
-    borderColor: colors.border.light,
-    backgroundColor: colors.surface.subtle,
     paddingVertical: spacing.xs,
     paddingLeft: spacing.md,
     paddingRight: spacing.sm,

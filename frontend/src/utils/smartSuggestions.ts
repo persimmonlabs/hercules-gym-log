@@ -9,9 +9,13 @@ import type { SetLog, Workout } from '@/types/workout';
 import type { EquipmentType } from '@/types/exercise';
 import {
   type ExerciseDataPoint,
+  type SetPositionData,
   type PatternType,
   type PatternAnalysis,
   type SmartSuggestionResult,
+  type PatternShiftResult,
+  type ClusterData,
+  type SetArrangement,
   type WeightIncrement,
   EQUIPMENT_INCREMENTS,
   DEFAULT_INCREMENT,
@@ -131,6 +135,7 @@ const stddev = (values: number[]): number => {
 /**
  * Extract historical data points for a specific exercise from workout history.
  * Returns data points sorted chronologically (oldest first).
+ * Now includes per-set-position data for pyramid/pattern detection.
  */
 export const extractDataPoints = (
   exerciseName: string,
@@ -167,6 +172,12 @@ export const extractDataPoints = (
     const topSetReps = reps[topSetIdx] ?? 0;
     const totalVolume = weightSets.reduce((sum, s) => sum + (s.weight ?? 0) * (s.reps ?? 0), 0);
 
+    // Per-set-position data (preserves order)
+    const setDetails: SetPositionData[] = weightSets.map((s) => ({
+      weight: s.weight ?? 0,
+      reps: s.reps ?? 0,
+    }));
+
     points.push({
       date: workoutDate,
       avgWeight,
@@ -175,6 +186,7 @@ export const extractDataPoints = (
       topSetReps,
       totalSets: completedSets.length,
       totalVolume,
+      setDetails,
     });
   }
 
@@ -194,8 +206,64 @@ export const extractDataPoints = (
 // ---------------------------------------------------------------------------
 
 /**
+ * Cluster sessions into heavy (low-rep) and light (high-rep) groups.
+ * Returns null if one cluster has fewer than MIN_CLUSTER_SESSIONS entries.
+ */
+const clusterSessions = (points: ExerciseDataPoint[]): ClusterData | null => {
+  if (points.length < SMART_CONFIG.MIN_SESSIONS_REP_CYCLING) return null;
+
+  const reps = points.map((p) => p.avgReps);
+  const sorted = [...reps].sort((a, b) => a - b);
+  const median = sorted[Math.floor(sorted.length / 2)];
+  // Use 11 as a floor so that 10-rep sessions always land in "heavy"
+  const threshold = Math.max(median, 11);
+
+  const heavy: ExerciseDataPoint[] = [];
+  const light: ExerciseDataPoint[] = [];
+
+  for (const p of points) {
+    if (p.avgReps < threshold) {
+      heavy.push(p);
+    } else {
+      light.push(p);
+    }
+  }
+
+  if (heavy.length < SMART_CONFIG.MIN_CLUSTER_SESSIONS ||
+      light.length < SMART_CONFIG.MIN_CLUSTER_SESSIONS) {
+    return null;
+  }
+
+  // Predict next cluster: simple alternation from last session
+  const lastSession = points[points.length - 1];
+  const lastWasHeavy = lastSession.avgReps < threshold;
+
+  // Validate alternation quality over last 4 sessions
+  const last4 = points.slice(-Math.min(4, points.length));
+  let alternations = 0;
+  for (let i = 1; i < last4.length; i++) {
+    const prevHeavy = last4[i - 1].avgReps < threshold;
+    const currHeavy = last4[i].avgReps < threshold;
+    if (prevHeavy !== currHeavy) alternations++;
+  }
+  const alternationRate = last4.length > 1 ? alternations / (last4.length - 1) : 0;
+
+  let nextIsHeavy: boolean;
+  if (alternationRate >= 0.5) {
+    // Good alternation — simply flip
+    nextIsHeavy = !lastWasHeavy;
+  } else {
+    // Irregular — balance by predicting whichever cluster is less frequent recently
+    const recentHeavy = last4.filter((p) => p.avgReps < threshold).length;
+    nextIsHeavy = recentHeavy <= Math.floor(last4.length / 2);
+  }
+
+  return { heavy, light, nextIsHeavy };
+};
+
+/**
  * Detect if the exercise shows alternating rep ranges (e.g., heavy/light weeks).
- * Requires at least 4 sessions with clear alternating pattern.
+ * Requires at least 4 sessions with clear alternating pattern and high rep stddev.
  */
 const detectRepCycling = (points: ExerciseDataPoint[]): boolean => {
   if (points.length < SMART_CONFIG.MIN_SESSIONS_REP_CYCLING) return false;
@@ -204,8 +272,8 @@ const detectRepCycling = (points: ExerciseDataPoint[]): boolean => {
   const sd = stddev(reps);
   if (sd < SMART_CONFIG.REP_CYCLING_STDDEV) return false;
 
-  // Check for alternating pattern: sign of (reps[i] - median) should alternate
-  const median = [...reps].sort((a, b) => a - b)[Math.floor(reps.length / 2)];
+  const sorted = [...reps].sort((a, b) => a - b);
+  const median = sorted[Math.floor(reps.length / 2)];
   let alternations = 0;
   for (let i = 1; i < reps.length; i++) {
     const prevAbove = reps[i - 1] > median;
@@ -215,14 +283,51 @@ const detectRepCycling = (points: ExerciseDataPoint[]): boolean => {
     }
   }
 
-  // At least 60% of transitions should alternate for a clear pattern
   const alternationRate = alternations / (reps.length - 1);
   return alternationRate >= 0.6;
 };
 
 /**
+ * Detect the set arrangement pattern (pyramid_up, pyramid_down, straight_across)
+ * by analyzing per-set weight data across recent sessions.
+ */
+const detectSetPattern = (points: ExerciseDataPoint[]): SetArrangement => {
+  const validSessions = points.filter((p) => p.setDetails.length >= 2);
+  if (validSessions.length < 2) return 'straight_across';
+
+  // Use up to last 6 sessions for pattern detection
+  const recent = validSessions.slice(-6);
+  let pyramidUpCount = 0;
+  let pyramidDownCount = 0;
+  let straightCount = 0;
+
+  for (const session of recent) {
+    const sets = session.setDetails;
+    const firstWeight = sets[0].weight;
+    const lastWeight = sets[sets.length - 1].weight;
+
+    if (firstWeight <= 0) {
+      straightCount++;
+      continue;
+    }
+
+    if (lastWeight > firstWeight * (1 + SMART_CONFIG.PYRAMID_UP_THRESHOLD)) {
+      pyramidUpCount++;
+    } else if (firstWeight > lastWeight * (1 + SMART_CONFIG.PYRAMID_DOWN_THRESHOLD)) {
+      pyramidDownCount++;
+    } else {
+      straightCount++;
+    }
+  }
+
+  const total = recent.length;
+  if (pyramidUpCount / total >= 0.5) return 'pyramid_up';
+  if (pyramidDownCount / total >= 0.5) return 'pyramid_down';
+  return 'straight_across';
+};
+
+/**
  * Detect deload patterns in the training history.
- * Returns true if the user has completed deload cycles.
  */
 const detectDeloadHistory = (points: ExerciseDataPoint[]): boolean => {
   if (points.length < 6) return false;
@@ -258,6 +363,7 @@ const isLastSessionDeload = (points: ExerciseDataPoint[]): boolean => {
 
 /**
  * Analyze training pattern for an exercise.
+ * Now includes cluster data for rep cycling and set arrangement detection.
  */
 export const analyzePattern = (
   points: ExerciseDataPoint[],
@@ -274,7 +380,22 @@ export const analyzePattern = (
     return { pattern: 'fallback', confidence: 0, dataPoints: points };
   }
 
-  // 1. Check for progressive overload (highest priority)
+  // Detect set arrangement (used by all patterns)
+  const setPattern = detectSetPattern(points);
+
+  // 1. Check for rep range cycling FIRST (it has its own progressive overload per cluster)
+  const clusters = clusterSessions(points);
+  if (clusters && detectRepCycling(points)) {
+    return {
+      pattern: 'rep_cycling',
+      confidence: 0.7,
+      dataPoints: points,
+      clusters,
+      setPattern,
+    };
+  }
+
+  // 2. Check for progressive overload
   const rSquaredThreshold = isCompound
     ? SMART_CONFIG.R_SQUARED_COMPOUND
     : SMART_CONFIG.R_SQUARED_ISOLATION;
@@ -290,21 +411,12 @@ export const analyzePattern = (
       dataPoints: points,
       slope: regression.slope,
       rSquared: regression.rSquared,
-    };
-  }
-
-  // 2. Check for rep range cycling
-  if (detectRepCycling(points)) {
-    return {
-      pattern: 'rep_cycling',
-      confidence: 0.7,
-      dataPoints: points,
+      setPattern,
     };
   }
 
   // 3. Check for deload patterns
   if (detectDeloadHistory(points)) {
-    // Only auto-suggest deload if ≥12 weeks of history
     const historySpanWeeks =
       (points[points.length - 1].date - points[0].date) / (7 * 24 * 60 * 60 * 1000);
 
@@ -313,6 +425,7 @@ export const analyzePattern = (
         pattern: 'deload',
         confidence: 0.6,
         dataPoints: points,
+        setPattern,
       };
     }
   }
@@ -322,143 +435,253 @@ export const analyzePattern = (
     pattern: 'stable',
     confidence: 0.5,
     dataPoints: points,
+    setPattern,
   };
 };
 
 // ---------------------------------------------------------------------------
-// Suggestion generation
+// Suggestion generation (per-set-position)
 // ---------------------------------------------------------------------------
 
 /**
- * Generate suggested weight and reps based on detected pattern.
+ * Generate per-set-position suggestions from a pool of sessions using linear
+ * regression on each set position independently.
+ *
+ * @param sessionPool - Chronologically ordered sessions to derive trend from
+ * @param requestedSets - How many sets to generate
+ * @param equipment - For rounding
+ * @param isCompound - For max-increase clamping
+ * @returns Array of per-set { weight, reps } targets
  */
-const generateSuggestion = (
+const generatePerSetSuggestions = (
+  sessionPool: ExerciseDataPoint[],
+  requestedSets: number,
+  equipment: EquipmentType[],
+  isCompound: boolean,
+): { weight: number; reps: number }[] => {
+  const maxIncrease = isCompound
+    ? SMART_CONFIG.MAX_INCREASE_COMPOUND
+    : SMART_CONFIG.MAX_INCREASE_ISOLATION;
+
+  // Determine the max set count seen across the pool
+  const maxHistorySets = Math.max(...sessionPool.map((s) => s.setDetails.length), 0);
+  const numSetsToAnalyze = Math.max(requestedSets, maxHistorySets);
+  const results: { weight: number; reps: number }[] = [];
+
+  for (let setIdx = 0; setIdx < numSetsToAnalyze; setIdx++) {
+    // Collect data for this set position across sessions
+    const positionData: { x: number; weight: number; reps: number }[] = [];
+    let sessionX = 0;
+    for (const session of sessionPool) {
+      if (session.setDetails.length > setIdx) {
+        positionData.push({
+          x: sessionX,
+          weight: session.setDetails[setIdx].weight,
+          reps: session.setDetails[setIdx].reps,
+        });
+      }
+      sessionX++;
+    }
+
+    if (positionData.length === 0) {
+      // No data at this position — clone the last computed result or use pool avg
+      if (results.length > 0) {
+        results.push({ ...results[results.length - 1] });
+      } else {
+        const lastSession = sessionPool[sessionPool.length - 1];
+        results.push({
+          weight: lastSession.avgWeight,
+          reps: Math.round(lastSession.avgReps),
+        });
+      }
+      continue;
+    }
+
+    const lastData = positionData[positionData.length - 1];
+
+    if (positionData.length >= 2) {
+      // Regression on weight for this set position
+      const weightReg = linearRegression(
+        positionData.map((d) => ({ x: d.x, y: d.weight })),
+      );
+      const repsReg = linearRegression(
+        positionData.map((d) => ({ x: d.x, y: d.reps })),
+      );
+
+      let nextWeight = lastData.weight + weightReg.slope;
+      nextWeight = Math.min(nextWeight, lastData.weight * (1 + maxIncrease));
+      nextWeight = Math.max(nextWeight, lastData.weight * 0.9); // never drop > 10%
+      nextWeight = roundToIncrement(nextWeight, equipment, weightReg.slope > 0);
+
+      // For reps: if weight increased meaningfully, hold reps. Otherwise allow rep bump.
+      let nextReps: number;
+      if (nextWeight > lastData.weight) {
+        nextReps = lastData.reps;
+      } else {
+        // Allow reps to trend up, but cap at +2 from last
+        const projectedReps = lastData.reps + repsReg.slope;
+        nextReps = Math.round(Math.min(projectedReps, lastData.reps + 2));
+      }
+
+      results.push({ weight: nextWeight, reps: Math.max(nextReps, 1) });
+    } else {
+      // Single data point — apply small bump
+      const bumped = roundToIncrement(
+        lastData.weight * (1 + SMART_CONFIG.SMALL_BUMP_PERCENT),
+        equipment,
+        false,
+      );
+      results.push({
+        weight: bumped > lastData.weight ? bumped : lastData.weight,
+        reps: lastData.reps,
+      });
+    }
+  }
+
+  // Trim or extend to requestedSets
+  while (results.length < requestedSets) {
+    results.push({ ...results[results.length - 1] });
+  }
+
+  return results.slice(0, requestedSets);
+};
+
+/**
+ * For straight_across patterns, apply mild intra-session progression:
+ * keep weight constant, increment reps by +1 per set.
+ */
+const applyStraightAcrossProgression = (
+  baseSets: { weight: number; reps: number }[],
+): { weight: number; reps: number }[] => {
+  if (baseSets.length <= 1) return baseSets;
+
+  // Use the first set as the base; subsequent sets get +1 rep each
+  return baseSets.map((s, i) => ({
+    weight: s.weight,
+    reps: s.reps + i,
+  }));
+};
+
+/**
+ * Generate per-set suggestions for a rep-cycling pattern.
+ * Uses the target cluster (heavy or light) for per-set regression.
+ */
+const generateClusterSuggestion = (
+  analysis: PatternAnalysis,
+  requestedSets: number,
+  equipment: EquipmentType[],
+  isCompound: boolean,
+): { weight: number; reps: number }[] => {
+  const clusters = analysis.clusters;
+  if (!clusters) {
+    // Shouldn't happen, but fallback
+    return generatePerSetSuggestions(
+      analysis.dataPoints.slice(-3),
+      requestedSets,
+      equipment,
+      isCompound,
+    );
+  }
+
+  const targetPool = clusters.nextIsHeavy ? clusters.heavy : clusters.light;
+
+  // Detect set pattern within the target cluster specifically
+  const clusterSetPattern = detectSetPattern(targetPool);
+
+  const perSet = generatePerSetSuggestions(
+    targetPool,
+    requestedSets,
+    equipment,
+    isCompound,
+  );
+
+  // If the cluster historically uses straight-across, add mild progression
+  if (clusterSetPattern === 'straight_across') {
+    return applyStraightAcrossProgression(perSet);
+  }
+
+  return perSet;
+};
+
+/**
+ * Generate suggested sets based on detected pattern (per-set-position).
+ * Returns an array of { weight, reps } — one per requested set.
+ */
+const generateSuggestionSets = (
   analysis: PatternAnalysis,
   isCompound: boolean,
   equipment: EquipmentType[],
   lastSets: SetLog[],
-): { weight: number; reps: number } => {
+  requestedSets: number,
+): { weight: number; reps: number }[] => {
   const points = analysis.dataPoints;
-  const lastPoint = points[points.length - 1];
 
   switch (analysis.pattern) {
     case 'progressive_overload': {
-      const slope = analysis.slope ?? 0;
-      const projectedWeight = lastPoint.topSetWeight + slope;
-      const maxIncrease = isCompound
-        ? SMART_CONFIG.MAX_INCREASE_COMPOUND
-        : SMART_CONFIG.MAX_INCREASE_ISOLATION;
-      const maxWeight = lastPoint.topSetWeight * (1 + maxIncrease);
-      const clampedWeight = Math.min(projectedWeight, maxWeight);
-      // For progressive overload with strong trend, allow rounding up
-      const allowRoundUp = (analysis.rSquared ?? 0) >= 0.8;
-      const roundedWeight = roundToIncrement(clampedWeight, equipment, allowRoundUp);
-
-      return {
-        weight: roundedWeight,
-        reps: Math.round(lastPoint.avgReps),
-      };
-    }
-
-    case 'rep_cycling': {
-      // Determine cycle position: even index = same as first session pattern
-      const sessionIndex = points.length; // next session
-      const isEvenPosition = sessionIndex % 2 === 0;
-
-      // Separate points into two groups based on rep range
-      const median = [...points.map((p) => p.avgReps)]
-        .sort((a, b) => a - b)[Math.floor(points.length / 2)];
-
-      const highRepPoints = points.filter((p) => p.avgReps >= median);
-      const lowRepPoints = points.filter((p) => p.avgReps < median);
-
-      // Determine which group the first session belongs to
-      const firstIsHigh = points[0].avgReps >= median;
-      const expectedHigh = firstIsHigh ? isEvenPosition : !isEvenPosition;
-
-      const targetGroup = expectedHigh ? highRepPoints : lowRepPoints;
-      if (targetGroup.length === 0) {
-        return { weight: lastPoint.topSetWeight, reps: Math.round(lastPoint.avgReps) };
-      }
-
-      // Use most recent session from the target group
-      const targetPoint = targetGroup[targetGroup.length - 1];
-
-      // Apply slight progression within the cycle
-      const progressedWeight = roundToIncrement(
-        targetPoint.topSetWeight * 1.01,
+      const perSet = generatePerSetSuggestions(
+        points,
+        requestedSets,
         equipment,
-        false,
+        isCompound,
       );
 
-      return {
-        weight: progressedWeight,
-        reps: Math.round(targetPoint.avgReps),
-      };
+      // For straight_across with progressive overload, add mild rep progression
+      if (analysis.setPattern === 'straight_across') {
+        return applyStraightAcrossProgression(perSet);
+      }
+      return perSet;
     }
 
+    case 'rep_cycling':
+      return generateClusterSuggestion(analysis, requestedSets, equipment, isCompound);
+
     case 'deload': {
-      // If last session was a deload, suggest returning to pre-deload levels
       if (isLastSessionDeload(points)) {
-        // Find the average of the 3 sessions before the deload
-        const preDeloadPoints = points.slice(-4, -1);
-        const avgWeight =
-          preDeloadPoints.reduce((sum, p) => sum + p.topSetWeight, 0) / preDeloadPoints.length;
-        const avgReps =
-          preDeloadPoints.reduce((sum, p) => sum + p.avgReps, 0) / preDeloadPoints.length;
-
-        return {
-          weight: roundToIncrement(avgWeight, equipment, false),
-          reps: Math.round(avgReps),
-        };
+        // Return to pre-deload levels using per-set analysis of sessions before deload
+        const preDeload = points.slice(-4, -1);
+        if (preDeload.length > 0) {
+          return generatePerSetSuggestions(preDeload, requestedSets, equipment, isCompound);
+        }
       }
-
-      // Otherwise use stable logic (don't auto-suggest deload unless criteria met)
-      return generateStableSuggestion(points, equipment);
+      // Fall through to stable
+      return generateStableSuggestionSets(points, requestedSets, equipment, isCompound);
     }
 
     case 'stable':
-      return generateStableSuggestion(points, equipment);
+      return generateStableSuggestionSets(points, requestedSets, equipment, isCompound);
 
     case 'fallback':
-    default:
-      // Use most recent session values directly
+    default: {
       if (lastSets.length > 0) {
-        return {
-          weight: lastSets[0].weight ?? 0,
-          reps: lastSets[0].reps ?? 8,
-        };
+        return lastSets.slice(0, requestedSets).map((s) => ({
+          weight: s.weight ?? 0,
+          reps: s.reps ?? 8,
+        }));
       }
-      return { weight: 0, reps: 8 };
+      return Array.from({ length: requestedSets }, () => ({ weight: 0, reps: 8 }));
+    }
   }
 };
 
 /**
- * Weighted average of last 3 sessions for stable/maintenance pattern.
+ * Per-set suggestions for stable/maintenance: use last 3 sessions with
+ * per-set-position weighted averaging, then apply mild straight-across progression.
  */
-const generateStableSuggestion = (
+const generateStableSuggestionSets = (
   points: ExerciseDataPoint[],
+  requestedSets: number,
   equipment: EquipmentType[],
-): { weight: number; reps: number } => {
+  isCompound: boolean,
+): { weight: number; reps: number }[] => {
   const recent = points.slice(-3);
-  const weights = [0.5, 0.3, 0.2];
+  const perSet = generatePerSetSuggestions(recent, requestedSets, equipment, isCompound);
+  const setPattern = detectSetPattern(points);
 
-  // If fewer than 3 points, adjust weights
-  let totalWeight = 0;
-  let weightedSum = 0;
-  let weightedReps = 0;
-
-  for (let i = 0; i < recent.length; i++) {
-    const w = weights[i] ?? weights[weights.length - 1];
-    totalWeight += w;
-    weightedSum += recent[recent.length - 1 - i].topSetWeight * w;
-    weightedReps += recent[recent.length - 1 - i].avgReps * w;
+  if (setPattern === 'straight_across') {
+    return applyStraightAcrossProgression(perSet);
   }
 
-  return {
-    weight: roundToIncrement(weightedSum / totalWeight, equipment, false),
-    reps: Math.round(weightedReps / totalWeight),
-  };
+  return perSet;
 };
 
 // ---------------------------------------------------------------------------
@@ -467,6 +690,7 @@ const generateStableSuggestion = (
 
 /**
  * Generate smart set suggestions for an exercise.
+ * Now produces per-set differentiated targets based on historical set-position analysis.
  *
  * @param exerciseName - Exercise name
  * @param workouts - All historical workouts
@@ -499,34 +723,28 @@ export const createSmartSuggestionSets = (
     };
   }
 
-  const suggestion = generateSuggestion(
+  const suggestionSets = generateSuggestionSets(
     analysis,
     isCompound,
     equipment,
     historySets ?? [],
+    requestedSetCount,
   );
 
-  // Clamp reps
-  const clampedReps = Math.max(
-    SMART_CONFIG.MIN_REPS,
-    Math.min(SMART_CONFIG.MAX_REPS, suggestion.reps),
-  );
-
-  // Build sets
-  const sets: SetLog[] = [];
-  for (let i = 0; i < requestedSetCount; i++) {
-    sets.push({
-      weight: suggestion.weight,
-      reps: clampedReps,
-      completed: false,
-    });
-  }
+  // Build SetLog[] with clamped reps
+  const sets: SetLog[] = suggestionSets.map((s) => ({
+    weight: s.weight,
+    reps: Math.max(SMART_CONFIG.MIN_REPS, Math.min(SMART_CONFIG.MAX_REPS, s.reps)),
+    completed: false,
+  }));
 
   return {
     sets,
     historySetCount: requestedSetCount,
     pattern: analysis.pattern,
     confidence: analysis.confidence,
+    clusters: analysis.clusters,
+    setPattern: analysis.setPattern,
   };
 };
 
@@ -597,4 +815,129 @@ export const adaptNextSet = (
     weight: roundToIncrement(reducedWeight, equipment, false),
     reps: targetReps,
   };
+};
+
+// ---------------------------------------------------------------------------
+// Intra-session pattern shift detection
+// ---------------------------------------------------------------------------
+
+/**
+ * Detect whether the user's completed set represents a significant deviation
+ * from the original suggestion (pattern shift). If so, find the closest
+ * matching historical session and re-target all remaining sets accordingly.
+ *
+ * @param completedSetIndex - Index of the just-completed set
+ * @param completedWeight - Actual weight used
+ * @param completedReps - Actual reps completed
+ * @param originalSuggestions - The original smart-suggested sets for this exercise
+ * @param dataPoints - Historical data points for this exercise
+ * @param remainingSetCount - How many uncompleted sets remain after the completed one
+ * @param equipment - Equipment types for rounding
+ * @param isCompound - Whether compound
+ * @returns PatternShiftResult with shifted flag and new targets for remaining sets
+ */
+export const detectPatternShift = (
+  completedSetIndex: number,
+  completedWeight: number,
+  completedReps: number,
+  originalSuggestions: SetLog[],
+  dataPoints: ExerciseDataPoint[],
+  remainingSetCount: number,
+  equipment: EquipmentType[],
+  isCompound: boolean,
+): PatternShiftResult => {
+  const noShift: PatternShiftResult = { shifted: false, newTargets: [] };
+
+  if (remainingSetCount <= 0 || !originalSuggestions[completedSetIndex]) {
+    return noShift;
+  }
+
+  const suggested = originalSuggestions[completedSetIndex];
+  const suggestedWeight = suggested.weight ?? 0;
+  const suggestedReps = suggested.reps ?? 0;
+
+  // Calculate deviation
+  const weightDev = suggestedWeight > 0
+    ? Math.abs(completedWeight - suggestedWeight) / suggestedWeight
+    : 0;
+  const repsDev = suggestedReps > 0
+    ? Math.abs(completedReps - suggestedReps) / suggestedReps
+    : 0;
+
+  const isSignificant =
+    weightDev > SMART_CONFIG.PATTERN_SHIFT_WEIGHT_THRESHOLD ||
+    repsDev > SMART_CONFIG.PATTERN_SHIFT_REPS_THRESHOLD;
+
+  if (!isSignificant) {
+    return noShift;
+  }
+
+  // Find the closest matching historical session by comparing Set 1 similarity
+  let bestMatch: ExerciseDataPoint | null = null;
+  let bestSimilarity = Infinity;
+
+  for (const session of dataPoints) {
+    if (session.setDetails.length === 0) continue;
+    const sessionSet = session.setDetails[Math.min(completedSetIndex, session.setDetails.length - 1)];
+
+    // Weighted similarity: weight matters more than reps
+    const wSim = sessionSet.weight > 0
+      ? Math.abs(completedWeight - sessionSet.weight) / sessionSet.weight
+      : 1;
+    const rSim = sessionSet.reps > 0
+      ? Math.abs(completedReps - sessionSet.reps) / sessionSet.reps
+      : 1;
+    const sim = wSim * 0.6 + rSim * 0.4;
+
+    if (sim < bestSimilarity) {
+      bestSimilarity = sim;
+      bestMatch = session;
+    }
+  }
+
+  if (!bestMatch || bestSimilarity > SMART_CONFIG.PATTERN_SHIFT_MAX_SIMILARITY) {
+    // No close match — fall back: use completed values as base for remaining sets
+    // with mild progression
+    const targets: { weight: number; reps: number }[] = [];
+    for (let i = 0; i < remainingSetCount; i++) {
+      const bump = roundToIncrement(
+        completedWeight * (1 + SMART_CONFIG.SMALL_BUMP_PERCENT * (i + 1)),
+        equipment,
+        false,
+      );
+      targets.push({
+        weight: bump,
+        reps: completedReps,
+      });
+    }
+    return { shifted: true, newTargets: targets };
+  }
+
+  // Re-target remaining sets using the matched session as a template with progression
+  const targets: { weight: number; reps: number }[] = [];
+  for (let i = 0; i < remainingSetCount; i++) {
+    const templateIdx = completedSetIndex + 1 + i;
+    let templateSet: SetPositionData;
+
+    if (templateIdx < bestMatch.setDetails.length) {
+      templateSet = bestMatch.setDetails[templateIdx];
+    } else {
+      // More sets than template — use last template set
+      templateSet = bestMatch.setDetails[bestMatch.setDetails.length - 1];
+    }
+
+    // Apply small progressive overload from the template
+    const progressedWeight = roundToIncrement(
+      templateSet.weight * (1 + SMART_CONFIG.SMALL_BUMP_PERCENT),
+      equipment,
+      false,
+    );
+
+    targets.push({
+      weight: progressedWeight > templateSet.weight ? progressedWeight : templateSet.weight,
+      reps: templateSet.reps,
+    });
+  }
+
+  return { shifted: true, newTargets: targets };
 };

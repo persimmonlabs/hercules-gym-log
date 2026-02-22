@@ -269,11 +269,15 @@ const WorkoutScreen: React.FC = () => {
 
         const historySetCounts: Record<string, number> = {};
         const suggestedSetsMap: Record<string, SetLog[]> = {};
+        const dataPointsMap: Record<string, any[]> = {};
         const mappedExercises: WorkoutExercise[] = workout.exercises.map((exercise: any) => {
           const result = createSetsWithSmartSuggestions(exercise.name, allWorkouts, smartSuggestionsEnabled, undefined, undefined, customExercises);
           historySetCounts[exercise.name] = result.historySetCount;
           if (result.smartSuggestedSets.length > 0) {
             suggestedSetsMap[exercise.name] = result.smartSuggestedSets;
+          }
+          if (result.dataPoints && result.dataPoints.length > 0) {
+            dataPointsMap[exercise.name] = result.dataPoints;
           }
           return {
             name: exercise.name,
@@ -282,7 +286,7 @@ const WorkoutScreen: React.FC = () => {
         });
 
         const planId = workout.type === 'program' ? workout.programId : workout.id;
-        startSession(planId, mappedExercises, workout.name, historySetCounts, suggestedSetsMap);
+        startSession(planId, mappedExercises, workout.name, historySetCounts, suggestedSetsMap, dataPointsMap);
         setShowPlansList(false);
       };
 

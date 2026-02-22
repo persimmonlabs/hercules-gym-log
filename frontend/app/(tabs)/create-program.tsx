@@ -10,6 +10,7 @@ import { IconSymbol } from '@/components/ui/icon-symbol';
 import { PlanBuilderCard } from '@/components/molecules/PlanBuilderCard';
 import { PremiumLimitModal } from '@/components/molecules/PremiumLimitModal';
 import { colors, radius, spacing, sizing } from '@/constants/theme';
+import { useTheme } from '@/hooks/useTheme';
 import { usePlansStore, type Plan } from '@/store/plansStore';
 import { useProgramsStore } from '@/store/programsStore';
 import { useProgramBuilderContext } from '@/providers/ProgramBuilderProvider';
@@ -19,7 +20,6 @@ import type { Exercise } from '@/constants/exercises';
 const styles = StyleSheet.create({
   container: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: colors.primary.bg,
   },
   scrollContent: {
     flexGrow: 1,
@@ -64,6 +64,7 @@ const styles = StyleSheet.create({
  */
 const CreatePlanScreen: React.FC = () => {
   const router = useRouter();
+  const { theme } = useTheme();
   const insets = useSafeAreaInsets();
   
   const { plans } = usePlansStore();
@@ -198,7 +199,7 @@ const CreatePlanScreen: React.FC = () => {
         onClose={() => setShowLimitModal(false)}
         limitType="plan"
       />
-      <View style={[styles.container, { paddingTop: insets.top }]}>
+      <View style={[styles.container, { paddingTop: insets.top, backgroundColor: theme.primary.bg }]}>
         <KeyboardAwareScrollView
           ref={scrollRef}
           contentContainerStyle={styles.scrollContent}
@@ -225,7 +226,7 @@ const CreatePlanScreen: React.FC = () => {
               onPress={handleBackPress}
               style={styles.backButton}
             >
-              <IconSymbol name="arrow-back" size={sizing.iconMD} color={colors.text.primary} />
+              <IconSymbol name="arrow-back" size={sizing.iconMD} color={theme.text.primary} />
             </Pressable>
           </View>
 

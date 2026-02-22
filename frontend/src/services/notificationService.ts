@@ -1,30 +1,48 @@
 /**
  * notificationService
- * Handles scheduling and managing local notifications.
- * Note: This uses LOCAL notifications only (not push/remote).
- * Works in both Expo Go and development builds.
+ * Handles scheduling and managing LOCAL notifications for workout reminders.
+ *
+ * Local notifications work in both development builds and production.
+ * Push/remote notifications are NOT used — this is local-only scheduling.
+ *
+ * Expo Go (SDK 53+) removed push notification support. This service detects
+ * Expo Go via Constants.appOwnership and gracefully no-ops all calls so the
+ * app never crashes or logs errors during development in Expo Go.
  */
 
 import { Platform } from 'react-native';
+import Constants from 'expo-constants';
 import { NotificationConfig, DayOfWeek } from '@/store/notificationStore';
 
 // Type alias for the notifications module
 type NotificationsModule = typeof import('expo-notifications');
 
-// Lazy-loaded notifications module to avoid Expo Go push token auto-registration
+/**
+ * Returns true when running inside Expo Go.
+ * In Expo Go, local notification scheduling still works but the push token
+ * auto-registration side-effect throws a warning. We skip initialisation
+ * entirely to keep the console clean during development.
+ */
+const isExpoGo = (): boolean => Constants.appOwnership === 'expo';
+
+// Cached module reference and initialisation flag
 let notificationsModule: NotificationsModule | null = null;
 let isInitialized = false;
 
 /**
- * Lazily load and initialize expo-notifications module.
+ * Lazily load expo-notifications and configure the foreground handler.
+ * Returns null when running in Expo Go so every caller can bail out cleanly.
  */
-const getNotificationsModule = async (): Promise<NotificationsModule> => {
+const getNotificationsModule = async (): Promise<NotificationsModule | null> => {
+  if (isExpoGo()) {
+    return null;
+  }
+
   if (!notificationsModule) {
     notificationsModule = await import('expo-notifications');
   }
-  
+
   if (!isInitialized) {
-    // Configure how notifications appear when app is in foreground
     notificationsModule.setNotificationHandler({
       handleNotification: async () => ({
         shouldShowAlert: true,
@@ -36,7 +54,7 @@ const getNotificationsModule = async (): Promise<NotificationsModule> => {
     });
     isInitialized = true;
   }
-  
+
   return notificationsModule;
 };
 
@@ -69,7 +87,8 @@ const WORKOUT_MESSAGES = [
 export const requestNotificationPermissions = async (): Promise<boolean> => {
   try {
     const Notifications = await getNotificationsModule();
-    
+    if (!Notifications) return false;
+
     const { status: existingStatus } = await Notifications.getPermissionsAsync();
     let finalStatus = existingStatus;
 
@@ -115,10 +134,12 @@ const scheduleWeeklyNotification = async (
   day: DayOfWeek,
   hour: number,
   minute: number
-): Promise<string> => {
+): Promise<string | null> => {
   const Notifications = await getNotificationsModule();
+  if (!Notifications) return null;
+
   const weekday = DAY_MAP[day];
-  
+
   const identifier = await Notifications.scheduleNotificationAsync({
     content: {
       title: 'Workout Reminder',
@@ -144,6 +165,7 @@ const scheduleWeeklyNotification = async (
 export const cancelAllNotifications = async (): Promise<void> => {
   try {
     const Notifications = await getNotificationsModule();
+    if (!Notifications) return;
     await Notifications.cancelAllScheduledNotificationsAsync();
     console.log('[NotificationService] All notifications cancelled');
   } catch (error) {
@@ -165,7 +187,6 @@ export const scheduleNotifications = async (
   const activeConfigs = configs.filter((c) => c.enabled);
 
   if (activeConfigs.length === 0) {
-    console.log('[NotificationService] No active configs to schedule');
     return;
   }
 
@@ -179,7 +200,9 @@ export const scheduleNotifications = async (
           config.hour,
           config.minute
         );
-        console.log(`[NotificationService] Scheduled: ${day} at ${config.hour}:${config.minute} (ID: ${id})`);
+        if (id) {
+          console.log(`[NotificationService] Scheduled: ${day} at ${config.hour}:${config.minute} (ID: ${id})`);
+        }
       } catch (error) {
         console.error(`[NotificationService] Failed to schedule ${day}:`, error);
       }
@@ -192,6 +215,7 @@ export const scheduleNotifications = async (
  */
 export const getScheduledNotifications = async () => {
   const Notifications = await getNotificationsModule();
+  if (!Notifications) return [];
   return await Notifications.getAllScheduledNotificationsAsync();
 };
 
@@ -201,6 +225,7 @@ export const getScheduledNotifications = async () => {
 export const checkNotificationPermissions = async (): Promise<boolean> => {
   try {
     const Notifications = await getNotificationsModule();
+    if (!Notifications) return false;
     const { status } = await Notifications.getPermissionsAsync();
     return status === 'granted';
   } catch (error) {
