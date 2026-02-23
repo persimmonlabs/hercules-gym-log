@@ -236,7 +236,7 @@ const PlanDetailScreen: React.FC = () => {
 
           {plan ? (
             <SurfaceCard tone="neutral" padding="xl" showAccentStripe={false} style={styles.exercisesCard}>
-              {plan.exercises.map((exercise) => {
+              {plan.exercises.map((exercise, index) => {
                 // Get all muscle names from the exercise's muscles object
                 const muscleNames = Object.keys(exercise.muscles || {});
                 
@@ -248,7 +248,7 @@ const PlanDetailScreen: React.FC = () => {
                 const midLevelMusclesLabel = uniqueGroups.length > 0 ? uniqueGroups.join(' · ') : 'General';
 
                 return (
-                  <View key={exercise.id} style={styles.exerciseRow}>
+                  <View key={`${exercise.id}-${index}`} style={styles.exerciseRow}>
                     <View style={styles.exerciseInfo}>
                       <Text variant="bodySemibold" color="primary">
                         {exercise.name}

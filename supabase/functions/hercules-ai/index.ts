@@ -22,13 +22,24 @@ import { executeStatFunction, type StatFunction } from './stats.ts';
 import { createSupabaseAdmin } from './supabase.ts';
 import { STAT_TOOLS } from './tools.ts';
 import type { ChatMessage, ChatRole } from './types.ts';
-import { getOrCreateUsage, incrementUsage, isUsageExceeded } from './usage.ts';
+import { getOrCreateUsage, incrementUsage, isUsageExceeded, getNextResetDate, addPurchasedCredits, checkRateLimit } from './usage.ts';
+import { getOptionalEnv } from './env.ts';
+
+interface AppStats {
+  totalVolume: number;
+  totalWorkouts: number;
+  totalSets: number;
+  totalReps: number;
+  muscleGroupVolume: Record<string, number>;
+  weightUnit: string;
+}
 
 interface ChatRequestBody {
   sessionId?: string;
   message?: string;
   title?: string;
   timezone?: string;
+  appStats?: AppStats;
 }
 
 interface ActionDecisionRequestBody {
@@ -56,7 +67,9 @@ interface UsageResponseBody {
   messagesUsed: number;
   tokensLimit: number;
   messagesLimit: number;
+  purchasedCredits: number;
   periodEnd: string;
+  nextResetAt: string;
 }
 
 interface ActionRequestRow {
@@ -109,7 +122,26 @@ Deno.serve(async (request: Request): Promise<Response> => {
         messagesUsed: usage.messagesUsed,
         tokensLimit: WEEKLY_TOKEN_LIMIT,
         messagesLimit: WEEKLY_MESSAGE_LIMIT,
+        purchasedCredits: usage.purchasedCredits,
         periodEnd: usage.periodEnd,
+        nextResetAt: getNextResetDate(),
+      };
+
+      return createJsonResponse(responseBody);
+    }
+
+    // Handle credit purchase
+    if (requestBody.action === 'purchaseCredits') {
+      const credits = requestBody.credits ?? 100;
+      const usage = await addPurchasedCredits(supabase, userId, credits);
+      const responseBody: UsageResponseBody = {
+        tokensUsed: usage.tokensUsed,
+        messagesUsed: usage.messagesUsed,
+        tokensLimit: WEEKLY_TOKEN_LIMIT,
+        messagesLimit: WEEKLY_MESSAGE_LIMIT,
+        purchasedCredits: usage.purchasedCredits,
+        periodEnd: usage.periodEnd,
+        nextResetAt: getNextResetDate(),
       };
 
       return createJsonResponse(responseBody);
@@ -267,12 +299,36 @@ Deno.serve(async (request: Request): Promise<Response> => {
       return createJsonResponse({ error: 'Message is required' }, 400);
     }
 
+    // Dev mode bypass — skip usage and rate limits during development
+    const isDev = getOptionalEnv('HERCULES_ENV', 'production') === 'development';
+
+    // Rate limit check (skip in dev)
+    if (!isDev) {
+      const isRateLimited = await checkRateLimit(supabase, userId);
+      if (isRateLimited) {
+        return createJsonResponse(
+          {
+            error: 'Too many requests. Please wait a moment before trying again.',
+            code: 'RATE_LIMITED',
+          },
+          429
+        );
+      }
+    }
+
     const usage = await getOrCreateUsage(supabase, userId);
-    if (isUsageExceeded(usage)) {
+    if (!isDev && isUsageExceeded(usage)) {
+      const nextReset = getNextResetDate();
+      const normalRemaining = Math.max(0, WEEKLY_MESSAGE_LIMIT - usage.messagesUsed);
       return createJsonResponse(
         {
-          error: `Message limit reached (${usage.messagesUsed}/${WEEKLY_MESSAGE_LIMIT})`,
-          usage,
+          error: 'credits_exhausted',
+          message: `You've used all your AI credits for this week. Your free credits will reset on ${new Date(nextReset).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })} at midnight UTC.`,
+          code: 'CREDITS_EXHAUSTED',
+          normalCreditsUsed: usage.messagesUsed,
+          normalCreditsLimit: WEEKLY_MESSAGE_LIMIT,
+          purchasedCreditsRemaining: usage.purchasedCredits,
+          nextResetAt: nextReset,
         },
         429
       );
@@ -298,7 +354,7 @@ Deno.serve(async (request: Request): Promise<Response> => {
     const kbMessages = kbMessage ? [buildChatMessage('system', kbMessage)] : [];
     const modelMessages: ChatMessage[] = [
       buildChatMessage('system', SYSTEM_PROMPT),
-      buildChatMessage('system', buildContextMessage(context, body.timezone)),
+      buildChatMessage('system', buildContextMessage(context, body.timezone, body.appStats)),
       ...kbMessages,
       ...recentMessages,
       buildChatMessage('user', message),
@@ -307,6 +363,7 @@ Deno.serve(async (request: Request): Promise<Response> => {
     // Tool calling loop - execute stat functions until we get a final response
     let totalUsage: OpenRouterUsage = { promptTokens: 0, completionTokens: 0, totalTokens: 0 };
     let finalContent: string | null = null;
+    let lastFinishReason = 'stop';
     const MAX_TOOL_ITERATIONS = 5;
 
     console.log(`[HerculesAI] Starting chat with ${STAT_TOOLS.length} tools available`);
@@ -317,6 +374,7 @@ Deno.serve(async (request: Request): Promise<Response> => {
       const result = await callOpenRouter(modelMessages, { tools: STAT_TOOLS });
 
       console.log(`[HerculesAI] Response: finishReason=${result.finishReason}, toolCalls=${result.toolCalls.length}, hasContent=${!!result.content}`);
+      lastFinishReason = result.finishReason;
 
       if (result.usage) {
         totalUsage.promptTokens += result.usage.promptTokens;
@@ -354,7 +412,7 @@ Deno.serve(async (request: Request): Promise<Response> => {
         }
 
         console.log(`[HerculesAI] Executing tool: ${functionName}`, args);
-        const statResult = await executeStatFunction(supabase, userId, functionName, args);
+        const statResult = await executeStatFunction(supabase, userId, functionName, args, body.timezone, body.appStats);
 
         const toolMessage: ChatMessage = {
           role: 'tool',
@@ -383,18 +441,62 @@ Deno.serve(async (request: Request): Promise<Response> => {
 
     let parsed = parseAssistantResponse(finalContent);
 
-    // CRITICAL: If message looks like a proposal but has no action, try to construct it
+    // CRITICAL: If message looks like a proposal but has no action, try to construct it.
+    // Also detect when user confirmed ("yes", "create it") but AI responded without action.
     if (parsed.type === 'message' && !parsed.action) {
       const lowerMessage = parsed.message.toLowerCase();
+      const lowerUserMessage = message.toLowerCase().trim();
+
+      // Detect if user's message was a confirmation
+      const userIsConfirming = /^(yes|yeah|yep|yup|sure|ok|okay|go ahead|do it|create it|sounds good|looks good|perfect|let'?s? do it|proceed|approve|confirm|make it|build it|go for it|please|yes please|y)\b/i.test(lowerUserMessage)
+        && lowerUserMessage.length < 40;
+
+      // Detect if AI's response looks like it's trying to create/execute without action payload
       const looksLikeProposal = lowerMessage.includes('would you like me to create') ||
         lowerMessage.includes('would you like me to set up') ||
         lowerMessage.includes('shall i create') ||
         lowerMessage.includes('tap approve') ||
         lowerMessage.includes('click approve') ||
         (lowerMessage.includes('day 1') && lowerMessage.includes('day 2'));
-      
-      if (looksLikeProposal) {
-        console.warn('[HerculesAI] Message looks like proposal but has no action - attempting to construct action');
+
+      const looksLikeExecution = lowerMessage.includes('creating your') ||
+        lowerMessage.includes('creating the') ||
+        lowerMessage.includes("i'll create") ||
+        lowerMessage.includes('i will create') ||
+        lowerMessage.includes('let me create') ||
+        lowerMessage.includes('setting up your') ||
+        lowerMessage.includes('building your') ||
+        (lowerMessage.includes('creating') && (lowerMessage.includes('program') || lowerMessage.includes('plan') || lowerMessage.includes('workout'))) ||
+        (lowerMessage.includes('here') && lowerMessage.includes('program') && lowerMessage.includes('workout'));
+
+      // CRITICAL: Detect if AI listed exercises (numbered list) — strongest signal of a proposal
+      // Matches patterns like "1. Barbell Bench Press" or "1. Something\n2. Something"
+      const hasNumberedExerciseList = /\b1\.\s+[A-Z]/.test(parsed.message) && /\b2\.\s+[A-Z]/.test(parsed.message);
+      const looksLikeWorkoutProposal = hasNumberedExerciseList && (
+        lowerMessage.includes('workout') || lowerMessage.includes('program') ||
+        lowerMessage.includes('plan') || lowerMessage.includes('push') ||
+        lowerMessage.includes('pull') || lowerMessage.includes('leg') ||
+        lowerMessage.includes('chest') || lowerMessage.includes('back') ||
+        lowerMessage.includes('shoulder') || lowerMessage.includes('day')
+      );
+
+      // Also trigger when user confirmed but AI just responded with a message (no action)
+      const userConfirmedButNoAction = userIsConfirming && (
+        looksLikeExecution ||
+        lowerMessage.includes('program') ||
+        lowerMessage.includes('plan') ||
+        lowerMessage.includes('workout') ||
+        lowerMessage.includes('schedule')
+      );
+
+      const shouldRetry = looksLikeProposal || looksLikeExecution || userConfirmedButNoAction || looksLikeWorkoutProposal;
+
+      if (shouldRetry) {
+        const reason = looksLikeWorkoutProposal ? 'numbered_exercise_list_without_action'
+          : looksLikeProposal ? 'proposal_without_action'
+          : looksLikeExecution ? 'execution_without_action'
+          : 'user_confirmed_no_action';
+        console.warn(`[HerculesAI] Missing action payload detected (${reason}) - attempting recovery`);
         
         // Determine likely action type
         let likelyActionType: string | null = null;
@@ -419,11 +521,18 @@ Deno.serve(async (request: Request): Promise<Response> => {
         } else {
           console.warn('[HerculesAI] Could not construct action from message - retrying with AI');
           
-          // Fallback: retry with explicit instruction
+          // Build a targeted retry instruction based on the failure mode
+          let retryInstruction: string;
+          if (userConfirmedButNoAction) {
+            retryInstruction = 'SYSTEM: The user confirmed they want to proceed, but your response is missing the action payload. The user CANNOT see Approve/Reject buttons without it and is now STUCK. You MUST re-read the entire conversation history above, find the program/workout/schedule you previously described, and output a complete JSON response with type: "action" and a full action object containing actionType and payload with ALL workouts and exercises. Do NOT just say "creating..." — you must include the actual data.';
+          } else {
+            retryInstruction = 'SYSTEM: Your previous response proposed creating something but forgot to include the action payload. The user CANNOT see Accept/Reject buttons without it. Please re-output your response as valid JSON with the action field included. Use type: "action" and include the full action object with actionType and payload containing ALL workouts and exercises.';
+          }
+
           const retryMessages: ChatMessage[] = [
             ...modelMessages,
             buildChatMessage('assistant', finalContent),
-            buildChatMessage('user', 'SYSTEM: Your previous response proposed creating something but you forgot to include the action payload. The user CANNOT see Accept/Reject buttons without it. Please re-output your response as valid JSON with the action field included. Use type: "action" and include the full action object with actionType and payload.'),
+            buildChatMessage('user', retryInstruction),
           ];
           
           try {

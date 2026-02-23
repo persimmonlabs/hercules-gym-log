@@ -153,13 +153,13 @@ export const STAT_TOOLS: ToolDefinition[] = [
     function: {
       name: 'getWorkoutFrequency',
       description:
-        'Get workout frequency statistics for a given period, including workouts per week and breakdown by day of week.',
+        'Get workout frequency statistics for a given period, including workouts per week and breakdown by day of week. IMPORTANT: Always tell the user what time period was analyzed (e.g., "over the last 30 days"). Use days=9999 for all-time stats. If the user asks about a specific period, convert it to days (e.g., "this month" ≈ 30, "all time" = 9999, "last 2 weeks" = 14).',
       parameters: {
         type: 'object',
         properties: {
           days: {
             type: 'number',
-            description: 'Number of days to analyze. Default is 30.',
+            description: 'Number of days to analyze. Default is 30. Use 7 for weekly, 14 for biweekly, 30 for monthly, 9999 for all-time.',
           },
         },
         required: [],
@@ -184,13 +184,13 @@ export const STAT_TOOLS: ToolDefinition[] = [
     function: {
       name: 'getRecentWorkoutSummary',
       description:
-        'Get a summary of recent workouts including exercise count, sets, and volume for each.',
+        'Get a summary of recent workouts. When count is 1 or 2, returns FULL exercise-by-exercise breakdown with every set (weight, reps, duration, distance). When count is 3+, returns a compact summary per workout. Use count=1 when user asks "what did I do last workout" or "show me my last session". Use count=5 when user asks "show me my last 5 workouts".',
       parameters: {
         type: 'object',
         properties: {
           count: {
             type: 'number',
-            description: 'Number of recent workouts to return. Default is 5.',
+            description: 'Number of recent workouts to return. Default is 5. Use 1 for detailed single-workout breakdown.',
           },
         },
         required: [],

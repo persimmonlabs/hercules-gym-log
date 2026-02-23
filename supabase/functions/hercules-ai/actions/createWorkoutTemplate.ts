@@ -1,7 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 import type { ActionExecutionResult } from './types.ts';
-import { getString, normalizeExercises } from './helpers.ts';
+import { getString, normalizeExercises, resolveExerciseByName } from './helpers.ts';
 
 // CRITICAL: Filter out rest day workouts - rest days are NOT workouts
 const isRestDayWorkout = (workoutName: string): boolean => {
@@ -111,13 +111,13 @@ export const createWorkoutTemplate = async (
     throw new Error('Workout template requires at least one exercise.');
   }
 
-  const validatedExercises: Array<{ id: string; name: string; sets?: number }> = [];
+  const validatedExercises: Array<{ id: string; name: string }> = [];
   
   for (const ex of rawExercises) {
     const exerciseName = getString(ex.name);
     const exerciseId = getString(ex.id);
     
-    if (!exerciseName || !exerciseId) continue;
+    if (!exerciseName) continue;
     
     // CRITICAL: Filter out invalid/placeholder exercises
     if (isInvalidExercise(exerciseName)) {
@@ -125,11 +125,19 @@ export const createWorkoutTemplate = async (
       continue;
     }
     
-    validatedExercises.push({
-      id: exerciseId,
-      name: exerciseName,
-      sets: typeof ex.sets === 'number' ? ex.sets : 3,
-    });
+    if (exerciseId) {
+      // AI provided both id and name — use as-is
+      validatedExercises.push({ id: exerciseId, name: exerciseName });
+    } else {
+      // AI provided name but no valid id — resolve from catalog
+      const resolved = resolveExerciseByName(exerciseName);
+      if (resolved) {
+        console.log('[HerculesAI] Resolved exercise by name:', exerciseName, '→', resolved.id, resolved.name);
+        validatedExercises.push(resolved);
+      } else {
+        console.warn('[HerculesAI] Could not resolve exercise:', exerciseName, '— skipping');
+      }
+    }
   }
 
   console.log('[HerculesAI] createWorkoutTemplate: validated', validatedExercises.length, 'exercises');

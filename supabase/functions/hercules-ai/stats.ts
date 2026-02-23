@@ -1,12 +1,14 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 import { formatDuration, formatNumber, formatVolume, formatWeight } from './formatters.ts';
+import { computeSetVolume } from './exerciseTypes.ts';
 
 interface ExerciseSet {
   weight?: number;
   reps?: number;
   duration?: number;
   distance?: number;
+  assistanceWeight?: number;
   completed?: boolean;
 }
 
@@ -31,19 +33,115 @@ export interface StatResult {
   error?: string;
 }
 
+export interface AppStats {
+  totalVolume: number;
+  totalWorkouts: number;
+  totalSets: number;
+  totalReps: number;
+  muscleGroupVolume: Record<string, number>;
+  weightUnit: string;
+}
+
 const parseExercises = (exercises: unknown): SessionExercise[] => {
   if (!Array.isArray(exercises)) return [];
   return exercises as SessionExercise[];
 };
 
-const calculateSetVolume = (set: ExerciseSet): number => {
-  const weight = set.weight ?? 0;
-  const reps = set.reps ?? 0;
-  return weight * reps;
+const fetchUserBodyWeight = async (
+  supabase: SupabaseClient,
+  userId: string
+): Promise<number> => {
+  const { data } = await supabase
+    .from('profiles')
+    .select('weight_lbs')
+    .eq('id', userId)
+    .maybeSingle();
+  return data?.weight_lbs ?? 0;
+};
+
+const calculateSetVolume = (set: ExerciseSet, exerciseName: string, userBodyWeight: number): number => {
+  return computeSetVolume(set, exerciseName, userBodyWeight);
 };
 
 const getExerciseName = (exercise: SessionExercise): string => {
   return exercise.name ?? exercise.exerciseName ?? exercise.exerciseId ?? 'Unknown';
+};
+
+/**
+ * Converts a UTC ISO timestamp to a local YYYY-MM-DD date string in the given timezone.
+ * Falls back to UTC date if timezone is invalid.
+ */
+const toLocalDateString = (isoTimestamp: string, timezone: string): string => {
+  try {
+    const d = new Date(isoTimestamp);
+    if (isNaN(d.getTime())) return isoTimestamp;
+    const formatter = new Intl.DateTimeFormat('en-CA', {
+      timeZone: timezone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    });
+    return formatter.format(d);
+  } catch {
+    return new Date(isoTimestamp).toISOString().split('T')[0];
+  }
+};
+
+/**
+ * Returns UTC start/end ISO strings for a given local date in the user's timezone.
+ * E.g., for '2026-02-21' in 'America/New_York':
+ *   start = '2026-02-21T05:00:00.000Z'  (midnight EST = 5am UTC)
+ *   end   = '2026-02-22T05:00:00.000Z'  (midnight next day EST)
+ */
+const getDateRangeForTimezone = (dateStr: string, timezone: string): { start: string; end: string } => {
+  try {
+    // Create a date at midnight UTC for the given date
+    const baseDate = new Date(`${dateStr}T12:00:00Z`);
+    if (isNaN(baseDate.getTime())) throw new Error('Invalid date');
+
+    // Use Intl to find the UTC offset for this timezone on this date
+    const formatter = new Intl.DateTimeFormat('en-US', {
+      timeZone: timezone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false,
+    });
+    const parts = formatter.formatToParts(baseDate);
+    const getPart = (type: string) => parts.find(p => p.type === type)?.value ?? '0';
+
+    const localYear = parseInt(getPart('year'));
+    const localMonth = parseInt(getPart('month')) - 1;
+    const localDay = parseInt(getPart('day'));
+    const localHour = parseInt(getPart('hour'));
+    const localMinute = parseInt(getPart('minute'));
+    const localSecond = parseInt(getPart('second'));
+
+    // Compute offset: UTC time - local time
+    const utcMs = baseDate.getTime();
+    const localAsUtc = Date.UTC(localYear, localMonth, localDay, localHour, localMinute, localSecond);
+    const offsetMs = utcMs - localAsUtc;
+
+    // Midnight local time on the target date = Date.UTC(year, month-1, day) + offset
+    const [year, month, day] = dateStr.split('-').map(Number);
+    const midnightLocalAsUtc = Date.UTC(year, month - 1, day, 0, 0, 0);
+    const startUtc = new Date(midnightLocalAsUtc + offsetMs);
+    const endUtc = new Date(midnightLocalAsUtc + offsetMs + 24 * 60 * 60 * 1000);
+
+    return {
+      start: startUtc.toISOString(),
+      end: endUtc.toISOString(),
+    };
+  } catch {
+    // Fallback: treat date as UTC
+    return {
+      start: `${dateStr}T00:00:00.000Z`,
+      end: new Date(new Date(`${dateStr}T00:00:00.000Z`).getTime() + 24 * 60 * 60 * 1000).toISOString(),
+    };
+  }
 };
 
 const normalizeString = (str: string): string => {
@@ -60,10 +158,19 @@ const fuzzyMatch = (query: string, target: string): boolean => {
   
   const queryWords = query.toLowerCase().split(/\s+/);
   const targetWords = target.toLowerCase().split(/\s+/);
+
+  // For single-word queries, require the word to appear as a substring in at least one target word
+  // This prevents matching "squat" to "EZ Bar Curls" etc.
+  if (queryWords.length === 1) {
+    const qw = queryWords[0];
+    return targetWords.some(tw => tw.includes(qw) || qw.includes(tw));
+  }
+
+  // For multi-word queries, require at least 60% of query words to match (rounded up)
   const matchedWords = queryWords.filter(qw => 
     targetWords.some(tw => tw.includes(qw) || qw.includes(tw))
   );
-  return matchedWords.length >= Math.ceil(queryWords.length * 0.5);
+  return matchedWords.length >= Math.ceil(queryWords.length * 0.6);
 };
 
 const findMatchingExercises = (
@@ -124,9 +231,13 @@ const getAllExerciseNames = (sessions: WorkoutSession[]): string[] => {
 export const getExerciseVolumeAllTime = async (
   supabase: SupabaseClient,
   userId: string,
-  exerciseName?: string
+  exerciseName?: string,
+  appStats?: AppStats
 ): Promise<StatResult> => {
-  const sessions = await fetchAllSessions(supabase, userId);
+  const [sessions, userBW] = await Promise.all([
+    fetchAllSessions(supabase, userId),
+    fetchUserBodyWeight(supabase, userId),
+  ]);
   const allExerciseNames = getAllExerciseNames(sessions);
 
   const volumeByExercise: Record<string, number> = {};
@@ -138,8 +249,8 @@ export const getExerciseVolumeAllTime = async (
 
       const sets = exercise.sets ?? [];
       for (const set of sets) {
-        if (set.completed !== false) {
-          const volume = calculateSetVolume(set);
+        if (set.completed === true) {
+          const volume = calculateSetVolume(set, name, userBW);
           volumeByExercise[name] = (volumeByExercise[name] ?? 0) + volume;
         }
       }
@@ -189,8 +300,8 @@ export const getExerciseVolumeAllTime = async (
         exerciseName,
         totalVolume: 0,
         exactMatchFound: false,
-        availableExercises: allExerciseNames.slice(0, 20),
-        message: `No exercise found matching "${exerciseName}". Here are your available exercises.`,
+        noDataForThisExercise: true,
+        message: `The user has NEVER performed "${exerciseName}". There is zero data for this exercise. Do NOT use data from any other exercise. Tell the user you have no data for "${exerciseName}".`,
         unit: 'lbs',
       },
     };
@@ -204,12 +315,20 @@ export const getExerciseVolumeAllTime = async (
     }))
     .sort((a, b) => b.totalVolume - a.totalVolume);
 
+  const unit = appStats?.weightUnit ?? 'lbs';
+
+  // When appStats are available, include the app's authoritative total volume
+  // so the LLM doesn't sum the per-exercise values (which use different BW multipliers).
+  const grandTotal = appStats?.totalVolume ?? sorted.reduce((s, e) => s + e.totalVolume, 0);
+
   return {
     success: true,
     data: {
       exercises: sorted,
       topExercise: sorted[0] ?? null,
-      unit: 'lbs',
+      grandTotalVolume: grandTotal,
+      grandTotalVolumeFormatted: formatVolume(grandTotal),
+      unit,
     },
   };
 };
@@ -231,7 +350,7 @@ export const getExerciseMaxWeight = async (
 
       const sets = exercise.sets ?? [];
       for (const set of sets) {
-        if (set.completed !== false && set.weight) {
+        if (set.completed === true && set.weight) {
           const current = maxByExercise[name];
           if (!current || set.weight > current.weight) {
             maxByExercise[name] = {
@@ -287,8 +406,8 @@ export const getExerciseMaxWeight = async (
         exerciseName,
         maxWeight: 0,
         exactMatchFound: false,
-        availableExercises: allExerciseNames.slice(0, 20),
-        message: `No exercise found matching "${exerciseName}".`,
+        noDataForThisExercise: true,
+        message: `The user has NEVER performed "${exerciseName}". There is zero data for this exercise. Do NOT use data from any other exercise. Tell the user you have no data for "${exerciseName}".`,
         unit: 'lbs',
       },
     };
@@ -315,7 +434,8 @@ export const getExerciseMaxWeight = async (
 
 export const getWorkoutStats = async (
   supabase: SupabaseClient,
-  userId: string
+  userId: string,
+  appStats?: AppStats
 ): Promise<StatResult> => {
   const sessions = await fetchAllSessions(supabase, userId);
 
@@ -338,7 +458,6 @@ export const getWorkoutStats = async (
   let totalDuration = 0;
   let totalSets = 0;
   let totalReps = 0;
-  let totalVolume = 0;
 
   for (const session of sessions) {
     totalDuration += session.duration ?? 0;
@@ -346,14 +465,22 @@ export const getWorkoutStats = async (
     for (const exercise of session.exercises) {
       const sets = exercise.sets ?? [];
       for (const set of sets) {
-        if (set.completed !== false) {
+        if (set.completed === true) {
           totalSets++;
           totalReps += set.reps ?? 0;
-          totalVolume += calculateSetVolume(set);
         }
       }
     }
   }
+
+  // Use pre-computed values from the app when available (ensures consistency
+  // with the Performance page). Fall back to session counts when appStats
+  // are not provided.
+  const finalTotalVolume = appStats?.totalVolume ?? 0;
+  const finalTotalWorkouts = appStats?.totalWorkouts ?? sessions.length;
+  const finalTotalSets = appStats?.totalSets ?? totalSets;
+  const finalTotalReps = appStats?.totalReps ?? totalReps;
+  const unit = appStats?.weightUnit ?? 'lbs';
 
   const sortedByDate = [...sessions].sort(
     (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
@@ -364,20 +491,20 @@ export const getWorkoutStats = async (
   return {
     success: true,
     data: {
-      totalWorkouts: sessions.length,
+      totalWorkouts: finalTotalWorkouts,
       totalDuration,
       totalDurationFormatted: formatDuration(totalDuration),
       averageDuration: avgDuration,
       averageDurationFormatted: formatDuration(avgDuration),
-      totalSets,
-      totalSetsFormatted: formatNumber(totalSets),
-      totalReps,
-      totalRepsFormatted: formatNumber(totalReps),
-      totalVolume,
-      totalVolumeFormatted: formatVolume(totalVolume),
+      totalSets: finalTotalSets,
+      totalSetsFormatted: formatNumber(finalTotalSets),
+      totalReps: finalTotalReps,
+      totalRepsFormatted: formatNumber(finalTotalReps),
+      totalVolume: finalTotalVolume,
+      totalVolumeFormatted: formatVolume(finalTotalVolume),
       firstWorkoutDate: sortedByDate[0]?.date ?? null,
       lastWorkoutDate: sortedByDate[sortedByDate.length - 1]?.date ?? null,
-      unit: 'lbs',
+      unit,
     },
   };
 };
@@ -391,7 +518,10 @@ export const getExerciseProgress = async (
     return { success: false, data: null, error: 'exerciseName is required' };
   }
 
-  const sessions = await fetchAllSessions(supabase, userId);
+  const [sessions, userBW] = await Promise.all([
+    fetchAllSessions(supabase, userId),
+    fetchUserBodyWeight(supabase, userId),
+  ]);
   const allExerciseNames = getAllExerciseNames(sessions);
   const { exact, fuzzy } = findMatchingExercises(allExerciseNames, exerciseName);
   
@@ -415,8 +545,8 @@ export const getExerciseProgress = async (
       data: {
         exerciseName,
         exactMatchFound: false,
-        availableExercises: allExerciseNames.slice(0, 20),
-        message: `No exercise found matching "${exerciseName}".`,
+        noDataForThisExercise: true,
+        message: `The user has NEVER performed "${exerciseName}". There is zero data for this exercise. Do NOT use data from any other exercise. Tell the user you have no data for "${exerciseName}" and suggest they try it in a future workout.`,
       },
     };
   }
@@ -436,9 +566,9 @@ export const getExerciseProgress = async (
       let setCount = 0;
 
       for (const set of sets) {
-        if (set.completed !== false) {
+        if (set.completed === true) {
           setCount++;
-          totalVolume += calculateSetVolume(set);
+          totalVolume += calculateSetVolume(set, name, userBW);
           if (set.weight && set.weight > maxWeight) {
             maxWeight = set.weight;
           }
@@ -713,9 +843,40 @@ const getMuscleGroupForExercise = (exerciseName: string): string => {
 
 export const getMuscleGroupVolume = async (
   supabase: SupabaseClient,
-  userId: string
+  userId: string,
+  appStats?: AppStats
 ): Promise<StatResult> => {
-  const sessions = await fetchAllSessions(supabase, userId);
+  // When the app provides pre-computed muscle group volumes, use them directly.
+  // These are computed by the frontend using the same weighted muscle distribution
+  // and BW multipliers shown in the Performance page charts.
+  if (appStats?.muscleGroupVolume && Object.keys(appStats.muscleGroupVolume).length > 0) {
+    const unit = appStats.weightUnit ?? 'lbs';
+    const sorted = Object.entries(appStats.muscleGroupVolume)
+      .filter(([_, volume]) => volume > 0)
+      .map(([muscleGroup, volume]) => ({
+        muscleGroup,
+        totalVolume: volume,
+        totalVolumeFormatted: formatVolume(volume),
+      }))
+      .sort((a, b) => b.totalVolume - a.totalVolume);
+
+    return {
+      success: true,
+      data: {
+        muscleGroups: sorted,
+        mostTrainedMuscle: sorted[0]?.muscleGroup ?? null,
+        leastTrainedMuscle: sorted[sorted.length - 1]?.muscleGroup ?? null,
+        unit,
+        source: 'app_precomputed',
+      },
+    };
+  }
+
+  // Fallback: compute from raw session data (less accurate — uses single primary muscle)
+  const [sessions, userBW] = await Promise.all([
+    fetchAllSessions(supabase, userId),
+    fetchUserBodyWeight(supabase, userId),
+  ]);
 
   const volumeByMuscleGroup: Record<string, number> = {};
   const exercisesByMuscleGroup: Record<string, Set<string>> = {};
@@ -729,8 +890,8 @@ export const getMuscleGroupVolume = async (
       const sets = exercise.sets ?? [];
 
       for (const set of sets) {
-        if (set.completed !== false) {
-          const volume = calculateSetVolume(set);
+        if (set.completed === true) {
+          const volume = calculateSetVolume(set, name, userBW);
           if (volume > 0) {
             volumeByMuscleGroup[muscleGroup] = (volumeByMuscleGroup[muscleGroup] ?? 0) + volume;
             if (!exercisesByMuscleGroup[muscleGroup]) {
@@ -801,7 +962,7 @@ export const getSetsPerMuscleGroup = async (
       let completedSets = 0;
 
       for (const set of sets) {
-        if (set.completed !== false) {
+        if (set.completed === true) {
           completedSets++;
         }
       }
@@ -887,16 +1048,19 @@ export const getWorkoutFrequency = async (
     byDayOfWeek[dayNames[dayIndex]]++;
   }
 
-  const avgPerWeek = (sessions.length / days) * 7;
+  const weeks = Math.max(days / 7, 1);
+  const avgPerWeek = Math.round((sessions.length / weeks) * 10) / 10;
 
   return {
     success: true,
     data: {
       periodDays: days,
+      periodDescription: `over the last ${days} days`,
       totalWorkouts: sessions.length,
       uniqueDays,
-      averagePerWeek: Math.round(avgPerWeek * 10) / 10,
+      averagePerWeek: avgPerWeek,
       byDayOfWeek,
+      summary: `${sessions.length} workouts over the last ${days} days (${avgPerWeek} per week on average).`,
     },
   };
 };
@@ -905,7 +1069,10 @@ export const getPersonalRecords = async (
   supabase: SupabaseClient,
   userId: string
 ): Promise<StatResult> => {
-  const sessions = await fetchAllSessions(supabase, userId);
+  const [sessions, userBW] = await Promise.all([
+    fetchAllSessions(supabase, userId),
+    fetchUserBodyWeight(supabase, userId),
+  ]);
 
   const records: Record<string, { weight: number; reps: number; date: string; volume: number }> = {};
 
@@ -917,14 +1084,14 @@ export const getPersonalRecords = async (
       const sets = exercise.sets ?? [];
 
       for (const set of sets) {
-        if (set.completed !== false && set.weight) {
+        if (set.completed === true && set.weight) {
           const current = records[name];
           if (!current || set.weight > current.weight) {
             records[name] = {
               weight: set.weight,
               reps: set.reps ?? 0,
               date: session.date,
-              volume: calculateSetVolume(set),
+              volume: calculateSetVolume(set, name, userBW),
             };
           }
         }
@@ -957,51 +1124,113 @@ export const getPersonalRecords = async (
 export const getRecentWorkoutSummary = async (
   supabase: SupabaseClient,
   userId: string,
-  count: number = 5
+  count: number = 5,
+  timezone: string = 'UTC'
 ): Promise<StatResult> => {
-  const { data, error } = await supabase
-    .from('workout_sessions')
-    .select('id, name, date, duration, exercises')
-    .eq('user_id', userId)
-    .order('date', { ascending: false })
-    .limit(count);
+  const [queryResult, userBW] = await Promise.all([
+    supabase
+      .from('workout_sessions')
+      .select('id, name, date, duration, exercises')
+      .eq('user_id', userId)
+      .order('date', { ascending: false })
+      .limit(count),
+    fetchUserBodyWeight(supabase, userId),
+  ]);
+
+  const { data, error } = queryResult;
 
   if (error) {
     return { success: false, data: null, error: error.message };
   }
+
+  // For small counts (1-2), include full exercise/set detail for a complete breakdown
+  const includeDetail = count <= 2;
 
   const sessions = (data || []).map((row) => {
     const exercises = parseExercises(row.exercises);
     let totalSets = 0;
     let totalVolume = 0;
 
+    const exerciseDetails: Array<{
+      name: string;
+      sets: Array<{ setNumber: number; weight?: number; reps?: number; duration?: number; distance?: number; completed: boolean }>;
+      completedSets: number;
+      volume: number;
+    }> = [];
+
     for (const exercise of exercises) {
+      const name = getExerciseName(exercise);
       const sets = exercise.sets ?? [];
-      for (const set of sets) {
-        if (set.completed !== false) {
+      let exerciseVolume = 0;
+      let exerciseCompletedSets = 0;
+      const setDetails: Array<{ setNumber: number; weight?: number; reps?: number; duration?: number; distance?: number; completed: boolean }> = [];
+
+      for (let i = 0; i < sets.length; i++) {
+        const set = sets[i];
+        const completed = set.completed === true;
+        if (completed) {
           totalSets++;
-          totalVolume += calculateSetVolume(set);
+          exerciseCompletedSets++;
+          const vol = calculateSetVolume(set, name, userBW);
+          exerciseVolume += vol;
+          totalVolume += vol;
         }
+        if (includeDetail) {
+          const detail: { setNumber: number; weight?: number; reps?: number; duration?: number; distance?: number; completed: boolean } = {
+            setNumber: i + 1,
+            completed,
+          };
+          if (set.weight != null) detail.weight = set.weight;
+          if (set.reps != null) detail.reps = set.reps;
+          if (set.duration != null) detail.duration = set.duration;
+          if (set.distance != null) detail.distance = set.distance;
+          setDetails.push(detail);
+        }
+      }
+
+      if (includeDetail) {
+        exerciseDetails.push({
+          name,
+          sets: setDetails,
+          completedSets: exerciseCompletedSets,
+          volume: exerciseVolume,
+        });
       }
     }
 
-    return {
+    // Always collect exercise names for summary mode
+    const exerciseNames = exercises
+      .map(e => getExerciseName(e))
+      .filter(n => n !== 'Unknown');
+
+    const base: Record<string, unknown> = {
       id: row.id,
       name: row.name,
-      date: row.date,
+      date: toLocalDateString(row.date, timezone),
       duration: row.duration,
       durationFormatted: row.duration ? formatDuration(row.duration) : null,
+      exerciseNames,
       exerciseCount: exercises.length,
       totalSets,
       totalVolume,
       totalVolumeFormatted: formatVolume(totalVolume),
     };
+
+    if (includeDetail) {
+      base.exercises = exerciseDetails;
+    }
+
+    return base;
   });
 
   return {
     success: true,
     data: {
       recentWorkouts: sessions,
+      detailLevel: includeDetail ? 'full' : 'summary',
+      note: includeDetail
+        ? undefined
+        : 'This is a SUMMARY view. Only exercise names, total sets, and total volume are available per workout. Do NOT report specific weights, reps, or set details — that data is not included here. Only mention the exercise names and summary stats shown.',
       unit: 'lbs',
     },
   };
@@ -1010,14 +1239,25 @@ export const getRecentWorkoutSummary = async (
 export const getWorkoutsForDate = async (
   supabase: SupabaseClient,
   userId: string,
-  date: string
+  date: string,
+  timezone: string = 'UTC'
 ): Promise<StatResult> => {
-  const { data, error } = await supabase
-    .from('workout_sessions')
-    .select('id, name, date, duration, exercises')
-    .eq('user_id', userId)
-    .eq('date', date)
-    .order('date', { ascending: false });
+  // The date column is timestamptz. A workout at 8pm EST on Feb 21 is stored as
+  // Feb 22 01:00 UTC. We need a timezone-aware range query to find the right day.
+  const range = getDateRangeForTimezone(date, timezone);
+
+  const [queryResult, userBW] = await Promise.all([
+    supabase
+      .from('workout_sessions')
+      .select('id, name, date, duration, exercises')
+      .eq('user_id', userId)
+      .gte('date', range.start)
+      .lt('date', range.end)
+      .order('date', { ascending: false }),
+    fetchUserBodyWeight(supabase, userId),
+  ]);
+
+  const { data, error } = queryResult;
 
   if (error) {
     return { success: false, data: null, error: error.message };
@@ -1035,9 +1275,9 @@ export const getWorkoutsForDate = async (
       
       const sets = exercise.sets ?? [];
       for (const set of sets) {
-        if (set.completed !== false) {
+        if (set.completed === true) {
           totalSets++;
-          totalVolume += calculateSetVolume(set);
+          totalVolume += calculateSetVolume(set, name, userBW);
         }
       }
     }
@@ -1045,7 +1285,7 @@ export const getWorkoutsForDate = async (
     return {
       id: row.id,
       name: row.name,
-      date: row.date,
+      date: toLocalDateString(row.date, timezone),
       duration: row.duration,
       durationFormatted: row.duration ? formatDuration(row.duration) : null,
       exerciseNames,
@@ -1073,8 +1313,8 @@ export const getWorkoutsForDate = async (
   };
 };
 
-const EXERCISE_CATALOG: Array<{ id: string; name: string; equipment: string[] }> = [
-  // Weight exercises
+// AUTO-GENERATED from exercises.json — do not edit manually. Run the catalog generation script instead.
+export const EXERCISE_CATALOG: Array<{ id: string; name: string; equipment: string[] }> = [
   { id: 'exercise_001', name: 'Barbell Bench Press', equipment: ['Barbell', 'Bench'] },
   { id: 'exercise_002', name: 'Chest Press Machine', equipment: ['Machine'] },
   { id: 'exercise_003', name: 'Butterfly Machine', equipment: ['Machine'] },
@@ -1091,8 +1331,8 @@ const EXERCISE_CATALOG: Array<{ id: string; name: string; equipment: string[] }>
   { id: 'exercise_014', name: 'Leg Press', equipment: ['Machine'] },
   { id: 'exercise_015', name: 'Leg Extensions', equipment: ['Machine'] },
   { id: 'exercise_016', name: 'Seated Leg Curl', equipment: ['Machine'] },
-  { id: 'exercise_017', name: 'Thigh Adductor', equipment: ['Machine'] },
-  { id: 'exercise_018', name: 'Thigh Abductor', equipment: ['Machine'] },
+  { id: 'exercise_017', name: 'Hip Adductor', equipment: ['Machine'] },
+  { id: 'exercise_018', name: 'Hip Abductor', equipment: ['Machine'] },
   { id: 'exercise_019', name: 'Barbell Squat', equipment: ['Barbell', 'Rack'] },
   { id: 'exercise_020', name: 'Barbell Deadlift', equipment: ['Barbell'] },
   { id: 'exercise_021', name: 'Cable Bicep Curl', equipment: ['Cable'] },
@@ -1217,6 +1457,31 @@ const EXERCISE_CATALOG: Array<{ id: string; name: string; equipment: string[] }>
   { id: 'exercise_140', name: 'Smith Machine Hack Squat', equipment: ['Machine'] },
   { id: 'exercise_141', name: 'Smith Machine Hip Thrust', equipment: ['Machine', 'Bench'] },
   { id: 'exercise_142', name: 'Smith Machine Incline Bench Press', equipment: ['Machine', 'Bench'] },
+  { id: 'exercise_143', name: 'Dumbbell Overhead Tricep Extension', equipment: ['Dumbbell'] },
+  { id: 'exercise_144', name: 'Dumbbell Hip Thrusts', equipment: ['Dumbbell', 'Bench'] },
+  { id: 'exercise_145', name: 'Single-Arm Dumbbell Row', equipment: ['Dumbbell', 'Bench'] },
+  { id: 'exercise_146', name: 'Single-Leg Romanian Deadlift', equipment: ['Dumbbell'] },
+  { id: 'exercise_147', name: 'Straight-Arm Pulldown', equipment: ['Cable'] },
+  { id: 'exercise_148', name: 'Rear Delt Fly Machine', equipment: ['Machine'] },
+  { id: 'exercise_149', name: 'Glute Kickback Machine', equipment: ['Machine'] },
+  { id: 'exercise_150', name: 'Weighted Pull-ups', equipment: ['Bodyweight'] },
+  { id: 'exercise_151', name: 'Weighted Dips', equipment: ['Bodyweight', 'Dumbbell'] },
+  { id: 'exercise_152', name: 'Medicine Ball Slams', equipment: ['Medicine Ball'] },
+  { id: 'exercise_153', name: 'Dumbbell Goblet Squat', equipment: ['Dumbbell'] },
+  { id: 'exercise_154', name: 'Dumbbell Calf Raises', equipment: ['Machine'] },
+  { id: 'exercise_155', name: 'Barbell Overhead Press', equipment: ['Barbell'] },
+  { id: 'exercise_156', name: 'Trap Bar Deadlift', equipment: ['Trap Bar'] },
+  { id: 'exercise_157', name: 'Hex Bar Deadlift', equipment: ['Trap Bar'] },
+  { id: 'exercise_158', name: 'Sumo Deadlift', equipment: ['Barbell'] },
+  { id: 'exercise_159', name: "Farmer's Carry", equipment: ['Dumbbell'] },
+  { id: 'exercise_160', name: 'Cable Glute Kickback', equipment: ['Cable'] },
+  { id: 'exercise_161', name: 'Dumbbell Pullover', equipment: ['Dumbbell', 'Bench'] },
+  { id: 'exercise_162', name: 'Wrist Curls', equipment: ['Dumbbell'] },
+  { id: 'exercise_163', name: 'Cable Lateral Raise', equipment: ['Cable'] },
+  { id: 'exercise_164', name: 'Hanging Leg Raise', equipment: ['Pull-up Bar'] },
+  { id: 'exercise_165', name: 'T-Bar Row', equipment: ['Barbell', 'Landmine'] },
+  { id: 'exercise_166', name: 'Cable Woodchop', equipment: ['Cable'] },
+  { id: 'exercise_167', name: 'Incline Dumbbell Curl', equipment: ['Dumbbell', 'Bench'] },
   // Cardio exercises
   { id: 'cardio_001', name: 'Treadmill', equipment: ['Cardio Machine'] },
   { id: 'cardio_002', name: 'Stationary Bike', equipment: ['Cardio Machine'] },
@@ -1235,12 +1500,13 @@ const EXERCISE_CATALOG: Array<{ id: string; name: string; equipment: string[] }>
   { id: 'bodyweight_005', name: 'Crunches', equipment: ['Bodyweight'] },
   { id: 'bodyweight_006', name: 'Sit-ups', equipment: ['Bodyweight'] },
   { id: 'bodyweight_007', name: 'Leg Raises', equipment: ['Bodyweight'] },
-  { id: 'bodyweight_008', name: 'Air Squats', equipment: ['Bodyweight'] },
+  { id: 'bodyweight_008', name: 'Bodyweight Squats', equipment: ['Bodyweight'] },
   { id: 'bodyweight_009', name: 'Lunges', equipment: ['Bodyweight'] },
   { id: 'bodyweight_010', name: 'Mountain Climbers', equipment: ['Bodyweight'] },
   { id: 'bodyweight_011', name: 'Burpees', equipment: ['Bodyweight'] },
   { id: 'bodyweight_012', name: 'Inverted Rows', equipment: ['Bodyweight'] },
   { id: 'bodyweight_013', name: 'Pistol Squats', equipment: ['Bodyweight'] },
+  { id: 'bodyweight_014', name: 'Pistol Squats (Bodyweight)', equipment: ['Bodyweight'] },
   { id: 'bodyweight_015', name: 'Handstand Push-ups', equipment: ['Bodyweight'] },
   { id: 'bodyweight_016', name: 'Muscle-ups', equipment: ['Bodyweight'] },
   { id: 'bodyweight_017', name: 'Jump Squats', equipment: ['Bodyweight'] },
@@ -1252,6 +1518,18 @@ const EXERCISE_CATALOG: Array<{ id: string; name: string; equipment: string[] }>
   { id: 'bodyweight_023', name: 'Archer Pull-ups', equipment: ['Bodyweight'] },
   { id: 'bodyweight_024', name: 'Dragon Flags', equipment: ['Bodyweight'] },
   { id: 'bodyweight_025', name: 'Russian Twist', equipment: ['Bodyweight'] },
+  { id: 'bodyweight_026', name: 'Pike Push-ups', equipment: ['Bodyweight'] },
+  { id: 'bodyweight_027', name: 'Knee Push-ups', equipment: ['Bodyweight'] },
+  { id: 'bodyweight_028', name: 'Jumping Jacks', equipment: ['Bodyweight'] },
+  { id: 'bodyweight_029', name: 'Butt Kicks', equipment: ['Bodyweight'] },
+  { id: 'bodyweight_030', name: 'Dead Bugs', equipment: ['Bodyweight'] },
+  { id: 'bodyweight_031', name: 'Bird Dogs', equipment: ['Bodyweight'] },
+  { id: 'bodyweight_032', name: 'Bicycle Crunches', equipment: ['Bodyweight'] },
+  { id: 'bodyweight_033', name: 'Bodyweight Reverse Lunges', equipment: ['Bodyweight'] },
+  { id: 'bodyweight_034', name: 'Bodyweight Walking Lunges', equipment: ['Bodyweight'] },
+  { id: 'bodyweight_035', name: 'Jump Lunges', equipment: ['Bodyweight'] },
+  { id: 'bodyweight_036', name: 'Plank Jacks', equipment: ['Bodyweight'] },
+  { id: 'bodyweight_037', name: 'Bodyweight Glute Bridges', equipment: ['Bodyweight'] },
   // Assisted exercises
   { id: 'assisted_001', name: 'Assisted Pull-ups', equipment: ['Machine'] },
   { id: 'assisted_002', name: 'Assisted Dips', equipment: ['Machine'] },
@@ -1273,56 +1551,100 @@ const EXERCISE_CATALOG: Array<{ id: string; name: string; equipment: string[] }>
   { id: 'duration_007', name: 'L-Sit Hold', equipment: ['Bodyweight'] },
 ];
 
-// Muscle group mapping for exercise discovery
+// AUTO-GENERATED muscle group mapping from exercises.json primary muscle weights
 const EXERCISE_MUSCLE_GROUPS: Record<string, string[]> = {
-  'chest': [
-    'Barbell Bench Press', 'Dumbbell Bench Press', 'Incline Barbell Bench Press', 
-    'Incline Dumbbell Bench Press', 'Decline Barbell Bench Press', 'Chest Press Machine',
-    'Incline Chest Press Machine', 'Cable Crossover', 'Dumbbell Fly', 'Incline Dumbbell Fly',
-    'Push-ups', 'Butterfly Machine', 'Smith Machine Bench Press', 'Cable Flat Bench Fly'
-  ],
-  'shoulders': [
-    'Dumbbell Shoulder Press', 'Seated Shoulder Press Machine', 'Seated Barbell Military Press',
-    'Arnold Press', 'Lateral Raises', 'Lateral Raise Machine', 'Dumbbell Front Raises',
-    'Cable Front Raises', 'Rear Delt Machine', 'Seated Bent Over Rear Delt Raise',
-    'Barbell Upright Rows', 'Dumbbell Upright Row', 'Landmine Press', 'Face Pull'
-  ],
-  'triceps': [
-    'Cable Triceps Pushdown', 'Triceps Extension Machine', 'Seated Triceps Dip Machine',
-    'Skullcrusher', 'Close Grip Barbell Bench Press', 'Dips', 'Assisted Dips',
-    'Overhead Cable Triceps Extension', 'Seated Dumbbell Triceps Extension',
-    'Triceps Kickback', 'Dumbbell Triceps Kickback'
-  ],
   'back': [
-    'Barbell Bent-Over Row', 'Dumbbell Row', 'Seated Cable Rows', 'Seated Row Machine',
-    'Wide Grip Lat Pulldown', 'Close Grip Lat Pulldown', 'Pull-ups', 'Chin-ups',
-    'Chest Supported T-Bar Row', 'Barbell Deadlift', 'Hyperextensions', 'Inverted Rows'
+    'Wide Grip Lat Pulldown', 'Seated Row Machine', 'Hyperextensions', 'Barbell Deadlift',
+    'Barbell Shrugs', 'Barbell Bent-Over Row', 'Cable Underhand Pulldown',
+    'Chest Supported T-Bar Row', 'Close Grip Lat Pulldown', 'Dumbbell Shrugs',
+    'Dumbbell Upright Row', 'Face Pull', 'Kneeling Single Arm Lat Pulldown',
+    'Reverse Grip Bent Over Barbell Row', 'Seated Back Extension Machine', 'Seated Cable Rows',
+    'Smith Machine Bent Over Row', 'Pull-ups', 'Chin-ups', 'Inverted Rows',
+    'Assisted Pull-ups', 'Assisted Chin-ups', 'Band Rows', 'Muscle-ups', 'Archer Pull-ups',
+    'Bird Dogs', 'Single-Arm Dumbbell Row', 'Straight-Arm Pulldown', 'Weighted Pull-ups',
+    'Dumbbell Pullover', 'T-Bar Row',
   ],
   'biceps': [
-    'Barbell Bicep Curl', 'Dumbbell Bicep Curls', 'Dumbbell Hammer Curls', 'Cable Bicep Curl',
-    'EZ Bar Curls', 'Barbell Preacher Curl', 'Preacher Curl Machine', 'Dumbbell Concentration Curl',
-    'Incline Dumbbell Bicep Curls', 'Bicep Curl Machine'
-  ],
-  'quads': [
-    'Barbell Squat', 'Barbell Front Squat', 'Dumbbell Squats', 'Leg Press', 'Leg Extensions',
-    'Hack Squat Machine', 'Dumbbell Lunges', 'Barbell Lunges', 'Dumbbell Bulgarian Split Squat',
-    'Air Squats', 'Kettlebell Goblet Squat'
-  ],
-  'hamstrings': [
-    'Barbell Romanian Deadlift', 'Dumbbell Romanian Deadlifts', 'Seated Leg Curl',
-    'Lying Leg Curl', 'Barbell Good Mornings'
-  ],
-  'glutes': [
-    'Barbell Hip Thrust', 'Hip Thrust Machine', 'Barbell Glute Bridge', 'Cable Pull Through',
-    'Thigh Abductor', 'Kettlebell Swing'
+    'Bicep Curl Machine', 'Dumbbell Hammer Curls', 'EZ Bar Curls', 'Cable Bicep Curl',
+    'Dumbbell Bicep Curls', 'Incline Dumbbell Bicep Curls', 'Barbell Bicep Curl',
+    'Barbell Drag Curl', 'Barbell Preacher Curl', 'Cable Hammer Curl', 'Cable Preacher Curl',
+    'Dumbbell Concentration Curl', 'Dumbbell Hammer Preacher Curls', 'Dumbbell Spider Curl',
+    'Dumbbell Zottman Curls', 'Preacher Curl Machine', 'Reverse Dumbbell Bicep Curl',
+    'Reverse EZ Bar Curl', 'Seated Dumbbell Bicep Curls', 'Band Bicep Curls',
+    'Incline Dumbbell Curl',
   ],
   'calves': [
-    'Standing Calf Raise Machine', 'Seated Calf Raise Machine', 'Calf Press on a Leg Press Machine'
+    'Standing Calf Raise Machine', 'Calf Press on a Leg Press Machine',
+    'Seated Barbell Calf Raise', 'Seated Calf Raise Machine', 'Dumbbell Calf Raises',
+  ],
+  'chest': [
+    'Barbell Bench Press', 'Chest Press Machine', 'Butterfly Machine', 'Cable Crossover',
+    'Cable Flat Bench Fly', 'Decline Barbell Bench Press', 'Decline Chest Press Machine',
+    'Decline Dumbbell Bench Press', 'Decline Dumbbell Fly', 'Dumbbell Bench Press',
+    'Dumbbell Fly', 'Incline Barbell Bench Press', 'Incline Cable Fly',
+    'Incline Chest Press Machine', 'Incline Dumbbell Bench Press', 'Incline Dumbbell Fly',
+    'Lying Chest Press Machine', 'Seated Cable Fly', 'Smith Machine Bench Press',
+    'Smith Machine Decline Bench Press', 'Smith Machine Incline Bench Press',
+    'Push-ups', 'Plyometric Push-ups', 'One-Arm Push-ups', 'Knee Push-ups',
+    'Barbell Floor Press', 'Close Grip Barbell Bench Press',
   ],
   'core': [
-    'Plank', 'Side Plank', 'Crunches', 'Sit-ups', 'Leg Raises', 'Cable Crunch',
-    'Russian Twist', 'Mountain Climbers', 'Hollow Body Hold'
-  ]
+    'Cable Crunch', 'Decline Oblique Crunch', 'Decline Sit-ups', 'Kettlebell Russian Twist',
+    'Seated Ab Crunch Machine', 'Crunches', 'Sit-ups', 'Leg Raises', 'Mountain Climbers',
+    'Plank', 'Side Plank', 'Hollow Body Hold', 'L-Sit Hold', 'High Knees', 'Plank to Push-up',
+    'Dragon Flags', 'Russian Twist', 'Dead Bugs', 'Bicycle Crunches', 'Plank Jacks',
+    'Medicine Ball Slams', 'Hanging Leg Raise', 'Cable Woodchop',
+  ],
+  'forearms': [
+    'Reverse Wrist Curls', 'Dead Hang', "Farmer's Carry", 'Wrist Curls',
+  ],
+  'glutes': [
+    'Hip Adductor', 'Hip Abductor', 'Barbell Glute Bridge', 'Barbell Hip Thrust',
+    'Barbell Step Ups', 'Cable Hip Abduction', 'Cable Hip Adduction', 'Cable Pull Through',
+    'Hip Thrust Machine', 'Kettlebell Swing', 'Smith Machine Hip Thrust', 'Band Lateral Walks',
+    'Glute Bridge Hold', 'Bodyweight Glute Bridges', 'Dumbbell Hip Thrusts',
+    'Glute Kickback Machine', 'Sumo Deadlift', 'Cable Glute Kickback',
+  ],
+  'hamstrings': [
+    'Seated Leg Curl', 'Lying Leg Curl', 'Barbell Good Mornings', 'Barbell Romanian Deadlift',
+    'Dumbbell Deadlifts', 'Dumbbell Romanian Deadlifts', 'Kettlebell Romanian Deadlift',
+    'Smith Machine Good Morning', 'Butt Kicks', 'Single-Leg Romanian Deadlift',
+  ],
+  'quads': [
+    'Leg Press', 'Leg Extensions', 'Barbell Squat', 'Dumbbell Bulgarian Split Squat',
+    'Barbell Bulgarian Split Squat', 'Barbell Clean', 'Barbell Clean and Jerk',
+    'Barbell Front Squat', 'Barbell Hack Squat', 'Barbell Lunges', 'Barbell Overhead Squat',
+    'Barbell Power Clean', 'Barbell Snatch', 'Dumbbell Bulgarian Split Squats',
+    'Dumbbell Front Squat', 'Dumbbell Lunges', 'Dumbbell Reverse Lunges', 'Dumbbell Squats',
+    'Dumbbell Step-Ups', 'Hack Squat Machine', 'Kettlebell Front Squat',
+    'Kettlebell Goblet Squat', 'Smith Machine Bulgarian Split Squat', 'Smith Machine Deadlift',
+    'Smith Machine Hack Squat', 'Dumbbell Goblet Squat', 'Bodyweight Squats', 'Lunges',
+    'Burpees', 'Wall Sit', 'Pistol Squats', 'Jump Squats',
+    'Bulgarian Split Squats (Bodyweight)', 'Bodyweight Reverse Lunges',
+    'Bodyweight Walking Lunges', 'Jump Lunges', 'Trap Bar Deadlift', 'Hex Bar Deadlift',
+  ],
+  'shoulders': [
+    'Lateral Raises', 'Dumbbell Shoulder Press', 'Seated Shoulder Press Machine',
+    'Dumbbell Front Raises', 'Arnold Press', 'Barbell Front Raises', 'Barbell Upright Rows',
+    'Cable Front Raises', 'Cable Upright Row', 'Dumbbell Cuban Press', 'Landmine Press',
+    'Lateral Raise Machine', 'Rear Delt Machine', 'Seated Barbell Military Press',
+    'Seated Bent Over Rear Delt Raise', 'Band Pull-aparts', 'Band Face Pulls',
+    'Handstand Push-ups', 'Pike Push-ups', 'Rear Delt Fly Machine', 'Barbell Overhead Press',
+    'Cable Lateral Raise',
+  ],
+  'triceps': [
+    'Cable Triceps Pushdown', 'Seated Triceps Dip Machine', 'Triceps Extension Machine',
+    'Triceps Kickback', 'Cable Incline Triceps Extension',
+    'Dumbbell Triceps Kickback', 'EZ Bar Decline Triceps Extension',
+    'Incline Barbell Triceps Extension', 'Incline Dumbbell Triceps Extension',
+    'Kneeling Cable Triceps Extension', 'Skullcrusher', 'Overhead Cable Triceps Extension',
+    'Seated Dumbbell Triceps Extension', 'Smith Machine Close Grip Bench Press',
+    'Dips', 'Assisted Dips', 'Band Tricep Pushdowns', 'Dumbbell Overhead Tricep Extension',
+    'Weighted Dips',
+  ],
+  'traps': [
+    'Barbell Shrugs', 'Dumbbell Shrugs',
+  ],
 };
 
 export const getExercisesByMuscleGroup = (muscleGroups: string): StatResult => {
@@ -1444,19 +1766,22 @@ export const executeStatFunction = async (
   supabase: SupabaseClient,
   userId: string,
   functionName: StatFunction,
-  params: Record<string, unknown>
+  params: Record<string, unknown>,
+  timezone?: string,
+  appStats?: AppStats
 ): Promise<StatResult> => {
+  const tz = timezone || 'UTC';
   switch (functionName) {
     case 'getExerciseVolumeAllTime':
-      return getExerciseVolumeAllTime(supabase, userId, params.exerciseName as string | undefined);
+      return getExerciseVolumeAllTime(supabase, userId, params.exerciseName as string | undefined, appStats);
     case 'getExerciseMaxWeight':
       return getExerciseMaxWeight(supabase, userId, params.exerciseName as string | undefined);
     case 'getWorkoutStats':
-      return getWorkoutStats(supabase, userId);
+      return getWorkoutStats(supabase, userId, appStats);
     case 'getExerciseProgress':
       return getExerciseProgress(supabase, userId, params.exerciseName as string);
     case 'getMuscleGroupVolume':
-      return getMuscleGroupVolume(supabase, userId);
+      return getMuscleGroupVolume(supabase, userId, appStats);
     case 'getSetsPerMuscleGroup':
       return getSetsPerMuscleGroup(supabase, userId, (params.days as number) ?? 7);
     case 'getWorkoutFrequency':
@@ -1464,9 +1789,9 @@ export const executeStatFunction = async (
     case 'getPersonalRecords':
       return getPersonalRecords(supabase, userId);
     case 'getRecentWorkoutSummary':
-      return getRecentWorkoutSummary(supabase, userId, (params.count as number) ?? 5);
+      return getRecentWorkoutSummary(supabase, userId, (params.count as number) ?? 5, tz);
     case 'getWorkoutsForDate':
-      return getWorkoutsForDate(supabase, userId, params.date as string);
+      return getWorkoutsForDate(supabase, userId, params.date as string, tz);
     case 'lookupExercises':
       return lookupExercises(params.exerciseNames as string);
     case 'getExercisesByMuscleGroup':

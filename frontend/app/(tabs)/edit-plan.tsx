@@ -11,8 +11,10 @@ import { Button } from '@/components/atoms/Button';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { PlanBuilderCard } from '@/components/molecules/PlanBuilderCard';
 import { colors, radius, spacing, sizing } from '@/constants/theme';
+import { exercises as exerciseCatalog } from '@/constants/exercises';
 import { usePlansStore, type Plan } from '@/store/plansStore';
 import { useProgramsStore } from '@/store/programsStore';
+import type { Exercise } from '@/types/exercise';
 import type { ProgramWorkout, UserProgram } from '@/types/premadePlan';
 
 const styles = StyleSheet.create({
@@ -54,7 +56,17 @@ const styles = StyleSheet.create({
 export default function EditPlanScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { planId } = useLocalSearchParams<{ planId: string }>();
+  const { planId, returnTo } = useLocalSearchParams<{ planId: string; returnTo?: string }>();
+
+  const decodedReturnTo = useMemo(() => {
+    if (!returnTo) return null;
+    const raw = Array.isArray(returnTo) ? returnTo[0] : returnTo;
+    try {
+      return decodeURIComponent(raw);
+    } catch {
+      return raw;
+    }
+  }, [returnTo]);
 
   const { plans, isLoading: areWorkoutsLoading } = usePlansStore();
   const {
@@ -98,10 +110,12 @@ export default function EditPlanScreen() {
   const selectedWorkouts = useMemo<Plan[]>(() => {
     if (!program) return [];
 
-    if (!plans || plans.length === 0) return [];
+    // Build lookup tables for resolving exercise IDs/names to full Exercise objects
+    const catalogById = new Map(exerciseCatalog.map((e) => [e.id, e as Exercise]));
+    const catalogByName = new Map(exerciseCatalog.map((e) => [e.name.toLowerCase().trim(), e as Exercise]));
 
     // Build helpers for matching by name (case-insensitive)
-    const plansByName = plans.reduce<Map<string, Plan[]>>((acc, plan) => {
+    const plansByName = (plans || []).reduce<Map<string, Plan[]>>((acc, plan) => {
       const key = plan.name.trim().toLowerCase();
       const bucket = acc.get(key) ?? [];
       bucket.push(plan);
@@ -127,7 +141,6 @@ export default function EditPlanScreen() {
         if (candidates.length === 1) {
           match = candidates[0];
         } else if (candidates.length > 1 && workout.exercises && workout.exercises.length > 0) {
-          // If multiple templates share the same name, pick the one with max overlapping exercise IDs
           const workoutExerciseIds = new Set(
             workout.exercises.map((ex: any) => String(ex.id)),
           );
@@ -147,6 +160,36 @@ export default function EditPlanScreen() {
           }
 
           match = best;
+        }
+      }
+
+      // 3) No template match found (e.g. AI-created workouts that only exist
+      //    in plan_workouts, not workout_templates). Build a synthetic Plan
+      //    from the plan_workout data so it still appears in the editor.
+      if (!match && workout.exercises && workout.exercises.length > 0) {
+        const resolvedExercises: Exercise[] = [];
+        for (const ex of workout.exercises) {
+          const byId = catalogById.get(ex.id);
+          if (byId) {
+            resolvedExercises.push(byId);
+            continue;
+          }
+          const byName = catalogByName.get((ex.name ?? '').toLowerCase().trim());
+          if (byName) {
+            resolvedExercises.push(byName);
+          }
+        }
+
+        if (resolvedExercises.length > 0) {
+          const syntheticPlan: Plan = {
+            id: workout.id,
+            name: workout.name,
+            exercises: resolvedExercises,
+            createdAt: Date.now(),
+            source: 'custom',
+          };
+          result.push(syntheticPlan);
+          continue;
         }
       }
 
@@ -172,8 +215,12 @@ export default function EditPlanScreen() {
 
   const handleBackPress = useCallback(() => {
     triggerHaptic('selection');
+    if (decodedReturnTo) {
+      router.back();
+      return;
+    }
     router.push('/(tabs)/plans');
-  }, [router]);
+  }, [router, decodedReturnTo]);
 
   // Handle Android hardware back button
   useEffect(() => {
@@ -241,14 +288,18 @@ export default function EditPlanScreen() {
 
       await updateUserProgram(updatedProgram);
       triggerHaptic('success');
-      router.push('/(tabs)/plans');
+      if (decodedReturnTo) {
+        router.back();
+      } else {
+        router.push('/(tabs)/plans');
+      }
     } catch (error) {
       console.error('[EditPlanScreen] Failed to save:', error);
       Alert.alert('Error', 'Failed to save plan. Please try again.');
     } finally {
       setIsSaving(false);
     }
-  }, [program, planName, isSaveDisabled, isDuplicateName, updateUserProgram, router]);
+  }, [program, planName, isSaveDisabled, isDuplicateName, updateUserProgram, router, decodedReturnTo]);
 
   const handleGoToCreateWorkout = useCallback(() => {
     triggerHaptic('selection');

@@ -12,7 +12,7 @@ export const OPENROUTER_MODEL = getOptionalEnv(
 
 export const OPENROUTER_MAX_TOKENS = getOptionalNumber(
   'OPENROUTER_MAX_TOKENS',
-  2000
+  4000
 );
 
 export const OPENROUTER_TEMPERATURE = getOptionalNumber(
@@ -37,7 +37,17 @@ export const WEEKLY_TOKEN_LIMIT = getOptionalNumber(
 
 export const WEEKLY_MESSAGE_LIMIT = getOptionalNumber(
   'HERCULES_AI_WEEKLY_MESSAGE_LIMIT',
-  120
+  100
+);
+
+export const RATE_LIMIT_WINDOW_SECONDS = getOptionalNumber(
+  'HERCULES_AI_RATE_LIMIT_WINDOW_SECONDS',
+  60
+);
+
+export const RATE_LIMIT_MAX_REQUESTS = getOptionalNumber(
+  'HERCULES_AI_RATE_LIMIT_MAX_REQUESTS',
+  10
 );
 
 export const MAX_CONTEXT_MESSAGES = getOptionalNumber(

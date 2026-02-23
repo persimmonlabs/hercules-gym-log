@@ -145,9 +145,9 @@ const CreateWorkoutScreen: React.FC = () => {
       resetSession();
     }
 
-    // If returnTo is specified, use it for navigation
+    // If returnTo is specified, go back to preserve the previous screen's state
     if (decodedReturnTo) {
-      router.replace(decodedReturnTo as any);
+      router.back();
       return;
     }
 
@@ -185,7 +185,7 @@ const CreateWorkoutScreen: React.FC = () => {
         if (result === 'success') {
           setHasSaved(true);
           if (decodedReturnTo) {
-            router.replace(decodedReturnTo);
+            router.back();
             return;
           }
           handleBackPress();

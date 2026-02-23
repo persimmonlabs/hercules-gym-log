@@ -435,7 +435,7 @@ const normalizeMessage = (message: string): string => {
  */
 export const sanitizeForDisplay = (content: string): string => {
   if (!content || typeof content !== 'string') {
-    return 'I encountered an issue processing your request. Please try again.';
+    return 'Let me know how I can help with your training today.';
   }
 
   const trimmed = content.trim();
@@ -478,15 +478,43 @@ export const sanitizeForDisplay = (content: string): string => {
     }
   }
 
-  // Last resort: Try to extract message using regex
+  // Last resort: Try to extract message using regex (requires closing quote)
   const messageMatch = trimmed.match(/"message"\s*:\s*"((?:[^"\\]|\\.)*)"/);
   if (messageMatch && messageMatch[1]) {
-    // Unescape the extracted message
     const extracted = messageMatch[1]
       .replace(/\\"/g, '"')
       .replace(/\\n/g, '\n')
       .replace(/\\\\/g, '\\');
     return extracted;
+  }
+
+  // CRITICAL: Handle truncated JSON (response was cut off mid-stream).
+  // Parse character-by-character to salvage the message value.
+  const msgStartMatch = trimmed.match(/"message"\s*:\s*"/);
+  if (msgStartMatch && msgStartMatch.index !== undefined) {
+    const valueStart = msgStartMatch.index + msgStartMatch[0].length;
+    let extracted = '';
+    let escapeNext = false;
+
+    for (let i = valueStart; i < trimmed.length; i++) {
+      const char = trimmed[i];
+      if (escapeNext) {
+        if (char === 'n') extracted += '\n';
+        else if (char === '"') extracted += '"';
+        else if (char === '\\') extracted += '\\';
+        else if (char === 't') extracted += '\t';
+        else extracted += char;
+        escapeNext = false;
+        continue;
+      }
+      if (char === '\\') { escapeNext = true; continue; }
+      if (char === '"') break;
+      extracted += char;
+    }
+
+    if (extracted.length > 20) {
+      return extracted;
+    }
   }
 
   // ABSOLUTE LAST RESORT: Remove all JSON-like content and return what's left
@@ -501,8 +529,8 @@ export const sanitizeForDisplay = (content: string): string => {
     return normalizeMessage(stripped);
   }
 
-  // If we still have nothing useful, return a generic message
-  return 'I processed your request. Please check if the action was completed.';
+  // If we still have nothing useful, return a neutral fallback
+  return 'Let me know how I can help with your training today.';
 };
 
 /**
@@ -521,7 +549,7 @@ export const parseAssistantResponse = (content: string): ParsedAssistantResponse
     console.warn('[HerculesAI] parseAssistantResponse: Empty or invalid content');
     return {
       type: 'message',
-      message: 'I encountered an issue processing your request. Please try again.',
+      message: 'Let me know how I can help with your training today.',
       action: null,
       raw: content || '',
     };
@@ -626,6 +654,48 @@ export const parseAssistantResponse = (content: string): ParsedAssistantResponse
       }
     } catch (_) {
       // Extraction failed
+    }
+  }
+
+  // CRITICAL: Handle truncated JSON (response hit max_tokens).
+  // The content starts with { but JSON.parse and extractJsonFromContent both failed,
+  // meaning the JSON was never closed. Try to salvage the "message" value.
+  if (trimmed.startsWith('{') || trimmed.includes('"message"')) {
+    console.warn('[HerculesAI] parseAssistantResponse: Detected likely truncated JSON, attempting to salvage message');
+
+    // Try to extract the message value even from incomplete JSON.
+    // Match "message": "..." where the string may be cut off (no closing quote).
+    const msgStartMatch = trimmed.match(/"message"\s*:\s*"/);
+    if (msgStartMatch && msgStartMatch.index !== undefined) {
+      const valueStart = msgStartMatch.index + msgStartMatch[0].length;
+      let extracted = '';
+      let escapeNext = false;
+
+      for (let i = valueStart; i < trimmed.length; i++) {
+        const char = trimmed[i];
+        if (escapeNext) {
+          if (char === 'n') extracted += '\n';
+          else if (char === '"') extracted += '"';
+          else if (char === '\\') extracted += '\\';
+          else if (char === 't') extracted += '\t';
+          else extracted += char;
+          escapeNext = false;
+          continue;
+        }
+        if (char === '\\') { escapeNext = true; continue; }
+        if (char === '"') break; // Proper end of string value
+        extracted += char;
+      }
+
+      if (extracted.length > 20) {
+        console.log('[HerculesAI] parseAssistantResponse: Salvaged message from truncated JSON, length:', extracted.length);
+        return {
+          type: 'message',
+          message: extracted,
+          action: null,
+          raw: content,
+        };
+      }
     }
   }
 

@@ -13,6 +13,7 @@ import type {
   UsageResponseBody,
   ChatSessionSummary,
   ChatHistoryMessage,
+  AppStats,
 } from '@/types/herculesAI';
 
 const FUNCTION_NAME = 'hercules-ai';
@@ -20,6 +21,8 @@ const FUNCTION_NAME = 'hercules-ai';
 export interface HerculesAIError {
   message: string;
   code?: string;
+  nextResetAt?: string;
+  purchasedCreditsRemaining?: number;
 }
 
 const parseFunctionError = async (
@@ -29,12 +32,26 @@ const parseFunctionError = async (
   let message = error instanceof Error ? error.message : 'Unknown error occurred';
   let code = 'INVOKE_ERROR';
 
+  let nextResetAt: string | undefined;
+  let purchasedCreditsRemaining: number | undefined;
+
   if (response) {
     code = `HTTP_${response.status}`;
     try {
       const data = await response.clone().json();
-      if (data?.error) {
+      if (data?.message) {
+        message = data.message;
+      } else if (data?.error) {
         message = data.error;
+      }
+      if (data?.code) {
+        code = data.code;
+      }
+      if (data?.nextResetAt) {
+        nextResetAt = data.nextResetAt;
+      }
+      if (data?.purchasedCreditsRemaining !== undefined) {
+        purchasedCreditsRemaining = data.purchasedCreditsRemaining;
       }
     } catch {
       try {
@@ -48,7 +65,7 @@ const parseFunctionError = async (
     }
   }
 
-  return { message, code };
+  return { message, code, nextResetAt, purchasedCreditsRemaining };
 };
 
 /**
@@ -56,7 +73,8 @@ const parseFunctionError = async (
  */
 export async function sendChatMessage(
   message: string,
-  sessionId?: string
+  sessionId?: string,
+  appStats?: AppStats
 ): Promise<{ data: ChatResponseBody | null; error: HerculesAIError | null }> {
   try {
     const body: ChatRequestBody = {
@@ -65,6 +83,9 @@ export async function sendChatMessage(
     };
     if (sessionId) {
       body.sessionId = sessionId;
+    }
+    if (appStats) {
+      body.appStats = appStats;
     }
 
     const { data, error, response } = await supabaseClient.functions.invoke<ChatResponseBody>(
@@ -163,7 +184,7 @@ export async function fetchChatSessions(): Promise<{
       .select('id, title, created_at')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
-      .limit(50);
+      .limit(100);
 
     if (error) {
       return { data: null, error: { message: error.message, code: 'DB_ERROR' } };
@@ -220,6 +241,34 @@ export async function fetchChatMessages(sessionId: string): Promise<{
       }));
 
     return { data: messages, error: null };
+  } catch (err) {
+    const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
+    return { data: null, error: { message: errorMessage, code: 'NETWORK_ERROR' } };
+  }
+}
+
+/**
+ * Purchase additional AI credits
+ */
+export async function purchaseCredits(credits: number = 100): Promise<{
+  data: UsageResponseBody | null;
+  error: HerculesAIError | null;
+}> {
+  try {
+    const { data, error, response } = await supabaseClient.functions.invoke<UsageResponseBody>(
+      FUNCTION_NAME,
+      {
+        body: { action: 'purchaseCredits', credits },
+        method: 'POST',
+      }
+    );
+
+    if (error) {
+      const parsedError = await parseFunctionError(error, response);
+      return { data: null, error: parsedError };
+    }
+
+    return { data, error: null };
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
     return { data: null, error: { message: errorMessage, code: 'NETWORK_ERROR' } };

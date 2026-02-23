@@ -198,7 +198,7 @@ export const WorkoutBuilderCard: React.FC<WorkoutBuilderCardProps> = ({
             <View style={styles.exerciseList}>
               {exercises.map((exercise, index) => (
                 <CompactExerciseRow
-                  key={exercise.id}
+                  key={`${exercise.id}-${index}`}
                   exercise={exercise}
                   index={index}
                   totalCount={exercises.length}

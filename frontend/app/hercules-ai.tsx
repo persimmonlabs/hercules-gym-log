@@ -15,6 +15,7 @@ import {
   Keyboard,
   NativeSyntheticEvent,
   NativeScrollEvent,
+  Text as RNText,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -36,6 +37,7 @@ import { ActionApprovalCard } from '@/components/molecules/ActionApprovalCard';
 import { ChatUsageBanner } from '@/components/molecules/ChatUsageBanner';
 import { TypingIndicator } from '@/components/molecules/TypingIndicator';
 import { ChatHistoryModal } from '@/components/molecules/ChatHistoryModal';
+import { CreditsExhaustedModal } from '@/components/molecules/CreditsExhaustedModal';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { useTheme } from '@/hooks/useTheme';
 import { usePremiumStatus } from '@/hooks/usePremiumStatus';
@@ -48,13 +50,15 @@ import {
   submitActionDecision,
   fetchUsageStats,
   fetchChatMessages,
+  purchaseCredits,
 } from '@/services/herculesAIService';
 import { sanitizeMessageForDisplay } from '@/utils/messageSanitizer';
 import { usePlansStore } from '@/store/plansStore';
 import { useProgramsStore } from '@/store/programsStore';
 import { useSchedulesStore } from '@/store/schedulesStore';
 import { useWorkoutSessionsStore } from '@/store/workoutSessionsStore';
-import type { ChatMessage, ActionProposal, UsageInfo } from '@/types/herculesAI';
+import { useAppStatsForAI } from '@/hooks/useAppStatsForAI';
+import type { ChatMessage, ActionProposal, UsageInfo, NavigationLink } from '@/types/herculesAI';
 
 /**
  * CRITICAL: Detects if a message looks like an action proposal that should have buttons.
@@ -76,9 +80,21 @@ const looksLikeActionProposal = (content: string): boolean => {
     'ready to create',
     'create this for you',
     'set this up for you',
+    'tap approve',
+    'click approve',
   ];
   
-  return confirmationPatterns.some(pattern => lowerContent.includes(pattern));
+  if (confirmationPatterns.some(pattern => lowerContent.includes(pattern))) return true;
+
+  // Check if content has a numbered exercise list (strongest signal)
+  const hasNumberedList = /\b1\.\s+[A-Z]/.test(content) && /\b2\.\s+[A-Z]/.test(content);
+  const mentionsWorkoutContext = lowerContent.includes('workout') || lowerContent.includes('program') ||
+    lowerContent.includes('plan') || lowerContent.includes('push') || lowerContent.includes('pull') ||
+    lowerContent.includes('leg') || lowerContent.includes('chest') || lowerContent.includes('back') ||
+    lowerContent.includes('day');
+  if (hasNumberedList && mentionsWorkoutContext) return true;
+
+  return false;
 };
 
 /**
@@ -96,52 +112,50 @@ const MissingActionFallback: React.FC<{
     <View style={{
       flexDirection: 'row',
       alignItems: 'center',
-      justifyContent: 'space-between',
+      justifyContent: 'center',
       paddingVertical: spacing.sm,
       paddingHorizontal: spacing.md,
       marginHorizontal: spacing.md,
       marginTop: spacing.sm,
       borderRadius: radius.lg,
-      borderWidth: 1,
-      borderColor: theme.border.light,
       backgroundColor: theme.surface.elevated,
+      gap: spacing.sm,
     }}>
-      <Text variant="caption" color="secondary" style={{ flex: 1 }}>
-        Ready to create?
-      </Text>
-      <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-        <Pressable
-          onPress={onDismiss}
-          disabled={isLoading}
-          style={[{
-            paddingVertical: spacing.xs,
-            paddingHorizontal: spacing.md,
-            borderRadius: radius.md,
-            borderWidth: 1,
-            borderColor: theme.border.medium,
-            opacity: isLoading ? 0.5 : 1,
-          }]}
-        >
-          <Text variant="bodySemibold" color="secondary">
-            No thanks
-          </Text>
-        </Pressable>
-        <Pressable
-          onPress={onRetry}
-          disabled={isLoading}
-          style={[{
-            paddingVertical: spacing.xs,
-            paddingHorizontal: spacing.md,
-            borderRadius: radius.md,
-            backgroundColor: theme.accent.primary,
-            opacity: isLoading ? 0.5 : 1,
-          }]}
-        >
-          <Text variant="bodySemibold" color="onAccent">
-            Yes, create it
-          </Text>
-        </Pressable>
-      </View>
+      <Pressable
+        onPress={onDismiss}
+        disabled={isLoading}
+        style={[{
+          paddingVertical: spacing.xs,
+          paddingHorizontal: spacing.md,
+          borderRadius: radius.md,
+          borderWidth: 1,
+          borderColor: '#000000',
+          minWidth: 70,
+          alignItems: 'center' as const,
+          opacity: isLoading ? 0.5 : 1,
+        }]}
+      >
+        <Text variant="bodySemibold" color="secondary">
+          Reject
+        </Text>
+      </Pressable>
+      <Pressable
+        onPress={onRetry}
+        disabled={isLoading}
+        style={[{
+          paddingVertical: spacing.xs,
+          paddingHorizontal: spacing.md,
+          borderRadius: radius.md,
+          backgroundColor: theme.accent.primary,
+          minWidth: 70,
+          alignItems: 'center' as const,
+          opacity: isLoading ? 0.5 : 1,
+        }]}
+      >
+        <Text variant="bodySemibold" color="onAccent">
+          Approve
+        </Text>
+      </Pressable>
     </View>
   );
 };
@@ -152,6 +166,7 @@ const HerculesAIScreen: React.FC = () => {
   const profile = useUserProfileStore((s) => s.profile);
   const userAge = calculateAge(profile?.dateOfBirth);
   const insets = useSafeAreaInsets();
+  const appStats = useAppStatsForAI();
   const flatListRef = useRef<FlatList>(null);
   const inputRef = useRef<TextInput>(null);
 
@@ -180,6 +195,10 @@ const HerculesAIScreen: React.FC = () => {
   const [historyModalVisible, setHistoryModalVisible] = useState(false);
   const [newMessageIds, setNewMessageIds] = useState<Set<string>>(new Set());
   const [animationCompleteIds, setAnimationCompleteIds] = useState<Set<string>>(new Set());
+  const [creditsModalVisible, setCreditsModalVisible] = useState(false);
+  const [isPurchasing, setIsPurchasing] = useState(false);
+  const [creditsNextReset, setCreditsNextReset] = useState<string>('');
+  const [hasAttemptedFallbackRetry, setHasAttemptedFallbackRetry] = useState(false);
 
   // CRITICAL: Trigger scroll to end when user sends a message
   // This function increments the trigger which fires a useEffect after React's render cycle
@@ -294,6 +313,8 @@ const HerculesAIScreen: React.FC = () => {
 
     // Reset scroll behavior when user sends a message - they want to see the response
     userHasScrolled.current = false;
+    // Reset fallback retry flag so user can retry again after new conversation
+    setHasAttemptedFallbackRetry(false);
 
     // CRITICAL: Clear any pending action when user types a new message
     // This removes the action buttons since user chose to continue conversation instead
@@ -327,16 +348,36 @@ const HerculesAIScreen: React.FC = () => {
     // This triggers a useEffect that scrolls AFTER the state update is processed
     scrollToUserMessageTop();
 
-    const { data, error } = await sendChatMessage(userMessage.content, sessionId ?? undefined);
+    const { data, error } = await sendChatMessage(userMessage.content, sessionId ?? undefined, appStats);
 
     if (error) {
-      const errorMessage: ChatMessage = {
-        id: `error-${Date.now()}`,
-        role: 'assistant',
-        content: `Sorry, something went wrong: ${error.message}`,
-        createdAt: new Date().toISOString(),
-      };
-      setMessages((prev) => [...prev, errorMessage]);
+      if (error.code === 'CREDITS_EXHAUSTED') {
+        setCreditsNextReset(error.nextResetAt || usage?.nextResetAt || '');
+        setCreditsModalVisible(true);
+        const exhaustedMessage: ChatMessage = {
+          id: `error-${Date.now()}`,
+          role: 'assistant',
+          content: error.message,
+          createdAt: new Date().toISOString(),
+        };
+        setMessages((prev) => [...prev, exhaustedMessage]);
+      } else if (error.code === 'RATE_LIMITED') {
+        const rateLimitMessage: ChatMessage = {
+          id: `error-${Date.now()}`,
+          role: 'assistant',
+          content: 'You\'re sending messages too quickly. Please wait a moment and try again.',
+          createdAt: new Date().toISOString(),
+        };
+        setMessages((prev) => [...prev, rateLimitMessage]);
+      } else {
+        const errorMessage: ChatMessage = {
+          id: `error-${Date.now()}`,
+          role: 'assistant',
+          content: `Sorry, something went wrong: ${error.message}`,
+          createdAt: new Date().toISOString(),
+        };
+        setMessages((prev) => [...prev, errorMessage]);
+      }
     } else if (data) {
       // CRITICAL DEBUG: Log what the backend returned
       console.log('[HerculesAI] Backend response:', {
@@ -413,7 +454,7 @@ const HerculesAIScreen: React.FC = () => {
         const feedbackMessage: ChatMessage = {
           id: `feedback-prompt-${Date.now()}`,
           role: 'assistant',
-          content: "No problem! What would you like me to change? You can ask for different exercises, more or fewer sets, a different workout type, or anything else.",
+          content: "No problem! What would you like me to change? You can ask for different exercises, a different split, or anything else.",
           createdAt: new Date().toISOString(),
         };
         setMessages((prev) => [...prev, feedbackMessage]);
@@ -441,12 +482,30 @@ const HerculesAIScreen: React.FC = () => {
       });
 
       if (data) {
+        // Build navigation link based on action type + created item ID
+        let navLink: NavigationLink | null = null;
+        if (data.status === 'executed' && data.data) {
+          const createdId = (data.data as Record<string, unknown>).id as string | undefined;
+          if (createdId) {
+            const actionType = actionToUse.actionType;
+            const returnTo = encodeURIComponent('/hercules-ai');
+            if (actionType === 'create_workout_template') {
+              navLink = { label: 'View Workout', route: '/(tabs)/create-workout', params: { planId: createdId, returnTo } };
+            } else if (actionType === 'create_program_plan') {
+              navLink = { label: 'View Plan', route: '/(tabs)/edit-plan', params: { planId: createdId, returnTo } };
+            } else if (actionType === 'create_schedule') {
+              navLink = { label: 'View Schedule', route: '/(tabs)/schedule-setup' };
+            }
+          }
+        }
+
         const resultMessage: ChatMessage = {
           id: `action-result-${Date.now()}`,
           role: 'assistant',
           // CRITICAL: Sanitize message to ensure no JSON is ever shown to users
           content: sanitizeMessageForDisplay(data.summary),
           createdAt: new Date().toISOString(),
+          navigationLink: navLink,
         };
         setMessages((prev) => [...prev, resultMessage]);
         setNewMessageIds((prev) => new Set(prev).add(resultMessage.id));
@@ -486,7 +545,7 @@ const HerculesAIScreen: React.FC = () => {
         const errorMessage: ChatMessage = {
           id: `action-error-${Date.now()}`,
           role: 'assistant',
-          content: `Action failed: ${error.message}`,
+          content: "Something went wrong while processing that. Please try again or rephrase your request.",
           createdAt: new Date().toISOString(),
         };
         setMessages((prev) => [...prev, errorMessage]);
@@ -519,6 +578,37 @@ const HerculesAIScreen: React.FC = () => {
     triggerHaptic('light');
     setHistoryModalVisible(true);
   };
+
+  const handlePurchaseCredits = useCallback(async () => {
+    setIsPurchasing(true);
+    triggerHaptic('light');
+
+    const { data, error } = await purchaseCredits(100);
+
+    if (data) {
+      setUsage(data);
+      setCreditsModalVisible(false);
+
+      const confirmMessage: ChatMessage = {
+        id: `system-${Date.now()}`,
+        role: 'assistant',
+        content: '100 AI credits have been added to your account. You can continue chatting!',
+        createdAt: new Date().toISOString(),
+      };
+      setMessages((prev) => [...prev, confirmMessage]);
+      setNewMessageIds((prev) => new Set(prev).add(confirmMessage.id));
+    } else if (error) {
+      const errMsg: ChatMessage = {
+        id: `error-${Date.now()}`,
+        role: 'assistant',
+        content: `Credit purchase failed: ${error.message}`,
+        createdAt: new Date().toISOString(),
+      };
+      setMessages((prev) => [...prev, errMsg]);
+    }
+
+    setIsPurchasing(false);
+  }, []);
 
   const handleSelectSession = async (selectedSessionId: string) => {
     setSessionId(selectedSessionId);
@@ -556,6 +646,8 @@ const HerculesAIScreen: React.FC = () => {
 
   // Handler for dismissing the fallback without taking action
   const handleFallbackDismiss = useCallback(() => {
+    // Prevent fallback from showing again
+    setHasAttemptedFallbackRetry(true);
     // Add a message acknowledging the dismissal
     const dismissMessage: ChatMessage = {
       id: `assistant-${Date.now()}`,
@@ -570,8 +662,12 @@ const HerculesAIScreen: React.FC = () => {
   }, []);
 
   // Handler for fallback retry - sends a confirmation message to regenerate with action
+  // CRITICAL: Only allows ONE retry attempt to prevent infinite loop
   const handleFallbackRetry = useCallback(async () => {
-    if (isLoading) return;
+    if (isLoading || hasAttemptedFallbackRetry) return;
+    
+    // Mark that we've attempted a retry - prevents infinite loop
+    setHasAttemptedFallbackRetry(true);
     
     // Reset scroll behavior - user is taking action
     userHasScrolled.current = false;
@@ -591,13 +687,19 @@ const HerculesAIScreen: React.FC = () => {
     // Scroll user's message to top
     scrollToUserMessageTop();
     
-    const { data, error } = await sendChatMessage(confirmMessage.content, sessionId ?? undefined);
+    const { data, error } = await sendChatMessage(confirmMessage.content, sessionId ?? undefined, appStats);
     
     if (error) {
+      if (error.code === 'CREDITS_EXHAUSTED') {
+        setCreditsNextReset(error.nextResetAt || usage?.nextResetAt || '');
+        setCreditsModalVisible(true);
+      }
       const errorMessage: ChatMessage = {
         id: `error-${Date.now()}`,
         role: 'assistant',
-        content: `Sorry, something went wrong: ${error.message}`,
+        content: error.code === 'RATE_LIMITED'
+          ? 'You\'re sending messages too quickly. Please wait a moment and try again.'
+          : `Sorry, something went wrong: ${error.message}`,
         createdAt: new Date().toISOString(),
       };
       setMessages((prev) => [...prev, errorMessage]);
@@ -628,7 +730,7 @@ const HerculesAIScreen: React.FC = () => {
         console.log('[HerculesAI] Fallback retry succeeded - action received:', data.action.actionType);
         setPendingAction({ ...data.action, status: 'pending' });
       } else {
-        console.warn('[HerculesAI] Fallback retry failed - still no action in response');
+        console.warn('[HerculesAI] Fallback retry failed - still no action. Will not retry again.');
       }
       
       loadUsage();
@@ -636,7 +738,7 @@ const HerculesAIScreen: React.FC = () => {
     
     setIsLoading(false);
     // Don't scroll here - typing animation will handle scrolling
-  }, [isLoading, sessionId, scrollToUserMessageTop]);
+  }, [isLoading, hasAttemptedFallbackRetry, sessionId, scrollToUserMessageTop]);
 
   const renderMessage = ({ item, index }: { item: ChatMessage; index: number }) => {
     const isAnimationComplete = animationCompleteIds.has(item.id) || !newMessageIds.has(item.id);
@@ -646,27 +748,38 @@ const HerculesAIScreen: React.FC = () => {
     const showActionCard = hasAction && isAnimationComplete;
     
     // CRITICAL: Detect if this message looks like a proposal but has no action
-    // Only show fallback after animation completes
+    // Only show fallback after animation completes AND only if retry hasn't been attempted
     const isLastAssistantMessage = item.role === 'assistant' && 
       messages.filter(m => m.role === 'assistant').slice(-1)[0]?.id === item.id;
     const looksLikeProposal = item.role === 'assistant' && looksLikeActionProposal(item.content);
-    const showMissingActionFallback = isAnimationComplete && isLastAssistantMessage && looksLikeProposal && !hasAction && !pendingAction && !isLoading;
+    const showMissingActionFallback = isAnimationComplete && isLastAssistantMessage && looksLikeProposal && !hasAction && !pendingAction && !isLoading && !hasAttemptedFallbackRetry;
 
-    // Debug logging to track action detection
-    if (item.role === 'assistant') {
-      console.log('[HerculesAI] Rendering message:', {
-        hasAction: !!item.action,
-        actionStatus: item.action?.status,
-        isAnimationComplete,
-        showActionCard,
-        showMissingActionFallback,
-      });
+    // Determine action label to append to message content
+    const ACTION_LABELS: Record<string, string> = {
+      create_workout_template: 'Create this workout?',
+      add_workout_session: 'Log this workout?',
+      update_user_profile: 'Update your profile?',
+      update_profile: 'Update your profile?',
+      create_plan: 'Create this plan?',
+      create_program_plan: 'Create this program?',
+      create_schedule: 'Create this schedule?',
+      edit_workout_session: 'Edit this session?',
+      delete_workout_session: 'Delete this session?',
+      create_custom_exercise: 'Create this exercise?',
+    };
+
+    let displayContent = item.content;
+    if (showActionCard && item.action) {
+      const label = ACTION_LABELS[item.action.actionType] || 'Proceed with this action?';
+      displayContent = `${item.content}\n\n**${label}**`;
+    } else if (showMissingActionFallback) {
+      displayContent = `${item.content}\n\n**Ready to create?**`;
     }
 
     return (
       <>
         <ChatMessageBubble
-          content={item.content}
+          content={displayContent}
           role={item.role}
           index={index}
           isNewMessage={newMessageIds.has(item.id)}
@@ -690,6 +803,40 @@ const HerculesAIScreen: React.FC = () => {
             isLoading={isLoading}
             theme={theme}
           />
+        )}
+        {item.navigationLink && isAnimationComplete && (
+          <View style={{ paddingHorizontal: spacing.md, marginTop: spacing.sm }}>
+            <Pressable
+              onPress={() => {
+                triggerHaptic('light');
+                if (item.navigationLink!.params) {
+                  router.push({
+                    pathname: item.navigationLink!.route as any,
+                    params: item.navigationLink!.params,
+                  });
+                } else {
+                  router.push(item.navigationLink!.route as any);
+                }
+              }}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: spacing.xs,
+                alignSelf: 'flex-start',
+                paddingVertical: spacing.xs,
+                paddingHorizontal: spacing.md,
+                borderRadius: radius.md,
+                backgroundColor: '#FFFFFF',
+                borderWidth: 1,
+                borderColor: '#000000',
+              }}
+            >
+              <Ionicons name="open-outline" size={16} color="#000000" />
+              <RNText style={{ color: '#000000', fontSize: 14, fontWeight: '600' }}>
+                {item.navigationLink!.label}
+              </RNText>
+            </Pressable>
+          </View>
         )}
       </>
     );
@@ -999,6 +1146,13 @@ const HerculesAIScreen: React.FC = () => {
         onClose={() => setHistoryModalVisible(false)}
         onSelectSession={handleSelectSession}
         onNewChat={handleNewChat}
+      />
+      <CreditsExhaustedModal
+        visible={creditsModalVisible}
+        nextResetAt={creditsNextReset}
+        onPurchase={handlePurchaseCredits}
+        onDismiss={() => setCreditsModalVisible(false)}
+        isPurchasing={isPurchasing}
       />
     </LinearGradient>
   );

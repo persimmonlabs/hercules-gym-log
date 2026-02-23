@@ -1,4 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { EXERCISE_CATALOG } from '../stats.ts';
 
 export const isRecord = (value: unknown): value is Record<string, unknown> => {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
@@ -47,6 +48,40 @@ export const normalizeScheduleData = (value: unknown): Record<string, unknown> |
   const type = getString(value.type);
   if (type !== 'weekly' && type !== 'rotating') return null;
   return value;
+};
+
+/**
+ * Resolves an exercise name to { id, name } from EXERCISE_CATALOG.
+ * Uses exact match first, then fuzzy (contains) match.
+ * Returns null if no match found.
+ */
+export const resolveExerciseByName = (exerciseName: string): { id: string; name: string } | null => {
+  if (!exerciseName || exerciseName.trim().length < 3) return null;
+  const searchName = exerciseName.trim().toLowerCase();
+
+  // 1. Exact match
+  const exact = EXERCISE_CATALOG.find(e => e.name.toLowerCase() === searchName);
+  if (exact) return { id: exact.id, name: exact.name };
+
+  // 2. Fuzzy contains match (catalog name includes search or vice-versa)
+  const fuzzy = EXERCISE_CATALOG.find(e => {
+    const catalogName = e.name.toLowerCase();
+    return catalogName.includes(searchName) || searchName.includes(catalogName);
+  });
+  if (fuzzy) return { id: fuzzy.id, name: fuzzy.name };
+
+  // 3. Word overlap — at least 2 significant words must match
+  const searchWords = searchName.split(/\s+/).filter(w => w.length > 2);
+  if (searchWords.length >= 2) {
+    const wordMatch = EXERCISE_CATALOG.find(e => {
+      const catalogWords = e.name.toLowerCase().split(/\s+/);
+      const matchCount = searchWords.filter(sw => catalogWords.some(cw => cw.includes(sw) || sw.includes(cw))).length;
+      return matchCount >= 2;
+    });
+    if (wordMatch) return { id: wordMatch.id, name: wordMatch.name };
+  }
+
+  return null;
 };
 
 export const updateScheduleIds = (

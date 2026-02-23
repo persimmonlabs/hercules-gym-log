@@ -54,40 +54,34 @@ export const ActionApprovalCard: React.FC<ActionApprovalCardProps> = ({
 
   return (
     <Animated.View entering={FadeInUp.duration(200)} style={styles.container}>
-      <View style={[styles.card, { backgroundColor: theme.surface.elevated, borderColor: theme.border.light }]}>
-        <Text variant="caption" color="secondary" style={styles.label}>
-          {actionLabel}
-        </Text>
-        <View style={styles.actions}>
-          <Pressable
-            onPress={handleReject}
-            disabled={isLoading}
-            style={[
-              styles.button,
-              styles.rejectButton,
-              { borderColor: theme.border.medium },
-              isLoading && styles.buttonDisabled,
-            ]}
-          >
-            <Text variant="bodySemibold" color="secondary">
-              Reject
-            </Text>
-          </Pressable>
-          <Pressable
-            onPress={handleApprove}
-            disabled={isLoading}
-            style={[
-              styles.button,
-              styles.approveButton,
-              { backgroundColor: theme.accent.primary },
-              isLoading && styles.buttonDisabled,
-            ]}
-          >
-            <Text variant="bodySemibold" color="onAccent">
-              Approve
-            </Text>
-          </Pressable>
-        </View>
+      <View style={[styles.card, { backgroundColor: theme.surface.elevated }]}>
+        <Pressable
+          onPress={handleReject}
+          disabled={isLoading}
+          style={[
+            styles.button,
+            styles.rejectButton,
+            isLoading && styles.buttonDisabled,
+          ]}
+        >
+          <Text variant="bodySemibold" color="secondary">
+            Reject
+          </Text>
+        </Pressable>
+        <Pressable
+          onPress={handleApprove}
+          disabled={isLoading}
+          style={[
+            styles.button,
+            styles.approveButton,
+            { backgroundColor: theme.accent.primary },
+            isLoading && styles.buttonDisabled,
+          ]}
+        >
+          <Text variant="bodySemibold" color="onAccent">
+            Approve
+          </Text>
+        </Pressable>
       </View>
     </Animated.View>
   );
@@ -100,17 +94,10 @@ const styles = StyleSheet.create({
   card: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.md,
     borderRadius: radius.lg,
-    borderWidth: 1,
-  },
-  label: {
-    flex: 1,
-  },
-  actions: {
-    flexDirection: 'row',
     gap: spacing.sm,
   },
   button: {
@@ -122,6 +109,7 @@ const styles = StyleSheet.create({
   },
   rejectButton: {
     borderWidth: 1,
+    borderColor: '#000000',
   },
   approveButton: {},
   buttonDisabled: {

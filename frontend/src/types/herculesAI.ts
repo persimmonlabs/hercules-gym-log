@@ -5,12 +5,19 @@
 
 export type ChatRole = 'user' | 'assistant' | 'system';
 
+export interface NavigationLink {
+  label: string;
+  route: string;
+  params?: Record<string, string>;
+}
+
 export interface ChatMessage {
   id: string;
   role: ChatRole;
   content: string;
   createdAt: string;
   action?: ActionProposal | null;
+  navigationLink?: NavigationLink | null;
 }
 
 export interface ActionProposal {
@@ -31,7 +38,18 @@ export interface UsageInfo {
   messagesUsed: number;
   tokensLimit: number;
   messagesLimit: number;
+  purchasedCredits: number;
   periodEnd: string;
+  nextResetAt: string;
+}
+
+export interface AppStats {
+  totalVolume: number;
+  totalWorkouts: number;
+  totalSets: number;
+  totalReps: number;
+  muscleGroupVolume: Record<string, number>;
+  weightUnit: string;
 }
 
 export interface ChatRequestBody {
@@ -39,6 +57,7 @@ export interface ChatRequestBody {
   message?: string;
   title?: string;
   timezone?: string;
+  appStats?: AppStats;
 }
 
 export interface ChatResponseBody {
@@ -66,7 +85,9 @@ export interface UsageResponseBody {
   messagesUsed: number;
   tokensLimit: number;
   messagesLimit: number;
+  purchasedCredits: number;
   periodEnd: string;
+  nextResetAt: string;
 }
 
 export interface ChatSessionSummary {

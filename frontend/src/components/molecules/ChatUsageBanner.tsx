@@ -22,12 +22,26 @@ export const ChatUsageBanner: React.FC<ChatUsageBannerProps> = ({ usage }) => {
     return null;
   }
 
-  const messagesRemaining = Math.max(0, usage.messagesLimit - usage.messagesUsed);
-  const isLow = messagesRemaining <= 5;
+  const normalRemaining = Math.max(0, usage.messagesLimit - usage.messagesUsed);
+  const totalRemaining = normalRemaining + (usage.purchasedCredits ?? 0);
+  const isLow = totalRemaining <= 10;
+  const isExhausted = totalRemaining <= 0;
+
+  if (isExhausted) {
+    return null;
+  }
 
   return (
     <View style={[styles.container, { backgroundColor: theme.surface.elevated }]}>
-      {/* Usage banner content removed */}
+      <Text
+        variant="caption"
+        color={isLow ? 'warning' : 'tertiary'}
+      >
+        {totalRemaining} credit{totalRemaining !== 1 ? 's' : ''} remaining
+        {(usage.purchasedCredits ?? 0) > 0
+          ? ` (${usage.purchasedCredits} purchased)`
+          : ''}
+      </Text>
     </View>
   );
 };

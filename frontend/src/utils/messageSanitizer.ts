@@ -122,15 +122,45 @@ export const sanitizeMessageForDisplay = (content: string): string => {
     }
   }
 
-  // Last resort: Try to extract message using regex
+  // Last resort: Try to extract message using regex (requires closing quote)
   const messageMatch = trimmed.match(/"message"\s*:\s*"((?:[^"\\]|\\.)*)"/);
   if (messageMatch && messageMatch[1]) {
-    // Unescape the extracted message
     const extracted = messageMatch[1]
       .replace(/\\"/g, '"')
       .replace(/\\n/g, '\n')
       .replace(/\\\\/g, '\\');
     return extracted;
+  }
+
+  // CRITICAL: Handle truncated JSON (response was cut off mid-stream).
+  // The regex above requires a closing quote, which won't exist if the LLM
+  // hit max_tokens. Parse character-by-character to salvage whatever message
+  // text we can extract from the incomplete JSON string value.
+  const msgStartMatch = trimmed.match(/"message"\s*:\s*"/);
+  if (msgStartMatch && msgStartMatch.index !== undefined) {
+    const valueStart = msgStartMatch.index + msgStartMatch[0].length;
+    let extracted = '';
+    let escapeNext = false;
+
+    for (let i = valueStart; i < trimmed.length; i++) {
+      const char = trimmed[i];
+      if (escapeNext) {
+        if (char === 'n') extracted += '\n';
+        else if (char === '"') extracted += '"';
+        else if (char === '\\') extracted += '\\';
+        else if (char === 't') extracted += '\t';
+        else extracted += char;
+        escapeNext = false;
+        continue;
+      }
+      if (char === '\\') { escapeNext = true; continue; }
+      if (char === '"') break;
+      extracted += char;
+    }
+
+    if (extracted.length > 20) {
+      return extracted;
+    }
   }
 
   // ABSOLUTE LAST RESORT: Remove all JSON-like content
@@ -145,7 +175,6 @@ export const sanitizeMessageForDisplay = (content: string): string => {
     return normalizeMessage(stripped);
   }
 
-  // If we still have nothing useful, return empty string
-  // The UI should handle empty strings gracefully
-  return '';
+  // If we still have nothing useful, return a neutral fallback
+  return 'Let me know how I can help with your training today.';
 };

@@ -7,6 +7,7 @@ import {
   isRecord,
   normalizeExercises,
   normalizeScheduleData,
+  resolveExerciseByName,
   updateScheduleIds,
 } from './helpers.ts';
 
@@ -204,20 +205,33 @@ export const createProgramPlan = async (
     const workoutName = uniqueWorkoutNames[index];
     const rawWorkoutExercises = normalizeExercises(workout.exercises);
     
-    // CRITICAL: Filter out invalid/placeholder exercises
-    const workoutExercises = rawWorkoutExercises.filter((ex) => {
+    // CRITICAL: Resolve exercises — if AI provided name but no valid id, look up from catalog
+    const workoutExercises: Array<{ id: string; name: string }> = [];
+    for (const ex of rawWorkoutExercises) {
       const exName = getString(ex.name) ?? '';
+      const exId = getString(ex.id);
+      
       if (isInvalidExercise(exName)) {
         console.warn('[HerculesAI] FILTERED OUT invalid exercise:', exName, 'from workout:', workoutName);
-        return false;
+        continue;
       }
-      return true;
-    });
+      
+      if (exId && exName) {
+        // AI provided both id and name — use as-is
+        workoutExercises.push({ id: exId, name: exName });
+      } else if (exName) {
+        // AI provided name but no valid id — resolve from catalog
+        const resolved = resolveExerciseByName(exName);
+        if (resolved) {
+          console.log('[HerculesAI] Resolved exercise by name:', exName, '→', resolved.id, resolved.name);
+          workoutExercises.push(resolved);
+        } else {
+          console.warn('[HerculesAI] Could not resolve exercise:', exName, '— skipping');
+        }
+      }
+    }
     
-    console.log('[HerculesAI] Preparing workout:', workoutName);
-    console.log('[HerculesAI] Raw exercises from payload:', JSON.stringify(workout.exercises));
-    console.log('[HerculesAI] After filtering invalid exercises:', workoutExercises.length);
-    console.log('[HerculesAI] Filtered exercises:', JSON.stringify(workoutExercises));
+    console.log('[HerculesAI] Preparing workout:', workoutName, '- exercises:', workoutExercises.length);
     
     return {
       plan_id: planData.id,

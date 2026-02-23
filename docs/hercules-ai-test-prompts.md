@@ -30,34 +30,11 @@ Passed all tests
 
 ## 7 — Statistics & Data Queries
 
-51. `What's my bench press PR?`
-52. `What's my squat PR?`
-53. `What's my deadlift PR?`
-54. `Show me all my personal records`
-55. `How many total workouts have I done?`
-56. `What's my total volume lifted all time?`
-57. `How many workouts did I do last week?`
-58. `How often do I work out per week on average?`
-59. `Did I work out today?`
-60. `Did I work out yesterday?`
-61. `What did I do in my last workout?`
-62. `Show me my last 5 workouts`
-63. `How has my bench press progressed over time?`
-64. `Am I getting stronger on squats?`
-65. `Which muscle group do I train the most?`
-66. `Show me my muscle group volume breakdown`
-67. `How much have I improved on lateral raises in the last 3 months?`
+Passed all tests
 
 ## 8 — Insights & Analysis
 
-68. `Am I making progress?`
-69. `What are my weakest muscle groups?`
-70. `Is my training balanced?`
-71. `Am I training my legs enough?`
-72. `What should I add to my program?`
-73. `I feel like I've hit a plateau, what should I do?`
-74. `How consistent have I been with my training?`
-75. `What exercise should I focus on improving?`
+Passed all tests
 
 ## 9 — Create Workout (Single)
 
