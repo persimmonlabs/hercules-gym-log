@@ -56,6 +56,7 @@ import { sanitizeMessageForDisplay } from '@/utils/messageSanitizer';
 import { usePlansStore } from '@/store/plansStore';
 import { useProgramsStore } from '@/store/programsStore';
 import { useSchedulesStore } from '@/store/schedulesStore';
+import { useActiveScheduleStore } from '@/store/activeScheduleStore';
 import { useWorkoutSessionsStore } from '@/store/workoutSessionsStore';
 import { useAppStatsForAI } from '@/hooks/useAppStatsForAI';
 import type { ChatMessage, ActionProposal, UsageInfo, NavigationLink } from '@/types/herculesAI';
@@ -100,7 +101,8 @@ const looksLikeActionProposal = (content: string): boolean => {
 /**
  * MissingActionFallback
  * Shows when message looks like a proposal but no action payload was included.
- * This prevents the infinite loop where user types "yes" and AI repeats.
+ * Uses "Create" / "Cancel" labels (not "Approve" / "Reject") to distinguish
+ * from the real ActionApprovalCard. The retry is silent (no visible user message).
  */
 const MissingActionFallback: React.FC<{
   onRetry: () => void;
@@ -136,7 +138,7 @@ const MissingActionFallback: React.FC<{
         }]}
       >
         <Text variant="bodySemibold" color="secondary">
-          Reject
+          Cancel
         </Text>
       </Pressable>
       <Pressable
@@ -153,7 +155,7 @@ const MissingActionFallback: React.FC<{
         }]}
       >
         <Text variant="bodySemibold" color="onAccent">
-          Approve
+          {isLoading ? 'Creating...' : 'Create'}
         </Text>
       </Pressable>
     </View>
@@ -373,7 +375,7 @@ const HerculesAIScreen: React.FC = () => {
         const errorMessage: ChatMessage = {
           id: `error-${Date.now()}`,
           role: 'assistant',
-          content: `Sorry, something went wrong: ${error.message}`,
+          content: 'Something went wrong. Please try again in a moment.',
           createdAt: new Date().toISOString(),
         };
         setMessages((prev) => [...prev, errorMessage]);
@@ -484,18 +486,16 @@ const HerculesAIScreen: React.FC = () => {
       if (data) {
         // Build navigation link based on action type + created item ID
         let navLink: NavigationLink | null = null;
-        if (data.status === 'executed' && data.data) {
-          const createdId = (data.data as Record<string, unknown>).id as string | undefined;
-          if (createdId) {
-            const actionType = actionToUse.actionType;
-            const returnTo = encodeURIComponent('/hercules-ai');
-            if (actionType === 'create_workout_template') {
-              navLink = { label: 'View Workout', route: '/(tabs)/create-workout', params: { planId: createdId, returnTo } };
-            } else if (actionType === 'create_program_plan') {
-              navLink = { label: 'View Plan', route: '/(tabs)/edit-plan', params: { planId: createdId, returnTo } };
-            } else if (actionType === 'create_schedule') {
-              navLink = { label: 'View Schedule', route: '/(tabs)/schedule-setup' };
-            }
+        if (data.status === 'executed') {
+          const createdId = (data.data as Record<string, unknown>)?.id as string | undefined;
+          const actionType = actionToUse.actionType;
+          const returnTo = encodeURIComponent('/hercules-ai');
+          if (actionType === 'create_workout_template' && createdId) {
+            navLink = { label: 'View Workout', route: '/(tabs)/create-workout', params: { planId: createdId, returnTo } };
+          } else if (actionType === 'create_program_plan' && createdId) {
+            navLink = { label: 'View Plan', route: '/(tabs)/edit-plan', params: { planId: createdId, returnTo } };
+          } else if (actionType === 'create_schedule') {
+            navLink = { label: 'View Schedule', route: '/(tabs)/schedule-setup', params: { mode: 'edit', returnTo } };
           }
         }
 
@@ -522,10 +522,13 @@ const HerculesAIScreen: React.FC = () => {
             } else if (actionType === 'create_program_plan') {
               await useProgramsStore.getState().hydratePrograms();
               await usePlansStore.getState().hydratePlans();
-              console.log('[HerculesAI] Programs and plans refreshed');
+              // Also hydrate active schedule in case setActiveSchedule was included
+              await useActiveScheduleStore.getState().hydrateActiveSchedule();
+              console.log('[HerculesAI] Programs, plans, and active schedule refreshed');
             } else if (actionType === 'create_schedule') {
+              await useActiveScheduleStore.getState().hydrateActiveSchedule();
               await useSchedulesStore.getState().hydrateSchedules();
-              console.log('[HerculesAI] Schedules refreshed');
+              console.log('[HerculesAI] Active schedule and schedules refreshed');
             } else if (
               actionType === 'add_workout_session' ||
               actionType === 'edit_workout_session' ||
@@ -601,7 +604,7 @@ const HerculesAIScreen: React.FC = () => {
       const errMsg: ChatMessage = {
         id: `error-${Date.now()}`,
         role: 'assistant',
-        content: `Credit purchase failed: ${error.message}`,
+        content: 'Credit purchase failed. Please try again in a moment.',
         createdAt: new Date().toISOString(),
       };
       setMessages((prev) => [...prev, errMsg]);
@@ -661,8 +664,9 @@ const HerculesAIScreen: React.FC = () => {
     // Don't scroll - typing animation will handle it
   }, []);
 
-  // Handler for fallback retry - sends a confirmation message to regenerate with action
-  // CRITICAL: Only allows ONE retry attempt to prevent infinite loop
+  // Handler for fallback retry - silently retries to get an action payload
+  // CRITICAL: Does NOT add a visible user message to prevent confusion and loops.
+  // Only allows ONE retry attempt to prevent infinite loop.
   const handleFallbackRetry = useCallback(async () => {
     if (isLoading || hasAttemptedFallbackRetry) return;
     
@@ -672,22 +676,18 @@ const HerculesAIScreen: React.FC = () => {
     // Reset scroll behavior - user is taking action
     userHasScrolled.current = false;
     
-    // Send a clear confirmation that should trigger action generation
-    const confirmMessage: ChatMessage = {
-      id: `user-${Date.now()}`,
-      role: 'user',
-      content: 'Yes, please create that for me now.',
-      createdAt: new Date().toISOString(),
-    };
-    
-    setMessages((prev) => [...prev, confirmMessage]);
+    // Show loading state but do NOT add a visible user message.
+    // The retry is invisible to the user — they just see a loading spinner.
     setIsLoading(true);
     triggerHaptic('light');
     
-    // Scroll user's message to top
-    scrollToUserMessageTop();
+    // Explicit instruction to produce the action payload.
+    // CRITICAL: Must be >40 chars to avoid triggering the backend's userIsConfirming
+    // detection which could cause an infinite loop. Instead, we rely on the AI
+    // re-reading the conversation and producing the correct JSON action payload.
+    const retryInstruction = 'Please output the action with a complete JSON payload including the action type and all required fields. Do not explain — just output the JSON response with type action.';
     
-    const { data, error } = await sendChatMessage(confirmMessage.content, sessionId ?? undefined, appStats);
+    const { data, error } = await sendChatMessage(retryInstruction, sessionId ?? undefined, appStats);
     
     if (error) {
       if (error.code === 'CREDITS_EXHAUSTED') {
@@ -699,7 +699,7 @@ const HerculesAIScreen: React.FC = () => {
         role: 'assistant',
         content: error.code === 'RATE_LIMITED'
           ? 'You\'re sending messages too quickly. Please wait a moment and try again.'
-          : `Sorry, something went wrong: ${error.message}`,
+          : 'Something went wrong. Please try again in a moment.',
         createdAt: new Date().toISOString(),
       };
       setMessages((prev) => [...prev, errorMessage]);
@@ -713,24 +713,30 @@ const HerculesAIScreen: React.FC = () => {
         setSessionId(data.sessionId);
       }
       
-      const assistantMessage: ChatMessage = {
-        id: `assistant-${Date.now()}`,
-        role: 'assistant',
-        content: sanitizeMessageForDisplay(data.message),
-        createdAt: new Date().toISOString(),
-        action: data.action
-          ? { ...data.action, status: 'pending' as const }
-          : null,
-      };
-      
-      setMessages((prev) => [...prev, assistantMessage]);
-      setNewMessageIds((prev) => new Set(prev).add(assistantMessage.id));
-      
       if (data.action) {
+        // Retry succeeded - show the response with action buttons
         console.log('[HerculesAI] Fallback retry succeeded - action received:', data.action.actionType);
+        const assistantMessage: ChatMessage = {
+          id: `assistant-${Date.now()}`,
+          role: 'assistant',
+          content: sanitizeMessageForDisplay(data.message),
+          createdAt: new Date().toISOString(),
+          action: { ...data.action, status: 'pending' as const },
+        };
+        setMessages((prev) => [...prev, assistantMessage]);
+        setNewMessageIds((prev) => new Set(prev).add(assistantMessage.id));
         setPendingAction({ ...data.action, status: 'pending' });
       } else {
-        console.warn('[HerculesAI] Fallback retry failed - still no action. Will not retry again.');
+        // Retry failed - show a generic, user-friendly message
+        console.warn('[HerculesAI] Fallback retry failed - still no action.');
+        const failMessage: ChatMessage = {
+          id: `assistant-${Date.now()}`,
+          role: 'assistant',
+          content: 'Let me try a different approach. Could you rephrase what you\'d like me to create?',
+          createdAt: new Date().toISOString(),
+        };
+        setMessages((prev) => [...prev, failMessage]);
+        setNewMessageIds((prev) => new Set(prev).add(failMessage.id));
       }
       
       loadUsage();

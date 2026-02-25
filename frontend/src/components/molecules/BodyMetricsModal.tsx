@@ -17,6 +17,7 @@ import { triggerHaptic } from '@/utils/haptics';
 import { Text } from '@/components/atoms/Text';
 import { Button } from '@/components/atoms/Button';
 import { colors, radius, shadows, spacing } from '@/constants/theme';
+import { useTheme } from '@/hooks/useTheme';
 import { useSettingsStore } from '@/store/settingsStore';
 
 interface BodyMetricsModalProps {
@@ -77,6 +78,7 @@ export const BodyMetricsModal: React.FC<BodyMetricsModalProps> = ({
   onClose,
   onSave,
 }) => {
+  const { theme } = useTheme();
   const { sizeUnit, weightUnit } = useSettingsStore();
   const isMetricHeight = sizeUnit === 'cm';
   const isMetricWeight = weightUnit === 'kg';
@@ -211,8 +213,8 @@ export const BodyMetricsModal: React.FC<BodyMetricsModalProps> = ({
                   placeholderTextColor={colors.text.tertiary}
                   keyboardType="numeric"
                   style={styles.input}
-                  cursorColor={colors.accent.primary}
-                  selectionColor={colors.accent.orangeLight}
+                  cursorColor={theme.accent.primary}
+                  selectionColor={theme.accent.orangeLight}
                   maxLength={3}
                 />
                 <Text variant="body" color="secondary" style={styles.unitLabel}>
@@ -230,8 +232,8 @@ export const BodyMetricsModal: React.FC<BodyMetricsModalProps> = ({
                     placeholderTextColor={colors.text.tertiary}
                     keyboardType="numeric"
                     style={styles.input}
-                    cursorColor={colors.accent.primary}
-                    selectionColor={colors.accent.orangeLight}
+                    cursorColor={theme.accent.primary}
+                    selectionColor={theme.accent.orangeLight}
                     maxLength={1}
                   />
                   <Text variant="body" color="secondary" style={styles.unitLabel}>
@@ -246,8 +248,8 @@ export const BodyMetricsModal: React.FC<BodyMetricsModalProps> = ({
                     placeholderTextColor={colors.text.tertiary}
                     keyboardType="numeric"
                     style={styles.input}
-                    cursorColor={colors.accent.primary}
-                    selectionColor={colors.accent.orangeLight}
+                    cursorColor={theme.accent.primary}
+                    selectionColor={theme.accent.orangeLight}
                     maxLength={2}
                   />
                   <Text variant="body" color="secondary" style={styles.unitLabel}>
@@ -271,8 +273,8 @@ export const BodyMetricsModal: React.FC<BodyMetricsModalProps> = ({
                 placeholderTextColor={colors.text.tertiary}
                 keyboardType={isMetricWeight ? 'decimal-pad' : 'numeric'}
                 style={styles.input}
-                cursorColor={colors.accent.primary}
-                selectionColor={colors.accent.orangeLight}
+                cursorColor={theme.accent.primary}
+                selectionColor={theme.accent.orangeLight}
                 maxLength={isMetricWeight ? 5 : 3}
               />
               <Text variant="body" color="secondary" style={styles.unitLabel}>

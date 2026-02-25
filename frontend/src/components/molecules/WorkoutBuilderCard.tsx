@@ -24,6 +24,7 @@ import { CompactExerciseRow } from '@/components/molecules/CompactExerciseRow';
 import { ExerciseSearchModal } from '@/components/molecules/ExerciseSearchModal';
 import { triggerHaptic } from '@/utils/haptics';
 import { colors, radius, spacing, typography, sizing } from '@/constants/theme';
+import { useTheme } from '@/hooks/useTheme';
 import { timingFast } from '@/constants/animations';
 import type { Exercise } from '@/constants/exercises';
 
@@ -68,6 +69,7 @@ export const WorkoutBuilderCard: React.FC<WorkoutBuilderCardProps> = ({
 
   onBrowseAllExercises,
 }) => {
+  const { theme } = useTheme();
   const [isSearchModalVisible, setSearchModalVisible] = useState(false);
   const nameFocusProgress = useSharedValue(0);
   const hasExercises = exercises.length > 0;
@@ -103,7 +105,7 @@ export const WorkoutBuilderCard: React.FC<WorkoutBuilderCardProps> = ({
   // Animated styles for name input
   const animatedNameBorderStyle = useAnimatedStyle(() => ({
     borderColor:
-      nameFocusProgress.value > 0 ? colors.accent.primary : colors.border.light,
+      nameFocusProgress.value > 0 ? theme.accent.primary : colors.border.light,
   }));
 
   const handleNameFocus = useCallback(() => {
@@ -157,8 +159,8 @@ export const WorkoutBuilderCard: React.FC<WorkoutBuilderCardProps> = ({
               onChangeText={onWorkoutNameChange}
               placeholder={namePlaceholder}
               placeholderTextColor={colors.text.muted}
-              selectionColor={colors.accent.primary}
-              cursorColor={colors.accent.primary}
+              selectionColor={theme.accent.primary}
+              cursorColor={theme.accent.primary}
               style={styles.nameInput}
               onFocus={handleNameFocus}
               onBlur={handleNameBlur}
@@ -219,7 +221,7 @@ export const WorkoutBuilderCard: React.FC<WorkoutBuilderCardProps> = ({
               pressed && styles.addExerciseButtonPressed,
             ]}
           >
-            <IconSymbol name="add" size={sizing.iconMD} color={colors.accent.orange} />
+            <IconSymbol name="add" size={sizing.iconMD} color={theme.accent.orange} />
             <Text variant="body" color="primary">
               Add Exercises
             </Text>

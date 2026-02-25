@@ -9,7 +9,8 @@ import { StyleProp, StyleSheet, Text as RNText, TextStyle } from 'react-native';
 import MaskedView from '@react-native-masked-view/masked-view';
 import { LinearGradient } from 'expo-linear-gradient';
 
-import { colors, typography } from '@/constants/theme';
+import { typography } from '@/constants/theme';
+import { useTheme } from '@/hooks/useTheme';
 
 // =============================================================================
 // TYPES
@@ -41,10 +42,13 @@ interface GradientTextProps {
 export const GradientText: React.FC<GradientTextProps> = ({
   children,
   variant = 'body',
-  gradientStart = colors.accent.gradientStart,
-  gradientEnd = colors.accent.gradientEnd,
+  gradientStart,
+  gradientEnd,
   style,
 }) => {
+  const { theme } = useTheme();
+  const resolvedStart = gradientStart ?? theme.accent.gradientStart;
+  const resolvedEnd = gradientEnd ?? theme.accent.gradientEnd;
   const typographyStyle = useMemo<TextStyle>(() => {
     const baseStyle = typography[variant];
 
@@ -60,8 +64,8 @@ export const GradientText: React.FC<GradientTextProps> = ({
   }, [style, typographyStyle]);
 
   const gradientColors = useMemo<[string, string]>(() => {
-    return [gradientStart, gradientEnd];
-  }, [gradientEnd, gradientStart]);
+    return [resolvedStart, resolvedEnd];
+  }, [resolvedEnd, resolvedStart]);
 
   return (
     <MaskedView

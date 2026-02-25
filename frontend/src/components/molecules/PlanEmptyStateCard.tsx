@@ -13,6 +13,7 @@ import { Text } from '@/components/atoms/Text';
 import { Button } from '@/components/atoms/Button';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { colors, spacing, radius } from '@/constants/theme';
+import { useTheme } from '@/hooks/useTheme';
 
 type EmptyStateVariant = 'workout' | 'plan' | 'exercises' | 'generic';
 
@@ -67,6 +68,7 @@ export const PlanEmptyStateCard: React.FC<PlanEmptyStateCardProps> = ({
   secondaryButtonLabel,
   onSecondaryPress,
 }) => {
+  const { theme } = useTheme();
   const config = VARIANT_CONFIG[variant];
   const displayHint = hintText || config.defaultHint;
 
@@ -78,7 +80,7 @@ export const PlanEmptyStateCard: React.FC<PlanEmptyStateCardProps> = ({
           <IconSymbol
             name={config.icon as any}
             size={40}
-            color={colors.accent.orange}
+            color={theme.accent.orange}
           />
         </View>
 

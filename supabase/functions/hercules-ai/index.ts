@@ -80,12 +80,6 @@ interface ActionRequestRow {
   status: string;
 }
 
-const getRouteSegment = (url: string): string => {
-  const { pathname } = new URL(url);
-  const segments = pathname.split('/').filter(Boolean);
-  return segments[segments.length - 1] ?? '';
-};
-
 const buildChatMessage = (role: ChatRole, content: string): ChatMessage => {
   return { role, content };
 };
@@ -366,11 +360,11 @@ Deno.serve(async (request: Request): Promise<Response> => {
     let lastFinishReason = 'stop';
     const MAX_TOOL_ITERATIONS = 5;
 
-    console.log(`[HerculesAI] Starting chat with ${STAT_TOOLS.length} tools available`);
+    console.log(`[HerculesAI] Starting chat with ${STAT_TOOLS.length} tools available, model: ${OPENROUTER_MODEL}`);
 
     for (let iteration = 0; iteration < MAX_TOOL_ITERATIONS; iteration++) {
       console.log(`[HerculesAI] Tool iteration ${iteration + 1}/${MAX_TOOL_ITERATIONS}`);
-      // Note: Don't use forceJson when tools are present - some models don't support both
+      // Note: Don't use forceJson when tools are present — Gemini does NOT support both simultaneously
       const result = await callOpenRouter(modelMessages, { tools: STAT_TOOLS });
 
       console.log(`[HerculesAI] Response: finishReason=${result.finishReason}, toolCalls=${result.toolCalls.length}, hasContent=${!!result.content}`);
@@ -387,6 +381,12 @@ Deno.serve(async (request: Request): Promise<Response> => {
         finalContent = result.content;
         console.log(`[HerculesAI] Final response received (no tool calls)`);
         break;
+      }
+
+      // Gemini may return BOTH content AND tool_calls in the same response.
+      // If content is present alongside tool calls, log it but continue processing tools.
+      if (result.content && result.toolCalls.length > 0) {
+        console.log(`[HerculesAI] Content returned alongside tool calls (Gemini behavior) — continuing tool processing`);
       }
 
       // Process tool calls
@@ -424,7 +424,7 @@ Deno.serve(async (request: Request): Promise<Response> => {
 
       // If this was the last iteration and we still have tool calls, get final response
       if (iteration === MAX_TOOL_ITERATIONS - 1) {
-        // toolChoice: 'none' means no tools will be called, so we can use forceJson
+        // toolChoice: 'none' disables tools so forceJson is safe here (no tools+json conflict)
         const finalResult = await callOpenRouter(modelMessages, { toolChoice: 'none', forceJson: true });
         finalContent = finalResult.content;
         if (finalResult.usage) {
@@ -499,12 +499,17 @@ Deno.serve(async (request: Request): Promise<Response> => {
         console.warn(`[HerculesAI] Missing action payload detected (${reason}) - attempting recovery`);
         
         // Determine likely action type
+        // IMPORTANT: Check schedule BEFORE plan — messages about scheduling an existing plan
+        // contain both "schedule" and "plan", and the primary intent is scheduling.
         let likelyActionType: string | null = null;
-        if (lowerMessage.includes('program') || lowerMessage.includes('plan') || 
+        if (lowerMessage.includes('schedule') || lowerMessage.includes('weekly')) {
+          // If message mentions schedule alongside creating new workouts/exercises, it's a program with schedule
+          const isCreatingNew = (lowerMessage.includes('creating') || lowerMessage.includes('create')) &&
+            (lowerMessage.includes('day 1') || lowerMessage.includes('workout'));
+          likelyActionType = isCreatingNew ? 'create_program_plan' : 'create_schedule';
+        } else if (lowerMessage.includes('program') || lowerMessage.includes('plan') || 
             (lowerMessage.includes('day 1') && lowerMessage.includes('day 2'))) {
           likelyActionType = 'create_program_plan';
-        } else if (lowerMessage.includes('schedule') || lowerMessage.includes('weekly')) {
-          likelyActionType = 'create_schedule';
         } else if (lowerMessage.includes('workout') || lowerMessage.includes('exercise')) {
           likelyActionType = 'create_workout_template';
         }

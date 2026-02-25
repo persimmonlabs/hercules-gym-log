@@ -10,6 +10,7 @@ import {
 import { Button } from '@/components/atoms/Button';
 import { Text } from '@/components/atoms/Text';
 import { colors, radius, sizing, spacing, typography } from '@/constants/theme';
+import { useTheme } from '@/hooks/useTheme';
 
 interface PlanSetModalProps {
   visible: boolean;
@@ -28,6 +29,7 @@ export const PlanSetModal: React.FC<PlanSetModalProps> = ({
   onCancel,
   onConfirm,
 }) => {
+  const { theme } = useTheme();
   return (
     <Modal animationType="fade" transparent visible={visible} onRequestClose={onCancel}>
       <TouchableWithoutFeedback onPress={onCancel}>
@@ -44,7 +46,7 @@ export const PlanSetModal: React.FC<PlanSetModalProps> = ({
                 placeholder="Enter sets"
                 placeholderTextColor={colors.text.tertiary}
                 style={styles.input}
-                selectionColor={colors.accent.primary}
+                selectionColor={theme.accent.primary}
               />
               <View style={styles.actions}>
                 <Button label="Cancel" variant="ghost" size="sm" onPress={onCancel} />

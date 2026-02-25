@@ -10,7 +10,8 @@ import Animated, { useAnimatedStyle, useSharedValue, useDerivedValue, withSpring
 import { triggerHaptic } from '@/utils/haptics';
 
 import { Text } from '@/components/atoms/Text';
-import { colors, spacing, radius } from '@/constants/theme';
+import { spacing, radius } from '@/constants/theme';
+import { useTheme } from '@/hooks/useTheme';
 import { springBouncy, buttonPressAnimation } from '@/constants/animations';
 import { TimeRange, TIME_RANGE_LABELS } from '@/types/analytics';
 
@@ -28,6 +29,7 @@ interface TimeRangeChipProps {
 }
 
 const TimeRangeChip: React.FC<TimeRangeChipProps> = ({ label, active, onPress }) => {
+  const { theme } = useTheme();
   const scale = useSharedValue(1);
 
   const animatedStyle = useAnimatedStyle(() => ({
@@ -49,7 +51,7 @@ const TimeRangeChip: React.FC<TimeRangeChipProps> = ({ label, active, onPress })
       <Pressable
         accessibilityRole="button"
         accessibilityState={{ selected: active }}
-        style={[styles.chip, active && styles.chipActive]}
+        style={[styles.chip, { borderColor: theme.accent.orangeMuted, backgroundColor: theme.surface.card }, active && { backgroundColor: theme.accent.orangeMuted, borderColor: theme.accent.orange }]}
         onPress={handlePress}
       >
         <Text variant="caption" color={active ? 'primary' : 'secondary'}>
@@ -89,13 +91,7 @@ const styles = StyleSheet.create({
   chip: {
     borderRadius: radius.full,
     borderWidth: 1,
-    borderColor: colors.accent.orangeMuted,
-    backgroundColor: colors.surface.card,
     paddingVertical: spacing.xs,
     paddingHorizontal: spacing.sm,
-  },
-  chipActive: {
-    backgroundColor: colors.accent.orangeMuted,
-    borderColor: colors.accent.orange,
   },
 });

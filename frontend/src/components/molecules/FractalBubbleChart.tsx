@@ -13,6 +13,8 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { Text } from '@/components/atoms/Text';
 import { colors, spacing, radius } from '@/constants/theme';
+import { useTheme } from '@/hooks/useTheme';
+import { hexToRgba } from '@/utils/colorUtils';
 import type { HierarchicalSetData, ChartSlice } from '@/types/analytics';
 
 const PIE_SIZE = 240;
@@ -30,12 +32,12 @@ interface BreadcrumbItem {
   level: 'root' | 'L1' | 'L2' | 'L3';
 }
 
-// Orange with opacity based on index (sorted by value)
-const getOrangeShade = (index: number, total: number): string => {
-  if (total <= 1) return 'rgba(255, 107, 74, 1.0)';
+// Accent shade with opacity based on index (sorted by value)
+const getAccentShade = (baseHex: string, index: number, total: number): string => {
+  if (total <= 1) return hexToRgba(baseHex, 1.0);
   const ratio = index / (total - 1);
   const opacity = 1.0 - ratio * 0.7;
-  return `rgba(255, 107, 74, ${opacity})`;
+  return hexToRgba(baseHex, opacity);
 };
 
 // Strip prefix from detailed muscle names for cleaner display
@@ -48,6 +50,7 @@ const getDisplayName = (fullName: string): string => {
 };
 
 export const FractalBubbleChart: React.FC<FractalBubbleChartProps> = ({ data, onMusclePress, rootGroup, showTapHint = true }) => {
+  const { theme } = useTheme();
   // If rootGroup is provided, start at L1 level with that group
   const initialBreadcrumb: BreadcrumbItem[] = rootGroup 
     ? [{ name: rootGroup, level: 'L1' }]
@@ -117,7 +120,7 @@ export const FractalBubbleChart: React.FC<FractalBubbleChartProps> = ({ data, on
     return currentData.map((item, index) => ({
       x: item.name,
       y: item.percentage,
-      color: getOrangeShade(index, currentData.length),
+      color: getAccentShade(theme.accent.orange, index, currentData.length),
     }));
   }, [currentData]);
 
@@ -164,7 +167,7 @@ export const FractalBubbleChart: React.FC<FractalBubbleChartProps> = ({ data, on
           ) : (
             breadcrumb.map((item, index) => (
               <View key={`${item.level}-${item.name}`} style={styles.breadcrumbItem}>
-                {index > 0 && <Ionicons name="chevron-forward" size={14} color={colors.text.tertiary} />}
+                {index > 0 && <Ionicons name="chevron-forward" size={14} color={theme.text.tertiary} />}
                 <Pressable
                   onPress={() => handleBreadcrumbPress(index)}
                   style={[styles.breadcrumbButton, index === breadcrumb.length - 1 && styles.breadcrumbButtonActive]}
@@ -230,7 +233,7 @@ export const FractalBubbleChart: React.FC<FractalBubbleChartProps> = ({ data, on
           {/* Drill down hint below donut */}
           {selectedSlice && hasChildren(selectedSlice) && (
             <View style={styles.drillHint}>
-              <Ionicons name="finger-print-outline" size={14} color={colors.text.tertiary} />
+              <Ionicons name="finger-print-outline" size={14} color={theme.text.tertiary} />
               <Text variant="caption" color="tertiary">Tap again to explore</Text>
             </View>
           )}
@@ -239,7 +242,7 @@ export const FractalBubbleChart: React.FC<FractalBubbleChartProps> = ({ data, on
         <View style={styles.noDataContainer}>
           <Text variant="body" color="secondary">No data at this level</Text>
           <Pressable onPress={() => handleBreadcrumbPress(breadcrumb.length - 2)} style={styles.goBackButton}>
-            <Ionicons name="arrow-back" size={16} color={colors.accent.orange} />
+            <Ionicons name="arrow-back" size={16} color={theme.accent.orange} />
             <Text variant="caption" color="secondary">Go back</Text>
           </Pressable>
         </View>
@@ -255,14 +258,14 @@ export const FractalBubbleChart: React.FC<FractalBubbleChartProps> = ({ data, on
           return (
             <TouchableOpacity
               key={item.name}
-              style={[styles.legendItem, { opacity: isDimmed ? 0.4 : 1 }]}
+              style={[styles.legendItem, { opacity: isDimmed ? 0.4 : 1, backgroundColor: theme.surface.subtle }]}
               onPress={() => handleSlicePress(item.name)}
             >
-              <View style={[styles.legendDot, { backgroundColor: getOrangeShade(index, currentData.length) }]} />
+              <View style={[styles.legendDot, { backgroundColor: getAccentShade(theme.accent.orange, index, currentData.length) }]} />
               <Text variant="caption" color="primary" style={styles.legendText} numberOfLines={1}>
                 {getDisplayName(item.name)}
               </Text>
-              {canDrill && <Ionicons name="chevron-forward" size={12} color={colors.text.tertiary} />}
+              {canDrill && <Ionicons name="chevron-forward" size={12} color={theme.text.tertiary} />}
               <Text variant="caption" color="secondary">{Math.round(item.percentage)}%</Text>
             </TouchableOpacity>
           );
@@ -287,16 +290,16 @@ const styles = StyleSheet.create({
   breadcrumbContainer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap', gap: spacing.xs, paddingVertical: spacing.xs, width: '100%' },
   breadcrumbItem: { flexDirection: 'row', alignItems: 'center' },
   breadcrumbButton: { paddingHorizontal: spacing.sm, paddingVertical: spacing.xs, borderRadius: radius.sm },
-  breadcrumbButtonActive: { backgroundColor: colors.neutral.gray200 },
+  breadcrumbButtonActive: {},
   chartContainer: { alignItems: 'center', justifyContent: 'center', position: 'relative' },
   selectedInfo: { position: 'absolute', alignItems: 'center', justifyContent: 'center', width: 120 },
   drillHint: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.xs },
   legendContainer: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: spacing.sm, paddingTop: spacing.sm },
-  legendItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: spacing.xs, paddingHorizontal: spacing.sm, backgroundColor: colors.surface.subtle, borderRadius: radius.sm, gap: spacing.xs },
+  legendItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: spacing.xs, paddingHorizontal: spacing.sm, borderRadius: radius.sm, gap: spacing.xs },
   legendDot: { width: 10, height: 10, borderRadius: 5 },
   legendText: { maxWidth: 80 },
   emptyContainer: { padding: spacing.lg, alignItems: 'center', gap: spacing.xs },
   emptyText: { textAlign: 'center' },
   noDataContainer: { alignItems: 'center', justifyContent: 'center', gap: spacing.md, padding: spacing.lg, minHeight: 200 },
-  goBackButton: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: radius.md, backgroundColor: colors.neutral.gray200 },
+  goBackButton: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: radius.md },
 });

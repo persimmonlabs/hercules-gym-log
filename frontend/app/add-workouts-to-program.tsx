@@ -21,6 +21,7 @@ import { SurfaceCard } from '@/components/atoms/SurfaceCard';
 import { Button } from '@/components/atoms/Button';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { colors, radius, spacing } from '@/constants/theme';
+import { useTheme } from '@/hooks/useTheme';
 // Plan here refers to a Workout (collection of exercises) - legacy naming in plansStore
 import { usePlansStore, type Plan } from '@/store/plansStore';
 import { useProgramBuilderContext } from '@/providers/ProgramBuilderProvider';
@@ -82,6 +83,7 @@ const styles = StyleSheet.create({
 });
 
 export default function AddWorkoutsToProgramScreen() {
+  const { theme } = useTheme();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { editPlanId } = useLocalSearchParams<{ editPlanId?: string }>();
@@ -187,7 +189,7 @@ export default function AddWorkoutsToProgramScreen() {
           tone="neutral"
           padding="md"
           showAccentStripe={false}
-          style={isSelected ? { borderColor: colors.accent.primary, borderWidth: 2 } : undefined}
+          style={isSelected ? { borderColor: theme.accent.primary, borderWidth: 2 } : undefined}
         >
           <View style={styles.workoutCard}>
             <View style={styles.workoutInfo}>
@@ -200,7 +202,7 @@ export default function AddWorkoutsToProgramScreen() {
               <IconSymbol
                 name={isSelected ? "check-circle" : "radio-button-unchecked"}
                 size={24}
-                color={isSelected ? colors.accent.primary : colors.text.tertiary}
+                color={isSelected ? theme.accent.primary : colors.text.tertiary}
               />
             </View>
           </View>

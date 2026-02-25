@@ -7,6 +7,8 @@ import { triggerHaptic } from '@/utils/haptics';
 
 import { Text } from '@/components/atoms/Text';
 import { colors, spacing, radius } from '@/constants/theme';
+import { useTheme } from '@/hooks/useTheme';
+import { hexToRgba } from '@/utils/colorUtils';
 import { useWorkoutSessionsStore } from '@/store/workoutSessionsStore';
 
 // Import data
@@ -96,6 +98,7 @@ interface ChartPageProps {
 }
 
 const ChartPage: React.FC<ChartPageProps> = ({ title, data, selectedSlice, onSelectSlice, onLayout, pageIndex, showTapHint = true, breadcrumb = [] }) => {
+  const { theme } = useTheme();
   // Prepare chart data for Victory
   const chartData = useMemo(() => {
     return data.map((item) => ({
@@ -218,6 +221,7 @@ const calculateExpectedHeight = (itemCount: number): number => {
 };
 
 export const FocusDistributionChart: React.FC = () => {
+  const { theme } = useTheme();
   const workouts = useWorkoutSessionsStore((state) => state.workouts);
   const [currentPage, setCurrentPage] = useState(0);
   const [selections, setSelections] = useState<Record<number, string | null>>({});
@@ -290,7 +294,7 @@ export const FocusDistributionChart: React.FC = () => {
           return {
             name,
             population: totalSets > 0 ? value / totalSets : 0,
-            color: `rgba(255, 107, 74, ${opacity})`,
+            color: hexToRgba(theme.accent.orange, opacity),
             legendFontColor: colors.text.primary,
             legendFontSize: 12,
           };
@@ -444,7 +448,7 @@ export const FocusDistributionChart: React.FC = () => {
             key={index}
             style={[
               styles.dot,
-              index === currentPage ? styles.activeDot : styles.inactiveDot
+              { backgroundColor: index === currentPage ? theme.accent.orange : colors.neutral.gray400 }
             ]}
           />
         ))}

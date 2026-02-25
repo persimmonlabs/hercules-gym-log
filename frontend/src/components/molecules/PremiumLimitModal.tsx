@@ -60,7 +60,7 @@ export const PremiumLimitModal: React.FC<PremiumLimitModalProps> = ({
         <View style={styles.container}>
           <View style={[styles.card, { backgroundColor: theme.surface.card }]}>
             <View style={styles.iconContainer}>
-              <IconSymbol name="lock" size={48} color={colors.accent.orange} />
+              <IconSymbol name="lock" size={48} color={theme.accent.orange} />
             </View>
 
             <Text variant="heading3" style={styles.title}>{title}</Text>

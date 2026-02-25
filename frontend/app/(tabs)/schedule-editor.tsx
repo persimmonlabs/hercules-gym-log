@@ -429,7 +429,7 @@ const ScheduleEditorScreen: React.FC = () => {
                       <Text variant="body" color={draftRotating.startDate ? 'primary' : 'tertiary'}>
                         {formattedStartDate}
                       </Text>
-                      <IconSymbol name="calendar-today" size={18} color={colors.accent.primary} />
+                      <IconSymbol name="calendar-today" size={18} color={theme.accent.primary} />
                     </View>
                   </Pressable>
 
@@ -443,7 +443,7 @@ const ScheduleEditorScreen: React.FC = () => {
                             display="spinner"
                             onChange={handleDateChange}
                             textColor={theme.text.primary}
-                            accentColor={colors.accent.primary}
+                            accentColor={theme.accent.primary}
                           />
                         </View>
                         <Button
@@ -459,7 +459,7 @@ const ScheduleEditorScreen: React.FC = () => {
                         mode="date"
                         display="default"
                         onChange={handleDateChange}
-                        accentColor={colors.accent.primary}
+                        accentColor={theme.accent.primary}
                       />
                     )
                   )}
@@ -532,14 +532,14 @@ const ScheduleEditorScreen: React.FC = () => {
                               onPress={() => selectRotatingDay(index)}
                               hitSlop={8}
                             >
-                              <IconSymbol name="edit" size={18} color={colors.accent.primary} />
+                              <IconSymbol name="edit" size={18} color={theme.accent.primary} />
                             </Pressable>
                             <Pressable
                               style={styles.rotatingDayActionButton}
                               onPress={() => removeRotatingDay(index)}
                               hitSlop={8}
                             >
-                              <IconSymbol name="close" size={18} color={colors.accent.orange} />
+                              <IconSymbol name="close" size={18} color={theme.accent.orange} />
                             </Pressable>
                           </View>
                         </View>

@@ -153,7 +153,7 @@ export const WorkoutFilters: React.FC<WorkoutFiltersProps> = ({ filters, onFilte
       <Pressable style={[styles.header, { borderBottomColor: theme.border.light }]} onPress={toggleExpanded}>
         <View style={styles.headerContent}>
           <View style={styles.headerLeft}>
-            <IconSymbol name="filter-list" size={20} color={colors.accent.primary} />
+            <IconSymbol name="filter-list" size={20} color={theme.accent.primary} />
             <Text variant="bodySemibold" color="primary">Filter</Text>
             {activeFiltersCount > 0 && (
               <View style={styles.badge}>

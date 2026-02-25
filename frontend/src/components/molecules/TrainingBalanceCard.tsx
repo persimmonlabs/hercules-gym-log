@@ -12,6 +12,7 @@ import { Text } from '@/components/atoms/Text';
 import { SurfaceCard } from '@/components/atoms/SurfaceCard';
 import { TimeRangeSelector } from '@/components/atoms/TimeRangeSelector';
 import { colors, spacing, radius } from '@/constants/theme';
+import { useTheme } from '@/hooks/useTheme';
 import { useTrainingBalanceMetrics } from '@/hooks/useTrainingBalanceMetrics';
 import { TIME_RANGE_SUBTITLES } from '@/types/analytics';
 import type { TimeRange } from '@/types/analytics';
@@ -29,6 +30,7 @@ const BalanceBar: React.FC<BalanceBarProps> = ({
   leftValue,
   rightValue,
 }) => {
+  const { theme } = useTheme();
   const total = leftValue + rightValue;
   const leftPercent = total > 0 ? (leftValue / total) * 100 : 50;
   const rightPercent = total > 0 ? (rightValue / total) * 100 : 50;
@@ -38,16 +40,16 @@ const BalanceBar: React.FC<BalanceBarProps> = ({
   const leftIsHigher = leftPercent > rightPercent;
   
   const leftBarColor = isBalanced 
-    ? colors.accent.orange 
+    ? theme.accent.orange 
     : leftIsHigher 
-      ? colors.accent.orange 
-      : 'rgba(255, 107, 74, 0.4)';
+      ? theme.accent.orange 
+      : theme.accent.orangeMuted;
   
   const rightBarColor = isBalanced 
-    ? colors.accent.orange 
+    ? theme.accent.orange 
     : !leftIsHigher 
-      ? colors.accent.orange 
-      : 'rgba(255, 107, 74, 0.4)';
+      ? theme.accent.orange 
+      : theme.accent.orangeMuted;
 
   return (
     <View style={styles.balanceItem}>

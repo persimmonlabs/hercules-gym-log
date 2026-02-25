@@ -86,7 +86,7 @@ export const AnalyticsCard: React.FC<AnalyticsCardProps> = ({
       activeOpacity={1}
       disabled={!isInteractive}
     >
-      <SurfaceCard tone="neutral" padding="md" showAccentStripe={showAccentStripe}>
+      <SurfaceCard tone="card" padding="md" showAccentStripe={showAccentStripe}>
         <View style={styles.cardContent}>
           {/* Header */}
           <View style={styles.header}>

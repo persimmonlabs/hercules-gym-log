@@ -4,6 +4,7 @@ import { triggerHaptic } from '@/utils/haptics';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { colors, radius, sizing, spacing } from '@/constants/theme';
+import { useTheme } from '@/hooks/useTheme';
 
 interface HoldRepeatIconButtonProps {
   iconName: React.ComponentProps<typeof MaterialCommunityIcons>['name'];
@@ -23,6 +24,7 @@ const HoldRepeatIconButtonInner: React.FC<HoldRepeatIconButtonProps> = ({
   style,
   triggerOnRelease = false,
 }): React.ReactElement => {
+  const { theme } = useTheme();
   const onStepRef = useRef(onStep);
   onStepRef.current = onStep;
 
@@ -68,7 +70,7 @@ const HoldRepeatIconButtonInner: React.FC<HoldRepeatIconButtonProps> = ({
       accessibilityLabel={accessibilityLabel}
       accessible
     >
-      <Animated.View style={[styles.button, disabled && styles.buttonDisabled, style, animatedStyle]}>
+      <Animated.View style={[styles.button, { borderColor: theme.accent.orange, backgroundColor: theme.surface.card }, disabled && styles.buttonDisabled, style, animatedStyle]}>
         <MaterialCommunityIcons
           name={iconName}
           size={sizing.iconMD}
@@ -86,9 +88,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.full,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.surface.card,
     borderWidth: 1,
-    borderColor: colors.accent.orange,
   },
   buttonDisabled: {
     opacity: 0.5,

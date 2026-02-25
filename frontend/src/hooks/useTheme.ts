@@ -1,13 +1,15 @@
 /**
  * useTheme hook
- * Provides theme-aware colors based on user preference and system color scheme.
- * Returns the appropriate color palette (light or dark) and the active color scheme.
+ * Provides theme-aware colors based on user preference, system color scheme,
+ * and the user's selected accent color.
+ * Returns the appropriate color palette (light or dark) with accent colors merged in.
  */
 
 import { useMemo } from 'react';
 import { useColorScheme as useRNColorScheme } from 'react-native';
 import { useSettingsStore } from '@/store/settingsStore';
 import { colors, darkColors } from '@/constants/theme';
+import { getAccentPalette } from '@/constants/accentColors';
 
 export type ColorScheme = 'light' | 'dark';
 
@@ -16,18 +18,18 @@ interface ThemeResult {
   colorScheme: ColorScheme;
   /** Whether dark mode is active */
   isDarkMode: boolean;
-  /** The active color palette */
+  /** The active color palette with accent colors applied */
   theme: typeof colors;
 }
 
 /**
  * Hook to get the current theme based on user preference and system settings.
- * - 'light': Always uses light colors
- * - 'dark': Always uses dark colors
- * - 'system': Follows the device's color scheme
+ * Merges the selected accent color palette into the theme's accent section,
+ * preserving semantic colors (red, success, warning, info).
  */
 export function useTheme(): ThemeResult {
   const themePreference = useSettingsStore((state) => state.themePreference);
+  const accentColor = useSettingsStore((state) => state.accentColor);
   const systemColorScheme = useRNColorScheme();
 
   const result = useMemo(() => {
@@ -40,14 +42,30 @@ export function useTheme(): ThemeResult {
     }
 
     const isDarkMode = resolvedScheme === 'dark';
-    const theme = isDarkMode ? darkColors : colors;
+    const baseTheme = isDarkMode ? darkColors : colors;
+    const accentPalette = getAccentPalette(accentColor, isDarkMode);
+
+    // Merge accent palette into the theme, preserving semantic colors
+    const theme: typeof colors = {
+      ...baseTheme,
+      accent: {
+        ...baseTheme.accent,
+        orange: accentPalette.orange,
+        orangeLight: accentPalette.orangeLight,
+        orangeMuted: accentPalette.orangeMuted,
+        orangeSolid: accentPalette.orangeSolid,
+        primary: accentPalette.primary,
+        gradientStart: accentPalette.gradientStart,
+        gradientEnd: accentPalette.gradientEnd,
+      },
+    };
 
     return {
       colorScheme: resolvedScheme,
       isDarkMode,
       theme,
     };
-  }, [themePreference, systemColorScheme]);
+  }, [themePreference, accentColor, systemColorScheme]);
 
   return result;
 }

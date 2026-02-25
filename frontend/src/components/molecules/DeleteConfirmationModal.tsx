@@ -9,6 +9,7 @@ import { BlurView } from 'expo-blur';
 import { Text } from '@/components/atoms/Text';
 import { Button } from '@/components/atoms/Button';
 import { colors, radius, spacing } from '@/constants/theme';
+import { useTheme } from '@/hooks/useTheme';
 
 interface DeleteConfirmationModalProps {
   visible: boolean;
@@ -31,6 +32,7 @@ export const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = (
   cancelLabel = 'Cancel',
   isLoading = false,
 }) => {
+  const { theme } = useTheme();
   return (
     <Modal
       visible={visible}

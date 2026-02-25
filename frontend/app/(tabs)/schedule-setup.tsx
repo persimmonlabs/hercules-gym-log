@@ -156,7 +156,17 @@ const createEmptyPlanDrivenRule = (planId: string, cycleWorkouts: (string | null
 const ScheduleSetupScreen: React.FC = () => {
   const { theme } = useTheme();
   const router = useRouter();
-  const { mode } = useLocalSearchParams<{ mode?: string }>();
+  const { mode, returnTo } = useLocalSearchParams<{ mode?: string; returnTo?: string }>();
+
+  const decodedReturnTo = useMemo(() => {
+    if (!returnTo) return null;
+    const raw = Array.isArray(returnTo) ? returnTo[0] : returnTo;
+    try {
+      return decodeURIComponent(raw);
+    } catch {
+      return raw;
+    }
+  }, [returnTo]);
   const { user } = useAuth();
   const setActiveRule = useActiveScheduleStore((state) => state.setActiveRule);
   const currentRule = useActiveScheduleStore((state) => state.state.activeRule);
@@ -315,12 +325,14 @@ const ScheduleSetupScreen: React.FC = () => {
 
   const handleBack = useCallback(() => {
     triggerHaptic('selection');
-    if (step === 'configure') {
+    if (step === 'configure' && !decodedReturnTo) {
       setStep('type-select');
+    } else if (decodedReturnTo) {
+      router.back();
     } else {
       router.push({ pathname: '/(tabs)/plans', params: { scrollTo: 'schedule' } });
     }
-  }, [step, router]);
+  }, [step, router, decodedReturnTo]);
 
   // Handle Android hardware back button
   useEffect(() => {
@@ -718,6 +730,132 @@ const ScheduleSetupScreen: React.FC = () => {
     );
   };
 
+  const renderPlanDrivenEditor = () => {
+    if (draftRule?.type !== 'plan-driven') return null;
+
+    const cycleWorkouts = draftRule.cycleWorkouts || [null];
+
+    return (
+      <View style={{ gap: spacing.md, marginTop: spacing.md }}>
+        {/* Plan selector */}
+        {allPlans.length > 0 ? (
+          <View style={{ gap: spacing.sm }}>
+            <Text variant="bodySemibold" color="primary">Select Plan</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.planScrollView}>
+              {allPlans.map((plan) => {
+                const isSelected = draftRule.planId === plan.id;
+                return (
+                  <Pressable
+                    key={plan.id}
+                    style={[
+                      styles.planChip,
+                      {
+                        backgroundColor: isSelected ? theme.accent.warning + '20' : theme.surface.elevated,
+                        borderColor: isSelected ? theme.accent.warning : theme.border.light,
+                      },
+                    ]}
+                    onPress={() => updatePlanDrivenPlan(plan.id)}
+                  >
+                    <Text variant="caption" color={isSelected ? 'warning' : 'primary'}>
+                      {plan.name}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
+          </View>
+        ) : (
+          <Text variant="body" color="tertiary" style={styles.emptyText}>
+            No plans found. Create a plan first to use plan-driven scheduling.
+          </Text>
+        )}
+
+        {/* Start date */}
+        <View style={[styles.cycleRow, { backgroundColor: theme.surface.elevated, borderColor: theme.border.light }]}>
+          <Text variant="bodySemibold" color="primary" style={styles.cycleDayNum}>
+            Start Date
+          </Text>
+          <Pressable
+            style={styles.cycleWorkoutPicker}
+            onPress={() => {
+              setDatePickerViewDate(startDate);
+              setPendingStartDate(startDate);
+              setDatePickerVisible(true);
+            }}
+          >
+            <Text
+              variant="body"
+              color="primary"
+              numberOfLines={1}
+              style={[styles.cycleWorkoutText, { textAlignVertical: 'center' }]}
+            >
+              {startDate.toLocaleDateString()}
+            </Text>
+            <IconSymbol name="calendar-today" size={16} color={theme.text.tertiary} />
+          </Pressable>
+        </View>
+
+        {/* Cycle workouts */}
+        <View style={styles.daysList}>
+          {cycleWorkouts.map((workoutId, visualIndex) => {
+            const workoutName = getWorkoutName(workoutId);
+            const isRest = workoutId === null || workoutName === 'Rest Day';
+
+            return (
+              <View
+                key={`plan-cycle-${visualIndex}-${workoutId ?? 'rest'}`}
+                style={[styles.cycleRow, { backgroundColor: theme.surface.elevated, borderColor: theme.border.light }]}
+              >
+                <Text variant="bodySemibold" color="primary" style={styles.cycleDayNum}>
+                  Day {visualIndex + 1}
+                </Text>
+                <Pressable
+                  style={styles.cycleWorkoutPicker}
+                  onPress={() => openWorkoutPicker('plan-driven', visualIndex)}
+                >
+                  <Text
+                    variant="body"
+                    color={isRest ? 'tertiary' : 'primary'}
+                    numberOfLines={1}
+                    style={styles.cycleWorkoutText}
+                  >
+                    {workoutName}
+                  </Text>
+                  <IconSymbol name="chevron-right" size={16} color={theme.text.tertiary} />
+                </Pressable>
+                {cycleWorkouts.length > 1 && (
+                  <Pressable
+                    style={styles.removeButton}
+                    onPress={() => removePlanDrivenDay(visualIndex)}
+                  >
+                    <IconSymbol name="close" size={18} color={theme.accent.warning} />
+                  </Pressable>
+                )}
+              </View>
+            );
+          })}
+        </View>
+
+        <Pressable
+          style={[styles.addDayButton, { backgroundColor: theme.surface.elevated }]}
+          onPress={addPlanDrivenDay}
+          disabled={cycleWorkouts.length >= MAX_ROTATING_CYCLE_DAYS}
+        >
+          <IconSymbol name="add" size={24} color={theme.accent.warning} />
+        </Pressable>
+
+        <View style={styles.saveButtonWrapper}>
+          <Button
+            label="Save Schedule"
+            variant="primary"
+            size="lg"
+            onPress={handleSave}
+          />
+        </View>
+      </View>
+    );
+  };
+
   const renderConfigureStep = () => {
     switch (selectedType) {
       case 'weekly':
@@ -869,7 +1007,7 @@ const ScheduleSetupScreen: React.FC = () => {
         >
           <View style={[styles.datePickerPopup, { backgroundColor: theme.surface.card }]}>
             <View style={[styles.pickerHeader, { borderBottomColor: theme.border.light }]}>
-              <Text variant="heading3" color={theme.text.primary}>
+              <Text variant="heading3" color="primary">
                 Select Start Date
               </Text>
               <Pressable onPress={() => setDatePickerVisible(false)}>

@@ -17,6 +17,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Text } from '@/components/atoms/Text';
 import { SurfaceCard } from '@/components/atoms/SurfaceCard';
 import { colors, spacing, radius, shadows } from '@/constants/theme';
+import { useTheme } from '@/hooks/useTheme';
 
 interface PremiumLockProps {
   isLocked: boolean;
@@ -33,6 +34,7 @@ export const PremiumLock: React.FC<PremiumLockProps> = ({
   onUnlock,
   children,
 }) => {
+  const { theme } = useTheme();
   if (!isLocked) {
     return <>{children}</>;
   }
@@ -42,7 +44,7 @@ export const PremiumLock: React.FC<PremiumLockProps> = ({
     <SurfaceCard tone="neutral" padding="md" showAccentStripe={false}>
       <View style={styles.lockedCard}>
         <View style={styles.lockBadge}>
-          <Ionicons name="lock-closed" size={24} color={colors.accent.orange} />
+          <Ionicons name="lock-closed" size={24} color={theme.accent.orange} />
         </View>
 
         {featureName && (
@@ -53,7 +55,7 @@ export const PremiumLock: React.FC<PremiumLockProps> = ({
 
         
         <TouchableOpacity
-          style={styles.ctaButton}
+          style={[styles.ctaButton, { backgroundColor: theme.accent.orange }]}
           onPress={onUnlock}
           activeOpacity={0.8}
         >
@@ -95,7 +97,6 @@ const styles = StyleSheet.create({
   ctaButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.accent.orange,
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.lg,
     borderRadius: radius.full,

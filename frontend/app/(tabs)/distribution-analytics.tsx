@@ -18,9 +18,11 @@ import { FractalBubbleChart } from '@/components/molecules/FractalBubbleChart';
 import { useAnalyticsData } from '@/hooks/useAnalyticsData';
 import { usePremiumStatus } from '@/hooks/usePremiumStatus';
 import { colors, spacing } from '@/constants/theme';
+import { useTheme } from '@/hooks/useTheme';
 import type { TimeRange } from '@/types/analytics';
 
 const DistributionAnalyticsScreen: React.FC = () => {
+  const { theme } = useTheme();
   const router = useRouter();
   const [timeRange, setTimeRange] = React.useState<TimeRange>('week');
   const { hierarchicalVolumeDistribution } = useAnalyticsData({ timeRange });
@@ -55,8 +57,8 @@ const DistributionAnalyticsScreen: React.FC = () => {
   // Show loading screen while checking premium status to avoid paywall flash
   if (isLoading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={colors.accent.orange} />
+      <View style={[styles.loadingContainer, { backgroundColor: theme.primary.bg }]}>
+        <ActivityIndicator size="large" color={theme.accent.orange} />
       </View>
     );
   }
@@ -66,11 +68,11 @@ const DistributionAnalyticsScreen: React.FC = () => {
   };
 
   return (
-    <TabSwipeContainer contentContainerStyle={styles.contentContainer}>
+    <TabSwipeContainer contentContainerStyle={[styles.contentContainer, { backgroundColor: theme.primary.bg }]}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={handleBackPress} style={styles.backButton}>
-          <Ionicons name="chevron-back" size={24} color={colors.text.primary} />
+          <Ionicons name="chevron-back" size={24} color={theme.text.primary} />
         </TouchableOpacity>
         <Text variant="heading2" color="primary">Volume Distribution</Text>
         <View style={styles.placeholder} />
@@ -82,7 +84,7 @@ const DistributionAnalyticsScreen: React.FC = () => {
       </View>
 
       {/* Upper Body Distribution */}
-      <SurfaceCard tone="neutral" padding="lg" showAccentStripe={false}>
+      <SurfaceCard tone="card" padding="lg" showAccentStripe={false}>
         <View style={styles.cardContent}>
           <PremiumLock
             isLocked={!isPremium}
@@ -100,7 +102,7 @@ const DistributionAnalyticsScreen: React.FC = () => {
       </SurfaceCard>
 
       {/* Lower Body Distribution */}
-      <SurfaceCard tone="neutral" padding="lg" showAccentStripe={false}>
+      <SurfaceCard tone="card" padding="lg" showAccentStripe={false}>
         <View style={styles.cardContent}>
           <PremiumLock
             isLocked={!isPremium}
@@ -118,7 +120,7 @@ const DistributionAnalyticsScreen: React.FC = () => {
       </SurfaceCard>
 
       {/* Core Distribution */}
-      <SurfaceCard tone="neutral" padding="lg" showAccentStripe={false}>
+      <SurfaceCard tone="card" padding="lg" showAccentStripe={false}>
         <View style={styles.cardContent}>
           <PremiumLock
             isLocked={!isPremium}
@@ -141,13 +143,11 @@ const DistributionAnalyticsScreen: React.FC = () => {
 const styles = StyleSheet.create({
   loadingContainer: {
     flex: 1,
-    backgroundColor: colors.primary.bg,
     alignItems: 'center',
     justifyContent: 'center',
   },
   contentContainer: {
     flexGrow: 1,
-    backgroundColor: colors.primary.bg,
     paddingTop: spacing.md,
     paddingHorizontal: spacing.md,
     gap: spacing.lg,

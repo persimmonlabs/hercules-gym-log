@@ -19,6 +19,7 @@ import { Text } from '@/components/atoms/Text';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { triggerHaptic } from '@/utils/haptics';
 import { colors, radius, spacing, typography, sizing } from '@/constants/theme';
+import { useTheme } from '@/hooks/useTheme';
 import { timingFast, timingMedium } from '@/constants/animations';
 import { useSemanticExerciseSearch } from '@/hooks/useSemanticExerciseSearch';
 import { exercises as exerciseCatalog, type Exercise } from '@/constants/exercises';
@@ -62,11 +63,12 @@ export const InlineExerciseSearch: React.FC<InlineExerciseSearchProps> = ({
       .slice(0, maxSuggestions);
   }, [excludeIds, searchTerm, maxSuggestions]);
 
+  const { theme } = useTheme();
   const displayExercises = searchTerm.trim() ? suggestions : popularExercises;
   const showSuggestions = isFocused && displayExercises.length > 0;
 
   const animatedBorderStyle = useAnimatedStyle(() => ({
-    borderColor: focusProgress.value > 0 ? colors.accent.primary : colors.border.light,
+    borderColor: focusProgress.value > 0 ? theme.accent.primary : theme.border.light,
   }));
 
   const handleFocus = useCallback(() => {
@@ -98,15 +100,15 @@ export const InlineExerciseSearch: React.FC<InlineExerciseSearchProps> = ({
         <IconSymbol
           name="search"
           size={sizing.iconSM}
-          color={isFocused ? colors.accent.primary : colors.text.tertiary}
+          color={isFocused ? theme.accent.primary : colors.text.tertiary}
         />
         <TextInput
           value={searchTerm}
           onChangeText={setSearchTerm}
           placeholder={placeholder}
           placeholderTextColor={colors.text.muted}
-          selectionColor={colors.accent.primary}
-          cursorColor={colors.accent.primary}
+          selectionColor={theme.accent.primary}
+          cursorColor={theme.accent.primary}
           style={styles.textInput}
           onFocus={handleFocus}
           onBlur={handleBlur}
@@ -186,6 +188,7 @@ interface SuggestionRowProps {
 }
 
 const SuggestionRow: React.FC<SuggestionRowProps> = ({ exercise, onAdd }) => {
+  const { theme } = useTheme();
   const tags = getExerciseDisplayTags({
     muscles: exercise.muscles,
     exerciseType: exercise.exerciseType,
@@ -201,7 +204,8 @@ const SuggestionRow: React.FC<SuggestionRowProps> = ({ exercise, onAdd }) => {
       onPress={handlePress}
       style={({ pressed }) => [
         styles.suggestionRow,
-        pressed && styles.suggestionRowPressed,
+        { backgroundColor: theme.surface.card, borderColor: theme.border.light },
+        pressed && { backgroundColor: theme.accent.orangeMuted, borderColor: theme.accent.orange },
       ]}
     >
       <View style={styles.suggestionInfo}>
@@ -214,11 +218,11 @@ const SuggestionRow: React.FC<SuggestionRowProps> = ({ exercise, onAdd }) => {
           </Text>
         )}
       </View>
-      <View style={styles.addButton}>
+      <View style={[styles.addButton, { backgroundColor: theme.accent.orangeMuted }]}>
         <IconSymbol
           name="add"
           size={18}
-          color={colors.accent.orange}
+          color={theme.accent.orange}
         />
       </View>
     </Pressable>
@@ -265,14 +269,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.md,
-    backgroundColor: colors.surface.card,
     borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: colors.border.light,
-  },
-  suggestionRowPressed: {
-    backgroundColor: colors.accent.orangeMuted,
-    borderColor: colors.accent.orange,
   },
   suggestionInfo: {
     flex: 1,
@@ -282,7 +280,6 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: radius.full,
-    backgroundColor: colors.accent.orangeMuted,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -291,7 +288,5 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     paddingVertical: spacing.lg,
   },
-  browseAllText: {
-    color: colors.accent.orange,
-  },
+  browseAllText: {},
 });

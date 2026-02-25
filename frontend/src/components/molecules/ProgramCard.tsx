@@ -6,6 +6,7 @@ import { Text } from '@/components/atoms/Text';
 import { Badge } from '@/components/atoms';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { colors, radius, spacing, shadows } from '@/constants/theme';
+import { useTheme } from '@/hooks/useTheme';
 import type { PremadeProgram, UserProgram, PremadeWorkout } from '@/types/premadePlan';
 
 interface ProgramCardProps {
@@ -80,6 +81,7 @@ const styles = StyleSheet.create({
 });
 
 export const ProgramCard: React.FC<ProgramCardProps> = ({ program, onPress, style, isLocked = false, onUnlock }) => {
+  const { theme } = useTheme();
   // Defensive checks for corrupted data
   if (!program || typeof program !== 'object') {
     return null;
@@ -102,7 +104,7 @@ export const ProgramCard: React.FC<ProgramCardProps> = ({ program, onPress, styl
       <SurfaceCard tone="neutral" padding="lg" style={[styles.container, style]} showAccentStripe={true}>
         <View style={styles.lockedCard}>
           <View style={styles.lockBadge}>
-            <Ionicons name="lock-closed" size={20} color={colors.accent.orange} />
+            <Ionicons name="lock-closed" size={20} color={theme.accent.orange} />
           </View>
 
           <Text variant="bodySemibold" color="primary" style={styles.lockedName}>

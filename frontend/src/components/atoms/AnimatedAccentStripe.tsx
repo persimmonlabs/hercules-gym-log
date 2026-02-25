@@ -7,7 +7,7 @@ import React from 'react';
 import { StyleProp, StyleSheet, ViewStyle } from 'react-native';
 import Animated from 'react-native-reanimated';
 
-import { colors } from '@/constants/theme';
+import { useTheme } from '@/hooks/useTheme';
 
 interface AnimatedAccentStripeProps {
   /** Optional style overrides for stripe layout */
@@ -15,11 +15,10 @@ interface AnimatedAccentStripeProps {
 }
 
 export const AnimatedAccentStripe: React.FC<AnimatedAccentStripeProps> = ({ style }) => {
-  return <Animated.View pointerEvents="none" style={[styles.stripe, style]} />;
+  const { theme } = useTheme();
+  return <Animated.View pointerEvents="none" style={[styles.stripe, { backgroundColor: theme.accent.orange }, style]} />;
 };
 
 const styles = StyleSheet.create({
-  stripe: {
-    backgroundColor: colors.accent.orange,
-  },
+  stripe: {},
 });

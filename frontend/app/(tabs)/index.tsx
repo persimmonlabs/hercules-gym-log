@@ -916,10 +916,10 @@ const DashboardScreen: React.FC = () => {
                   <View style={styles.todaysPlanBody}>
                       {todaysCardState.variant === 'outdoorOngoing' ? (
                         <SurfaceCard
-                          tone="neutral"
+                          tone="subcard"
                           padding="lg"
                           showAccentStripe={false}
-                          style={[styles.inlineCard, { borderColor: theme.border.light }]}
+                          style={styles.inlineCard}
                         >
                           <View style={styles.quickLinkRow}>
                             <View style={styles.quickLinkInfo}>
@@ -952,10 +952,10 @@ const DashboardScreen: React.FC = () => {
                         </SurfaceCard>
                       ) : todaysCardState.variant === 'ongoing' ? (
                         <SurfaceCard
-                          tone="neutral"
+                          tone="subcard"
                           padding="lg"
                           showAccentStripe={false}
-                          style={[styles.inlineCard, { borderColor: theme.border.light }]}
+                          style={styles.inlineCard}
                         >
                           <View style={styles.quickLinkRow}>
                             <View style={styles.quickLinkInfo}>
@@ -988,10 +988,10 @@ const DashboardScreen: React.FC = () => {
                         </SurfaceCard>
                       ) : todaysCardState.variant === 'activeSchedule' ? (
                         <SurfaceCard
-                          tone="neutral"
+                          tone="subcard"
                           padding="lg"
                           showAccentStripe={false}
-                          style={[styles.inlineCard, { borderColor: theme.border.light }]}
+                          style={styles.inlineCard}
                         >
                           <View style={styles.quickLinkRow}>
                             <View style={styles.quickLinkInfo}>
@@ -1080,10 +1080,10 @@ const DashboardScreen: React.FC = () => {
                         </SurfaceCard>
                       ) : todaysCardState.variant === 'plan' || todaysCardState.variant === 'rotation' || todaysCardState.variant === 'standaloneRotation' ? (
                         <SurfaceCard
-                          tone="neutral"
+                          tone="subcard"
                           padding="lg"
                           showAccentStripe={false}
-                          style={[styles.inlineCard, { borderColor: theme.border.light }]}
+                          style={styles.inlineCard}
                         >
                           <View style={styles.quickLinkRow}>
                             <View style={styles.quickLinkInfo}>
@@ -1131,7 +1131,7 @@ const DashboardScreen: React.FC = () => {
                           }}
                         >
                           <SurfaceCard
-                            tone="neutral"
+                            tone="subcard"
                             padding="lg"
                             showAccentStripe={false}
                             style={styles.inlineCard}
@@ -1155,10 +1155,10 @@ const DashboardScreen: React.FC = () => {
                         </Pressable>
                       ) : todaysCardState.variant === 'noPlans' ? (
                         <SurfaceCard
-                          tone="neutral"
+                          tone="subcard"
                           padding="lg"
                           showAccentStripe={false}
-                          style={[styles.inlineCard, { borderColor: theme.border.light }]}
+                          style={styles.inlineCard}
                         >
                           <View style={styles.quickLinkRow}>
                             <View style={styles.quickLinkInfo}>
@@ -1191,10 +1191,10 @@ const DashboardScreen: React.FC = () => {
                         </SurfaceCard>
                       ) : todaysCardState.variant === 'rest' ? (
                         <SurfaceCard
-                          tone="neutral"
+                          tone="subcard"
                           padding="lg"
                           showAccentStripe={false}
-                          style={[styles.inlineCard, { borderColor: theme.border.light }]}
+                          style={styles.inlineCard}
                         >
                           <View style={styles.todaysPlanEmptyContent}>
                             <Text variant="bodySemibold" color="primary">
@@ -1207,10 +1207,10 @@ const DashboardScreen: React.FC = () => {
                         </SurfaceCard>
                       ) : (
                         <SurfaceCard
-                          tone="neutral"
+                          tone="subcard"
                           padding="lg"
                           showAccentStripe={false}
-                          style={[styles.inlineCard, { borderColor: theme.border.light }]}
+                          style={styles.inlineCard}
                         >
                           <View style={styles.quickLinkRow}>
                             <View style={styles.quickLinkInfo}>
@@ -1276,10 +1276,10 @@ const DashboardScreen: React.FC = () => {
                           }}
                         >
                           <SurfaceCard
-                            tone="neutral"
+                            tone="subcard"
                             padding="lg"
                             showAccentStripe={false}
-                            style={[styles.inlineCard, { borderColor: theme.border.light }, lift?.animatedStyle]}
+                            style={[styles.inlineCard, lift?.animatedStyle]}
                           >
                             <View style={styles.recentCardHeader}>
                               <Text variant="bodySemibold" color="primary">
@@ -1298,10 +1298,10 @@ const DashboardScreen: React.FC = () => {
                     })
                   ) : (
                     <SurfaceCard
-                      tone="neutral"
+                      tone="subcard"
                       padding="lg"
                       showAccentStripe={false}
-                      style={[styles.inlineCard, { borderColor: theme.border.light }]}
+                      style={styles.inlineCard}
                     >
                       <Text variant="bodySemibold" color="primary">
                         No workouts yet
@@ -1331,10 +1331,10 @@ const DashboardScreen: React.FC = () => {
                   }}
                 >
                   <SurfaceCard
-                    tone="neutral"
+                    tone="subcard"
                     padding="lg"
                     showAccentStripe={false}
-                    style={[styles.inlineCard, { borderColor: theme.border.light }]}
+                    style={styles.inlineCard}
                   >
                     <View style={styles.quickLinkRow}>
                       <View style={styles.quickLinkInfo}>

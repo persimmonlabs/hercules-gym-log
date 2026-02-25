@@ -14,6 +14,7 @@ import { PlanEmptyStateCard } from '@/components/molecules/PlanEmptyStateCard';
 import { PlanNameCard } from '@/components/molecules/PlanNameCard';
 import { usePlanBuilderContext } from '@/providers/PlanBuilderProvider';
 import { colors, radius, spacing, sizing } from '@/constants/theme';
+import { useTheme } from '@/hooks/useTheme';
 
 const styles = StyleSheet.create({
   container: {
@@ -84,6 +85,7 @@ const styles = StyleSheet.create({
 });
 
 const CreatePlanScreen: React.FC = () => {
+  const { theme } = useTheme();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { planId } = useLocalSearchParams<{ planId?: string }>();
@@ -161,7 +163,7 @@ const CreatePlanScreen: React.FC = () => {
   if (isLoading) {
     return (
       <View style={[styles.container, { paddingTop: insets.top, justifyContent: 'center', alignItems: 'center' }]}>
-        <ActivityIndicator size="large" color={colors.accent.orange} />
+        <ActivityIndicator size="large" color={theme.accent.orange} />
         <Text variant="body" color="secondary" style={{ marginTop: spacing.md }}>
           Loading plan...
         </Text>

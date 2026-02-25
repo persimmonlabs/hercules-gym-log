@@ -10,6 +10,7 @@ import { triggerHaptic } from '@/utils/haptics';
 
 import { Text } from '@/components/atoms/Text';
 import { colors, radius, spacing } from '@/constants/theme';
+import { useTheme } from '@/hooks/useTheme';
 import type { Exercise } from '@/constants/exercises';
 import { springBouncy, buttonPressAnimation } from '@/constants/animations';
 import { IconSymbol } from '@/components/ui/icon-symbol';
@@ -24,6 +25,7 @@ export const PlanQuickBuilderSuggestionRow: React.FC<PlanQuickBuilderSuggestionR
   exercise,
   onAdd,
 }) => {
+  const { theme } = useTheme();
   const scale = useSharedValue(1);
 
   const animatedStyle = useAnimatedStyle(() => ({
@@ -62,7 +64,7 @@ export const PlanQuickBuilderSuggestionRow: React.FC<PlanQuickBuilderSuggestionR
         </View>
 
         <LinearGradient
-          colors={[colors.accent.gradientStart, colors.accent.gradientEnd]}
+          colors={[theme.accent.gradientStart, theme.accent.gradientEnd]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={styles.addButton}

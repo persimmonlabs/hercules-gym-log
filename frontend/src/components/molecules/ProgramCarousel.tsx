@@ -7,6 +7,7 @@ import { triggerHaptic } from '@/utils/haptics';
 import { Text } from '@/components/atoms/Text';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { colors, radius, spacing, shadows, sizing } from '@/constants/theme';
+import { useTheme } from '@/hooks/useTheme';
 
 interface Program {
   id: string;
@@ -38,6 +39,7 @@ export const ProgramCarousel: React.FC<ProgramCarouselProps> = ({
   onDeleteProgram,
   onCloseExpanded,
 }) => {
+  const { theme } = useTheme();
   const router = useRouter();
   const scrollViewRef = useRef<ScrollView>(null);
 
@@ -164,7 +166,7 @@ export const ProgramCarousel: React.FC<ProgramCarouselProps> = ({
         >
           <View style={styles.addCardInner}>
             <View style={styles.addIconWrapper}>
-              <IconSymbol name="add" size={sizing.iconLG} color={colors.accent.orange} />
+              <IconSymbol name="add" size={sizing.iconLG} color={theme.accent.orange} />
             </View>
             <Text variant="body" color="primary" style={styles.addText}>
               Add Plan

@@ -51,13 +51,30 @@ export const normalizeScheduleData = (value: unknown): Record<string, unknown> |
 };
 
 /**
+ * Strips parenthetical annotations the AI sometimes appends to exercise names.
+ * e.g. "Bench Press (from existing Push Day)" → "Bench Press"
+ *      "Cable Fly (existing)" → "Cable Fly"
+ */
+export const stripExerciseAnnotations = (name: string): string => {
+  return name
+    .replace(/\s*\(from existing[^)]*\)/gi, '')
+    .replace(/\s*\(existing[^)]*\)/gi, '')
+    .replace(/\s*\(from [^)]*\)/gi, '')
+    .replace(/\s*\(new\)/gi, '')
+    .trim();
+};
+
+/**
  * Resolves an exercise name to { id, name } from EXERCISE_CATALOG.
  * Uses exact match first, then fuzzy (contains) match.
  * Returns null if no match found.
  */
 export const resolveExerciseByName = (exerciseName: string): { id: string; name: string } | null => {
   if (!exerciseName || exerciseName.trim().length < 3) return null;
-  const searchName = exerciseName.trim().toLowerCase();
+  // CRITICAL: Strip AI annotations before matching
+  const cleaned = stripExerciseAnnotations(exerciseName);
+  if (cleaned.length < 3) return null;
+  const searchName = cleaned.toLowerCase();
 
   // 1. Exact match
   const exact = EXERCISE_CATALOG.find(e => e.name.toLowerCase() === searchName);
@@ -79,6 +96,106 @@ export const resolveExerciseByName = (exerciseName: string): { id: string; name:
       return matchCount >= 2;
     });
     if (wordMatch) return { id: wordMatch.id, name: wordMatch.name };
+  }
+
+  return null;
+};
+
+/**
+ * Check if a reference is a rest day (null in schedule).
+ */
+export const isRestDayRef = (ref: unknown): boolean => {
+  if (ref === null || ref === undefined) return true;
+  if (typeof ref !== 'string') return true;
+  const lower = ref.trim().toLowerCase();
+  return (
+    lower === '' ||
+    lower === 'rest' ||
+    lower === 'rest day' ||
+    lower === 'off' ||
+    lower === 'recovery' ||
+    lower === 'recovery day' ||
+    lower === 'off day'
+  );
+};
+
+/**
+ * Build a lookup function that resolves workout references (name or ID) to real IDs.
+ * Loads all workout_templates and plan_workouts upfront for efficiency.
+ */
+export const buildWorkoutLookup = async (
+  supabase: SupabaseClient,
+  userId: string
+): Promise<(ref: string) => string | null> => {
+  const [templatesResult, planWorkoutsResult] = await Promise.all([
+    supabase.from('workout_templates').select('id, name').eq('user_id', userId),
+    supabase.from('plan_workouts').select('id, name').eq('user_id', userId),
+  ]);
+
+  const allWorkouts: { id: string; name: string }[] = [];
+  if (templatesResult.data) allWorkouts.push(...(templatesResult.data as { id: string; name: string }[]));
+  if (planWorkoutsResult.data) allWorkouts.push(...(planWorkoutsResult.data as { id: string; name: string }[]));
+
+  return (ref: string): string | null => {
+    if (!ref || ref.trim().length === 0) return null;
+    const trimmed = ref.trim();
+
+    // 1. Exact ID match
+    const byId = allWorkouts.find((w) => w.id === trimmed);
+    if (byId) return byId.id;
+
+    // 2. Exact name match (case-insensitive)
+    const byName = allWorkouts.find((w) => w.name.toLowerCase() === trimmed.toLowerCase());
+    if (byName) return byName.id;
+
+    // 3. Fuzzy (contains) match
+    const fuzzy = allWorkouts.find(
+      (w) =>
+        w.name.toLowerCase().includes(trimmed.toLowerCase()) ||
+        trimmed.toLowerCase().includes(w.name.toLowerCase())
+    );
+    if (fuzzy) return fuzzy.id;
+
+    return null;
+  };
+};
+
+/**
+ * Resolve a plan reference (name or ID) to its plan ID.
+ */
+export const resolvePlanRef = async (
+  supabase: SupabaseClient,
+  userId: string,
+  ref: string
+): Promise<string | null> => {
+  if (!ref || ref.trim().length === 0) return null;
+  const trimmed = ref.trim();
+
+  // 1. Exact ID match
+  const { data: planById } = await supabase
+    .from('plans')
+    .select('id')
+    .eq('id', trimmed)
+    .eq('user_id', userId)
+    .maybeSingle();
+  if (planById) return planById.id as string;
+
+  // 2. Name match (case-insensitive)
+  const { data: plans } = await supabase
+    .from('plans')
+    .select('id, name')
+    .eq('user_id', userId);
+
+  if (plans) {
+    const exact = plans.find((p) => (p.name as string).toLowerCase() === trimmed.toLowerCase());
+    if (exact) return exact.id as string;
+
+    const fuzzy = plans.find(
+      (p) =>
+        (p.name as string).toLowerCase().includes(trimmed.toLowerCase()) ||
+        trimmed.toLowerCase().includes((p.name as string).toLowerCase())
+    );
+    if (fuzzy) return fuzzy.id as string;
   }
 
   return null;

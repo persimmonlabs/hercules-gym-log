@@ -239,7 +239,7 @@ const OutdoorSessionScreen: React.FC = () => {
           {routeCoords.length >= 2 && (
             <Polyline
               coordinates={routeCoords}
-              strokeColor={colors.accent.orange}
+              strokeColor={theme.accent.orange}
               strokeWidth={4}
             />
           )}

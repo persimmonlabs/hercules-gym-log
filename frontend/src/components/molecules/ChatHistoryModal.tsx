@@ -155,7 +155,7 @@ export const ChatHistoryModal: React.FC<ChatHistoryModalProps> = ({
       ]}
       onPress={() => handleSelectSession(item.id)}
     >
-      <View style={styles.sessionIcon}>
+      <View style={[styles.sessionIcon, { backgroundColor: theme.accent.orangeMuted }]}>
         <IconSymbol name="chat-bubble-outline" size={18} color={theme.accent.primary} />
       </View>
       <View style={styles.sessionContent}>
@@ -252,7 +252,7 @@ export const ChatHistoryModal: React.FC<ChatHistoryModalProps> = ({
           )}
         </View>
 
-        <View style={styles.footer}>
+        <View style={[styles.footer, { borderTopColor: theme.border.light }]}>
           <Button
             label="New Chat"
             variant="primary"
@@ -341,7 +341,6 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 107, 74, 0.15)',
   },
   sessionContent: {
     flex: 1,
@@ -355,7 +354,6 @@ const styles = StyleSheet.create({
     paddingTop: spacing.md,
     paddingBottom: spacing.md,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255, 107, 74, 0.2)',
   },
   newChatButton: {
     width: '100%',

@@ -11,6 +11,7 @@ import { Button } from '@/components/atoms/Button';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { PlanBuilderCard } from '@/components/molecules/PlanBuilderCard';
 import { colors, radius, spacing, sizing } from '@/constants/theme';
+import { useTheme } from '@/hooks/useTheme';
 import { exercises as exerciseCatalog } from '@/constants/exercises';
 import { usePlansStore, type Plan } from '@/store/plansStore';
 import { useProgramsStore } from '@/store/programsStore';
@@ -54,6 +55,7 @@ const styles = StyleSheet.create({
 });
 
 export default function EditPlanScreen() {
+  const { theme } = useTheme();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { planId, returnTo } = useLocalSearchParams<{ planId: string; returnTo?: string }>();
@@ -309,7 +311,7 @@ export default function EditPlanScreen() {
   if (isLoading) {
     return (
       <View style={[styles.container, { paddingTop: insets.top, justifyContent: 'center', alignItems: 'center' }]}>
-        <ActivityIndicator size="large" color={colors.accent.primary} />
+        <ActivityIndicator size="large" color={theme.accent.primary} />
         <Text variant="body" color="secondary" style={{ marginTop: spacing.md }}>
           Loading plan...
         </Text>

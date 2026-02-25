@@ -174,10 +174,10 @@ export const CreateExerciseModal: React.FC<CreateExerciseModalProps> = ({
                           styles.typeOption,
                           { 
                             backgroundColor: isSelected 
-                              ? colors.accent.primary 
+                              ? theme.accent.primary 
                               : theme.surface.elevated,
                             borderColor: isSelected 
-                              ? colors.accent.primary 
+                              ? theme.accent.primary 
                               : theme.border.light,
                           },
                         ]}

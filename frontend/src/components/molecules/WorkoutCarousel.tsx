@@ -6,6 +6,7 @@ import { triggerHaptic } from '@/utils/haptics';
 import { Text } from '@/components/atoms/Text';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { colors, radius, spacing, shadows, sizing } from '@/constants/theme';
+import { useTheme } from '@/hooks/useTheme';
 
 interface Workout {
   uniqueId: string;
@@ -41,6 +42,7 @@ export const WorkoutCarousel: React.FC<WorkoutCarouselProps> = ({
   onDeleteWorkout,
   onCloseExpanded,
 }) => {
+  const { theme } = useTheme();
   const scrollViewRef = useRef<ScrollView>(null);
 
   // Reset scroll position when parent screen gains focus
@@ -185,7 +187,7 @@ export const WorkoutCarousel: React.FC<WorkoutCarouselProps> = ({
         >
           <View style={styles.addCardInner}>
             <View style={styles.addIconWrapper}>
-              <IconSymbol name="add" size={sizing.iconLG} color={colors.accent.orange} />
+              <IconSymbol name="add" size={sizing.iconLG} color={theme.accent.orange} />
             </View>
             <Text variant="body" color="primary" style={styles.addText}>
               Add Workout

@@ -8,6 +8,7 @@ export interface HerculesAIContext {
   planWorkouts: Record<string, unknown>[];
   workoutTemplates: Record<string, unknown>[];
   schedules: Record<string, unknown>[];
+  activeSchedule: Record<string, unknown> | null;
   customExercises: Record<string, unknown>[];
   generatedAt: string;
 }
@@ -99,6 +100,17 @@ export const buildUserContext = async (
     console.warn('[HerculesAI] Schedules fetch failed', schedulesError.message);
   }
 
+  // Fetch the REAL active schedule (active_schedule table is what My Schedule reads)
+  const { data: activeScheduleData, error: activeScheduleError } = await supabase
+    .from('active_schedule')
+    .select('schedule_data, updated_at')
+    .eq('user_id', userId)
+    .maybeSingle();
+
+  if (activeScheduleError) {
+    console.warn('[HerculesAI] Active schedule fetch failed', activeScheduleError.message);
+  }
+
   const { data: customExercisesData, error: customExercisesError } = await supabase
     .from('custom_exercises')
     .select('id, name, exercise_type, created_at')
@@ -117,6 +129,7 @@ export const buildUserContext = async (
     planWorkouts: planWorkoutsData,
     workoutTemplates: safeArray(templatesData),
     schedules: safeArray(schedulesData),
+    activeSchedule: activeScheduleData ?? null,
     customExercises: safeArray(customExercisesData),
     generatedAt: new Date().toISOString(),
   };

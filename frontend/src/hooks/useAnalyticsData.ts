@@ -6,6 +6,8 @@
 
 import { useMemo } from 'react';
 
+import { useTheme } from '@/hooks/useTheme';
+import { hexToRgba } from '@/utils/colorUtils';
 import { useWorkoutSessionsStore } from '@/store/workoutSessionsStore';
 import { useUserProfileStore } from '@/store/userProfileStore';
 import { useSettingsStore } from '@/store/settingsStore';
@@ -149,12 +151,12 @@ const filterByTimeRange = (workouts: any[], range: TimeRange) => {
   });
 };
 
-// Generate orange color with opacity based on index
-const generateSliceColor = (index: number, total: number): string => {
-  if (total <= 1) return `rgba(255, 107, 74, 1.0)`;
+// Generate accent color with opacity based on index
+const generateSliceColor = (baseHex: string, index: number, total: number): string => {
+  if (total <= 1) return hexToRgba(baseHex, 1.0);
   const ratio = index / (total - 1);
   const opacity = 1.0 - ratio * 0.7;
-  return `rgba(255, 107, 74, ${opacity})`;
+  return hexToRgba(baseHex, opacity);
 };
 
 interface UseAnalyticsDataOptions {
@@ -163,6 +165,7 @@ interface UseAnalyticsDataOptions {
 
 export const useAnalyticsData = (options: UseAnalyticsDataOptions = {}) => {
   const { timeRange = 'week' } = options;
+  const { theme } = useTheme();
   const forceEmptyAnalytics = useDevToolsStore((state) => state.forceEmptyAnalytics);
   const rawWorkouts = useWorkoutSessionsStore((state) => state.workouts);
   const workouts = useMemo(
@@ -344,7 +347,7 @@ export const useAnalyticsData = (options: UseAnalyticsDataOptions = {}) => {
         name,
         value,
         percentage: filteredTotal > 0 ? (value / filteredTotal) * 100 : 0,
-        color: generateSliceColor(index, filtered.length),
+        color: generateSliceColor(theme.accent.orange, index, filtered.length),
       }));
     };
 
@@ -434,7 +437,7 @@ export const useAnalyticsData = (options: UseAnalyticsDataOptions = {}) => {
         name,
         value,
         percentage: filteredTotal > 0 ? (value / filteredTotal) * 100 : 0,
-        color: generateSliceColor(index, filtered.length),
+        color: generateSliceColor(theme.accent.orange, index, filtered.length),
       }));
     };
 

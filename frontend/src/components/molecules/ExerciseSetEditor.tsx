@@ -13,6 +13,7 @@ import { HoldRepeatIconButton } from '@/components/atoms/HoldRepeatIconButton';
 import { TimePickerModal } from '@/components/molecules/TimePickerModal';
 import { GpsActivityTracker } from '@/components/molecules/GpsActivityTracker';
 import { colors, radius, shadows, sizing, spacing, zIndex } from '@/constants/theme';
+import { useTheme } from '@/hooks/useTheme';
 import type { SetLog } from '@/types/workout';
 import type { ExerciseType, EquipmentType } from '@/types/exercise';
 import { useSettingsStore } from '@/store/settingsStore';
@@ -217,6 +218,7 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
   onShowHistory,
   onInputFocus,
 }) => {
+  const { theme } = useTheme();
   // Subscribe to smart suggestions setting
   const smartSuggestionsEnabled = useSettingsStore((state) => state.smartSuggestionsEnabled);
   // Subscribe to unit values to trigger re-renders when units change
@@ -1218,10 +1220,10 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
                 >
                   <View style={styles.gpsSetHeader}>
                     <View style={styles.gpsSetIndicator}>
-                      <Text style={styles.gpsSetIndicatorText}>
+                      <Text style={[styles.gpsSetIndicatorText, { color: theme.accent.orange }]}>
                         Set {setIndex + 1}
                       </Text>
-                      <View style={styles.gpsSetIndicatorLine} />
+                      <View style={[styles.gpsSetIndicatorLine, { backgroundColor: theme.accent.orange }]} />
                     </View>
                     <Pressable
                       onPress={() => removeSet(actualIndex)}
@@ -1295,7 +1297,8 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
                 key={`set-${index}`}
                 style={[
                   styles.setCard,
-                  isCompleted ? styles.setCardCompleted : null,
+                  { borderColor: theme.accent.orange },
+                  isCompleted ? [styles.setCardCompleted, { backgroundColor: theme.accent.orange, borderColor: theme.accent.orange }] : null,
                   index > 0 ? styles.setCardSpacer : null,
                 ]}
               >
@@ -1370,7 +1373,7 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
                         />
                       </Pressable>
                       {isMenuOpenAtIndex(index) ? (
-                        <View style={styles.menuPopover} pointerEvents="box-none">
+                        <View style={[styles.menuPopover, { borderColor: theme.accent.orange }]} pointerEvents="box-none">
                           {onShowHistory && (
                             <Pressable
                               style={styles.menuItem}
@@ -1418,8 +1421,8 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
                             textAlign="center"
                             placeholder="0"
                             placeholderTextColor={colors.text.tertiary}
-                            cursorColor={colors.accent.primary}
-                            selectionColor={colors.accent.orangeLight}
+                            cursorColor={theme.accent.primary}
+                            selectionColor={theme.accent.orangeLight}
                             selection={
                               activeSelection?.type === 'weight' && activeSelection.index === index
                                 ? { start: 0, end: (exerciseType === 'assisted' ? set.assistanceWeightInput : set.weightInput).length }
@@ -1483,8 +1486,8 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
                             textAlign="center"
                             placeholder={distanceUnit === 'meters' || distanceUnit === 'floors' ? '0' : '0.00'}
                             placeholderTextColor={colors.text.tertiary}
-                            cursorColor={colors.accent.primary}
-                            selectionColor={colors.accent.orangeLight}
+                            cursorColor={theme.accent.primary}
+                            selectionColor={theme.accent.orangeLight}
                             selection={
                               activeSelection?.type === 'distance' && activeSelection.index === index
                                 ? { start: 0, end: set.distanceInput.length }
@@ -1551,7 +1554,8 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
                           <Pressable
                             style={[
                               styles.timerButtonCircle,
-                              (!pausedTimers.has(index) || (set.duration ?? 0) === 0) && styles.timerButtonDisabled
+                              { borderColor: theme.accent.orange },
+                              (!pausedTimers.has(index) || (set.duration ?? 0) === 0) && [styles.timerButtonDisabled, { borderColor: theme.accent.orangeLight }],
                             ]}
                             onPress={() => resetTimer(index)}
                             disabled={!pausedTimers.has(index) || (set.duration ?? 0) === 0}
@@ -1560,11 +1564,11 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
                             <MaterialCommunityIcons
                               name="restart"
                               size={sizing.iconSM}
-                              color={(!pausedTimers.has(index) || (set.duration ?? 0) === 0) ? colors.accent.orangeLight : colors.accent.orange}
+                              color={(!pausedTimers.has(index) || (set.duration ?? 0) === 0) ? theme.accent.orangeLight : theme.accent.orange}
                             />
                           </Pressable>
                           <Pressable
-                            style={styles.timerButtonCircle}
+                            style={[styles.timerButtonCircle, { borderColor: theme.accent.orange }]}
                             onPress={() => {
                               const isRunning = runningTimers.has(index);
                               if (isRunning) {
@@ -1578,13 +1582,14 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
                             <MaterialCommunityIcons
                               name={runningTimers.has(index) ? "pause" : "play"}
                               size={sizing.iconSM}
-                              color={colors.accent.orange}
+                              color={theme.accent.orange}
                             />
                           </Pressable>
                           <Pressable
                             style={[
                               styles.timerButtonCircle,
-                              (!runningTimers.has(index) && !pausedTimers.has(index)) && styles.timerButtonDisabled
+                              { borderColor: theme.accent.orange },
+                              (!runningTimers.has(index) && !pausedTimers.has(index)) && [styles.timerButtonDisabled, { borderColor: theme.accent.orangeLight }],
                             ]}
                             onPress={() => stopTimer(index)}
                             disabled={!runningTimers.has(index) && !pausedTimers.has(index)}
@@ -1593,7 +1598,7 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
                             <MaterialCommunityIcons
                               name="stop"
                               size={sizing.iconSM}
-                              color={(!runningTimers.has(index) && !pausedTimers.has(index)) ? colors.accent.orangeLight : colors.accent.orange}
+                              color={(!runningTimers.has(index) && !pausedTimers.has(index)) ? theme.accent.orangeLight : theme.accent.orange}
                             />
                           </Pressable>
                         </View>
@@ -1623,8 +1628,8 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
                             textAlign="center"
                             placeholder="0"
                             placeholderTextColor={colors.text.tertiary}
-                            cursorColor={colors.accent.primary}
-                            selectionColor={colors.accent.orangeLight}
+                            cursorColor={theme.accent.primary}
+                            selectionColor={theme.accent.orangeLight}
                             selection={
                               activeSelection?.type === 'reps' && activeSelection.index === index
                                 ? { start: 0, end: set.repsInput.length }
@@ -1647,7 +1652,7 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
                     )}
 
                     <Pressable
-                      style={[styles.setActionButton, styles.setActionButtonPressable]}
+                      style={[styles.setActionButton, styles.setActionButtonPressable, { backgroundColor: theme.accent.orange, borderColor: theme.accent.orange }]}
                       onPress={() => handleCompleteSetPress(index)}
                       hitSlop={spacing.xs}
                       accessibilityRole="button"
@@ -1669,7 +1674,7 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
         )}
         {!supportsGpsTracking && (
           <Pressable
-            style={styles.addSetButton}
+            style={[styles.addSetButton, { borderColor: theme.accent.orange }]}
             onPress={addSet}
             accessibilityRole="button"
             accessibilityLabel="Add set"
@@ -1842,9 +1847,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.full,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.surface.card,
     borderWidth: 1,
-    borderColor: colors.accent.orange,
   },
   metricValue: {
     minWidth: spacing['2xl'] + spacing.lg,

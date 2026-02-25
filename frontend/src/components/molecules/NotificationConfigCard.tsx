@@ -10,6 +10,7 @@ import { triggerHaptic } from '@/utils/haptics';
 import { Text } from '@/components/atoms/Text';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { colors, radius, spacing } from '@/constants/theme';
+import { useTheme } from '@/hooks/useTheme';
 import { NotificationConfig, DayOfWeek } from '@/store/notificationStore';
 
 interface NotificationConfigCardProps {
@@ -58,6 +59,7 @@ export const NotificationConfigCard: React.FC<NotificationConfigCardProps> = ({
   onEdit,
   onDelete,
 }) => {
+  const { theme } = useTheme();
   const handleToggle = () => {
     triggerHaptic('selection');
     onToggle();

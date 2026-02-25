@@ -6,6 +6,7 @@ import { triggerHaptic } from '@/utils/haptics';
 import { Text } from '@/components/atoms/Text';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { colors, radius, spacing, shadows, sizing } from '@/constants/theme';
+import { useTheme } from '@/hooks/useTheme';
 import { SheetModal } from '@/components/molecules/SheetModal';
 
 interface Program {
@@ -33,6 +34,7 @@ export const ViewAllProgramsModal: React.FC<ViewAllProgramsModalProps> = ({
   onDeleteProgram,
   onAddProgram,
 }) => {
+  const { theme } = useTheme();
   const insets = useSafeAreaInsets();
   const [expandedProgramId, setExpandedProgramId] = useState<string | null>(null);
 
@@ -167,7 +169,7 @@ export const ViewAllProgramsModal: React.FC<ViewAllProgramsModalProps> = ({
             >
               <View style={styles.addCardInner}>
                 <View style={styles.addIconWrapper}>
-                  <IconSymbol name="add" size={sizing.iconLG} color={colors.accent.orange} />
+                  <IconSymbol name="add" size={sizing.iconLG} color={theme.accent.orange} />
                 </View>
                 <Text variant="body" color="primary" style={styles.addText}>
                   Add Plan

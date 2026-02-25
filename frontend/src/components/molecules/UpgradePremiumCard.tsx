@@ -9,7 +9,7 @@ import { useRouter } from 'expo-router';
 
 import { Text } from '@/components/atoms/Text';
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { spacing, radius } from '@/constants/theme';
+import { colors, spacing, radius } from '@/constants/theme';
 import { useTheme } from '@/hooks/useTheme';
 import { triggerHaptic } from '@/utils/haptics';
 
@@ -38,7 +38,7 @@ export const UpgradePremiumCard: React.FC<UpgradePremiumCardProps> = ({ onPress 
       borderRadius: radius.full,
       alignItems: 'center',
       justifyContent: 'center',
-      backgroundColor: theme.accent.orange,
+      backgroundColor: colors.accent.orange,
       marginRight: spacing.md,
     },
     content: {

@@ -35,6 +35,7 @@ import { IconSymbol } from '@/components/ui/icon-symbol';
 import { CreateExerciseModal } from '@/components/molecules/CreateExerciseModal';
 import { triggerHaptic } from '@/utils/haptics';
 import { colors, radius, spacing, typography, sizing, shadows } from '@/constants/theme';
+import { useTheme } from '@/hooks/useTheme';
 import { springGentle } from '@/constants/animations';
 import { useSemanticExerciseSearch } from '@/hooks/useSemanticExerciseSearch';
 import { exercises as baseExerciseCatalog, createCustomExerciseCatalogItem, type Exercise } from '@/constants/exercises';
@@ -70,6 +71,7 @@ export const ExerciseSearchModal: React.FC<ExerciseSearchModalProps> = ({
   excludeIds = [],
   title = 'Add Exercises',
 }) => {
+  const { theme } = useTheme();
   const insets = useSafeAreaInsets();
   const inputRef = useRef<TextInput>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -303,8 +305,8 @@ export const ExerciseSearchModal: React.FC<ExerciseSearchModalProps> = ({
                   onChangeText={setSearchTerm}
                   placeholder="Search by name, muscle, or equipment..."
                   placeholderTextColor={colors.text.muted}
-                  selectionColor={colors.accent.primary}
-                  cursorColor={colors.accent.primary}
+                  selectionColor={theme.accent.primary}
+                  cursorColor={theme.accent.primary}
                   style={styles.searchInput}
                   returnKeyType="search"
                   autoCapitalize="none"
@@ -379,8 +381,8 @@ export const ExerciseSearchModal: React.FC<ExerciseSearchModalProps> = ({
                   onPress={handleOpenCreateModal}
                   style={styles.emptyStateCreateButton}
                 >
-                  <IconSymbol name="add" size={sizing.iconSM} color={colors.accent.orange} />
-                  <Text variant="bodySemibold" style={{ color: colors.accent.orange }}>
+                  <IconSymbol name="add" size={sizing.iconSM} color={theme.accent.orange} />
+                  <Text variant="bodySemibold" style={{ color: theme.accent.orange }}>
                     Create "{searchTerm.trim()}"
                   </Text>
                 </Pressable>
@@ -426,6 +428,7 @@ const ExerciseRow: React.FC<ExerciseRowProps> = React.memo(({
   isSelected,
   onToggle,
 }) => {
+  const { theme } = useTheme();
   const tags = useMemo(() => getExerciseDisplayTags({
     muscles: exercise.muscles,
     exerciseType: exercise.exerciseType,
@@ -469,14 +472,17 @@ interface CreateExerciseRowProps {
   onPress: () => void;
 }
 
-const CreateExerciseRow: React.FC<CreateExerciseRowProps> = React.memo(({ onPress }) => (
-  <Pressable onPress={onPress} style={styles.createExerciseFooter}>
-    <IconSymbol name="add" size={sizing.iconSM} color={colors.accent.orange} />
-    <Text variant="bodySemibold" style={{ color: colors.accent.orange }}>
-      Create Custom Exercise
-    </Text>
-  </Pressable>
-));
+const CreateExerciseRow: React.FC<CreateExerciseRowProps> = React.memo(({ onPress }) => {
+  const { theme } = useTheme();
+  return (
+    <Pressable onPress={onPress} style={styles.createExerciseFooter}>
+      <IconSymbol name="add" size={sizing.iconSM} color={theme.accent.orange} />
+      <Text variant="bodySemibold" style={{ color: theme.accent.orange }}>
+        Create Custom Exercise
+      </Text>
+    </Pressable>
+  );
+});
 
 const styles = StyleSheet.create({
   gestureRoot: {

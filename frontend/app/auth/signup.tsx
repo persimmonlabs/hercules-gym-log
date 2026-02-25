@@ -15,11 +15,13 @@ import { useRouter, Link } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
 import { colors, spacing, typography, radius, sizing } from '@/constants/theme';
+import { useTheme } from '@/hooks/useTheme';
 import { useAuth } from '@/providers/AuthProvider';
 import { supabaseClient } from '@/lib/supabaseClient';
 import { useUserProfileStore } from '@/store/userProfileStore';
 
 export default function SignupScreen() {
+  const { theme } = useTheme();
     const router = useRouter();
     const updateProfileField = useUserProfileStore((state) => state.updateProfileField);
     const [firstName, setFirstName] = useState('');

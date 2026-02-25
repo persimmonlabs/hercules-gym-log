@@ -18,6 +18,7 @@ import { EditableWorkoutExerciseCard } from '@/components/molecules/EditableWork
 import { CreateExerciseModal } from '@/components/molecules/CreateExerciseModal';
 import { DeleteConfirmationModal } from '@/components/molecules/DeleteConfirmationModal';
 import { colors, radius, spacing, sizing } from '@/constants/theme';
+import { useTheme } from '@/hooks/useTheme';
 import { useWorkoutEditor } from '@/hooks/useWorkoutEditor';
 import { exercises, createCustomExerciseCatalogItem } from '@/constants/exercises';
 import { useCustomExerciseStore } from '@/store/customExerciseStore';
@@ -28,6 +29,7 @@ import type { Exercise } from '@/constants/exercises';
 import hierarchyData from '@/data/hierarchy.json';
 
 const WorkoutEditScreen: React.FC = () => {
+  const { theme } = useTheme();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { workoutId } = useLocalSearchParams<{ workoutId?: string }>();
@@ -164,7 +166,7 @@ const WorkoutEditScreen: React.FC = () => {
               </View>
             </SurfaceCard>
             <LinearGradient
-              colors={[colors.accent.gradientStart, colors.accent.gradientEnd]}
+              colors={[theme.accent.gradientStart, theme.accent.gradientEnd]}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
               style={styles.headerDivider}
@@ -250,9 +252,9 @@ const WorkoutEditScreen: React.FC = () => {
                     <MaterialCommunityIcons
                       name="plus-circle-outline"
                       size={sizing.iconMD}
-                      color={colors.accent.primary}
+                      color={theme.accent.primary}
                     />
-                    <Text variant="bodySemibold" style={{ color: colors.accent.primary }}>
+                    <Text variant="bodySemibold" style={{ color: theme.accent.primary }}>
                       Create Exercise
                     </Text>
                   </Pressable>
@@ -293,9 +295,9 @@ const WorkoutEditScreen: React.FC = () => {
                   <MaterialCommunityIcons
                     name="plus-circle-outline"
                     size={sizing.iconMD}
-                    color={colors.accent.primary}
+                    color={theme.accent.primary}
                   />
-                  <Text variant="bodySemibold" style={{ color: colors.accent.primary }}>
+                  <Text variant="bodySemibold" style={{ color: theme.accent.primary }}>
                     Create Exercise
                   </Text>
                 </Pressable>

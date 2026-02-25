@@ -20,10 +20,12 @@ import { useFocusEffect } from '@react-navigation/native';
 import { Text } from '@/components/atoms/Text';
 import { springGentle } from '@/constants/animations';
 import { colors, radius, sizing, spacing } from '@/constants/theme';
+import { useTheme } from '@/hooks/useTheme';
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
 const WorkoutSuccessScreen: React.FC = () => {
+  const { theme } = useTheme();
   const router = useRouter();
   const scale = useSharedValue(0.92);
   const opacity = useSharedValue(0);
@@ -92,7 +94,7 @@ const WorkoutSuccessScreen: React.FC = () => {
               cx={radiusValue}
               cy={radiusValue}
               r={radiusValue - spacing.xxxs}
-              stroke={colors.accent.orange}
+              stroke={theme.accent.orange}
               strokeWidth={spacing.xxs}
               fill="none"
               strokeDasharray={`${circumference}`}
@@ -105,7 +107,7 @@ const WorkoutSuccessScreen: React.FC = () => {
           <MaterialCommunityIcons
             name="check"
             size={sizing.iconLG}
-            color={colors.accent.orange}
+            color={theme.accent.orange}
             accessibilityLabel="Workout complete"
             style={styles.checkIcon}
           />

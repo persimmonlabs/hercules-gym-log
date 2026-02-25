@@ -270,7 +270,7 @@ export const ScheduleEditorModal: React.FC<ScheduleEditorModalProps> = ({
           variant="ghost"
           size="md"
           onPress={handleClearSchedule}
-          textColor={colors.accent.warning}
+          textColor={theme.accent.warning}
         />
       )}
     </View>

@@ -17,6 +17,7 @@ import { VictoryChart, VictoryLine, VictoryAxis, VictoryTheme, VictoryScatter, V
 import { Text } from '@/components/atoms/Text';
 import { ChartWrapper } from '@/components/atoms/ChartWrapper';
 import { colors, spacing } from '@/constants/theme';
+import { useTheme } from '@/hooks/useTheme';
 import { useAnalyticsData } from '@/hooks/useAnalyticsData';
 import { TIME_RANGE_SUBTITLES } from '@/types/analytics';
 import { useSettingsStore } from '@/store/settingsStore';
@@ -42,6 +43,7 @@ interface VolumeTrendChartProps {
 export const WEIGHT_EXERCISE_TYPES = ['weight', 'bodyweight', 'assisted'];
 
 export const VolumeTrendChart: React.FC<VolumeTrendChartProps> = ({ timeRange = 'week', selectedExercise = null }) => {
+  const { theme } = useTheme();
   const { volumeTrendData, hasFilteredData, filteredWorkouts } = useAnalyticsData({ timeRange });
   const { convertWeight } = useSettingsStore();
   const userBodyWeight = useUserProfileStore((state) => state.profile?.weightLbs);
@@ -1041,7 +1043,7 @@ export const VolumeTrendChart: React.FC<VolumeTrendChartProps> = ({ timeRange = 
               data={chartData.filter(d => d.hasData)}
               style={{
                 data: {
-                  fill: 'rgba(255, 107, 74, 0.15)',
+                  fill: theme.accent.orangeMuted,
                 },
               }}
               interpolation="monotoneX"
@@ -1052,9 +1054,9 @@ export const VolumeTrendChart: React.FC<VolumeTrendChartProps> = ({ timeRange = 
               tickValues={xTickValues}
               tickFormat={(t) => getXTickLabel(t - 1)}
               style={{
-                axis: { stroke: colors.border.light, strokeWidth: 1 },
+                axis: { stroke: theme.border.light, strokeWidth: 1 },
                 tickLabels: { 
-                  fill: colors.text.secondary, 
+                  fill: theme.text.secondary, 
                   fontSize: 9,
                   padding: 5,
                   angle: 0,
@@ -1073,7 +1075,7 @@ export const VolumeTrendChart: React.FC<VolumeTrendChartProps> = ({ timeRange = 
                 ticks: { stroke: 'none' },
                 tickLabels: { fill: 'transparent' },
                 grid: { 
-                  stroke: colors.border.light,
+                  stroke: theme.border.light,
                   strokeWidth: 1,
                   strokeDasharray: '4, 4',
                 },
@@ -1085,7 +1087,7 @@ export const VolumeTrendChart: React.FC<VolumeTrendChartProps> = ({ timeRange = 
               data={chartData.filter(d => d.hasData)}
               style={{
                 data: {
-                  stroke: colors.accent.orange,
+                  stroke: theme.accent.orange,
                   strokeWidth: 3,
                 },
               }}
@@ -1187,9 +1189,9 @@ export const VolumeTrendChart: React.FC<VolumeTrendChartProps> = ({ timeRange = 
                   }}
                   backgroundPadding={{ left: 6, right: 6, top: 4, bottom: 2 }}
                   backgroundStyle={{
-                    fill: '#FFFFFF',
+                    fill: theme.surface.card,
                     opacity: 0.98,
-                    stroke: colors.accent.orange,
+                    stroke: theme.accent.orange,
                     strokeWidth: 0.5,
                     rx: 8,
                     ry: 8,
@@ -1198,10 +1200,10 @@ export const VolumeTrendChart: React.FC<VolumeTrendChartProps> = ({ timeRange = 
               }
               style={{
                 data: {
-                  fill: colors.accent.orange,
+                  fill: theme.accent.orange,
                 },
                 labels: {
-                  fill: colors.text.primary,
+                  fill: theme.text.primary,
                   fontSize: 10,
                   fontWeight: '600',
                 },

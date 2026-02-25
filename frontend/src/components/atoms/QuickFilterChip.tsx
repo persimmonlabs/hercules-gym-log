@@ -42,7 +42,7 @@ export const QuickFilterChip: React.FC<QuickFilterChipProps> = ({ label, active,
       <Pressable
         accessibilityRole="button"
         accessibilityState={{ selected: active }}
-        style={[styles.chip, { backgroundColor: theme.surface.card, borderColor: theme.border.light }, active ? styles.chipActive : null]}
+        style={[styles.chip, { backgroundColor: theme.surface.card, borderColor: theme.border.light }, active && { backgroundColor: theme.accent.primary, borderColor: theme.accent.primary }]}
         onPress={handlePress}
         testID={testID}
       >
@@ -63,9 +63,5 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     paddingVertical: spacing.xs,
     paddingHorizontal: spacing.sm,
-  },
-  chipActive: {
-    backgroundColor: colors.accent.primary,
-    borderColor: colors.accent.primary,
   },
 });

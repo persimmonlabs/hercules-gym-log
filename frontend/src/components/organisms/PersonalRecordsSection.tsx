@@ -185,7 +185,7 @@ export const PersonalRecordsSection: React.FC = () => {
   }, [searchQuery, trackedExercises, allExercises]);
 
   return (
-    <SurfaceCard tone="neutral" padding="xl" showAccentStripe={false}>
+    <SurfaceCard tone="card" padding="xl" showAccentStripe={false}>
       <View style={styles.cardContent}>
         <View style={styles.headerContainer}>
           <Text variant="heading3" color="primary">
@@ -218,11 +218,11 @@ export const PersonalRecordsSection: React.FC = () => {
         >
           <View style={styles.modalContent}>
             <TextInput
-              style={styles.searchInput}
+              style={[styles.searchInput, { backgroundColor: theme.primary.bg, borderColor: theme.border.medium, color: theme.text.primary }]}
               placeholder="Search exercises..."
               value={searchQuery}
               onChangeText={setSearchQuery}
-              placeholderTextColor={colors.text.tertiary}
+              placeholderTextColor={theme.text.tertiary}
             />
 
             <FlatList
@@ -230,7 +230,7 @@ export const PersonalRecordsSection: React.FC = () => {
               keyExtractor={(item) => item.id}
               renderItem={({ item }) => (
                 <TouchableOpacity
-                  style={styles.exerciseItem}
+                  style={[styles.exerciseItem, { borderBottomColor: theme.border.light }]}
                   onPress={() => handleSelectNewExercise(item.name)}
                 >
                   <Text variant="body">{item.name}</Text>
@@ -266,13 +266,10 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   searchInput: {
-    backgroundColor: colors.primary.bg,
     borderWidth: 1,
-    borderColor: colors.border.medium,
     padding: spacing.md,
     borderRadius: radius.md,
     fontSize: 16,
-    color: colors.text.primary,
     marginBottom: spacing.md,
   },
   exerciseList: {
@@ -284,7 +281,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: spacing.md,
     borderBottomWidth: 0.5,
-    borderBottomColor: colors.border.light,
   },
   spacer: {
     height: spacing.xl * 2,

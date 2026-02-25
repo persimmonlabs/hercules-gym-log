@@ -25,6 +25,7 @@ import { SurfaceCard } from '@/components/atoms/SurfaceCard';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { triggerHaptic } from '@/utils/haptics';
 import { colors, radius, spacing, typography, sizing } from '@/constants/theme';
+import { useTheme } from '@/hooks/useTheme';
 import { timingFast } from '@/constants/animations';
 import type { Plan } from '@/store/plansStore';
 
@@ -73,6 +74,7 @@ export const PlanBuilderCard: React.FC<PlanBuilderCardProps> = ({
   onCreateWorkout,
   enableRowAnimations = true,
 }) => {
+  const { theme } = useTheme();
   const nameFocusProgress = useSharedValue(0);
   const [showWorkoutPicker, setShowWorkoutPicker] = useState(false);
   const hasWorkouts = selectedWorkouts.length > 0;
@@ -110,7 +112,7 @@ export const PlanBuilderCard: React.FC<PlanBuilderCardProps> = ({
   // Animated styles for name input
   const animatedNameBorderStyle = useAnimatedStyle(() => ({
     borderColor:
-      nameFocusProgress.value > 0 ? colors.accent.primary : colors.border.light,
+      nameFocusProgress.value > 0 ? theme.accent.primary : colors.border.light,
   }));
 
   const handleNameFocus = useCallback(() => {
@@ -167,8 +169,8 @@ export const PlanBuilderCard: React.FC<PlanBuilderCardProps> = ({
               onChangeText={onPlanNameChange}
               placeholder={namePlaceholder}
               placeholderTextColor={colors.text.muted}
-              selectionColor={colors.accent.primary}
-              cursorColor={colors.accent.primary}
+              selectionColor={theme.accent.primary}
+              cursorColor={theme.accent.primary}
               style={styles.nameInput}
               onFocus={handleNameFocus}
               onBlur={handleNameBlur}
@@ -193,7 +195,7 @@ export const PlanBuilderCard: React.FC<PlanBuilderCardProps> = ({
               Workouts
             </Text>
             {hasWorkouts && (
-              <View style={styles.countBadge}>
+              <View style={[styles.countBadge, { backgroundColor: theme.accent.orange }]}>
                 <Text variant="caption" color="primary" style={styles.countText}>
                   {selectedWorkouts.length}
                 </Text>
@@ -229,13 +231,14 @@ export const PlanBuilderCard: React.FC<PlanBuilderCardProps> = ({
                   onPress={() => setShowWorkoutPicker(!showWorkoutPicker)}
                   style={({ pressed }) => [
                     styles.workoutPickerButton,
+                    { backgroundColor: theme.accent.orangeMuted, borderColor: theme.accent.orange },
                     pressed && styles.workoutPickerButtonPressed,
                   ]}
                 >
                   <IconSymbol
                     name={showWorkoutPicker ? 'remove' : 'add'}
                     size={sizing.iconMD}
-                    color={colors.accent.orange}
+                    color={theme.accent.orange}
                   />
                   <Text variant="body" style={styles.pickerButtonText}>
                     {showWorkoutPicker ? 'Hide workouts' : 'Add Workouts'}
@@ -253,7 +256,7 @@ export const PlanBuilderCard: React.FC<PlanBuilderCardProps> = ({
                         key={workout.id}
                         style={({ pressed }) => [
                           styles.workoutOption,
-                          pressed && styles.workoutOptionPressed,
+                          pressed && [styles.workoutOptionPressed, { backgroundColor: theme.accent.orangeMuted, borderColor: theme.accent.orange }],
                         ]}
                         onPress={() => handleAddWorkout(workout)}
                       >
@@ -265,11 +268,11 @@ export const PlanBuilderCard: React.FC<PlanBuilderCardProps> = ({
                             {workout.exercises.length} exercise{workout.exercises.length !== 1 ? 's' : ''}
                           </Text>
                         </View>
-                        <View style={styles.addButton}>
+                        <View style={[styles.addButton, { backgroundColor: theme.accent.orangeMuted }]}>
                           <IconSymbol
                             name="add"
                             size={18}
-                            color={colors.accent.orange}
+                            color={theme.accent.orange}
                           />
                         </View>
                       </Pressable>

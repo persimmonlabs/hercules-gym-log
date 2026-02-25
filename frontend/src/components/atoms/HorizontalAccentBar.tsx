@@ -7,7 +7,8 @@ import React from 'react';
 import { StyleProp, StyleSheet, ViewStyle } from 'react-native';
 import Animated from 'react-native-reanimated';
 
-import { colors, spacing } from '@/constants/theme';
+import { spacing } from '@/constants/theme';
+import { useTheme } from '@/hooks/useTheme';
 
 interface HorizontalAccentBarProps {
   /** Optional style overrides for the bar */
@@ -23,9 +24,10 @@ export const HorizontalAccentBar: React.FC<HorizontalAccentBarProps> = ({
   fullWidth = true,
   width = 100 
 }) => {
+  const { theme } = useTheme();
   const barStyle = fullWidth 
-    ? [styles.bar, styles.fullWidth, style] 
-    : [styles.bar, { width }, style];
+    ? [styles.bar, { backgroundColor: theme.accent.orangeMuted }, styles.fullWidth, style] 
+    : [styles.bar, { backgroundColor: theme.accent.orangeMuted, width }, style];
     
   return (
     <Animated.View 
@@ -38,7 +40,6 @@ export const HorizontalAccentBar: React.FC<HorizontalAccentBarProps> = ({
 const styles = StyleSheet.create({
   bar: {
     height: 3,
-    backgroundColor: colors.accent.orangeMuted,
     borderRadius: 2,
     alignSelf: 'center',
     marginTop: spacing.xs,

@@ -111,19 +111,19 @@ export const darkColors = {
     espresso: '#F2F2F7',   // Light cream (inverted)
   },
 
-  // Vibrant accent system (kept similar for brand consistency)
+  // Vibrant accent system (darkened oranges for low contrast on black)
   accent: {
-    orange: '#FF6B4A',      // Primary orange energy
+    orange: '#CC5533',      // Deep burnt orange (dark-mode primary)
     red: '#FF4581',         // Pink-red complement
-    orangeLight: '#FFB88C', // Lighter orange (hover, subtle)
-    orangeMuted: 'rgba(255, 107, 74, 0.20)', // Muted orange for selection backgrounds (more visible in dark mode)
-    orangeSolid: '#FF9070',  // Mid-tone orange for solid button fills in dark mode
+    orangeLight: '#B3724D', // Muted warm orange (hover, subtle)
+    orangeMuted: 'rgba(204, 85, 51, 0.25)', // Muted orange for selection backgrounds
+    orangeSolid: '#B36048',  // Mid-tone dark orange for solid button fills
     success: '#30D158',     // Bright green for dark mode
     warning: '#FF9F0A',     // Bright orange (caution)
     info: '#64D2FF',        // Bright blue for dark mode
-    primary: '#FF6B4A',     // Primary CTA accent
-    gradientStart: '#FF6B4A', // Solid orange gradient start
-    gradientEnd: '#FF6B4A',   // Solid orange gradient end
+    primary: '#CC5533',     // Primary CTA accent (dark-mode)
+    gradientStart: '#CC5533', // Dark orange gradient start
+    gradientEnd: '#CC5533',   // Dark orange gradient end
   },
 
   // Glassmorphism effect colors (on dark background)

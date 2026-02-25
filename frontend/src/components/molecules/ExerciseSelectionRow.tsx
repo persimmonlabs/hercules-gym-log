@@ -9,6 +9,7 @@ import { triggerHaptic } from '@/utils/haptics';
 import { Text } from '@/components/atoms/Text';
 import type { Exercise } from '@/constants/exercises';
 import { colors, radius, spacing } from '@/constants/theme';
+import { useTheme } from '@/hooks/useTheme';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { getExerciseDisplayTagText } from '@/utils/exerciseDisplayTags';
 
@@ -19,6 +20,7 @@ interface ExerciseSelectionRowProps {
 }
 
 export const ExerciseSelectionRow: React.FC<ExerciseSelectionRowProps> = React.memo(({ exercise, selected, onToggle }) => {
+  const { theme } = useTheme();
   const handlePress = useCallback(() => {
     triggerHaptic('selection');
     onToggle(exercise);
@@ -36,7 +38,7 @@ export const ExerciseSelectionRow: React.FC<ExerciseSelectionRowProps> = React.m
       accessibilityRole="checkbox"
       accessibilityState={{ checked: selected }}
       onPress={handlePress}
-      style={({ pressed }) => [styles.container, selected ? styles.containerSelected : null]}
+      style={({ pressed }) => [styles.container, { borderColor: theme.border.light, backgroundColor: theme.surface.card }, selected && { borderColor: theme.accent.primary }]}
     >
       <View style={styles.leftColumn}>
         <View style={styles.textGroup}>
@@ -51,8 +53,8 @@ export const ExerciseSelectionRow: React.FC<ExerciseSelectionRowProps> = React.m
         </View>
       </View>
 
-      <View style={[styles.checkbox, selected ? styles.checkboxSelected : null]}>
-        {selected ? <IconSymbol name="check" color={colors.text.onAccent} size={18} /> : null}
+      <View style={[styles.checkbox, { borderColor: theme.border.light, backgroundColor: theme.surface.tint }, selected && { backgroundColor: theme.accent.primary, borderColor: theme.accent.primary }]}>
+        {selected ? <IconSymbol name="check" color={theme.text.onAccent} size={18} /> : null}
       </View>
     </Pressable>
   );
@@ -67,16 +69,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     borderRadius: radius.lg,
     borderWidth: 1,
-    borderColor: colors.border.light,
-    backgroundColor: colors.surface.card,
     gap: spacing.md,
   },
   leftColumn: {
     flex: 1,
     gap: spacing.xs,
-  },
-  containerSelected: {
-    borderColor: colors.accent.primary,
   },
   textGroup: {
     gap: spacing.xxxs,
@@ -86,13 +83,7 @@ const styles = StyleSheet.create({
     height: spacing.lg,
     borderRadius: radius.full,
     borderWidth: 1,
-    borderColor: colors.border.light,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.surface.tint,
-  },
-  checkboxSelected: {
-    backgroundColor: colors.accent.primary,
-    borderColor: colors.accent.primary,
   },
 });

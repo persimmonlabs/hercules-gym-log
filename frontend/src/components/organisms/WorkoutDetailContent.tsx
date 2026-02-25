@@ -52,7 +52,7 @@ export const WorkoutDetailContent: React.FC<WorkoutDetailContentProps> = ({ work
               <Text style={{ fontSize: 20, fontWeight: '500', color: theme.text.secondary }}>
                 Duration:
               </Text>
-              <Text style={{ fontSize: 20, fontWeight: '700', color: colors.accent.orange, textAlign: 'right', flexShrink: 0 }}>
+              <Text style={{ fontSize: 20, fontWeight: '700', color: theme.accent.orange, textAlign: 'right', flexShrink: 0 }}>
                 {durationLabel}
               </Text>
             </View>
@@ -60,7 +60,7 @@ export const WorkoutDetailContent: React.FC<WorkoutDetailContentProps> = ({ work
               <Text style={{ fontSize: 20, fontWeight: '500', color: theme.text.secondary }}>
                 Sets:
               </Text>
-              <Text style={{ fontSize: 20, fontWeight: '700', color: colors.accent.orange, textAlign: 'right', flexShrink: 0 }}>
+              <Text style={{ fontSize: 20, fontWeight: '700', color: theme.accent.orange, textAlign: 'right', flexShrink: 0 }}>
                 {completedSets}
               </Text>
             </View>
@@ -68,7 +68,7 @@ export const WorkoutDetailContent: React.FC<WorkoutDetailContentProps> = ({ work
               <Text style={{ fontSize: 20, fontWeight: '500', color: theme.text.secondary }}>
                 Volume:
               </Text>
-              <Text style={{ fontSize: 20, fontWeight: '700', color: colors.accent.orange, textAlign: 'right', flexShrink: 0 }}>
+              <Text style={{ fontSize: 20, fontWeight: '700', color: theme.accent.orange, textAlign: 'right', flexShrink: 0 }}>
                 {volumeLabel}
               </Text>
             </View>

@@ -37,7 +37,7 @@ export const MyScheduleCard: React.FC<MyScheduleCardProps> = ({
   onAddOverridePress,
   onDeletePress,
 }) => {
-  const { theme } = useTheme();
+  const { theme, isDarkMode } = useTheme();
   const activeRule = useActiveScheduleStore((state) => state.state.activeRule);
   const overrides = useActiveScheduleStore((state) => state.state.overrides);
 
@@ -95,7 +95,10 @@ export const MyScheduleCard: React.FC<MyScheduleCardProps> = ({
           return (
             <View
               key={visualIndex}
-              style={[styles.scheduleRow, { backgroundColor: theme.surface.elevated, borderColor: 'rgba(0, 0, 0, 0.06)' }]}
+              style={[styles.scheduleRow, {
+                backgroundColor: isDarkMode ? theme.surface.card : theme.surface.elevated,
+                borderColor: isDarkMode ? theme.border.medium : 'rgba(0, 0, 0, 0.06)',
+              }]}
             >
               <Text
                 variant="bodySemibold"
@@ -121,7 +124,7 @@ export const MyScheduleCard: React.FC<MyScheduleCardProps> = ({
 
   const renderEmptyState = () => (
     <SurfaceCard
-      tone="neutral"
+      tone="subcard"
       padding="md"
       showAccentStripe={false}
       style={styles.emptyCard}
@@ -164,7 +167,10 @@ export const MyScheduleCard: React.FC<MyScheduleCardProps> = ({
           return (
             <View
               key={key}
-              style={[styles.scheduleRow, { backgroundColor: theme.surface.elevated, borderColor: 'rgba(0, 0, 0, 0.06)' }]}
+              style={[styles.scheduleRow, {
+                backgroundColor: isDarkMode ? theme.surface.card : theme.surface.elevated,
+                borderColor: isDarkMode ? theme.border.medium : 'rgba(0, 0, 0, 0.06)',
+              }]}
             >
               <Text variant="bodySemibold" color={isCurrentDay ? 'orange' : 'primary'} style={styles.dayLabel}>
                 {label}
@@ -202,7 +208,13 @@ export const MyScheduleCard: React.FC<MyScheduleCardProps> = ({
           return (
             <View
               key={visualIndex}
-              style={[styles.scheduleRow, { backgroundColor: theme.surface.elevated, borderColor: 'rgba(0, 0, 0, 0.06)' }]}
+              style={[
+                styles.scheduleRow,
+                {
+                  backgroundColor: isDarkMode ? theme.surface.card : theme.surface.elevated,
+                  borderColor: isDarkMode ? theme.border.medium : 'rgba(0, 0, 0, 0.06)',
+                },
+              ]}
             >
               <Text
                 variant="bodySemibold"
@@ -265,7 +277,7 @@ export const MyScheduleCard: React.FC<MyScheduleCardProps> = ({
             label="Add Override"
             variant="secondary"
             size="md"
-            textColor={colors.accent.orange}
+            textColor={theme.accent.orange}
             style={[styles.secondaryButton, { ...shadows.sm }]}
             onPress={onAddOverridePress}
           />

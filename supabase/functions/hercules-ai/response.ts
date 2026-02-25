@@ -22,16 +22,25 @@ const looksLikeActionProposal = (message: string): { isProposal: boolean; likely
     'would you like me to create',
     'would you like me to set up',
     'would you like me to schedule',
+    'would you like me to apply',
     'would you like me to log',
     'would you like me to add',
+    'would you like to apply',
+    'would you like to proceed',
+    'would you like to approve',
+    'would you like me to approve',
     'shall i create',
-    'shall i set up', 
+    'shall i set up',
+    'shall i apply',
     'want me to create',
     'ready to create',
     'create this for you',
     'set this up for you',
+    'apply this schedule',
+    'approve this schedule',
     'tap approve',
     'click approve',
+    'hit approve',
   ];
   
   const isProposal = confirmationPatterns.some(pattern => lowerMessage.includes(pattern));
@@ -360,11 +369,59 @@ const constructWorkoutTemplateAction = (message: string): ActionProposal | null 
 
 /**
  * Constructs a schedule action from message content.
+ * Parses day assignments from the AI's message and builds a create_schedule payload.
+ * Uses workout NAMES (resolved server-side to IDs).
  */
 const constructScheduleAction = (message: string): ActionProposal | null => {
-  // This is more complex as it requires existing workout IDs
-  // For now, return null and let the AI retry with proper payload
-  console.warn('[HerculesAI] Cannot construct schedule action without workout IDs');
+  console.log('[HerculesAI] constructScheduleAction - parsing message');
+
+  // Strip markdown bold markers before parsing so **Monday**: Push works
+  const cleanMessage = message.replace(/\*\*/g, '');
+
+  const WEEKDAYS = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+
+  // Try to detect weekly schedule: "Monday: Push Day", "Tuesday: Rest", etc.
+  const weeklyPattern = /\b(sunday|monday|tuesday|wednesday|thursday|friday|saturday)\s*[:–-]\s*([^,\n]+)/gi;
+  const weeklyMatches = [...cleanMessage.matchAll(weeklyPattern)];
+
+  if (weeklyMatches.length >= 3) {
+    console.log('[HerculesAI] Detected weekly schedule with', weeklyMatches.length, 'day assignments');
+    const days: Record<string, string | null> = {};
+    for (const day of WEEKDAYS) {
+      days[day] = null; // default rest
+    }
+    for (const match of weeklyMatches) {
+      const dayName = match[1].toLowerCase();
+      const workoutName = match[2].trim();
+      const isRest = /^(rest|off|recovery|rest day|off day|recovery day)$/i.test(workoutName);
+      days[dayName] = isRest ? null : workoutName;
+    }
+    return {
+      actionType: 'create_schedule',
+      payload: { type: 'weekly', scheduleData: { type: 'weekly', days } },
+    };
+  }
+
+  // Try to detect rotating schedule: "Day 1: Push", "Day 2: Pull", etc.
+  const rotatingPattern = /\bDay\s*(\d+)\s*[:–-]\s*([^,\n]+)/gi;
+  const rotatingMatches = [...cleanMessage.matchAll(rotatingPattern)];
+
+  if (rotatingMatches.length >= 2) {
+    console.log('[HerculesAI] Detected rotating schedule with', rotatingMatches.length, 'cycle entries');
+    // Sort by day number
+    const sorted = rotatingMatches.sort((a, b) => parseInt(a[1]) - parseInt(b[1]));
+    const cycleWorkouts: (string | null)[] = sorted.map((match) => {
+      const workoutName = match[2].trim();
+      const isRest = /^(rest|off|recovery|rest day|off day|recovery day)$/i.test(workoutName);
+      return isRest ? null : workoutName;
+    });
+    return {
+      actionType: 'create_schedule',
+      payload: { type: 'rotating', scheduleData: { type: 'rotating', cycleWorkouts } },
+    };
+  }
+
+  console.warn('[HerculesAI] Could not parse schedule from message');
   return null;
 };
 
@@ -569,9 +626,9 @@ export const parseAssistantResponse = (content: string): ParsedAssistantResponse
     console.log('[HerculesAI] parseAssistantResponse: JSON parsed successfully, type=', parsed.type, 'hasAction=', !!parsed.action);
 
     if (parsed?.type && parsed?.message) {
-      const type = parsed.type === 'action' ? 'action' : 'message';
+      let type: 'message' | 'action' = parsed.type === 'action' ? 'action' : 'message';
       const sanitizedMessage = sanitizeForDisplay(parsed.message);
-      let action = parsed.action ?? null;
+      let action: ActionProposal | null = parsed.action ?? null;
       
       // CRITICAL: Validate action has required fields
       if (action) {
@@ -581,24 +638,34 @@ export const parseAssistantResponse = (content: string): ParsedAssistantResponse
         }
       }
       
-      // CRITICAL: If type is 'action' but action payload is null, log warning
+      // CRITICAL: If type is 'action' but action payload is null, try to construct it
       if (type === 'action' && !action) {
         const proposal = looksLikeActionProposal(sanitizedMessage);
-        console.warn('[HerculesAI] parseAssistantResponse: type=action but action is null!', {
+        console.warn('[HerculesAI] parseAssistantResponse: type=action but action is null! Attempting construction...', {
           messagePreview: sanitizedMessage.substring(0, 100),
-          looksLikeProposal: proposal.isProposal,
           likelyActionType: proposal.likelyActionType,
         });
+        if (proposal.likelyActionType) {
+          action = constructActionFromMessage(sanitizedMessage, proposal.likelyActionType);
+          if (action) {
+            console.log('[HerculesAI] parseAssistantResponse: Successfully constructed missing action:', action.actionType);
+          }
+        }
       }
       
-      // CRITICAL: If type is 'message' but message looks like a proposal, log warning
+      // CRITICAL: If type is 'message' but message looks like a proposal, construct and attach the action
       if (type === 'message') {
         const proposal = looksLikeActionProposal(sanitizedMessage);
-        if (proposal.isProposal) {
-          console.warn('[HerculesAI] parseAssistantResponse: Message looks like proposal but type=message!', {
+        if (proposal.isProposal && proposal.likelyActionType) {
+          console.warn('[HerculesAI] parseAssistantResponse: Message looks like proposal but type=message! Constructing action...', {
             messagePreview: sanitizedMessage.substring(0, 100),
             likelyActionType: proposal.likelyActionType,
           });
+          action = constructActionFromMessage(sanitizedMessage, proposal.likelyActionType);
+          if (action) {
+            type = 'action';
+            console.log('[HerculesAI] parseAssistantResponse: Promoted message to action:', action.actionType);
+          }
         }
       }
       
@@ -630,9 +697,9 @@ export const parseAssistantResponse = (content: string): ParsedAssistantResponse
       };
 
       if (parsed?.type && parsed?.message) {
-        const type = parsed.type === 'action' ? 'action' : 'message';
+        let type: 'message' | 'action' = parsed.type === 'action' ? 'action' : 'message';
         const sanitizedMessage = sanitizeForDisplay(parsed.message);
-        let action = parsed.action ?? null;
+        let action: ActionProposal | null = parsed.action ?? null;
         
         // Validate action
         if (action && (!action.actionType || !action.payload)) {
@@ -640,9 +707,29 @@ export const parseAssistantResponse = (content: string): ParsedAssistantResponse
           action = null;
         }
         
-        // Log warning if action expected but missing
+        // If action expected but missing, try to construct it
         if (type === 'action' && !action) {
-          console.warn('[HerculesAI] parseAssistantResponse (extracted): type=action but action is null!');
+          console.warn('[HerculesAI] parseAssistantResponse (extracted): type=action but action is null! Attempting construction...');
+          const proposal = looksLikeActionProposal(sanitizedMessage);
+          if (proposal.likelyActionType) {
+            action = constructActionFromMessage(sanitizedMessage, proposal.likelyActionType);
+            if (action) {
+              console.log('[HerculesAI] parseAssistantResponse (extracted): Constructed missing action:', action.actionType);
+            }
+          }
+        }
+        
+        // If type is message but looks like a proposal, try to construct action
+        if (type === 'message') {
+          const proposal = looksLikeActionProposal(sanitizedMessage);
+          if (proposal.isProposal && proposal.likelyActionType) {
+            const constructed = constructActionFromMessage(sanitizedMessage, proposal.likelyActionType);
+            if (constructed) {
+              type = 'action';
+              action = constructed;
+              console.log('[HerculesAI] parseAssistantResponse (extracted): Promoted to action:', constructed.actionType);
+            }
+          }
         }
         
         return {

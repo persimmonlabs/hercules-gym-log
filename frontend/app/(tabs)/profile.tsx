@@ -81,6 +81,7 @@ interface CardioStatsContentProps {
 }
 
 const CardioStatsContent: React.FC<CardioStatsContentProps> = ({ stats, timeRange }) => {
+  const { theme, isDarkMode } = useTheme();
   // Subscribe to distanceUnit to trigger re-renders when units change
   useSettingsStore((state) => state.distanceUnit);
   const { convertDistance, getDistanceUnitShort } = useSettingsStore();
@@ -127,7 +128,7 @@ const CardioStatsContent: React.FC<CardioStatsContentProps> = ({ stats, timeRang
       <View style={{ flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center' }}>
         {/* Total Time */}
         <View style={{ alignItems: 'center', paddingHorizontal: spacing.sm }}>
-          <View style={summaryStyles.valueBadge}>
+          <View style={[summaryStyles.valueBadge, { backgroundColor: isDarkMode ? theme.surface.card : theme.surface.elevated }]}>
             <Text variant="heading2" color="primary">
               {cardioSummaryValue}
             </Text>
@@ -140,7 +141,7 @@ const CardioStatsContent: React.FC<CardioStatsContentProps> = ({ stats, timeRang
         {/* Total Distance */}
         {totalDistance > 0 && (
           <View style={{ alignItems: 'center', paddingHorizontal: spacing.sm }}>
-            <View style={summaryStyles.valueBadge}>
+            <View style={[summaryStyles.valueBadge, { backgroundColor: isDarkMode ? theme.surface.card : theme.surface.elevated }]}>
               <Text variant="heading2" color="primary">
                 {distanceSummaryValue}
               </Text>
@@ -184,7 +185,6 @@ const summaryStyles = StyleSheet.create({
     textAlign: 'center',
   },
   valueBadge: {
-    backgroundColor: colors.surface.card,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.xs,
     borderRadius: radius.md,
@@ -215,13 +215,10 @@ const volumeTrendFilterStyles = StyleSheet.create({
     flex: 1,
   },
   searchInput: {
-    backgroundColor: colors.primary.bg,
     borderWidth: 1,
-    borderColor: colors.border.medium,
     padding: spacing.md,
     borderRadius: radius.md,
     fontSize: 16,
-    color: colors.text.primary,
     marginBottom: spacing.md,
   },
   exerciseList: {
@@ -233,7 +230,6 @@ const volumeTrendFilterStyles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: spacing.md,
     borderBottomWidth: 0.5,
-    borderBottomColor: colors.border.light,
   },
   exerciseItemSelected: {
     backgroundColor: colors.accent.orangeMuted + '20',
@@ -320,7 +316,7 @@ const TabPill: React.FC<TabPillProps> = ({ label, isActive, onPress }) => {
 
 const StatsScreen: React.FC = () => {
   const router = useRouter();
-  const { theme } = useTheme();
+  const { theme, isDarkMode } = useTheme();
   const { isPremium } = usePremiumStatus();
   const scrollRef = useRef<ScrollView>(null);
   useScrollToTop(scrollRef);
@@ -365,13 +361,13 @@ const StatsScreen: React.FC = () => {
       paddingVertical: spacing.xxs,
       borderRadius: 999,
       borderWidth: 1,
-      borderColor: theme.accent.orangeMuted,
+      borderColor: colors.accent.orangeMuted,
       backgroundColor: theme.primary.bg,
       minWidth: 90,
     },
     tabPillActive: {
-      backgroundColor: theme.accent.orangeMuted,
-      borderColor: theme.accent.orange,
+      backgroundColor: colors.accent.orangeMuted,
+      borderColor: colors.accent.orange,
     },
     tabPillLabel: {
       textAlign: 'center',
@@ -596,7 +592,7 @@ const StatsScreen: React.FC = () => {
           ) : (
             <View style={summaryStyles.grid}>
               <View style={summaryStyles.tile}>
-                <View style={summaryStyles.valueBadge}>
+                <View style={[summaryStyles.valueBadge, { backgroundColor: isDarkMode ? theme.surface.card : theme.surface.elevated }]}>
                   <Text variant="heading3" color="primary">
                     {totalWorkoutSessions}
                   </Text>
@@ -607,7 +603,7 @@ const StatsScreen: React.FC = () => {
               </View>
 
               <View style={summaryStyles.tile}>
-                <View style={summaryStyles.valueBadge}>
+                <View style={[summaryStyles.valueBadge, { backgroundColor: isDarkMode ? theme.surface.card : theme.surface.elevated }]}>
                   <Text variant="heading3" color="primary">
                     {formatCompactNumber(totalVolume)}
                   </Text>
@@ -618,7 +614,7 @@ const StatsScreen: React.FC = () => {
               </View>
 
               <View style={summaryStyles.tile}>
-                <View style={summaryStyles.valueBadge}>
+                <View style={[summaryStyles.valueBadge, { backgroundColor: isDarkMode ? theme.surface.card : theme.surface.elevated }]}>
                   <Text variant="heading3" color="primary">
                     {cardioSummaryValue}
                   </Text>
@@ -629,7 +625,7 @@ const StatsScreen: React.FC = () => {
               </View>
 
               <View style={summaryStyles.tile}>
-                <View style={summaryStyles.valueBadge}>
+                <View style={[summaryStyles.valueBadge, { backgroundColor: isDarkMode ? theme.surface.card : theme.surface.elevated }]}>
                   <Text variant="heading3" color="primary">
                     {formatDistanceValue(totalCardioDistance, 1)}
                   </Text>
@@ -691,16 +687,16 @@ const StatsScreen: React.FC = () => {
         >
           <View style={volumeTrendFilterStyles.modalContent}>
             <TextInput
-              style={volumeTrendFilterStyles.searchInput}
+              style={[volumeTrendFilterStyles.searchInput, { backgroundColor: theme.primary.bg, borderColor: theme.border.medium, color: theme.text.primary }]}
               placeholder="Search exercises..."
               value={exerciseSearchQuery}
               onChangeText={setExerciseSearchQuery}
-              placeholderTextColor={colors.text.tertiary}
+              placeholderTextColor={theme.text.tertiary}
             />
             
             {/* All Exercises option to clear filter */}
             <TouchableOpacity
-              style={volumeTrendFilterStyles.exerciseItem}
+              style={[volumeTrendFilterStyles.exerciseItem, { borderBottomColor: theme.border.light }]}
               onPress={() => {
                 setVolumeTrendExercise(null);
                 setIsExerciseModalVisible(false);
@@ -715,7 +711,7 @@ const StatsScreen: React.FC = () => {
               keyExtractor={(item) => item.id}
               renderItem={({ item }) => (
                 <TouchableOpacity
-                  style={volumeTrendFilterStyles.exerciseItem}
+                  style={[volumeTrendFilterStyles.exerciseItem, { borderBottomColor: theme.border.light }]}
                   onPress={() => {
                     if (!isPremium) {
                       setIsExerciseModalVisible(false);
@@ -857,7 +853,7 @@ const StatsScreen: React.FC = () => {
         featureName="Deep Dive Analytics"
         onUnlock={() => router.push('/premium')}
       >
-        <SurfaceCard tone="neutral" padding="md" showAccentStripe={false}>
+        <SurfaceCard tone="card" padding="md" showAccentStripe={false}>
           <View style={insightsStyles.content}>
             {/* Header */}
             <View style={insightsStyles.headerSection}>
@@ -875,7 +871,7 @@ const StatsScreen: React.FC = () => {
                 }}
                 style={insightsStyles.linkItem}
               >
-                <Text variant="body" color="primary">
+                <Text variant="body" color="secondary">
                   Volume Totals Breakdown
                 </Text>
                 <Ionicons name="chevron-forward" size={20} color={theme.accent.orange} />
@@ -890,7 +886,7 @@ const StatsScreen: React.FC = () => {
                 }}
                 style={insightsStyles.linkItem}
               >
-                <Text variant="body" color="primary">
+                <Text variant="body" color="secondary">
                   Volume Distribution Map
                 </Text>
                 <Ionicons name="chevron-forward" size={20} color={theme.accent.orange} />
@@ -901,7 +897,7 @@ const StatsScreen: React.FC = () => {
       </PremiumLock>
 
       {/* Hercules AI Card */}
-      <SurfaceCard tone="neutral" padding="md" showAccentStripe={false}>
+      <SurfaceCard tone="card" padding="md" showAccentStripe={false}>
         <View style={insightsStyles.content}>
           {/* Header */}
           <View style={insightsStyles.headerSection}>
@@ -919,7 +915,7 @@ const StatsScreen: React.FC = () => {
               }}
               style={insightsStyles.linkItem}
             >
-              <Text variant="body" color="primary">
+              <Text variant="body" color="secondary">
                 Chat with your AI Coach
               </Text>
               <Ionicons name="chevron-forward" size={20} color={theme.accent.orange} />

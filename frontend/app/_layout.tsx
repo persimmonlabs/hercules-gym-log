@@ -103,7 +103,7 @@ const RootLayout: React.FC = () => {
           card: colors.primary.bg,
           text: colors.text.primary,
           border: colors.border.dark,
-          primary: colors.accent.primary,
+          primary: theme.accent.primary,
         },
       };
     },

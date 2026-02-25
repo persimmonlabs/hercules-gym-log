@@ -10,6 +10,7 @@ import { triggerHaptic } from '@/utils/haptics';
 import { Text } from '@/components/atoms/Text';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { colors, radius, spacing } from '@/constants/theme';
+import { useTheme } from '@/hooks/useTheme';
 import type { RotationScheduleConfig, ProgramWorkout } from '@/types/premadePlan';
 
 interface RotationScheduleEditorProps {
@@ -88,6 +89,7 @@ export const RotationScheduleEditor: React.FC<RotationScheduleEditorProps> = ({
   onRemoveWorkout,
   onChange,
 }) => {
+  const { theme } = useTheme();
   // Create workout items from workout order
   const workoutItems: WorkoutItem[] = schedule.workoutOrder
     .map((id, index) => {
@@ -197,7 +199,7 @@ export const RotationScheduleEditor: React.FC<RotationScheduleEditorProps> = ({
                   onPress={() => onWorkoutPress(item.workout)}
                   hitSlop={8}
                 >
-                  <IconSymbol name="edit" size={18} color={colors.accent.primary} />
+                  <IconSymbol name="edit" size={18} color={theme.accent.primary} />
                 </Pressable>
               )}
               <Pressable
@@ -208,7 +210,7 @@ export const RotationScheduleEditor: React.FC<RotationScheduleEditorProps> = ({
                 }}
                 hitSlop={8}
               >
-                <IconSymbol name="close" size={18} color={colors.accent.orange} />
+                <IconSymbol name="close" size={18} color={theme.accent.orange} />
               </Pressable>
             </View>
           </View>

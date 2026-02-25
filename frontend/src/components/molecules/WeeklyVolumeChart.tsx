@@ -5,6 +5,7 @@ import { useFocusEffect } from '@react-navigation/native';
 
 import { Text } from '@/components/atoms/Text';
 import { colors, spacing, radius } from '@/constants/theme';
+import { useTheme } from '@/hooks/useTheme';
 import { useWorkoutSessionsStore } from '@/store/workoutSessionsStore';
 import { useSettingsStore } from '@/store/settingsStore';
 
@@ -90,6 +91,7 @@ interface ChartPageProps {
 }
 
 const ChartPage: React.FC<ChartPageProps> = ({ title, data, selectedBar, setSelectedBar, formatWeight }) => {
+  const { theme } = useTheme();
     // Calculate Max Value and Y-axis ticks
     const rawMax = Math.max(...data.values, 0);
 

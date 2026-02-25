@@ -4,6 +4,7 @@ import { StyleSheet, TextInput, View, type TextStyle } from 'react-native';
 import { SurfaceCard } from '@/components/atoms/SurfaceCard';
 import { Text } from '@/components/atoms/Text';
 import { colors, radius, sizing, spacing, typography } from '@/constants/theme';
+import { useTheme } from '@/hooks/useTheme';
 
 interface PlanFormHeaderProps {
   planName: string;
@@ -18,6 +19,7 @@ export const PlanFormHeader: React.FC<PlanFormHeaderProps> = ({
   searchTerm,
   onSearchTermChange,
 }) => {
+  const { theme } = useTheme();
   return (
     <View style={styles.container}>
       <SurfaceCard tone="neutral" padding="lg" showAccentStripe={false} style={styles.card}>
@@ -31,7 +33,7 @@ export const PlanFormHeader: React.FC<PlanFormHeaderProps> = ({
             placeholder="e.g. Upper Body Strength"
             placeholderTextColor={colors.text.tertiary}
             style={styles.input}
-            selectionColor={colors.accent.primary}
+            selectionColor={theme.accent.primary}
           />
         </View>
 
@@ -45,7 +47,7 @@ export const PlanFormHeader: React.FC<PlanFormHeaderProps> = ({
             placeholder="Find by name or category"
             placeholderTextColor={colors.text.tertiary}
             style={styles.input}
-            selectionColor={colors.accent.primary}
+            selectionColor={theme.accent.primary}
           />
         </View>
       </SurfaceCard>

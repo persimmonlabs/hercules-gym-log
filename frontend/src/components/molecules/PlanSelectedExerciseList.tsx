@@ -14,6 +14,7 @@ import { Button } from '@/components/atoms/Button';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import type { Exercise } from '@/constants/exercises';
 import { colors, radius, sizing, spacing } from '@/constants/theme';
+import { useTheme } from '@/hooks/useTheme';
 import { getExerciseDisplayTagText } from '@/utils/exerciseDisplayTags';
 
 interface PlanSelectedExerciseListProps {
@@ -45,6 +46,7 @@ export const PlanSelectedExerciseList: React.FC<PlanSelectedExerciseListProps> =
   isSaveDisabled,
   isSaving,
 }) => {
+  const { theme } = useTheme();
   const handleMove = (index: number, direction: 'up' | 'down') => {
     const newIndex = direction === 'up' ? index - 1 : index + 1;
 
@@ -162,7 +164,7 @@ export const PlanSelectedExerciseList: React.FC<PlanSelectedExerciseListProps> =
                       <IconSymbol
                         name="delete-outline"
                         size={sizing.iconSM}
-                        color={colors.accent.orange}
+                        color={theme.accent.orange}
                       />
                     </Pressable>
                   </View>

@@ -33,7 +33,13 @@ export interface OpenRouterResult {
 const buildUsage = (usage: Record<string, unknown> | null | undefined): OpenRouterUsage => {
   const promptTokens = Number(usage?.prompt_tokens ?? 0);
   const completionTokens = Number(usage?.completion_tokens ?? 0);
-  const totalTokens = Number(usage?.total_tokens ?? promptTokens + completionTokens);
+  // Gemini 2.5 Flash may report thinking/reasoning tokens separately via OpenRouter.
+  // Include them in the total so cost tracking stays accurate.
+  const details = usage?.completion_tokens_details as Record<string, unknown> | undefined;
+  const reasoningTokens = Number(
+    usage?.reasoning_tokens ?? details?.reasoning_tokens ?? 0
+  );
+  const totalTokens = Number(usage?.total_tokens ?? (promptTokens + completionTokens + reasoningTokens));
 
   return {
     promptTokens,
@@ -60,8 +66,10 @@ export const callOpenRouter = async (
     max_tokens: OPENROUTER_MAX_TOKENS,
   };
 
-  // Force JSON output when requested - this helps ensure valid JSON responses
-  if (options?.forceJson) {
+  // Force JSON output when requested - this helps ensure valid JSON responses.
+  // IMPORTANT: Gemini via OpenRouter does NOT support response_format + tools simultaneously.
+  // Only set response_format when tools are NOT present.
+  if (options?.forceJson && !(options?.tools && options.tools.length > 0)) {
     payload.response_format = { type: 'json_object' };
   }
 
@@ -93,9 +101,12 @@ export const callOpenRouter = async (
   const finishReason = choice?.finish_reason ?? 'stop';
 
   const content = message?.content ?? null;
-  const toolCalls: ToolCall[] = message?.tool_calls ?? [];
+  const toolCalls: ToolCall[] = Array.isArray(message?.tool_calls) ? message.tool_calls : [];
 
+  // Gemini commonly returns content: null when making tool calls — that is normal.
+  // Only error when BOTH are missing, indicating a truly empty response.
   if (!content && toolCalls.length === 0) {
+    console.warn('[HerculesAI] OpenRouter response has no content and no tool calls. finish_reason:', finishReason);
     throw new Error('[HerculesAI] OpenRouter response missing content and tool calls');
   }
 

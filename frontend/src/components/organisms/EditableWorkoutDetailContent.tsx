@@ -261,8 +261,8 @@ const EditableSetRow: React.FC<EditableSetRowProps> = ({
                 placeholder="0"
                 placeholderTextColor={theme.text.tertiary}
                 textAlign="center"
-                cursorColor={colors.accent.primary}
-                selectionColor={colors.accent.orangeLight}
+                cursorColor={theme.accent.primary}
+                selectionColor={theme.accent.orangeLight}
               />
               <Text variant="caption" color="secondary">{distanceUnitLabel}</Text>
             </View>
@@ -301,8 +301,8 @@ const EditableSetRow: React.FC<EditableSetRowProps> = ({
                 placeholder="0"
                 placeholderTextColor={theme.text.tertiary}
                 textAlign="center"
-                cursorColor={colors.accent.primary}
-                selectionColor={colors.accent.orangeLight}
+                cursorColor={theme.accent.primary}
+                selectionColor={theme.accent.orangeLight}
               />
               <Text variant="caption" color="secondary">{weightUnit}</Text>
             </View>
@@ -315,8 +315,8 @@ const EditableSetRow: React.FC<EditableSetRowProps> = ({
                 placeholder="0"
                 placeholderTextColor={theme.text.tertiary}
                 textAlign="center"
-                cursorColor={colors.accent.primary}
-                selectionColor={colors.accent.orangeLight}
+                cursorColor={theme.accent.primary}
+                selectionColor={theme.accent.orangeLight}
               />
               <Text variant="caption" color="secondary">reps</Text>
             </View>
@@ -336,8 +336,8 @@ const EditableSetRow: React.FC<EditableSetRowProps> = ({
                 placeholder="0"
                 placeholderTextColor={theme.text.tertiary}
                 textAlign="center"
-                cursorColor={colors.accent.primary}
-                selectionColor={colors.accent.orangeLight}
+                cursorColor={theme.accent.primary}
+                selectionColor={theme.accent.orangeLight}
               />
               <Text variant="caption" color="secondary">{weightUnit}</Text>
             </View>
@@ -350,8 +350,8 @@ const EditableSetRow: React.FC<EditableSetRowProps> = ({
                 placeholder="0"
                 placeholderTextColor={theme.text.tertiary}
                 textAlign="center"
-                cursorColor={colors.accent.primary}
-                selectionColor={colors.accent.orangeLight}
+                cursorColor={theme.accent.primary}
+                selectionColor={theme.accent.orangeLight}
               />
               <Text variant="caption" color="secondary">reps</Text>
             </View>

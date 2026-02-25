@@ -86,7 +86,7 @@ export const InsightCard: React.FC<InsightCardProps> = ({ insights, insightType,
       emptyMessage = EMPTY_STATE_MESSAGES[insightType]?.message ?? '';
     }
     return (
-      <SurfaceCard tone="neutral" padding="md" showAccentStripe={false}>
+      <SurfaceCard tone="card" padding="md" showAccentStripe={false}>
         <View style={styles.content}>
           <View style={styles.headerSection}>
             <Text variant="heading3" color="primary" style={styles.title}>
@@ -99,10 +99,10 @@ export const InsightCard: React.FC<InsightCardProps> = ({ insights, insightType,
             </Text>
           </View>
           <View pointerEvents="none" style={[styles.expandButton, { opacity: 0 }]}>
-            <Text variant="caption" style={{ color: colors.accent.orange }}>
+            <Text variant="caption" style={{ color: theme.accent.orange }}>
               +0 more
             </Text>
-            <Ionicons name="chevron-down" size={14} color={colors.accent.orange} />
+            <Ionicons name="chevron-down" size={14} color={theme.accent.orange} />
           </View>
         </View>
       </SurfaceCard>
@@ -114,7 +114,7 @@ export const InsightCard: React.FC<InsightCardProps> = ({ insights, insightType,
   const hasMore = additionalInsights.length > 0;
 
   return (
-    <SurfaceCard tone="neutral" padding="md" showAccentStripe={false}>
+    <SurfaceCard tone="card" padding="md" showAccentStripe={false}>
       <View style={styles.content}>
         {/* Header */}
         <View style={styles.headerSection}>
@@ -156,7 +156,7 @@ export const InsightCard: React.FC<InsightCardProps> = ({ insights, insightType,
             style={styles.expandButton}
             hitSlop={spacing.sm}
           >
-            <Text variant="caption" style={{ color: colors.accent.orange }}>
+            <Text variant="caption" style={{ color: theme.accent.orange }}>
               {isExpanded
                 ? 'Show less'
                 : `+${additionalInsights.length} more`}
@@ -164,15 +164,15 @@ export const InsightCard: React.FC<InsightCardProps> = ({ insights, insightType,
             <Ionicons
               name={isExpanded ? 'chevron-up' : 'chevron-down'}
               size={14}
-              color={colors.accent.orange}
+              color={theme.accent.orange}
             />
           </Pressable>
         ) : (
           <View pointerEvents="none" style={[styles.expandButton, { opacity: 0 }]}>
-            <Text variant="caption" style={{ color: colors.accent.orange }}>
+            <Text variant="caption" style={{ color: theme.accent.orange }}>
               +0 more
             </Text>
-            <Ionicons name="chevron-down" size={14} color={colors.accent.orange} />
+            <Ionicons name="chevron-down" size={14} color={theme.accent.orange} />
           </View>
         )}
       </View>

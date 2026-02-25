@@ -689,7 +689,7 @@ const WorkoutSessionScreen: React.FC = () => {
 
   const listHeaderComponent = useMemo(() => (
     <View style={styles.listHeader}>
-      <View style={styles.headerCard}>
+      <View style={[styles.headerCard, { backgroundColor: theme.surface.card, borderColor: theme.accent.orange }]}>
         <Text variant="heading2" color="primary">{sessionDisplayName}</Text>
         <View style={styles.headerRow}>
           <View style={styles.headerStat}>
@@ -711,7 +711,7 @@ const WorkoutSessionScreen: React.FC = () => {
         <Text variant="heading3">Exercises</Text>
       </View>
     </View>
-  ), [sessionDisplayName, elapsedSeconds, exerciseCount, completedExercisesCount]);
+  ), [sessionDisplayName, elapsedSeconds, exerciseCount, completedExercisesCount, theme]);
 
   const tabBarBottomOffset = useMemo(() => insets.bottom + spacing.sm, [insets.bottom]);
   const tabBarMaskHeight = useMemo(
@@ -761,13 +761,13 @@ const WorkoutSessionScreen: React.FC = () => {
             size="md"
             onPress={handleCancel}
             disabled={isFinishingWorkout}
-            contentStyle={styles.cancelButton}
-            textColor={colors.accent.red}
+            contentStyle={[styles.cancelButton, { backgroundColor: theme.surface.card, borderColor: theme.accent.red }]}
+            textColor={theme.accent.red}
           />
         )}
       </View>
     ),
-    [handleAddExercisePress, handleFinishWorkout, handleCancel, hasExercises, isFinishingWorkout]
+    [handleAddExercisePress, handleFinishWorkout, handleCancel, hasExercises, isFinishingWorkout, theme]
   );
   const listEmptyComponent = useMemo(
     () => (
@@ -777,12 +777,12 @@ const WorkoutSessionScreen: React.FC = () => {
           { paddingBottom: spacing['2xl'] },
         ]}
       >
-        <View style={styles.listEmptyCard}>
-          <Text variant="heading3">No exercises yet.</Text>
+        <View style={[styles.listEmptyCard, { backgroundColor: theme.surface.card, borderColor: theme.accent.orange }]}>
+          <Text variant="heading3" color="primary">No exercises yet.</Text>
         </View>
       </View>
     ),
-    []
+    [theme]
   );
   const renderExerciseSeparator = useCallback(() => <View style={styles.exerciseSeparator} />, []);
 
@@ -794,7 +794,7 @@ const WorkoutSessionScreen: React.FC = () => {
 
   return (
     <View style={[styles.safeAreaRoot, { paddingTop: insets.top, backgroundColor: theme.surface.tint }]}>
-      <StatusBar style="dark" backgroundColor="transparent" translucent />
+      <StatusBar style="auto" backgroundColor="transparent" translucent />
       <View style={styles.root}>
         {activeMenu?.type === 'exercise' ? (
           <Pressable style={styles.menuBackdrop} onPress={closeAllMenus} accessibilityLabel="Dismiss exercise menu" />
@@ -823,15 +823,15 @@ const WorkoutSessionScreen: React.FC = () => {
             const isExpanded = expandedExercises.has(item.name);
 
             const badgeGradientColors: readonly [ColorValue, ColorValue] = [
-              colors.accent.gradientStart,
-              colors.accent.gradientEnd,
+              theme.accent.gradientStart,
+              theme.accent.gradientEnd,
             ];
 
             const isMenuOpen = activeMenu?.type === 'exercise' && activeMenu.exerciseName === item.name;
 
             return (
               <View style={[styles.exerciseItem, isMenuOpen && styles.exerciseItemMenuActive]}>
-                <View style={[styles.exerciseCard, isMenuOpen && styles.exerciseCardMenuActive]}>
+                <View style={[styles.exerciseCard, { backgroundColor: theme.surface.card, borderColor: theme.accent.orange }, isMenuOpen && styles.exerciseCardMenuActive]}>
                   <Pressable
                     style={[styles.exerciseHeader, { minHeight: spacing.md }]}
                     onPress={() => handleToggleExercise(item.name)}
@@ -854,7 +854,7 @@ const WorkoutSessionScreen: React.FC = () => {
                             </Text>
                           </LinearGradient>
                         ) : (
-                          <View style={styles.badgeNeutral}>
+                          <View style={[styles.badgeNeutral, { backgroundColor: theme.surface.card, borderColor: theme.accent.orange }]}>
                             <Text variant="bodySemibold" color="primary">
                               {index + 1}
                             </Text>
@@ -889,7 +889,7 @@ const WorkoutSessionScreen: React.FC = () => {
                               <MaterialCommunityIcons
                                 name="dots-vertical"
                                 size={sizing.iconSM}
-                                color={colors.overlay.navigation}
+                                color={theme.text.secondary}
                               />
                             </Pressable>
                           </View>
@@ -942,8 +942,8 @@ const WorkoutSessionScreen: React.FC = () => {
             value={searchTerm}
             onChangeText={setSearchTerm}
             placeholder="Search by name or category"
-            placeholderTextColor={colors.text.tertiary}
-            style={styles.searchInput}
+            placeholderTextColor={theme.text.tertiary}
+            style={[styles.searchInput, { borderColor: theme.accent.orange, color: theme.text.primary }]}
           />
         }
       >
@@ -974,9 +974,9 @@ const WorkoutSessionScreen: React.FC = () => {
                 <MaterialCommunityIcons
                   name="plus-circle-outline"
                   size={sizing.iconMD}
-                  color={colors.accent.primary}
+                  color={theme.accent.primary}
                 />
-                <Text variant="bodySemibold" style={{ color: colors.accent.primary }}>
+                <Text variant="bodySemibold" style={{ color: theme.accent.primary }}>
                   Create Exercise
                 </Text>
               </Pressable>
@@ -1018,9 +1018,9 @@ const WorkoutSessionScreen: React.FC = () => {
               <MaterialCommunityIcons
                 name="plus-circle-outline"
                 size={sizing.iconMD}
-                color={colors.accent.primary}
+                color={theme.accent.primary}
               />
-              <Text variant="bodySemibold" style={{ color: colors.accent.primary }}>
+              <Text variant="bodySemibold" style={{ color: theme.accent.primary }}>
                 Create Exercise
               </Text>
             </Pressable>
@@ -1029,13 +1029,13 @@ const WorkoutSessionScreen: React.FC = () => {
       </SheetModal>
       {/* Render menu at root level for reliable touch handling */}
       {activeMenu?.type === 'exercise' && (
-        <View style={[styles.menuPopover, { top: menuPosition.top, right: menuPosition.right }]} pointerEvents="auto">
+        <View style={[styles.menuPopover, { top: menuPosition.top, right: menuPosition.right, backgroundColor: theme.surface.card, borderColor: theme.accent.orange }]} pointerEvents="auto">
           {sessionExercises.findIndex(e => e.name === activeMenu.exerciseName) > 0 && (
             <Pressable
               style={styles.menuPopoverItem}
               onPress={() => handleMoveExerciseUp(activeMenu.exerciseName)}
             >
-              <MaterialCommunityIcons name="arrow-up" size={sizing.iconSM} color={colors.text.primary} style={{ marginRight: spacing.xs }} />
+              <MaterialCommunityIcons name="arrow-up" size={sizing.iconSM} color={theme.text.primary} style={{ marginRight: spacing.xs }} />
               <Text variant="body">Move Up</Text>
             </Pressable>
           )}
@@ -1044,7 +1044,7 @@ const WorkoutSessionScreen: React.FC = () => {
               style={styles.menuPopoverItem}
               onPress={() => handleMoveExerciseDown(activeMenu.exerciseName)}
             >
-              <MaterialCommunityIcons name="arrow-down" size={sizing.iconSM} color={colors.text.primary} style={{ marginRight: spacing.xs }} />
+              <MaterialCommunityIcons name="arrow-down" size={sizing.iconSM} color={theme.text.primary} style={{ marginRight: spacing.xs }} />
               <Text variant="body">Move Down</Text>
             </Pressable>
           )}
@@ -1139,8 +1139,6 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     borderRadius: radius.lg,
     borderWidth: 2,
-    borderColor: colors.accent.orange,
-    backgroundColor: colors.surface.card,
     paddingHorizontal: spacing.lg,
   },
   headerRow: {
@@ -1169,18 +1167,15 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
   },
   exerciseCard: {
-    backgroundColor: colors.surface.card,
     borderRadius: radius.lg,
     paddingLeft: spacing.md,
     paddingRight: spacing.md,
     paddingVertical: spacing.sm,
     borderWidth: 2,
-    borderColor: colors.accent.orange,
     overflow: 'visible',
     position: 'relative',
   },
   exerciseCardMenuActive: {
-    borderColor: colors.accent.orange,
     elevation: 11, // Ensure card is above item
   },
   exerciseCardRow: {
@@ -1211,9 +1206,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.full,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: colors.surface.card,
     borderWidth: 1,
-    borderColor: colors.accent.orange,
   },
   cardBody: {
     flex: 1,
@@ -1246,10 +1239,8 @@ const styles = StyleSheet.create({
   },
   menuPopover: {
     position: 'absolute',
-    backgroundColor: colors.surface.card,
     borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: colors.accent.orange,
     paddingVertical: spacing.xs,
     paddingHorizontal: spacing.sm,
     gap: spacing.xs,
@@ -1304,18 +1295,14 @@ const styles = StyleSheet.create({
     gap: spacing.md,
     borderRadius: radius.lg,
     borderWidth: 1,
-    borderColor: colors.accent.orange,
-    backgroundColor: colors.surface.card,
     padding: spacing.lg,
   },
   /* styles removed */
   searchInput: {
     borderWidth: 1,
-    borderColor: colors.accent.orange,
     borderRadius: radius.md,
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.md,
-    color: colors.text.primary,
     backgroundColor: 'transparent',
     marginHorizontal: 0,
   },
@@ -1351,12 +1338,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     marginTop: spacing.sm,
     borderTopWidth: 1,
-    borderTopColor: colors.border.light,
+    borderTopColor: 'rgba(128, 128, 128, 0.2)',
   },
   cancelButton: {
-    backgroundColor: colors.surface.card,
     borderWidth: 1.5,
-    borderColor: colors.accent.red,
     borderRadius: radius.lg,
   },
 });

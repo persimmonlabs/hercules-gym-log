@@ -14,6 +14,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Text } from '@/components/atoms/Text';
 import { colors, radius, shadows, spacing, zIndex } from '@/constants/theme';
 import { springGentle } from '@/constants/animations';
+import { useTheme } from '@/hooks/useTheme';
 
 const SCREEN_HEIGHT = Dimensions.get('window').height;
 const SHEET_DISMISS_THRESHOLD = spacing['2xl'] * 2;
@@ -37,6 +38,7 @@ export const SheetModal: React.FC<SheetModalProps> = ({
     height = '80%',
 }) => {
     const insets = useSafeAreaInsets();
+    const { theme } = useTheme();
     const sheetTranslateY = useSharedValue(SCREEN_HEIGHT);
     const [isModalVisible, setIsModalVisible] = useState(visible);
 
@@ -118,18 +120,22 @@ export const SheetModal: React.FC<SheetModalProps> = ({
                     <Animated.View
                         style={[
                             styles.sheet,
-                            { height: height as any },
+                            {
+                                height: height as any,
+                                backgroundColor: theme.surface.card,
+                                borderColor: theme.border.medium,
+                            },
                             sheetAnimatedStyle,
                         ]}
                     >
                         <GestureDetector gesture={sheetGesture}>
                             <View>
                                 <View style={styles.handleContainer}>
-                                    <View style={styles.handle} />
+                                    <View style={[styles.handle, { backgroundColor: theme.border.medium }]} />
                                 </View>
 
                                 {(title || headerContent) && (
-                                    <View style={styles.header}>
+                                    <View style={[styles.header, { borderBottomColor: theme.border.light }]}>
                                         {title && <Text variant="heading2">{title}</Text>}
                                         {headerContent}
                                     </View>
@@ -158,13 +164,11 @@ const styles = StyleSheet.create({
         backgroundColor: colors.overlay.scrim,
     },
     sheet: {
-        backgroundColor: colors.surface.card,
         borderTopLeftRadius: radius.lg,
         borderTopRightRadius: radius.lg,
         width: '100%',
         overflow: 'hidden',
         borderWidth: 1,
-        borderColor: colors.neutral.gray200,
         ...shadows.lg,
     },
     handleContainer: {
@@ -175,13 +179,11 @@ const styles = StyleSheet.create({
         width: 40,
         height: 4,
         borderRadius: 2,
-        backgroundColor: colors.border.light,
     },
     header: {
         paddingHorizontal: spacing.lg,
         paddingBottom: spacing.md,
         borderBottomWidth: 1,
-        borderBottomColor: colors.border.light,
         gap: spacing.md,
     },
     content: {

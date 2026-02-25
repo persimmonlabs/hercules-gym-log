@@ -151,7 +151,7 @@ export const WorkoutExerciseSummaryCard: React.FC<WorkoutExerciseSummaryCardProp
 
             return (
               <View key={`${exercise.name}-${originalIndex}`} style={styles.setRow}>
-                <View style={[styles.setCircle, { backgroundColor: theme.surface.elevated }]}>
+                <View style={[styles.setCircle, { backgroundColor: theme.surface.elevated, borderColor: theme.accent.orange }]}>
                   <Text variant="bodySemibold" style={[styles.setCircleText, { color: theme.text.secondary }]}>
                     {displayIndex + 1}
                   </Text>

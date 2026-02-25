@@ -27,6 +27,7 @@ interface CircularProgressProps {
 }
 
 const CircularProgress: React.FC<CircularProgressProps> = ({ percentage, size }) => {
+  const { theme } = useTheme();
   const ringSize = size - 20;
   const strokeWidth = 10;
   const radiusValue = ringSize / 2;
@@ -48,7 +49,7 @@ const CircularProgress: React.FC<CircularProgressProps> = ({ percentage, size })
           cx={radiusValue}
           cy={radiusValue}
           r={effectiveRadius}
-          stroke={colors.accent.orangeMuted}
+          stroke={theme.accent.orangeMuted}
           strokeWidth={strokeWidth}
           fill="none"
         />
@@ -59,7 +60,7 @@ const CircularProgress: React.FC<CircularProgressProps> = ({ percentage, size })
             cx={radiusValue}
             cy={radiusValue}
             r={effectiveRadius}
-            stroke={colors.accent.orange}
+            stroke={theme.accent.orange}
             strokeWidth={strokeWidth}
             fill="none"
             strokeDasharray={`${circumference}`}
@@ -201,7 +202,7 @@ export const WeeklyCardioGoalCard: React.FC = () => {
           </View>
         ) : (
           <Pressable style={styles.emptyState} onPress={() => openGoalModal('time')}>
-            <View style={styles.emptyIconContainer}>
+            <View style={[styles.emptyIconContainer, { backgroundColor: theme.accent.orangeMuted }]}>
               <IconSymbol name="add" size={sizing.iconLG} color={theme.accent.orange} />
             </View>
             <Text variant="body" color="secondary" style={styles.emptyText}>
@@ -242,7 +243,7 @@ export const WeeklyCardioGoalCard: React.FC = () => {
           </View>
         ) : (
           <Pressable style={styles.emptyState} onPress={() => openGoalModal('distance')}>
-            <View style={styles.emptyIconContainer}>
+            <View style={[styles.emptyIconContainer, { backgroundColor: theme.accent.orangeMuted }]}>
               <IconSymbol name="add" size={sizing.iconLG} color={theme.accent.orange} />
             </View>
             <Text variant="body" color="secondary" style={styles.emptyText}>
@@ -256,7 +257,7 @@ export const WeeklyCardioGoalCard: React.FC = () => {
 
   return (
     <>
-      <SurfaceCard tone="neutral" padding="md" showAccentStripe={false}>
+      <SurfaceCard tone="card" padding="md" showAccentStripe={false}>
         <View style={styles.container}>
           <View style={styles.header}>
             <Text variant="heading3" color="primary">
@@ -288,7 +289,7 @@ export const WeeklyCardioGoalCard: React.FC = () => {
             >
               <View style={[
                 styles.dot,
-                activeSlide === 0 ? styles.dotActive : styles.dotInactive,
+                { backgroundColor: activeSlide === 0 ? theme.accent.orange : theme.accent.orangeMuted },
               ]} />
             </Pressable>
             <Pressable
@@ -298,7 +299,7 @@ export const WeeklyCardioGoalCard: React.FC = () => {
             >
               <View style={[
                 styles.dot,
-                activeSlide === 1 ? styles.dotActive : styles.dotInactive,
+                { backgroundColor: activeSlide === 1 ? theme.accent.orange : theme.accent.orangeMuted },
               ]} />
             </Pressable>
           </View>
@@ -376,7 +377,6 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: radius.full,
-    backgroundColor: colors.accent.orangeMuted,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -397,11 +397,5 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-  },
-  dotActive: {
-    backgroundColor: colors.accent.orange,
-  },
-  dotInactive: {
-    backgroundColor: colors.accent.orangeMuted,
   },
 });

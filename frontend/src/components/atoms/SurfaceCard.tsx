@@ -16,7 +16,7 @@ import { AnimatedAccentStripe } from '@/components/atoms/AnimatedAccentStripe';
 // TYPES
 // =============================================================================
 
-export type SurfaceTone = 'card' | 'elevated' | 'subtle' | 'tint' | 'neutral';
+export type SurfaceTone = 'card' | 'elevated' | 'subtle' | 'tint' | 'neutral' | 'subcard';
 
 interface SurfaceCardProps {
   /** Content displayed inside the card */
@@ -45,18 +45,20 @@ export const SurfaceCard: React.FC<SurfaceCardProps> = ({
   showAccentStripe = true,
   withShadow = true,
 }) => {
-  const { theme } = useTheme();
+  const { theme, isDarkMode } = useTheme();
   
   const containerStyle = useMemo<ViewStyle>(
     () => ({
       padding: spacing[padding],
       borderRadius: radius.lg,
       backgroundColor:
-        tone === 'neutral'
-          ? theme.surface.elevated  // Neutral cards use elevated (lighter) for nesting
-          : theme.surface[tone === 'tint' ? 'tint' : tone],
+        tone === 'subcard'
+          ? (isDarkMode ? theme.surface.card : theme.surface.elevated)
+          : tone === 'neutral'
+            ? theme.surface.elevated
+            : theme.surface[tone === 'tint' ? 'tint' : tone],
     }),
-    [padding, tone, theme]
+    [padding, tone, theme, isDarkMode]
   );
 
   const flattenedStyle = useMemo<ViewStyle | undefined>(() => {
@@ -121,10 +123,10 @@ export const SurfaceCard: React.FC<SurfaceCardProps> = ({
       overflow: 'hidden',
       borderRadius: radius.lg,
       borderWidth: 1,
-      borderColor: theme.border.light,
+      borderColor: (tone === 'subcard' && isDarkMode) ? theme.border.medium : theme.border.light,
       position: 'relative',
     }),
-    [theme]
+    [theme, tone, isDarkMode]
   );
 
   return (

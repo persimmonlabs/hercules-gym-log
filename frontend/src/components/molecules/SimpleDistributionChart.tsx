@@ -15,6 +15,8 @@ import { Text } from '@/components/atoms/Text';
 import { ChartWrapper } from '@/components/atoms/ChartWrapper';
 import { TimeRangeSelector } from '@/components/atoms/TimeRangeSelector';
 import { colors, spacing, radius } from '@/constants/theme';
+import { useTheme } from '@/hooks/useTheme';
+import { hexToRgba } from '@/utils/colorUtils';
 import { useAnalyticsData } from '@/hooks/useAnalyticsData';
 import { TIME_RANGE_SUBTITLES } from '@/types/analytics';
 import type { ChartSlice, TimeRange } from '@/types/analytics';
@@ -22,12 +24,12 @@ import type { ChartSlice, TimeRange } from '@/types/analytics';
 const PIE_SIZE = 240;
 const EMPTY_MIN_HEIGHT = 240;
 
-// Orange with opacity based on index (sorted by value)
-const getOrangeShade = (index: number, total: number): string => {
-  if (total <= 1) return 'rgba(255, 107, 74, 1.0)';
+// Accent shade with opacity based on index (sorted by value)
+const getAccentShade = (baseHex: string, index: number, total: number): string => {
+  if (total <= 1) return hexToRgba(baseHex, 1.0);
   const ratio = index / (total - 1);
   const opacity = 1.0 - ratio * 0.7;
-  return `rgba(255, 107, 74, ${opacity})`;
+  return hexToRgba(baseHex, opacity);
 };
 
 interface LegendItemProps {
@@ -49,6 +51,7 @@ const LegendItem: React.FC<LegendItemProps> = ({ item, isSelected, isDimmed, onP
 );
 
 export const SimpleDistributionChart: React.FC = () => {
+  const { theme } = useTheme();
   const [timeRange, setTimeRange] = useState<TimeRange>('week');
   const { tieredVolumeDistribution, hasFilteredData } = useAnalyticsData({ timeRange });
   const [selectedSlice, setSelectedSlice] = useState<string | null>(null);
@@ -72,7 +75,7 @@ export const SimpleDistributionChart: React.FC = () => {
   const chartData = data.map((item, index) => ({
     x: item.name,
     y: item.percentage,
-    color: getOrangeShade(index, data.length),
+    color: getAccentShade(theme.accent.orange, index, data.length),
   }));
 
   const colorScale = chartData.map((d) => d.color);

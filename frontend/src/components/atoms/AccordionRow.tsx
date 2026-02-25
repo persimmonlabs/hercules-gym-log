@@ -22,6 +22,7 @@ import { triggerHaptic } from '@/utils/haptics';
 
 import { Text } from '@/components/atoms/Text';
 import { colors, spacing, radius } from '@/constants/theme';
+import { useTheme } from '@/hooks/useTheme';
 
 interface AccordionRowProps {
   name: string;
@@ -44,6 +45,7 @@ export const AccordionRow: React.FC<AccordionRowProps> = ({
   depth,
   onPress,
 }) => {
+  const { theme } = useTheme();
   // Shared value for chevron rotation
   const rotation = useSharedValue(0);
 
@@ -75,9 +77,9 @@ export const AccordionRow: React.FC<AccordionRowProps> = ({
 
   // Color intensity based on percentage
   const getBarColor = () => {
-    if (percentage >= 30) return colors.accent.orange;
-    if (percentage >= 15) return colors.accent.orangeLight;
-    return `rgba(255, 107, 74, 0.5)`;
+    if (percentage >= 30) return theme.accent.orange;
+    if (percentage >= 15) return theme.accent.orangeLight;
+    return theme.accent.orangeMuted;
   };
 
   return (

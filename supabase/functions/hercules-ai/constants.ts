@@ -7,7 +7,7 @@ export const OPENROUTER_BASE_URL = getOptionalEnv(
 
 export const OPENROUTER_MODEL = getOptionalEnv(
   'OPENROUTER_MODEL',
-  'openai/gpt-4o-mini'
+  'google/gemini-2.5-flash'
 );
 
 export const OPENROUTER_MAX_TOKENS = getOptionalNumber(
@@ -18,11 +18,6 @@ export const OPENROUTER_MAX_TOKENS = getOptionalNumber(
 export const OPENROUTER_TEMPERATURE = getOptionalNumber(
   'OPENROUTER_TEMPERATURE',
   0.3
-);
-
-export const OPENROUTER_RESPONSE_FORMAT = getOptionalEnv(
-  'OPENROUTER_RESPONSE_FORMAT',
-  'json'
 );
 
 export const COST_PER_1K_TOKENS = getOptionalNumber(

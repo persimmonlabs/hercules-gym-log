@@ -13,7 +13,8 @@ import React from 'react';
 import { View, StyleSheet, ActivityIndicator } from 'react-native';
 
 import { Text } from '@/components/atoms/Text';
-import { colors, spacing } from '@/constants/theme';
+import { spacing } from '@/constants/theme';
+import { useTheme } from '@/hooks/useTheme';
 import type { ChartState } from '@/types/analytics';
 
 interface ChartWrapperProps {
@@ -31,10 +32,11 @@ export const ChartWrapper: React.FC<ChartWrapperProps> = ({
   minHeight = 200,
   children,
 }) => {
+  const { theme } = useTheme();
   if (state === 'loading') {
     return (
       <View style={[styles.container, { minHeight }]}>
-        <ActivityIndicator size="large" color={colors.accent.orange} />
+        <ActivityIndicator size="large" color={theme.accent.orange} />
         <Text variant="caption" color="secondary" style={styles.message}>
           Loading analytics...
         </Text>

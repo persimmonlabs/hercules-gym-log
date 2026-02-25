@@ -77,10 +77,10 @@ export const ProgramSubcardList: React.FC<ProgramSubcardListProps> = ({
       <View style={styles.recentWorkoutsList}>
         {programs.length === 0 ? (
           <SurfaceCard
-            tone="neutral"
+            tone="subcard"
             padding="md"
             showAccentStripe={false}
-            style={[styles.emptyCard, { borderColor: theme.border.light }]}
+            style={styles.emptyCard}
           >
             <View style={styles.emptyContent}>
               <Text variant="bodySemibold" color="primary" style={styles.emptyTitle}>
@@ -104,10 +104,10 @@ export const ProgramSubcardList: React.FC<ProgramSubcardListProps> = ({
                 }}
               >
                 <SurfaceCard
-                  tone="neutral"
+                  tone="subcard"
                   padding="md"
                   showAccentStripe={false}
-                  style={[styles.inlineCard, { borderColor: theme.border.light }, isSelected && styles.expandedCard]}
+                  style={[styles.inlineCard, isSelected && styles.expandedCard]}
                 >
                   {!isSelected ? (
                     <>
@@ -132,7 +132,7 @@ export const ProgramSubcardList: React.FC<ProgramSubcardListProps> = ({
                           }}
                         >
                           <View style={[styles.iconCircle, { borderColor: theme.accent.orange }]}>
-                            <IconSymbol name="edit" size={sizing.iconMD} color={colors.accent.orange} />
+                            <IconSymbol name="edit" size={sizing.iconMD} color={theme.accent.orange} />
                           </View>
                           <Text variant="caption" color="primary">Edit</Text>
                         </Pressable>
@@ -147,7 +147,7 @@ export const ProgramSubcardList: React.FC<ProgramSubcardListProps> = ({
                           }}
                         >
                           <View style={[styles.iconCircle, { borderColor: theme.accent.orange }]}>
-                            <IconSymbol name="delete" size={sizing.iconMD} color={colors.accent.orange} />
+                            <IconSymbol name="delete" size={sizing.iconMD} color={theme.accent.orange} />
                           </View>
                           <Text variant="caption" color="primary">Delete</Text>
                         </Pressable>
@@ -162,7 +162,7 @@ export const ProgramSubcardList: React.FC<ProgramSubcardListProps> = ({
                           }}
                         >
                           <View style={[styles.iconCircle, { borderColor: theme.accent.orange }]}>
-                            <IconSymbol name="close" size={sizing.iconMD} color={colors.accent.orange} />
+                            <IconSymbol name="close" size={sizing.iconMD} color={theme.accent.orange} />
                           </View>
                           <Text variant="caption" color="primary">Close</Text>
                         </Pressable>

@@ -11,6 +11,7 @@ import { VictoryChart, VictoryBar, VictoryAxis, VictoryTheme } from 'victory-nat
 import { Text } from '@/components/atoms/Text';
 import { ChartWrapper } from '@/components/atoms/ChartWrapper';
 import { colors, spacing, radius } from '@/constants/theme';
+import { useTheme } from '@/hooks/useTheme';
 import { useAnalyticsData } from '@/hooks/useAnalyticsData';
 import { TIME_RANGE_SUBTITLES } from '@/types/analytics';
 import { useSettingsStore } from '@/store/settingsStore';
@@ -24,6 +25,7 @@ interface SimpleVolumeChartProps {
 }
 
 export const SimpleVolumeChart: React.FC<SimpleVolumeChartProps> = ({ timeRange = 'week' }) => {
+  const { theme } = useTheme();
   const { weeklyVolume, hasFilteredData } = useAnalyticsData({ timeRange });
   const weightUnit = useSettingsStore((state) => state.weightUnit);
 
@@ -87,7 +89,7 @@ export const SimpleVolumeChart: React.FC<SimpleVolumeChartProps> = ({ timeRange 
               tickFormat={(t, index) => xCategories[index] || ''}
               style={{
                 axis: { stroke: 'none' },
-                tickLabels: { fill: colors.text.primary, fontSize: 11, padding: 5 },
+                tickLabels: { fill: theme.text.primary, fontSize: 11, padding: 5 },
                 grid: { stroke: 'none' },
               }}
             />
@@ -113,11 +115,11 @@ export const SimpleVolumeChart: React.FC<SimpleVolumeChartProps> = ({ timeRange 
               }
               style={{
                 data: {
-                  fill: colors.accent.orange,
+                  fill: theme.accent.orange,
                   width: Math.min(32, (CHART_WIDTH - 100) / chartData.length - 8),
                 },
                 labels: {
-                  fill: colors.text.primary,
+                  fill: theme.text.primary,
                   fontSize: 10,
                   fontWeight: '600',
                 },

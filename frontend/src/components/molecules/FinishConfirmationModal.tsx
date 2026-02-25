@@ -4,6 +4,7 @@ import { BlurView } from 'expo-blur';
 import { Text } from '@/components/atoms/Text';
 import { Button } from '@/components/atoms/Button';
 import { colors, radius, spacing, sizing } from '@/constants/theme';
+import { useTheme } from '@/hooks/useTheme';
 
 interface FinishConfirmationModalProps {
   visible: boolean;
@@ -22,6 +23,7 @@ export const FinishConfirmationModal: React.FC<FinishConfirmationModalProps> = (
   onConfirm,
   isLoading = false,
 }) => {
+  const { theme } = useTheme();
   return (
     <Modal
       visible={visible}
@@ -35,7 +37,7 @@ export const FinishConfirmationModal: React.FC<FinishConfirmationModalProps> = (
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
         
         <View style={styles.container}>
-          <View style={styles.card}>
+          <View style={[styles.card, { borderColor: theme.accent.orange, backgroundColor: theme.surface.card }]}>
             <Text variant="heading3" style={styles.title}>Finish Workout?</Text>
             <Text variant="body" color="secondary" style={styles.message}>
               Are you sure you want to end your current session?
@@ -46,8 +48,8 @@ export const FinishConfirmationModal: React.FC<FinishConfirmationModalProps> = (
                 label="Continue Workout"
                 onPress={onClose}
                 variant="ghost"
-                contentStyle={styles.continueButton}
-                textColor={colors.accent.orange}
+                contentStyle={[styles.continueButton, { borderColor: theme.accent.orange }]}
+                textColor={theme.accent.orange}
                 disabled={isLoading}
               />
               <Button
@@ -55,8 +57,8 @@ export const FinishConfirmationModal: React.FC<FinishConfirmationModalProps> = (
                 onPress={onConfirm}
                 loading={isLoading}
                 disabled={isLoading}
-                contentStyle={styles.finishButton}
-                textColor={colors.text.onAccent}
+                contentStyle={[styles.finishButton, { backgroundColor: theme.accent.orange, borderColor: theme.accent.orange }]}
+                textColor={theme.text.onAccent}
               />
             </View>
           </View>
@@ -78,11 +80,9 @@ const styles = StyleSheet.create({
     maxWidth: 400,
   },
   card: {
-    backgroundColor: colors.surface.card,
     borderRadius: radius.xl,
     padding: spacing.xl,
     borderWidth: 2,
-    borderColor: colors.accent.orange,
     alignItems: 'center',
     gap: spacing.md,
   },
@@ -100,13 +100,10 @@ const styles = StyleSheet.create({
   continueButton: {
     backgroundColor: '#FFFFFF',
     borderWidth: 2,
-    borderColor: colors.accent.orange,
     borderRadius: radius.lg,
   },
   finishButton: {
-    backgroundColor: colors.accent.orange,
     borderWidth: 2,
-    borderColor: colors.accent.orange,
     borderRadius: radius.lg,
   },
 });

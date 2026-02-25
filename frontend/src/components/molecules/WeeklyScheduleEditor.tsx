@@ -11,6 +11,7 @@ import { Button } from '@/components/atoms/Button';
 import { SurfaceCard } from '@/components/atoms/SurfaceCard';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { colors, radius, spacing } from '@/constants/theme';
+import { useTheme } from '@/hooks/useTheme';
 import type { WeeklyScheduleConfig, Weekday, ProgramWorkout } from '@/types/premadePlan';
 
 interface WeeklyScheduleEditorProps {
@@ -20,13 +21,13 @@ interface WeeklyScheduleEditorProps {
 }
 
 const WEEKDAYS: { key: Weekday; label: string; short: string }[] = [
+  { key: 'sunday', label: 'Sunday', short: 'Sun' },
   { key: 'monday', label: 'Monday', short: 'Mon' },
   { key: 'tuesday', label: 'Tuesday', short: 'Tue' },
   { key: 'wednesday', label: 'Wednesday', short: 'Wed' },
   { key: 'thursday', label: 'Thursday', short: 'Thu' },
   { key: 'friday', label: 'Friday', short: 'Fri' },
   { key: 'saturday', label: 'Saturday', short: 'Sat' },
-  { key: 'sunday', label: 'Sunday', short: 'Sun' },
 ];
 
 const styles = StyleSheet.create({
@@ -106,6 +107,7 @@ export const WeeklyScheduleEditor: React.FC<WeeklyScheduleEditorProps> = ({
   workouts,
   onChange,
 }) => {
+  const { theme } = useTheme();
   const [selectedDay, setSelectedDay] = useState<Weekday | null>(null);
 
   const handleDayPress = useCallback((day: Weekday) => {
@@ -198,7 +200,7 @@ export const WeeklyScheduleEditor: React.FC<WeeklyScheduleEditorProps> = ({
               >
                 <Text variant="body" color="primary">Rest Day</Text>
                 {selectedDay && !schedule[selectedDay] && (
-                  <IconSymbol name="check" size={20} color={colors.accent.primary} />
+                  <IconSymbol name="check" size={20} color={theme.accent.primary} />
                 )}
               </Pressable>
 
@@ -226,7 +228,7 @@ export const WeeklyScheduleEditor: React.FC<WeeklyScheduleEditorProps> = ({
                       </Text>
                     </View>
                     {isSelected && (
-                      <IconSymbol name="check" size={20} color={colors.accent.primary} />
+                      <IconSymbol name="check" size={20} color={theme.accent.primary} />
                     )}
                   </Pressable>
                 );

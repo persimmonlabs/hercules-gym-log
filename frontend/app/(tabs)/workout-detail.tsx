@@ -350,7 +350,7 @@ const WorkoutDetailScreen: React.FC = () => {
                   variant="ghost"
                   onPress={handleDismissDeleteDialog}
                   size="md"
-                  textColor={colors.accent.gradientStart}
+                  textColor={theme.accent.gradientStart}
                   style={[styles.dialogActionButton, styles.dialogCancelButton]}
                 />
                 <Button

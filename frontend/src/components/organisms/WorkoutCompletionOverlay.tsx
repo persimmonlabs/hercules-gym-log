@@ -7,6 +7,7 @@ import Animated, { useAnimatedStyle, useSharedValue, withSpring, withTiming } fr
 import { Text } from '@/components/atoms/Text';
 import { springBouncy, timingMedium } from '@/constants/animations';
 import { colors, radius, shadows, sizing, spacing } from '@/constants/theme';
+import { useTheme } from '@/hooks/useTheme';
 
 interface WorkoutCompletionOverlayProps {
   onDismiss: () => void;
@@ -19,6 +20,7 @@ export const WorkoutCompletionOverlay: React.FC<WorkoutCompletionOverlayProps> =
   onDismiss,
   autoDismissDurationMs = DEFAULT_AUTO_DISMISS_MS,
 }) => {
+  const { theme } = useTheme();
   const scale = useSharedValue(0.7);
   const cardOpacity = useSharedValue(0);
   const overlayOpacity = useSharedValue(0);

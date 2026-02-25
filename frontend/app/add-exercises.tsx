@@ -20,6 +20,7 @@ import { useCustomExerciseStore } from '@/store/customExerciseStore';
 import type { Exercise } from '@/constants/exercises';
 import type { ExerciseFilters } from '@/types/exercise';
 import { colors, radius, spacing, sizing, shadows } from '@/constants/theme';
+import { useTheme } from '@/hooks/useTheme';
 import { usePlanBuilderContext } from '@/providers/PlanBuilderProvider';
 import { countActiveFilters, getActiveFilterLabels } from '@/utils/exerciseFilters';
 
@@ -157,6 +158,7 @@ const styles = StyleSheet.create({
 });
 
 const AddExercisesScreen: React.FC = () => {
+  const { theme } = useTheme();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const {
@@ -364,7 +366,7 @@ const AddExercisesScreen: React.FC = () => {
                 onPress={handleOpenFilters}
                 style={styles.filterButton}
                 contentStyle={styles.filterButtonContent}
-                textColor={colors.accent.primary}
+                textColor={theme.accent.primary}
               />
               {hasActiveFilters ? (
                 <Button
@@ -425,9 +427,9 @@ const AddExercisesScreen: React.FC = () => {
             <MaterialCommunityIcons
               name="plus-circle-outline"
               size={sizing.iconMD}
-              color={colors.accent.primary}
+              color={theme.accent.primary}
             />
-            <Text variant="bodySemibold" style={{ color: colors.accent.primary }}>
+            <Text variant="bodySemibold" style={{ color: theme.accent.primary }}>
               Create Exercise
             </Text>
           </Pressable>
@@ -463,7 +465,7 @@ const AddExercisesScreen: React.FC = () => {
             disabled={selectedCount === 0}
             style={selectedCount === 0 ? [styles.saveButton, styles.disabledButtonWrapper] : styles.saveButton}
             contentStyle={selectedCount === 0 ? styles.disabledButtonContent : undefined}
-            textColor={selectedCount === 0 ? colors.accent.primary : undefined}
+            textColor={selectedCount === 0 ? theme.accent.primary : undefined}
           />
         </View>
       </View>

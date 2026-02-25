@@ -21,6 +21,7 @@ import { WeightModal } from '@/components/molecules/WeightModal';
 import { NotificationsModal } from '@/components/molecules/NotificationsModal';
 import { SignOutConfirmationModal } from '@/components/molecules/SignOutConfirmationModal';
 import { FeedbackModal } from '@/components/molecules/FeedbackModal';
+import { AccentColorModal } from '@/components/molecules/AccentColorModal';
 import { colors, spacing, radius, shadows, sizing } from '@/constants/theme';
 import { useTheme } from '@/hooks/useTheme';
 import { usePremiumStatus } from '@/hooks/usePremiumStatus';
@@ -52,7 +53,8 @@ const ProfileModal: React.FC = () => {
   const [isFeedbackModalVisible, setIsFeedbackModalVisible] = useState(false);
   const [isDeleteAccountModalVisible, setIsDeleteAccountModalVisible] = useState(false);
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
-  const { weightUnit, distanceUnit, sizeUnit, formatWeight, hapticsEnabled, setHapticsEnabled, smartSuggestionsEnabled, setSmartSuggestionsEnabled, themePreference, setThemePreference } = useSettingsStore();
+  const [isAccentColorModalVisible, setIsAccentColorModalVisible] = useState(false);
+  const { weightUnit, distanceUnit, sizeUnit, formatWeight, hapticsEnabled, setHapticsEnabled, smartSuggestionsEnabled, setSmartSuggestionsEnabled, themePreference, setThemePreference, accentColor } = useSettingsStore();
   const { notificationsEnabled, configs } = useNotificationStore();
   const { isPremium, isLoading: isPremiumLoading } = usePremiumStatus();
   const { premiumOverride, setPremiumOverride } = useDevToolsStore();
@@ -430,6 +432,12 @@ const ProfileModal: React.FC = () => {
                 triggerHaptic('selection');
                 setThemePreference(val ? 'dark' : 'light');
               }}
+              showDivider
+            />
+            <SettingsItem
+              title="Accent Color"
+              subtitle={accentColor.charAt(0).toUpperCase() + accentColor.slice(1).replace(/([A-Z])/g, ' $1')}
+              onPress={() => { triggerHaptic('selection'); setIsAccentColorModalVisible(true); }}
             />
           </View>
         </View>
@@ -711,6 +719,11 @@ const ProfileModal: React.FC = () => {
         onClose={handleCloseDeleteAccountModal}
         onConfirm={handleDeleteAccountConfirm}
         isLoading={isDeletingAccount}
+      />
+
+      <AccentColorModal
+        visible={isAccentColorModalVisible}
+        onClose={() => setIsAccentColorModalVisible(false)}
       />
     </SafeAreaView>
   );

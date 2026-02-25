@@ -18,9 +18,11 @@ import { TimeRangeSelector } from '@/components/atoms/TimeRangeSelector';
 import { useAnalyticsData } from '@/hooks/useAnalyticsData';
 import { usePremiumStatus } from '@/hooks/usePremiumStatus';
 import { colors, spacing } from '@/constants/theme';
+import { useTheme } from '@/hooks/useTheme';
 import { useSettingsStore } from '@/store/settingsStore';
 
 const VolumeAnalyticsScreen: React.FC = () => {
+  const { theme } = useTheme();
   const router = useRouter();
   const [timeRange, setTimeRange] = React.useState<'week' | 'month' | 'year' | 'all'>('week');
   const { hierarchicalVolumeDistribution } = useAnalyticsData({ timeRange });
@@ -56,8 +58,8 @@ const VolumeAnalyticsScreen: React.FC = () => {
   // Show loading screen while checking premium status to avoid paywall flash
   if (isLoading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={colors.accent.orange} />
+      <View style={[styles.loadingContainer, { backgroundColor: theme.primary.bg }]}>
+        <ActivityIndicator size="large" color={theme.accent.orange} />
       </View>
     );
   }
@@ -67,11 +69,11 @@ const VolumeAnalyticsScreen: React.FC = () => {
   };
 
   return (
-    <TabSwipeContainer contentContainerStyle={styles.contentContainer}>
+    <TabSwipeContainer contentContainerStyle={[styles.contentContainer, { backgroundColor: theme.primary.bg }]}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={handleBackPress} style={styles.backButton}>
-          <Ionicons name="chevron-back" size={24} color={colors.text.primary} />
+          <Ionicons name="chevron-back" size={24} color={theme.text.primary} />
         </TouchableOpacity>
         <Text variant="heading2" color="primary">Volume Totals ({weightUnit})</Text>
         <View style={styles.placeholder} />
@@ -88,7 +90,7 @@ const VolumeAnalyticsScreen: React.FC = () => {
         featureName="Upper Body Breakdown"
         onUnlock={handleUpgrade}
       >
-        <SurfaceCard tone="neutral" padding="md" showAccentStripe={false}>
+        <SurfaceCard tone="card" padding="md" showAccentStripe={false}>
           <DrilldownBarChart
             key={`upper-${chartKey}`}
             data={hierarchicalVolumeDistribution}
@@ -103,7 +105,7 @@ const VolumeAnalyticsScreen: React.FC = () => {
         featureName="Lower Body Breakdown"
         onUnlock={handleUpgrade}
       >
-        <SurfaceCard tone="neutral" padding="md" showAccentStripe={false}>
+        <SurfaceCard tone="card" padding="md" showAccentStripe={false}>
           <DrilldownBarChart
             key={`lower-${chartKey}`}
             data={hierarchicalVolumeDistribution}
@@ -118,7 +120,7 @@ const VolumeAnalyticsScreen: React.FC = () => {
         featureName="Core Breakdown"
         onUnlock={handleUpgrade}
       >
-        <SurfaceCard tone="neutral" padding="md" showAccentStripe={false}>
+        <SurfaceCard tone="card" padding="md" showAccentStripe={false}>
           <DrilldownBarChart
             key={`core-${chartKey}`}
             data={hierarchicalVolumeDistribution}
@@ -130,7 +132,7 @@ const VolumeAnalyticsScreen: React.FC = () => {
 
       {/* Tip */}
       <View style={styles.tipContainer}>
-        <Ionicons name="information-circle-outline" size={18} color={colors.text.tertiary} />
+        <Ionicons name="information-circle-outline" size={18} color={theme.text.tertiary} />
         <Text variant="caption" color="tertiary" style={styles.tipText}>
           Volume = weight × reps for all completed sets
         </Text>
@@ -142,13 +144,11 @@ const VolumeAnalyticsScreen: React.FC = () => {
 const styles = StyleSheet.create({
   loadingContainer: {
     flex: 1,
-    backgroundColor: colors.primary.bg,
     alignItems: 'center',
     justifyContent: 'center',
   },
   contentContainer: {
     flexGrow: 1,
-    backgroundColor: colors.primary.bg,
     paddingTop: spacing.md,
     paddingHorizontal: spacing.md,
     gap: spacing.md,

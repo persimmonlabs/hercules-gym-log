@@ -8,6 +8,7 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabaseClient } from '@/lib/supabaseClient';
+import { AccentColorKey } from '@/constants/accentColors';
 
 export type UnitSystem = 'imperial' | 'metric';
 export type WeightUnit = 'lbs' | 'kg';
@@ -26,6 +27,8 @@ interface SettingsState {
   sizeUnit: SizeUnit;
   /** Theme preference: 'light', 'dark', or 'system' */
   themePreference: ThemePreference;
+  /** Selected accent color key */
+  accentColor: AccentColorKey;
   /** Whether user has Hercules Pro access */
   isPro: boolean;
   /** Weekly cardio time goal in seconds (null = no goal set) */
@@ -36,6 +39,8 @@ interface SettingsState {
   setUnitSystem: (system: UnitSystem) => void;
   /** Set theme preference */
   setThemePreference: (preference: ThemePreference) => void;
+  /** Set accent color */
+  setAccentColor: (color: AccentColorKey) => void;
   /** Set individual weight unit preference */
   setWeightUnit: (unit: WeightUnit) => void;
   /** Set individual distance unit preference */
@@ -112,6 +117,7 @@ export const useSettingsStore = create<SettingsState>()(
       distanceUnit: 'mi',
       sizeUnit: 'in',
       themePreference: 'light',
+      accentColor: 'orange' as AccentColorKey,
       isPro: false,
       weeklyCardioTimeGoal: null,
       weeklyCardioDistanceGoal: null,
@@ -135,6 +141,18 @@ export const useSettingsStore = create<SettingsState>()(
           }
         } catch (error) {
           console.warn('Failed to sync theme preference to Supabase', error);
+        }
+      },
+
+      setAccentColor: async (color: AccentColorKey) => {
+        set({ accentColor: color });
+        try {
+          const { data: { user } } = await supabaseClient.auth.getUser();
+          if (user) {
+            await supabaseClient.from('profiles').update({ accent_color: color }).eq('id', user.id);
+          }
+        } catch (error) {
+          console.warn('Failed to sync accent color to Supabase', error);
         }
       },
 
@@ -430,6 +448,7 @@ export const useSettingsStore = create<SettingsState>()(
         distanceUnit: state.distanceUnit,
         sizeUnit: state.sizeUnit,
         themePreference: state.themePreference,
+        accentColor: state.accentColor,
         isPro: state.isPro,
         hapticsEnabled: state.hapticsEnabled,
         smartSuggestionsEnabled: state.smartSuggestionsEnabled,

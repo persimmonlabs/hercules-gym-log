@@ -14,6 +14,7 @@ import { triggerHaptic } from '@/utils/haptics';
 import { Text } from '@/components/atoms/Text';
 import { ChartWrapper } from '@/components/atoms/ChartWrapper';
 import { colors, spacing, radius } from '@/constants/theme';
+import { useTheme } from '@/hooks/useTheme';
 import { useSettingsStore } from '@/store/settingsStore';
 import type { HierarchicalSetData, ChartSlice } from '@/types/analytics';
 import hierarchyData from '@/data/hierarchy.json';
@@ -44,6 +45,7 @@ export const DrilldownBarChart: React.FC<DrilldownBarChartProps> = ({
   rootGroup,
   showTapHint = true,
 }) => {
+  const { theme } = useTheme();
   // Use reactive selector for unit
   const weightUnit = useSettingsStore((state) => state.weightUnit);
   const [breadcrumb, setBreadcrumb] = useState<BreadcrumbItem[]>([
@@ -216,7 +218,7 @@ export const DrilldownBarChart: React.FC<DrilldownBarChartProps> = ({
           {breadcrumb.map((item, index) => (
             <View key={`${item.level}-${item.name}`} style={styles.breadcrumbItem}>
               {index > 0 && (
-                <Ionicons name="chevron-forward" size={14} color={colors.text.tertiary} />
+                <Ionicons name="chevron-forward" size={14} color={theme.text.tertiary} />
               )}
               <Pressable
                 onPress={() => handleBreadcrumbPress(index)}
@@ -264,7 +266,7 @@ export const DrilldownBarChart: React.FC<DrilldownBarChartProps> = ({
                 style={{
                   axis: { stroke: 'none' },
                   tickLabels: {
-                    fill: colors.text.primary,
+                    fill: theme.text.primary,
                     fontSize: 11,
                     padding: 5,
                     angle: chartData.length > 5 ? -45 : 0,
@@ -291,12 +293,12 @@ export const DrilldownBarChart: React.FC<DrilldownBarChartProps> = ({
                   data: {
                     fill: (args: any) =>
                       selectedBar?.label === args.datum?.originalName
-                        ? colors.accent.orangeLight
-                        : colors.accent.orange,
+                        ? theme.accent.orangeLight
+                        : theme.accent.orange,
                     width: Math.min(32, (CHART_WIDTH - 100) / chartData.length - 8),
                   },
                   labels: {
-                    fill: colors.text.primary,
+                    fill: theme.text.primary,
                     fontSize: 10,
                     fontWeight: '600',
                   },
@@ -325,7 +327,7 @@ export const DrilldownBarChart: React.FC<DrilldownBarChartProps> = ({
           {/* Drill down hint below chart */}
           {selectedBar && canDrillDown(selectedBar.label) && (
             <View style={styles.drillHint}>
-              <Ionicons name="finger-print-outline" size={14} color={colors.text.tertiary} />
+              <Ionicons name="finger-print-outline" size={14} color={theme.text.tertiary} />
               <Text variant="caption" color="tertiary">Tap again to explore</Text>
             </View>
           )}

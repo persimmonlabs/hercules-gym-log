@@ -13,6 +13,7 @@ import { Text } from '@/components/atoms/Text';
 import { SurfaceCard } from '@/components/atoms/SurfaceCard';
 import { TimeRangeSelector } from '@/components/atoms/TimeRangeSelector';
 import { colors, spacing, radius } from '@/constants/theme';
+import { useTheme } from '@/hooks/useTheme';
 import {
   useTrainingBalanceMetrics,
   calculateRatioScore,
@@ -41,6 +42,7 @@ const BalanceBar: React.FC<BalanceBarProps> = ({
   leftValue,
   rightValue,
 }) => {
+  const { theme } = useTheme();
   const total = leftValue + rightValue;
   const leftPercent = total > 0 ? (leftValue / total) * 100 : 50;
   const rightPercent = total > 0 ? (rightValue / total) * 100 : 50;
@@ -49,16 +51,16 @@ const BalanceBar: React.FC<BalanceBarProps> = ({
   const leftIsHigher = leftPercent > rightPercent;
   
   const leftBarColor = isBalanced 
-    ? colors.accent.orange 
+    ? theme.accent.orange 
     : leftIsHigher 
-      ? colors.accent.orange 
-      : 'rgba(255, 107, 74, 0.4)';
+      ? theme.accent.orange 
+      : theme.accent.orangeMuted;
   
   const rightBarColor = isBalanced 
-    ? colors.accent.orange 
+    ? theme.accent.orange 
     : !leftIsHigher 
-      ? colors.accent.orange 
-      : 'rgba(255, 107, 74, 0.4)';
+      ? theme.accent.orange 
+      : theme.accent.orangeMuted;
 
   return (
     <View style={styles.balanceItem}>
@@ -118,6 +120,7 @@ const BalanceSection: React.FC<BalanceSectionProps> = ({ title, data }) => {
 };
 
 const CircularProgress: React.FC<{ score: number; size: number }> = ({ score, size }) => {
+  const { theme } = useTheme();
   // Clamp score to 0-100 range
   const clampedScore = Math.max(0, Math.min(score, 100));
 
@@ -138,7 +141,7 @@ const CircularProgress: React.FC<{ score: number; size: number }> = ({ score, si
           cx={radiusValue}
           cy={radiusValue}
           r={effectiveRadius}
-          stroke={colors.accent.orangeMuted}
+          stroke={theme.accent.orangeMuted}
           strokeWidth={strokeWidth}
           fill="none"
         />
@@ -149,7 +152,7 @@ const CircularProgress: React.FC<{ score: number; size: number }> = ({ score, si
             cx={radiusValue}
             cy={radiusValue}
             r={effectiveRadius}
-            stroke={colors.accent.orange}
+            stroke={theme.accent.orange}
             strokeWidth={strokeWidth}
             fill="none"
             strokeDasharray={`${circumference}`}
@@ -172,6 +175,7 @@ const CircularProgress: React.FC<{ score: number; size: number }> = ({ score, si
 };
 
 export const BalanceScoreCard: React.FC = () => {
+  const { theme } = useTheme();
   const [timeRange, setTimeRange] = useState<TimeRange>('week');
   const [isExpanded, setIsExpanded] = useState(false);
   const [activeSlide, setActiveSlide] = useState(0);
@@ -281,7 +285,7 @@ export const BalanceScoreCard: React.FC = () => {
   );
   
   return (
-    <SurfaceCard tone="neutral" padding="md" showAccentStripe={false}>
+    <SurfaceCard tone="card" padding="md" showAccentStripe={false}>
       <View style={styles.container}>
         <View style={styles.header}>
           <Text variant="heading3" color="primary">
@@ -350,7 +354,7 @@ export const BalanceScoreCard: React.FC = () => {
             >
               <View style={[
                 styles.dot,
-                activeSlide === 0 ? styles.dotActive : styles.dotInactive,
+                { backgroundColor: activeSlide === 0 ? theme.accent.orange : theme.accent.orangeMuted },
               ]} />
             </Pressable>
             <Pressable
@@ -360,7 +364,7 @@ export const BalanceScoreCard: React.FC = () => {
             >
               <View style={[
                 styles.dot,
-                activeSlide === 1 ? styles.dotActive : styles.dotInactive,
+                { backgroundColor: activeSlide === 1 ? theme.accent.orange : theme.accent.orangeMuted },
               ]} />
             </Pressable>
           </View>
@@ -492,12 +496,6 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-  },
-  dotActive: {
-    backgroundColor: colors.accent.orange,
-  },
-  dotInactive: {
-    backgroundColor: colors.accent.orangeMuted,
   },
   emptyState: {
     alignItems: 'center',

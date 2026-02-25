@@ -299,12 +299,12 @@ export const CardioGoalModal: React.FC<CardioGoalModalProps> = ({
 
           <View style={styles.actions}>
             <Pressable style={styles.actionButton} onPress={handleCancel}>
-              <Text variant="bodySemibold" style={{ color: colors.accent.orange }}>
+              <Text variant="bodySemibold" style={{ color: theme.accent.orange }}>
                 Cancel
               </Text>
             </Pressable>
             <Pressable style={styles.actionButton} onPress={handleConfirm}>
-              <Text variant="bodySemibold" style={{ color: colors.accent.orange }}>
+              <Text variant="bodySemibold" style={{ color: theme.accent.orange }}>
                 OK
               </Text>
             </Pressable>

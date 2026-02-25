@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { Text } from '@/components/atoms/Text';
 import { colors, radius, spacing, shadows } from '@/constants/theme';
+import { useTheme } from '@/hooks/useTheme';
 import { useSettingsStore } from '@/store/settingsStore';
 import type { ExerciseType } from '@/types/exercise';
 
@@ -36,6 +37,7 @@ export const PRCard: React.FC<PRCardProps> = ({
   weight, reps, distance = 0, duration = 0, assistanceWeight = 0,
   date, onReplace,
 }) => {
+  const { theme, isDarkMode } = useTheme();
   const { weightUnit, formatWeightValue, formatDistanceValueForExercise, getDistanceUnitForExercise } = useSettingsStore();
 
   const formattedDate = date
@@ -90,7 +92,10 @@ export const PRCard: React.FC<PRCardProps> = ({
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, {
+      backgroundColor: isDarkMode ? theme.surface.card : theme.surface.elevated,
+      borderColor: isDarkMode ? theme.border.medium : theme.border.light,
+    }]}>
       <View style={styles.content}>
         <View style={styles.mainInfo}>
           <Text variant="bodySemibold" style={styles.label} numberOfLines={2} color="primary">
@@ -111,7 +116,7 @@ export const PRCard: React.FC<PRCardProps> = ({
 
         <View style={styles.rightSection}>
           <View style={styles.stats}>
-            <View style={styles.weightBadge}>
+            <View style={[styles.weightBadge, { backgroundColor: theme.accent.orange }]}>
               <Text variant="heading3" color="onAccent">
                 {badgeValue}
               </Text>
@@ -123,7 +128,7 @@ export const PRCard: React.FC<PRCardProps> = ({
 
           {onReplace && (
             <TouchableOpacity onPress={onReplace} style={styles.menuButton}>
-              <Ionicons name="ellipsis-vertical" size={20} color={colors.text.tertiary} />
+              <Ionicons name="ellipsis-vertical" size={20} color={theme.text.tertiary} />
             </TouchableOpacity>
           )}
         </View>
@@ -134,14 +139,12 @@ export const PRCard: React.FC<PRCardProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: colors.surface.card,
     borderRadius: radius.md,
     ...shadows.sm,
     overflow: 'hidden',
     flexDirection: 'row',
     height: 88,
     borderWidth: 1,
-    borderColor: colors.border.light,
   },
   content: {
     flex: 1,
@@ -174,7 +177,6 @@ const styles = StyleSheet.create({
     marginLeft: spacing.md,
   },
   weightBadge: {
-    backgroundColor: colors.accent.orange,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.xs,
     borderRadius: radius.md,
