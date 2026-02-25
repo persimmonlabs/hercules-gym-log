@@ -18,7 +18,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import MaskedView from '@react-native-masked-view/masked-view';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { spacing, radius, sizing, zIndex, shadows } from '@/constants/theme';
+import { spacing, radius, sizing, zIndex, shadows, colors, darkColors } from '@/constants/theme';
 import { useTheme } from '@/hooks/useTheme';
 import { springBouncy } from '@/constants/animations';
 import { TAB_META } from '@/constants/navigation';
@@ -111,7 +111,7 @@ export const CustomTabBar: React.FC<BottomTabBarProps> = ({ state, navigation })
   const workoutDetailSource = useNavigationStore((store) => store.workoutDetailSource);
 
   const TAB_SURFACE_COLOR = theme.surface.card;
-  const TAB_BORDER_COLOR = theme.primary.light;
+  const TAB_BORDER_COLOR = isDarkMode ? darkColors.border.medium : theme.surface.card;
   const ACTIVE_GRADIENT: readonly [ColorValue, ColorValue] = [
     theme.accent.gradientStart,
     theme.accent.gradientEnd,
@@ -281,7 +281,7 @@ const styles = StyleSheet.create({
   tabContainer: {
     borderRadius: radius.xl,
     overflow: 'hidden',
-    borderWidth: spacing.xxxs,
+    borderWidth: 0.5,
   },
   blurShell: {
     borderRadius: radius.xl,

@@ -282,7 +282,7 @@ const styles = StyleSheet.create({
     gap: spacing.lg,
   },
   inlineCard: {
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: 1,
     borderRadius: radius.lg,
     shadowColor: 'transparent',
     shadowOpacity: 0,

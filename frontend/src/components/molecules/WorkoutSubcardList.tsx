@@ -63,7 +63,7 @@ const WorkoutSubcardList: React.FC<WorkoutSubcardListProps> = ({
       {/* Card Header with Expand/Collapse Button */}
       <View style={styles.cardHeader}>
         <View style={styles.headerLeft}>
-          <Text variant="heading3" color="primary">
+          <Text variant="heading3" color="subcardHeader">
             My Workouts
           </Text>
         </View>
@@ -230,10 +230,10 @@ const WorkoutSubcardList: React.FC<WorkoutSubcardListProps> = ({
         {/* Create Workout Button */}
         <Button
           label="Create Workout"
-          variant="secondary"
+          variant="light"
           size="md"
-          textColor={theme.accent.orange}
           style={[styles.wideButton, { ...shadows.sm }]}
+          contentStyle={{ backgroundColor: theme.surface.elevated }}
           onPress={() => {
             triggerHaptic('selection');
             onCreateWorkoutPress();
@@ -259,7 +259,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   },
   inlineCard: {
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: 1,
     borderRadius: radius.lg,
     shadowColor: 'transparent',
     shadowOpacity: 0,
@@ -326,7 +326,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   emptyCard: {
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: 1,
     borderRadius: radius.lg,
     shadowColor: 'transparent',
     shadowOpacity: 0,

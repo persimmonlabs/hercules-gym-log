@@ -60,11 +60,12 @@ export const colors = {
 
   // Text hierarchy (dark on light background)
   text: {
-    primary: '#2D2D2D',   // Dark gray (main text, headings)
-    secondary: '#5A5A5A', // Medium gray (secondary info)
-    tertiary: '#8B8B8B',  // Light gray (captions, hints)
-    muted: '#C7C7C7',     // Muted gray for inactive states
-    onAccent: '#FFFFFF',  // High-contrast text on accent backgrounds
+    primary: '#2D2D2D',         // Dark gray (main text, headings)
+    secondary: '#5A5A5A',       // Medium gray (secondary info)
+    tertiary: '#8B8B8B',        // Light gray (captions, hints)
+    muted: '#C7C7C7',           // Muted gray for inactive states
+    onAccent: '#FFFFFF',        // High-contrast text on accent backgrounds
+    subcardHeader: '#2D2D2D',   // Subcard section headers (same as primary in light mode)
   },
 
   // Borders and dividers
@@ -136,11 +137,12 @@ export const darkColors = {
 
   // Text hierarchy (white/light on dark background)
   text: {
-    primary: '#E5E5EA',    // Light gray for main text (softer than pure white)
-    secondary: '#8E8E93',  // Medium gray (secondary info)
-    tertiary: '#636366',   // Muted gray (captions, hints)
-    muted: '#48484A',      // Very muted for inactive states
-    onAccent: '#FFFFFF',   // High-contrast text on accent backgrounds
+    primary: '#E5E5EA',          // Light gray for main text (softer than pure white)
+    secondary: '#8E8E93',        // Medium gray (secondary info)
+    tertiary: '#636366',         // Muted gray (captions, hints)
+    muted: '#48484A',            // Very muted for inactive states
+    onAccent: '#FFFFFF',         // High-contrast text on accent backgrounds
+    subcardHeader: '#F2F2F7',    // Subcard section headers (lighter than primary, near-white)
   },
 
   // Borders and dividers

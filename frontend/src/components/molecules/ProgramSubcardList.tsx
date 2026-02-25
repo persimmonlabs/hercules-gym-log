@@ -55,7 +55,7 @@ export const ProgramSubcardList: React.FC<ProgramSubcardListProps> = ({
       {/* Card Header with Expand/Collapse Button */}
       <View style={styles.cardHeader}>
         <View style={styles.headerLeft}>
-          <Text variant="heading3" color="primary">
+          <Text variant="heading3" color="subcardHeader">
             My Plans
           </Text>
         </View>
@@ -195,10 +195,10 @@ export const ProgramSubcardList: React.FC<ProgramSubcardListProps> = ({
         {/* Create Plan Button */}
         <Button
           label="Create Plan"
-          variant="secondary"
+          variant="light"
           size="md"
-          textColor={theme.accent.orange}
           style={[styles.wideButton, { ...shadows.sm }]}
+          contentStyle={{ backgroundColor: theme.surface.elevated }}
           onPress={() => {
             triggerHaptic('selection');
             onCreatePlanPress();
@@ -224,7 +224,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   },
   inlineCard: {
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: 1,
     borderRadius: radius.lg,
     shadowColor: 'transparent',
     shadowOpacity: 0,
@@ -278,7 +278,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.sm,
   },
   emptyCard: {
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: 1,
     borderRadius: radius.lg,
     shadowColor: 'transparent',
     shadowOpacity: 0,

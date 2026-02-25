@@ -48,7 +48,8 @@ type TextColor =
   | 'red'
   | 'success'
   | 'warning'
-  | 'onAccent';
+  | 'onAccent'
+  | 'subcardHeader';
 
 interface TextComponentProps extends TextProps {
   /** Text variant (heading, body, caption) */
@@ -108,6 +109,7 @@ export const Text: React.FC<TextComponentProps> = ({
     success: theme.accent.success,
     warning: theme.accent.warning,
     onAccent: theme.text.onAccent,
+    subcardHeader: theme.text.subcardHeader,
   };
 
   const textColor = colorMap[color];

@@ -258,7 +258,7 @@ export const MyScheduleCard: React.FC<MyScheduleCardProps> = ({
   return (
     <View style={styles.innerContent}>
       <View style={styles.cardHeader}>
-        <Text variant="heading3" color="primary">
+        <Text variant="heading3" color="subcardHeader">
           My Schedule
         </Text>
       </View>
@@ -275,10 +275,10 @@ export const MyScheduleCard: React.FC<MyScheduleCardProps> = ({
           />
           <Button
             label="Add Override"
-            variant="secondary"
+            variant="light"
             size="md"
-            textColor={theme.accent.orange}
             style={[styles.secondaryButton, { ...shadows.sm }]}
+            contentStyle={{ backgroundColor: theme.surface.elevated }}
             onPress={onAddOverridePress}
           />
         </View>
