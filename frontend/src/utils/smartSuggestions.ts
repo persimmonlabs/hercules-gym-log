@@ -17,10 +17,15 @@ import {
   type ClusterData,
   type SetArrangement,
   type WeightIncrement,
+  type RepRange,
+  type SessionRepIntent,
   EQUIPMENT_INCREMENTS,
   DEFAULT_INCREMENT,
   SMART_CONFIG,
+  GOAL_REP_RANGES,
+  DEFAULT_REP_RANGES,
 } from '@/types/smartSuggestions';
+import type { PrimaryGoal } from '@/store/userProfileStore';
 
 // ---------------------------------------------------------------------------
 // Utility: Equipment-aware weight rounding
@@ -940,4 +945,298 @@ export const detectPatternShift = (
   }
 
   return { shifted: true, newTargets: targets };
+};
+
+// ---------------------------------------------------------------------------
+// V2: Rep range & progressive overload bias
+// ---------------------------------------------------------------------------
+
+/**
+ * Classify a rep count into a training intent bucket.
+ */
+export const classifyRepIntent = (reps: number): SessionRepIntent => {
+  if (reps <= 6) return 'strength';
+  if (reps <= 15) return 'hypertrophy';
+  return 'endurance';
+};
+
+/**
+ * Build a rep range around a median rep value using the appropriate padding.
+ * Strength-oriented (median ≤ 8) gets ±2, hypertrophy/endurance gets ±3.
+ */
+const buildRepRange = (median: number): RepRange => {
+  const pad = median <= 8
+    ? SMART_CONFIG.REP_RANGE_PAD_STRENGTH
+    : SMART_CONFIG.REP_RANGE_PAD_HYPERTROPHY;
+  return {
+    min: Math.max(SMART_CONFIG.MIN_REPS, Math.round(median - pad)),
+    max: Math.min(SMART_CONFIG.MAX_REPS, Math.round(median + pad)),
+  };
+};
+
+/**
+ * Determine per-set-position rep ranges for an exercise.
+ *
+ * Priority:
+ * 1. Per-set-position history median (if enough sessions)
+ * 2. Exercise-level overall median
+ * 3. Goal-based defaults (compound vs isolation)
+ * 4. General defaults
+ *
+ * Pyramid patterns are only used if detected in history.
+ */
+export const determinePerSetRepRanges = (
+  dataPoints: ExerciseDataPoint[],
+  requestedSets: number,
+  isCompound: boolean,
+  userGoal?: PrimaryGoal | null,
+): RepRange[] => {
+  const goalDefaults = userGoal && GOAL_REP_RANGES[userGoal]
+    ? GOAL_REP_RANGES[userGoal]
+    : DEFAULT_REP_RANGES;
+  const fallbackRange: RepRange = isCompound
+    ? { ...goalDefaults.compound }
+    : { ...goalDefaults.isolation };
+
+  // Not enough history — use goal-based defaults for all set positions
+  if (dataPoints.length < SMART_CONFIG.MIN_SESSIONS_REP_RANGE) {
+    return Array.from({ length: requestedSets }, () => ({ ...fallbackRange }));
+  }
+
+  // Check if the user actually does pyramids (only predict if historical)
+  const setPattern = detectSetPattern(dataPoints);
+  const isPyramid = setPattern === 'pyramid_up' || setPattern === 'pyramid_down';
+
+  // Check pyramid frequency to enforce PYRAMID_HISTORY_FRACTION
+  let pyramidConfirmed = false;
+  if (isPyramid) {
+    const validSessions = dataPoints.filter((p) => p.setDetails.length >= 2);
+    const recent = validSessions.slice(-6);
+    let pyramidCount = 0;
+    for (const session of recent) {
+      const sets = session.setDetails;
+      const firstW = sets[0].weight;
+      const lastW = sets[sets.length - 1].weight;
+      if (firstW <= 0) continue;
+      if (lastW > firstW * (1 + SMART_CONFIG.PYRAMID_UP_THRESHOLD) ||
+          firstW > lastW * (1 + SMART_CONFIG.PYRAMID_DOWN_THRESHOLD)) {
+        pyramidCount++;
+      }
+    }
+    pyramidConfirmed = recent.length > 0 &&
+      pyramidCount / recent.length >= SMART_CONFIG.PYRAMID_HISTORY_FRACTION;
+  }
+
+  // Compute exercise-level overall median reps (fallback for sparse set positions)
+  const allReps = dataPoints.flatMap((dp) => dp.setDetails.map((s) => s.reps));
+  const sortedAllReps = [...allReps].sort((a, b) => a - b);
+  const exerciseMedian = sortedAllReps.length > 0
+    ? sortedAllReps[Math.floor(sortedAllReps.length / 2)]
+    : (fallbackRange.min + fallbackRange.max) / 2;
+  const exerciseRange = buildRepRange(exerciseMedian);
+
+  const ranges: RepRange[] = [];
+
+  for (let setIdx = 0; setIdx < requestedSets; setIdx++) {
+    // Collect reps at this set position across sessions
+    const posReps: number[] = [];
+    for (const dp of dataPoints) {
+      if (dp.setDetails.length > setIdx) {
+        posReps.push(dp.setDetails[setIdx].reps);
+      }
+    }
+
+    if (posReps.length >= SMART_CONFIG.MIN_SESSIONS_REP_RANGE) {
+      // Enough data for this set position — compute per-position median
+      const sorted = [...posReps].sort((a, b) => a - b);
+      const median = sorted[Math.floor(sorted.length / 2)];
+      const range = buildRepRange(median);
+
+      // If NOT a confirmed pyramid, clamp per-position range to be near the exercise range
+      // to prevent accidental pyramid-like differentiation
+      if (!pyramidConfirmed) {
+        ranges.push({
+          min: Math.max(range.min, exerciseRange.min - 1),
+          max: Math.min(range.max, exerciseRange.max + 1),
+        });
+      } else {
+        ranges.push(range);
+      }
+    } else if (posReps.length > 0) {
+      // Some data but not enough — use exercise-level range
+      ranges.push({ ...exerciseRange });
+    } else {
+      // No data at this position — use exercise-level range
+      ranges.push({ ...exerciseRange });
+    }
+  }
+
+  return ranges;
+};
+
+/**
+ * Adapt ALL remaining sets after a set is completed.
+ * Implements progressive overload bias:
+ * - 3/4 outcomes push forward (weight bump, rep bump, or hold)
+ * - Only significant miss (3+ below range min) reduces weight
+ *
+ * Each remaining set uses its OWN per-set-position rep range.
+ */
+export const adaptRemainingSets = (
+  completedSetIndex: number,
+  actualWeight: number,
+  actualReps: number,
+  remainingIndices: number[],
+  perSetRepRanges: RepRange[],
+  currentSuggestions: SetLog[],
+  equipment: EquipmentType[],
+  isCompound: boolean,
+): { weight: number; reps: number }[] => {
+  const increment = getWeightIncrement(equipment);
+  const maxIncrease = isCompound
+    ? SMART_CONFIG.MAX_INCREASE_COMPOUND
+    : SMART_CONFIG.MAX_INCREASE_ISOLATION;
+
+  const results: { weight: number; reps: number }[] = [];
+
+  for (let i = 0; i < remainingIndices.length; i++) {
+    const targetIdx = remainingIndices[i];
+    const range = perSetRepRanges[targetIdx] ?? perSetRepRanges[perSetRepRanges.length - 1] ?? { min: 8, max: 12 };
+    const currentSuggestion = currentSuggestions[targetIdx];
+    const currentSugWeight = currentSuggestion?.weight ?? actualWeight;
+    const currentSugReps = currentSuggestion?.reps ?? actualReps;
+
+    // Determine what the "base" weight/reps is for this remaining set.
+    // For the first remaining set, base off the just-completed set.
+    // For subsequent remaining sets, base off the previous remaining set's adapted result.
+    const baseWeight = i === 0 ? actualWeight : results[i - 1].weight;
+    const baseReps = i === 0 ? actualReps : results[i - 1].reps;
+
+    // Check if the completed set performance is within THIS set's rep range context
+    // For set positions with different ranges (warmup vs working vs dropset),
+    // compare against the CURRENT suggestion for that specific set instead
+    const referenceReps = i === 0 ? actualReps : baseReps;
+
+    if (referenceReps >= range.max) {
+      // Hit or exceeded top of range → WEIGHT BUMP (progressive overload!)
+      const bumpedWeight = baseWeight + increment.increment;
+      const maxAllowed = baseWeight * (1 + maxIncrease);
+      const newWeight = roundToIncrement(
+        Math.min(bumpedWeight, maxAllowed),
+        equipment,
+        false,
+      );
+      results.push({
+        weight: Math.max(newWeight, baseWeight), // Never go below current
+        reps: Math.max(range.min + 1, Math.min(range.min + 1, range.max)),
+      });
+    } else if (referenceReps >= range.min) {
+      // Within range → HOLD weight, BUMP reps +1 (progressive overload via reps)
+      results.push({
+        weight: baseWeight,
+        reps: Math.min(referenceReps + 1, range.max),
+      });
+    } else if (referenceReps >= range.min - (SMART_CONFIG.SIGNIFICANT_MISS_REPS - 1)) {
+      // Slightly under range (1-2 below min) → HOLD weight, target range min (neutral)
+      results.push({
+        weight: baseWeight,
+        reps: range.min,
+      });
+    } else {
+      // Significant miss (3+ below range min) → REDUCE weight ONE increment, target mid-range
+      const reducedWeight = baseWeight - increment.increment;
+      const minAllowed = baseWeight * (1 - SMART_CONFIG.MAX_DECREASE);
+      const newWeight = roundToIncrement(
+        Math.max(reducedWeight, minAllowed, 0),
+        equipment,
+        false,
+      );
+      const midReps = Math.floor((range.min + range.max) / 2);
+      results.push({
+        weight: newWeight,
+        reps: midReps,
+      });
+    }
+  }
+
+  return results;
+};
+
+/**
+ * Detect whether a user historically uses different rep ranges
+ * for compound vs isolation exercises within the same workout session.
+ *
+ * @param workouts - All historical workouts
+ * @param exerciseCatalogLookup - Function to check if an exercise is compound
+ * @returns true if compound/isolation split is a consistent historical pattern
+ */
+export const detectCompoundIsolationSplit = (
+  workouts: Workout[],
+  exerciseCatalogLookup: (name: string) => boolean,
+): boolean => {
+  const cutoff = Date.now() - SMART_CONFIG.LOOKBACK_MS;
+  let splitCount = 0;
+  let validSessionCount = 0;
+
+  for (const workout of workouts) {
+    const workoutDate = new Date(workout.date).getTime();
+    if (workoutDate < cutoff) continue;
+
+    const compoundReps: number[] = [];
+    const isolationReps: number[] = [];
+
+    for (const exercise of workout.exercises) {
+      const completedSets = exercise.sets.filter((s) => s.completed && s.reps !== undefined && s.reps > 0);
+      if (completedSets.length === 0) continue;
+
+      const avgReps = completedSets.reduce((sum, s) => sum + (s.reps ?? 0), 0) / completedSets.length;
+      const isComp = exerciseCatalogLookup(exercise.name);
+
+      if (isComp) {
+        compoundReps.push(avgReps);
+      } else {
+        isolationReps.push(avgReps);
+      }
+    }
+
+    // Need both compound and isolation exercises in the session
+    if (compoundReps.length > 0 && isolationReps.length > 0) {
+      validSessionCount++;
+      const compAvg = compoundReps.reduce((a, b) => a + b, 0) / compoundReps.length;
+      const isoAvg = isolationReps.reduce((a, b) => a + b, 0) / isolationReps.length;
+
+      if (Math.abs(isoAvg - compAvg) >= SMART_CONFIG.SPLIT_REP_DIFFERENCE) {
+        splitCount++;
+      }
+    }
+  }
+
+  if (validSessionCount < SMART_CONFIG.MIN_SESSIONS) return false;
+
+  return splitCount / validSessionCount >= SMART_CONFIG.SPLIT_SESSION_FRACTION;
+};
+
+/**
+ * Check if a completed set represents an intent shift (reps dramatically
+ * outside the predicted rep range). Returns the detected intent or null.
+ */
+export const detectIntentShift = (
+  actualReps: number,
+  expectedRange: RepRange,
+): SessionRepIntent | null => {
+  const rangeMid = (expectedRange.min + expectedRange.max) / 2;
+  const rangeSpan = expectedRange.max - expectedRange.min;
+  const threshold = Math.max(rangeSpan * SMART_CONFIG.INTENT_SHIFT_REP_THRESHOLD, 2);
+
+  // Reps dramatically above the range
+  if (actualReps > expectedRange.max + threshold) {
+    return classifyRepIntent(actualReps);
+  }
+
+  // Reps dramatically below the range
+  if (actualReps < expectedRange.min - threshold) {
+    return classifyRepIntent(actualReps);
+  }
+
+  return null;
 };

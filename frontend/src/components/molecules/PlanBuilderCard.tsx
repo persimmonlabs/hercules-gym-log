@@ -112,7 +112,7 @@ export const PlanBuilderCard: React.FC<PlanBuilderCardProps> = ({
   // Animated styles for name input
   const animatedNameBorderStyle = useAnimatedStyle(() => ({
     borderColor:
-      nameFocusProgress.value > 0 ? theme.accent.primary : colors.border.light,
+      nameFocusProgress.value > 0 ? theme.accent.primary : theme.border.light,
   }));
 
   const handleNameFocus = useCallback(() => {
@@ -163,15 +163,15 @@ export const PlanBuilderCard: React.FC<PlanBuilderCardProps> = ({
               Name
             </Text>
           </View>
-          <Animated.View style={[styles.nameInputContainer, animatedNameBorderStyle]}>
+          <Animated.View style={[styles.nameInputContainer, { backgroundColor: theme.surface.elevated }, animatedNameBorderStyle]}>
             <TextInput
               value={planName}
               onChangeText={onPlanNameChange}
               placeholder={namePlaceholder}
-              placeholderTextColor={colors.text.muted}
+              placeholderTextColor={theme.text.muted}
               selectionColor={theme.accent.primary}
               cursorColor={theme.accent.primary}
-              style={styles.nameInput}
+              style={[styles.nameInput, { color: theme.text.primary }]}
               onFocus={handleNameFocus}
               onBlur={handleNameBlur}
               returnKeyType="next"
@@ -186,7 +186,7 @@ export const PlanBuilderCard: React.FC<PlanBuilderCardProps> = ({
         </View>
 
         {/* Divider */}
-        <View style={styles.divider} />
+        <View style={[styles.divider, { backgroundColor: theme.border.light }]} />
 
         {/* Section 2: Add Workouts */}
         <View style={styles.section}>
@@ -232,7 +232,7 @@ export const PlanBuilderCard: React.FC<PlanBuilderCardProps> = ({
                   style={({ pressed }) => [
                     styles.workoutPickerButton,
                     { backgroundColor: theme.accent.orangeMuted, borderColor: theme.accent.orange },
-                    pressed && styles.workoutPickerButtonPressed,
+                    pressed && { opacity: 0.8 },
                   ]}
                 >
                   <IconSymbol
@@ -256,7 +256,8 @@ export const PlanBuilderCard: React.FC<PlanBuilderCardProps> = ({
                         key={workout.id}
                         style={({ pressed }) => [
                           styles.workoutOption,
-                          pressed && [styles.workoutOptionPressed, { backgroundColor: theme.accent.orangeMuted, borderColor: theme.accent.orange }],
+                          { backgroundColor: theme.surface.elevated, borderColor: theme.border.light },
+                          pressed && { backgroundColor: theme.accent.orangeMuted, borderColor: theme.accent.orange },
                         ]}
                         onPress={() => handleAddWorkout(workout)}
                       >
@@ -303,7 +304,7 @@ export const PlanBuilderCard: React.FC<PlanBuilderCardProps> = ({
         </View>
 
         {/* Divider */}
-        <View style={styles.divider} />
+        <View style={[styles.divider, { backgroundColor: theme.border.light }]} />
 
         {/* Section 4: Progress & Save */}
         <View style={styles.section}>
@@ -312,7 +313,7 @@ export const PlanBuilderCard: React.FC<PlanBuilderCardProps> = ({
             <View
               style={[
                 styles.progressDot,
-                progressState === 'ready' && styles.progressDotReady,
+                { backgroundColor: progressState === 'ready' ? theme.accent.success : theme.text.muted },
               ]}
             />
             <Text variant="caption" color={progressState === 'ready' ? 'primary' : 'secondary'}>
@@ -346,7 +347,7 @@ interface SelectedWorkoutRowProps {
   enableRowAnimations?: boolean;
 }
 
-const SelectedWorkoutRow: React.FC<SelectedWorkoutRowProps> = React.memo(({
+const SelectedWorkoutRow: React.FC<SelectedWorkoutRowProps> = React.memo(function SelectedWorkoutRowInner({
   workout,
   index,
   totalCount,
@@ -354,7 +355,8 @@ const SelectedWorkoutRow: React.FC<SelectedWorkoutRowProps> = React.memo(({
   onMoveUp,
   onMoveDown,
   enableRowAnimations = true,
-}) => {
+}) {
+  const { theme } = useTheme();
   const isFirst = index === 0;
   const isLast = index === totalCount - 1;
   const hasReorderHandlers = Boolean(onMoveUp && onMoveDown);
@@ -369,7 +371,7 @@ const SelectedWorkoutRow: React.FC<SelectedWorkoutRowProps> = React.memo(({
         entering: FadeIn.duration(200),
         exiting: FadeOut.duration(150),
       } : {})}
-      style={styles.selectedWorkoutRow}
+      style={[styles.selectedWorkoutRow, { backgroundColor: theme.surface.elevated, borderColor: theme.border.light }]}
     >
       {/* Reorder controls on the left when enabled; otherwise no spacer */}
       {canReorder && (
@@ -383,7 +385,7 @@ const SelectedWorkoutRow: React.FC<SelectedWorkoutRowProps> = React.memo(({
             <IconSymbol
               name="keyboard-arrow-up"
               size={20}
-              color={isFirst ? colors.text.muted : colors.text.secondary}
+              color={isFirst ? theme.text.muted : theme.text.secondary}
             />
           </Pressable>
           <Pressable
@@ -395,7 +397,7 @@ const SelectedWorkoutRow: React.FC<SelectedWorkoutRowProps> = React.memo(({
             <IconSymbol
               name="keyboard-arrow-down"
               size={20}
-              color={isLast ? colors.text.muted : colors.text.secondary}
+              color={isLast ? theme.text.muted : theme.text.secondary}
             />
           </Pressable>
         </View>
@@ -420,7 +422,7 @@ const SelectedWorkoutRow: React.FC<SelectedWorkoutRowProps> = React.memo(({
         <IconSymbol
           name="close"
           size={18}
-          color={colors.text.tertiary}
+          color={theme.text.tertiary}
         />
       </Pressable>
     </RowWrapper>
@@ -445,7 +447,6 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
-    backgroundColor: colors.surface.card,
     borderRadius: radius.md,
     borderWidth: 1,
   },
@@ -453,7 +454,6 @@ const styles = StyleSheet.create({
     flex: 1,
     ...typography.body,
     fontWeight: typography.body.fontWeight as any,
-    color: colors.text.primary,
     paddingVertical: spacing.xs,
   },
   errorText: {
@@ -461,7 +461,6 @@ const styles = StyleSheet.create({
   },
   divider: {
     height: 1,
-    backgroundColor: colors.border.light,
     marginVertical: spacing.xs,
   },
   workoutPickerButton: {
@@ -471,10 +470,8 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.lg,
-    backgroundColor: colors.accent.orangeMuted,
     borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: colors.accent.orange,
     borderStyle: 'dashed',
   },
   workoutPickerButtonPressed: {
@@ -498,16 +495,11 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.md,
-    backgroundColor: colors.surface.card,
     borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: colors.border.light,
     minHeight: 56,
   },
-  workoutOptionPressed: {
-    backgroundColor: colors.accent.orangeMuted,
-    borderColor: colors.accent.orange,
-  },
+  workoutOptionPressed: {},
   workoutOptionInfo: {
     flex: 1,
     gap: 2,
@@ -516,7 +508,6 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: radius.full,
-    backgroundColor: colors.accent.orangeMuted,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -539,7 +530,6 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   countBadge: {
-    backgroundColor: colors.accent.orange,
     borderRadius: radius.full,
     paddingHorizontal: spacing.sm,
     paddingVertical: 2,
@@ -572,21 +562,16 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: radius.full,
-    backgroundColor: colors.text.muted,
   },
-  progressDotReady: {
-    backgroundColor: colors.accent.success,
-  },
+  progressDotReady: {},
   // Selected Workout Row styles (match CompactExerciseRow layout)
   selectedWorkoutRow: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.md,
-    backgroundColor: colors.surface.card,
     borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: colors.border.light,
     minHeight: 56,
     gap: spacing.sm,
   },

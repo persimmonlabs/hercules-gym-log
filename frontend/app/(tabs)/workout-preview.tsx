@@ -22,7 +22,8 @@ import { Badge } from '@/components/atoms';
 import { SurfaceCard } from '@/components/atoms/SurfaceCard';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { PremiumLimitModal } from '@/components/molecules/PremiumLimitModal';
-import { colors, spacing, radius, sizing } from '@/constants/theme';
+import { spacing, radius, sizing } from '@/constants/theme';
+import { useTheme } from '@/hooks/useTheme';
 import { useProgramsStore } from '@/store/programsStore';
 import { usePlansStore } from '@/store/plansStore';
 import { exercises as exerciseCatalog } from '@/constants/exercises';
@@ -31,7 +32,6 @@ import type { PremadeWorkout } from '@/types/premadePlan';
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.primary.bg,
   },
   header: {
     flexDirection: 'row',
@@ -82,6 +82,7 @@ const styles = StyleSheet.create({
 export default function WorkoutPreviewScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { theme } = useTheme();
   const scrollRef = useRef<ScrollView>(null);
   const params = useLocalSearchParams<{ workoutId: string; from?: string }>();
   const workoutId = Array.isArray(params.workoutId) ? params.workoutId[0] : params.workoutId;
@@ -160,14 +161,14 @@ export default function WorkoutPreviewScreen() {
   // Not found state - instant render
   if (!workout) {
     return (
-      <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom + sizing.tabBarHeight }]}>
+      <View style={[styles.container, { backgroundColor: theme.primary.bg, paddingTop: insets.top, paddingBottom: insets.bottom + sizing.tabBarHeight }]}>
         <View style={[styles.header, { paddingHorizontal: spacing.md }]}>
           <View style={styles.titleContainer}>
             <Text variant="heading2" color="primary">Workout Not Found</Text>
             <Text variant="body" color="secondary">The requested workout could not be found.</Text>
           </View>
           <Pressable onPress={handleBack} style={styles.backButton} hitSlop={8}>
-            <IconSymbol name="arrow-back" size={24} color={colors.text.primary} />
+            <IconSymbol name="arrow-back" size={24} color={theme.text.primary} />
           </Pressable>
         </View>
         <View style={{ justifyContent: 'center', alignItems: 'center', flex: 1 }}>
@@ -194,7 +195,7 @@ export default function WorkoutPreviewScreen() {
         onClose={() => setShowLimitModal(false)}
         limitType="workout"
       />
-      <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom + sizing.tabBarHeight }]}>
+      <View style={[styles.container, { backgroundColor: theme.primary.bg, paddingTop: insets.top, paddingBottom: insets.bottom + sizing.tabBarHeight }]}>
         <ScrollView ref={scrollRef} contentContainerStyle={styles.scrollContent}>
           {/* Header */}
           <View style={styles.header}>
@@ -221,7 +222,7 @@ export default function WorkoutPreviewScreen() {
               </View>
             </View>
             <Pressable onPress={handleBack} style={styles.backButton} hitSlop={8}>
-              <IconSymbol name="arrow-back" size={24} color={colors.text.primary} />
+              <IconSymbol name="arrow-back" size={24} color={theme.text.primary} />
             </Pressable>
           </View>
 

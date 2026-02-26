@@ -16,9 +16,13 @@ import { useProgramsStore } from '@/store/programsStore';
 import { useSessionStore } from '@/store/sessionStore';
 import type { WorkoutExercise, SetLog } from '@/types/workout';
 import { createSetsWithSmartSuggestions } from '@/utils/workout';
+import { detectCompoundIsolationSplit } from '@/utils/smartSuggestions';
+import { exercises as exerciseCatalogData } from '@/constants/exercises';
 import { useSettingsStore } from '@/store/settingsStore';
 import { useWorkoutSessionsStore } from '@/store/workoutSessionsStore';
 import { useCustomExerciseStore } from '@/store/customExerciseStore';
+import { useUserProfileStore } from '@/store/userProfileStore';
+import type { RepRange } from '@/types/smartSuggestions';
 import WorkoutSessionScreen from '../workout-session';
 import { WorkoutCompletionOverlay } from '@/components/organisms';
 import { useOutdoorSessionStore } from '@/store/outdoorSessionStore';
@@ -80,7 +84,6 @@ const styles = StyleSheet.create({
   createCard: {
     borderStyle: 'dashed',
     borderWidth: 1,
-    borderColor: colors.accent.orange,
   },
   createCardContent: {
     flexDirection: 'row',
@@ -267,11 +270,13 @@ const WorkoutScreen: React.FC = () => {
       const doStartSession = () => {
         setCompletionOverlayVisible(false);
 
+        const userGoal = useUserProfileStore.getState().profile?.primaryGoal;
         const historySetCounts: Record<string, number> = {};
         const suggestedSetsMap: Record<string, SetLog[]> = {};
         const dataPointsMap: Record<string, any[]> = {};
+        const repRangesMap: Record<string, RepRange[]> = {};
         const mappedExercises: WorkoutExercise[] = workout.exercises.map((exercise: any) => {
-          const result = createSetsWithSmartSuggestions(exercise.name, allWorkouts, smartSuggestionsEnabled, undefined, undefined, customExercises);
+          const result = createSetsWithSmartSuggestions(exercise.name, allWorkouts, smartSuggestionsEnabled, undefined, undefined, customExercises, userGoal);
           historySetCounts[exercise.name] = result.historySetCount;
           if (result.smartSuggestedSets.length > 0) {
             suggestedSetsMap[exercise.name] = result.smartSuggestedSets;
@@ -279,14 +284,22 @@ const WorkoutScreen: React.FC = () => {
           if (result.dataPoints && result.dataPoints.length > 0) {
             dataPointsMap[exercise.name] = result.dataPoints;
           }
+          if (result.repRanges && result.repRanges.length > 0) {
+            repRangesMap[exercise.name] = result.repRanges;
+          }
           return {
             name: exercise.name,
             sets: result.sets,
           };
         });
 
+        const hasSplit = detectCompoundIsolationSplit(
+          allWorkouts,
+          (name) => exerciseCatalogData.find((e) => e.name === name)?.isCompound ?? false,
+        );
+
         const planId = workout.type === 'program' ? workout.programId : workout.id;
-        startSession(planId, mappedExercises, workout.name, historySetCounts, suggestedSetsMap, dataPointsMap);
+        startSession(planId, mappedExercises, workout.name, historySetCounts, suggestedSetsMap, dataPointsMap, repRangesMap, hasSplit);
         setShowPlansList(false);
       };
 
@@ -502,7 +515,7 @@ const WorkoutScreen: React.FC = () => {
                   accessibilityRole="button"
                   accessibilityLabel="Create a new outdoor exercise"
                 >
-                  <SurfaceCard tone="neutral" padding="md" showAccentStripe={false} style={[styles.planCard, styles.createCard]}>
+                  <SurfaceCard tone="neutral" padding="md" showAccentStripe={false} style={[styles.planCard, styles.createCard, { borderColor: theme.accent.orange }]}>
                     <View style={styles.createCardContent}>
                       <IconSymbol name="add" size={sizing.iconSM} color={theme.accent.orange} />
                       <Text variant="bodySemibold" style={{ color: theme.accent.orange }}>
@@ -561,7 +574,7 @@ const WorkoutScreen: React.FC = () => {
                 accessibilityRole="button"
                 accessibilityLabel="Create a new workout"
               >
-                <SurfaceCard tone="neutral" padding="md" showAccentStripe={false} style={[styles.planCard, styles.createCard]}>
+                <SurfaceCard tone="neutral" padding="md" showAccentStripe={false} style={[styles.planCard, styles.createCard, { borderColor: theme.accent.orange }]}>
                   <View style={styles.createCardContent}>
                     <IconSymbol name="add" size={sizing.iconSM} color={theme.accent.orange} />
                     <Text variant="bodySemibold" style={{ color: theme.accent.orange }}>

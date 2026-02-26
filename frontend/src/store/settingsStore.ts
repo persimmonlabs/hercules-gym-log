@@ -264,7 +264,7 @@ export const useSettingsStore = create<SettingsState>()(
           if (user) {
             const { data, error } = await supabaseClient
               .from('profiles')
-              .select('unit_system, weight_unit, distance_unit, size_unit, theme_preference, is_pro, weekly_cardio_time_goal, weekly_cardio_distance_goal')
+              .select('unit_system, weight_unit, distance_unit, size_unit, theme_preference, accent_color, is_pro, weekly_cardio_time_goal, weekly_cardio_distance_goal')
               .eq('id', user.id)
               .single();
 
@@ -276,6 +276,7 @@ export const useSettingsStore = create<SettingsState>()(
                 distanceUnit: (data.distance_unit as DistanceUnit) || get().distanceUnit,
                 sizeUnit: (data.size_unit as SizeUnit) || get().sizeUnit,
                 themePreference: (data.theme_preference as ThemePreference) || get().themePreference,
+                accentColor: (data.accent_color as AccentColorKey) || get().accentColor,
                 isPro: (data.is_pro as boolean) ?? get().isPro,
                 weeklyCardioTimeGoal: (data.weekly_cardio_time_goal as number | null) ?? get().weeklyCardioTimeGoal,
                 weeklyCardioDistanceGoal: (data.weekly_cardio_distance_goal as number | null) ?? get().weeklyCardioDistanceGoal,

@@ -264,6 +264,7 @@ export const ExerciseSearchModal: React.FC<ExerciseSearchModalProps> = ({
           <Animated.View
             style={[
               styles.sheet,
+              { backgroundColor: theme.surface.card, borderColor: theme.border.light },
               sheetAnimatedStyle,
             ]}
           >
@@ -271,11 +272,11 @@ export const ExerciseSearchModal: React.FC<ExerciseSearchModalProps> = ({
             <GestureDetector gesture={panGesture}>
               <View>
                 <View style={styles.handleContainer}>
-                  <View style={styles.handle} />
+                  <View style={[styles.handle, { backgroundColor: theme.border.medium }]} />
                 </View>
 
                 {/* Header */}
-                <View style={styles.header}>
+                <View style={[styles.header, { borderBottomColor: theme.border.light }]}>
                   <View style={styles.headerContent}>
                     <Text variant="heading3" color="primary">
                       {title}
@@ -285,7 +286,7 @@ export const ExerciseSearchModal: React.FC<ExerciseSearchModalProps> = ({
                     </Text>
                   </View>
                   <Pressable onPress={handleClose} style={styles.closeButton} hitSlop={12}>
-                    <IconSymbol name="close" size={sizing.iconMD} color={colors.text.primary} />
+                    <IconSymbol name="close" size={sizing.iconMD} color={theme.text.primary} />
                   </Pressable>
                 </View>
               </View>
@@ -293,21 +294,21 @@ export const ExerciseSearchModal: React.FC<ExerciseSearchModalProps> = ({
 
             {/* Search Input */}
             <View style={styles.searchContainer}>
-              <View style={styles.searchInputContainer}>
+              <View style={[styles.searchInputContainer, { backgroundColor: theme.surface.elevated, borderColor: theme.border.light }]}>
                 <IconSymbol
                   name="search"
                   size={sizing.iconSM}
-                  color={colors.text.tertiary}
+                  color={theme.text.tertiary}
                 />
                 <TextInput
                   ref={inputRef}
                   value={searchTerm}
                   onChangeText={setSearchTerm}
                   placeholder="Search by name, muscle, or equipment..."
-                  placeholderTextColor={colors.text.muted}
+                  placeholderTextColor={theme.text.tertiary}
                   selectionColor={theme.accent.primary}
                   cursorColor={theme.accent.primary}
-                  style={styles.searchInput}
+                  style={[styles.searchInput, { color: theme.text.primary }]}
                   returnKeyType="search"
                   autoCapitalize="none"
                   autoCorrect={false}
@@ -317,7 +318,7 @@ export const ExerciseSearchModal: React.FC<ExerciseSearchModalProps> = ({
                     <IconSymbol
                       name="close"
                       size={sizing.iconSM}
-                      color={colors.text.tertiary}
+                      color={theme.text.tertiary}
                     />
                   </Pressable>
                 )}
@@ -333,7 +334,7 @@ export const ExerciseSearchModal: React.FC<ExerciseSearchModalProps> = ({
                 }
               </Text>
               {selectedMap.size > 0 && (
-                <View style={styles.selectedBadge}>
+                <View style={[styles.selectedBadge, { backgroundColor: theme.accent.orange }]}>
                   <Text variant="caption" style={styles.selectedBadgeText}>
                     {selectedMap.size} selected
                   </Text>
@@ -379,7 +380,7 @@ export const ExerciseSearchModal: React.FC<ExerciseSearchModalProps> = ({
                 </Text>
                 <Pressable
                   onPress={handleOpenCreateModal}
-                  style={styles.emptyStateCreateButton}
+                  style={[styles.emptyStateCreateButton, { borderColor: theme.accent.orange, backgroundColor: theme.accent.orangeMuted }]}
                 >
                   <IconSymbol name="add" size={sizing.iconSM} color={theme.accent.orange} />
                   <Text variant="bodySemibold" style={{ color: theme.accent.orange }}>
@@ -394,7 +395,7 @@ export const ExerciseSearchModal: React.FC<ExerciseSearchModalProps> = ({
               <Animated.View
                 entering={FadeIn.duration(150)}
                 exiting={FadeOut.duration(100)}
-                style={[styles.bottomAction, { paddingBottom: insets.bottom + spacing.md }]}
+                style={[styles.bottomAction, { paddingBottom: insets.bottom + spacing.md, backgroundColor: theme.surface.card, borderTopColor: theme.border.light }]}
               >
                 <Button
                   label={`Add ${selectedMap.size} Exercise${selectedMap.size !== 1 ? 's' : ''}`}
@@ -441,14 +442,15 @@ const ExerciseRow: React.FC<ExerciseRowProps> = React.memo(({
       onPress={handlePress}
       style={({ pressed }) => [
         styles.exerciseRow,
-        isSelected && styles.exerciseRowSelected,
+        { backgroundColor: theme.surface.elevated, borderColor: theme.border.light },
+        isSelected && [styles.exerciseRowSelected, { backgroundColor: theme.accent.orangeMuted, borderColor: theme.accent.orange }],
         pressed && styles.exerciseRowPressed,
       ]}
     >
       {/* Selection Indicator */}
-      <View style={[styles.checkbox, isSelected && styles.checkboxSelected]}>
+      <View style={[styles.checkbox, { borderColor: theme.border.medium }, isSelected && [styles.checkboxSelected, { backgroundColor: theme.accent.orange, borderColor: theme.accent.orange }]]}>
         {isSelected && (
-          <IconSymbol name="check" size={14} color={colors.text.onAccent} />
+          <IconSymbol name="check" size={14} color={theme.text.onAccent} />
         )}
       </View>
 
@@ -475,7 +477,7 @@ interface CreateExerciseRowProps {
 const CreateExerciseRow: React.FC<CreateExerciseRowProps> = React.memo(({ onPress }) => {
   const { theme } = useTheme();
   return (
-    <Pressable onPress={onPress} style={styles.createExerciseFooter}>
+    <Pressable onPress={onPress} style={[styles.createExerciseFooter, { borderTopColor: theme.border.light }]}>
       <IconSymbol name="add" size={sizing.iconSM} color={theme.accent.orange} />
       <Text variant="bodySemibold" style={{ color: theme.accent.orange }}>
         Create Custom Exercise
@@ -499,12 +501,10 @@ const styles = StyleSheet.create({
   },
   sheet: {
     height: '85%',
-    backgroundColor: colors.surface.card,
     borderTopLeftRadius: radius.lg,
     borderTopRightRadius: radius.lg,
     borderWidth: 1,
     borderBottomWidth: 0,
-    borderColor: colors.neutral.gray200,
     overflow: 'hidden',
     ...shadows.lg,
   },
@@ -516,7 +516,6 @@ const styles = StyleSheet.create({
     width: 40,
     height: 4,
     borderRadius: 2,
-    backgroundColor: colors.border.light,
   },
   header: {
     flexDirection: 'row',
@@ -525,7 +524,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingBottom: spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: colors.border.light,
   },
   headerContent: {
     flex: 1,
@@ -544,16 +542,13 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
-    backgroundColor: colors.surface.subtle,
     borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: colors.border.light,
   },
   searchInput: {
     flex: 1,
     ...typography.body,
     fontWeight: typography.body.fontWeight as any,
-    color: colors.text.primary,
     paddingVertical: spacing.xs,
   },
   resultsHeader: {
@@ -564,13 +559,12 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   },
   selectedBadge: {
-    backgroundColor: colors.accent.orange,
     paddingHorizontal: spacing.sm,
     paddingVertical: 2,
     borderRadius: radius.full,
   },
   selectedBadgeText: {
-    color: colors.text.onAccent,
+    color: '#FFFFFF',
     fontWeight: '600',
   },
   scrollView: {
@@ -585,16 +579,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.md,
-    backgroundColor: colors.surface.card,
     borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: colors.border.light,
     gap: spacing.md,
   },
-  exerciseRowSelected: {
-    backgroundColor: colors.accent.orangeMuted,
-    borderColor: colors.accent.orange,
-  },
+  exerciseRowSelected: {},
   exerciseRowPressed: {
     opacity: 0.8,
   },
@@ -603,14 +592,10 @@ const styles = StyleSheet.create({
     height: 22,
     borderRadius: radius.sm,
     borderWidth: 2,
-    borderColor: colors.border.medium,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  checkboxSelected: {
-    backgroundColor: colors.accent.orange,
-    borderColor: colors.accent.orange,
-  },
+  checkboxSelected: {},
   exerciseInfo: {
     flex: 1,
     gap: 2,
@@ -632,9 +617,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: colors.accent.orange,
     borderStyle: 'dashed',
-    backgroundColor: colors.accent.orangeMuted,
   },
   createExerciseFooter: {
     flexDirection: 'row',
@@ -644,13 +627,10 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
     marginBottom: spacing.xl,
     borderTopWidth: 1,
-    borderTopColor: colors.border.light,
   },
   bottomAction: {
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.md,
-    backgroundColor: colors.surface.card,
     borderTopWidth: 1,
-    borderTopColor: colors.border.light,
   },
 });

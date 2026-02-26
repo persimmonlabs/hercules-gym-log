@@ -23,6 +23,7 @@ import { outdoorTrackingService } from '@/services/outdoorTrackingService';
 import { useSettingsStore } from '@/store/settingsStore';
 import { triggerHaptic } from '@/utils/haptics';
 import { colors, spacing, radius, sizing } from '@/constants/theme';
+import { DARK_MAP_STYLE } from '@/constants/mapStyles';
 import type { Workout } from '@/types/workout';
 import * as Location from 'expo-location';
 
@@ -233,6 +234,7 @@ const OutdoorSessionScreen: React.FC = () => {
           showsMyLocationButton={false}
           followsUserLocation={status === 'active'}
           userInterfaceStyle={isDarkMode ? 'dark' : 'light'}
+          customMapStyle={isDarkMode && Platform.OS === 'android' ? DARK_MAP_STYLE : undefined}
           provider={Platform.OS === 'android' ? PROVIDER_GOOGLE : undefined}
           mapPadding={{ top: insets.top, right: 0, bottom: 0, left: 0 }}
         >

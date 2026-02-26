@@ -6,8 +6,9 @@
 import type { SetLog, Workout } from '@/types/workout';
 import type { ExerciseType, EquipmentType } from '@/types/exercise';
 import { exercises as exerciseCatalog, getExerciseTypeByName } from '@/constants/exercises';
-import { createSmartSuggestionSets, extractDataPoints } from '@/utils/smartSuggestions';
-import type { PatternType, ExerciseDataPoint } from '@/types/smartSuggestions';
+import { createSmartSuggestionSets, extractDataPoints, determinePerSetRepRanges } from '@/utils/smartSuggestions';
+import type { PatternType, ExerciseDataPoint, RepRange } from '@/types/smartSuggestions';
+import type { PrimaryGoal } from '@/store/userProfileStore';
 
 const DEFAULT_SET_COUNT = 3;
 
@@ -23,6 +24,8 @@ export interface SmartSetsResult extends SetsWithHistoryResult {
     pattern?: PatternType;
     /** Cached historical data points for intra-session pattern shift detection. */
     dataPoints?: ExerciseDataPoint[];
+    /** Per-set-position rep ranges (v2). */
+    repRanges?: RepRange[];
 }
 
 /**
@@ -208,6 +211,7 @@ export const createSetsWithSmartSuggestions = (
     currentWorkoutId?: string,
     requestedSetCount?: number,
     customExercises?: { name: string; exerciseType: ExerciseType }[],
+    userGoal?: PrimaryGoal | null,
 ): SmartSetsResult => {
     // Always run the standard logic first to get baseline sets and set count
     const baseline = createSetsWithHistory(
@@ -271,6 +275,14 @@ export const createSetsWithSmartSuggestions = (
     // Extract data points for intra-session pattern shift detection cache
     const dataPoints = extractDataPoints(exerciseName, workouts, currentWorkoutId);
 
+    // Compute per-set rep ranges (v2)
+    const repRanges = determinePerSetRepRanges(
+        dataPoints,
+        smartResult.sets.length,
+        isCompound,
+        userGoal,
+    );
+
     // Use smart-suggested sets, store originals for intra-session comparison
     return {
         sets: smartResult.sets,
@@ -278,5 +290,6 @@ export const createSetsWithSmartSuggestions = (
         smartSuggestedSets: smartResult.sets.map(s => ({ ...s })),
         pattern: smartResult.pattern,
         dataPoints,
+        repRanges,
     };
 };

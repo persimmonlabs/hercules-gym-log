@@ -35,9 +35,9 @@ export const Badge: React.FC<BadgeProps> = ({
     switch (variant) {
       case 'workout':
         return {
-          backgroundColor: '#FFFFFF',
+          backgroundColor: theme.surface.elevated,
           borderWidth: 1,
-          borderColor: theme.border.light,
+          borderColor: theme.border.medium,
         };
       case 'neutral':
         return {
@@ -89,7 +89,7 @@ export const Badge: React.FC<BadgeProps> = ({
         color={variant === 'workout' ? undefined : getTextColor()}
         style={{
           textTransform: 'capitalize',
-          ...(variant === 'workout' ? { color: '#000000' } : {})
+          ...(variant === 'workout' ? { color: theme.text.primary } : {})
         }}
       >
         {label}

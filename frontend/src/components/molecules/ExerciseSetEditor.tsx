@@ -17,8 +17,8 @@ import { useTheme } from '@/hooks/useTheme';
 import type { SetLog } from '@/types/workout';
 import type { ExerciseType, EquipmentType } from '@/types/exercise';
 import { useSettingsStore } from '@/store/settingsStore';
-import { adaptNextSet, detectPatternShift } from '@/utils/smartSuggestions';
-import type { ExerciseDataPoint } from '@/types/smartSuggestions';
+import { adaptRemainingSets, detectPatternShift, detectIntentShift } from '@/utils/smartSuggestions';
+import type { ExerciseDataPoint, RepRange, SessionRepIntent } from '@/types/smartSuggestions';
 import { SMART_CONFIG } from '@/types/smartSuggestions';
 
 interface ExerciseSetEditorProps {
@@ -44,6 +44,10 @@ interface ExerciseSetEditorProps {
   patternShiftCount?: number;
   /** Callback when a pattern shift is detected (to increment counter in store) */
   onPatternShift?: () => void;
+  /** Per-set-position rep ranges for v2 adaptation (from session store) */
+  exerciseRepRanges?: RepRange[];
+  /** Callback when an intent shift is detected (v2 cross-exercise propagation) */
+  onIntentShift?: (intent: SessionRepIntent) => void;
   // Controlled menu state props (optional)
   activeSetMenuIndex?: number | null;
   onOpenSetMenu?: (index: number) => void;
@@ -212,6 +216,8 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
   exerciseDataPoints = [],
   patternShiftCount = 0,
   onPatternShift,
+  exerciseRepRanges = [],
+  onIntentShift,
   activeSetMenuIndex,
   onOpenSetMenu,
   onCloseSetMenu,
@@ -867,11 +873,46 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
 
       if (remainingIndices.length > 0) {
         const hasSmart = smartSuggestionsEnabled && suggestedSets && suggestedSets.length > 0;
+        const hasRepRanges = exerciseRepRanges && exerciseRepRanges.length > 0;
         const actualWeight = completedSet.weight ?? 0;
         const actualReps = completedSet.reps ?? 0;
 
-        if (hasSmart && exerciseType === 'weight') {
-          // Check for pattern shift FIRST (significant deviation from suggestion)
+        if (hasSmart && hasRepRanges && exerciseType === 'weight') {
+          // V2: Use adaptRemainingSets with per-set rep ranges for ALL remaining sets
+          const adapted = adaptRemainingSets(
+            index,
+            actualWeight,
+            actualReps,
+            remainingIndices,
+            exerciseRepRanges,
+            suggestedSets,
+            exerciseEquipment,
+            isCompound,
+          );
+
+          // Apply adapted targets to ALL remaining uncompleted sets
+          for (let ti = 0; ti < Math.min(adapted.length, remainingIndices.length); ti++) {
+            const targetIdx = remainingIndices[ti];
+            const target = adapted[ti];
+            updatedSets[targetIdx] = {
+              ...updatedSets[targetIdx],
+              weight: target.weight,
+              reps: target.reps,
+              weightInput: formatWeightInputValue(target.weight),
+              repsInput: String(target.reps),
+            };
+          }
+
+          // V2: Check for intent shift (cross-exercise propagation)
+          const completedSetRange = exerciseRepRanges[index] ?? exerciseRepRanges[exerciseRepRanges.length - 1];
+          if (completedSetRange && onIntentShift) {
+            const shiftedIntent = detectIntentShift(actualReps, completedSetRange);
+            if (shiftedIntent) {
+              onIntentShift(shiftedIntent);
+            }
+          }
+        } else if (hasSmart && exerciseType === 'weight') {
+          // Fallback to legacy pattern shift if no rep ranges available
           let didShift = false;
 
           if (
@@ -893,7 +934,6 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
               didShift = true;
               onPatternShift?.();
 
-              // Apply new targets to ALL remaining uncompleted sets
               for (let ti = 0; ti < Math.min(shiftResult.newTargets.length, remainingIndices.length); ti++) {
                 const targetIdx = remainingIndices[ti];
                 const target = shiftResult.newTargets[ti];
@@ -908,35 +948,16 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
             }
           }
 
-          // If no pattern shift, use standard micro-adjustment on next uncompleted set only
           if (!didShift) {
+            // Legacy: single-set adaptation (kept as fallback)
             const nextIdx = remainingIndices[0];
             if (nextIdx >= historySetCount) {
-              const originalSuggestion = suggestedSets[index];
-              const originalWeight = originalSuggestion?.weight ?? actualWeight;
-              const originalReps = originalSuggestion?.reps ?? actualReps;
-
-              const adapted = adaptNextSet(
-                originalWeight,
-                originalReps,
-                actualWeight,
-                actualReps,
-                exerciseEquipment,
-                isCompound,
-              );
-
               updatedSets[nextIdx] = {
                 ...updatedSets[nextIdx],
-                weight: adapted.weight,
-                reps: adapted.reps,
-                weightInput: formatWeightInputValue(adapted.weight),
-                repsInput: String(adapted.reps),
-                duration: completedSet.duration,
-                distance: completedSet.distance,
-                durationInput: completedSet.durationInput,
-                distanceInput: completedSet.distanceInput,
-                assistanceWeight: completedSet.assistanceWeight,
-                assistanceWeightInput: completedSet.assistanceWeightInput,
+                weight: actualWeight,
+                reps: actualReps,
+                weightInput: formatWeightInputValue(actualWeight),
+                repsInput: String(actualReps),
               };
             }
           }
@@ -967,7 +988,7 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
     completedSetsRef.current = updatedSets.filter((set) => set.completed).length;
     setSets(updatedSets);
     emitProgress();
-  }, [emitProgress, exerciseType, historySetCount, runningTimers, pausedTimers, smartSuggestionsEnabled, suggestedSets, exerciseEquipment, isCompound, exerciseDataPoints, patternShiftCount, onPatternShift]);
+  }, [emitProgress, exerciseType, historySetCount, runningTimers, pausedTimers, smartSuggestionsEnabled, suggestedSets, exerciseEquipment, isCompound, exerciseDataPoints, patternShiftCount, onPatternShift, exerciseRepRanges, onIntentShift]);
 
   const handleCompleteSetPress = useCallback((index: number) => {
     toggleSetCompletion(index);
@@ -1215,6 +1236,7 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
                   key={`gps-set-${actualIndex}`}
                   style={[
                     styles.gpsCompletedSet,
+                    { backgroundColor: theme.surface.card, borderColor: theme.border.light },
                     setIndex > 0 ? styles.setCardSpacer : null,
                   ]}
                 >
@@ -1235,7 +1257,7 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
                       <MaterialCommunityIcons
                         name="trash-can-outline"
                         size={20}
-                        color={colors.accent.warning}
+                        color={theme.accent.orange}
                       />
                     </Pressable>
                   </View>
@@ -1297,7 +1319,7 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
                 key={`set-${index}`}
                 style={[
                   styles.setCard,
-                  { borderColor: theme.accent.orange },
+                  { borderColor: theme.accent.orange, backgroundColor: theme.surface.card },
                   isCompleted ? [styles.setCardCompleted, { backgroundColor: theme.accent.orange, borderColor: theme.accent.orange }] : null,
                   index > 0 ? styles.setCardSpacer : null,
                 ]}
@@ -1369,11 +1391,11 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
                         <MaterialCommunityIcons
                           name="dots-vertical"
                           size={sizing.iconSM}
-                          color={colors.overlay.navigation}
+                          color={theme.text.secondary}
                         />
                       </Pressable>
                       {isMenuOpenAtIndex(index) ? (
-                        <View style={[styles.menuPopover, { borderColor: theme.accent.orange }]} pointerEvents="box-none">
+                        <View style={[styles.menuPopover, { backgroundColor: theme.surface.card, borderColor: theme.accent.orange }]} pointerEvents="box-none">
                           {onShowHistory && (
                             <Pressable
                               style={styles.menuItem}
@@ -1417,10 +1439,10 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
                             value={exerciseType === 'assisted' ? set.assistanceWeightInput : set.weightInput}
                             onChangeText={(value) => handleWeightInput(index, value)}
                             keyboardType="decimal-pad"
-                            style={styles.metricValue}
+                            style={[styles.metricValue, { color: theme.text.primary, backgroundColor: 'transparent' }]}
                             textAlign="center"
                             placeholder="0"
-                            placeholderTextColor={colors.text.tertiary}
+                            placeholderTextColor={theme.text.tertiary}
                             cursorColor={theme.accent.primary}
                             selectionColor={theme.accent.orangeLight}
                             selection={
@@ -1482,10 +1504,11 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
                             value={set.distanceInput}
                             onChangeText={(value) => handleDistanceInput(index, value)}
                             keyboardType="decimal-pad"
-                            style={styles.metricValue}
+                            style={[styles.metricValue, { color: theme.text.primary, backgroundColor: 'transparent' }]}
                             textAlign="center"
+                            scrollEnabled={false}
                             placeholder={distanceUnit === 'meters' || distanceUnit === 'floors' ? '0' : '0.00'}
-                            placeholderTextColor={colors.text.tertiary}
+                            placeholderTextColor={theme.text.tertiary}
                             cursorColor={theme.accent.primary}
                             selectionColor={theme.accent.orangeLight}
                             selection={
@@ -1536,7 +1559,7 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
                           Time {(set.hoursInput !== '00' ? '(hr:min:sec)' : '(min:sec)')}
                         </Text>
                         <Pressable
-                          style={styles.timeDisplayButton}
+                          style={[styles.timeDisplayButton, { backgroundColor: 'transparent' }]}
                           onPress={() => {
                             const isRunning = runningTimers.has(index);
                             if (!isRunning) {
@@ -1546,7 +1569,7 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
                           disabled={runningTimers.has(index)}
                           accessibilityLabel={`Edit time for set ${index + 1}`}
                         >
-                          <Text style={styles.timeDisplayText}>
+                          <Text style={[styles.timeDisplayText, { color: theme.text.primary }]}>
                             {(set.hoursInput !== '00' ? `${set.hoursInput}:` : '')}{set.minutesInput || '00'}:{set.secondsInput || '00'}
                           </Text>
                         </Pressable>
@@ -1554,7 +1577,7 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
                           <Pressable
                             style={[
                               styles.timerButtonCircle,
-                              { borderColor: theme.accent.orange },
+                              { borderColor: theme.accent.orange, backgroundColor: theme.surface.card },
                               (!pausedTimers.has(index) || (set.duration ?? 0) === 0) && [styles.timerButtonDisabled, { borderColor: theme.accent.orangeLight }],
                             ]}
                             onPress={() => resetTimer(index)}
@@ -1568,7 +1591,7 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
                             />
                           </Pressable>
                           <Pressable
-                            style={[styles.timerButtonCircle, { borderColor: theme.accent.orange }]}
+                            style={[styles.timerButtonCircle, { borderColor: theme.accent.orange, backgroundColor: theme.surface.card }]}
                             onPress={() => {
                               const isRunning = runningTimers.has(index);
                               if (isRunning) {
@@ -1588,7 +1611,7 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
                           <Pressable
                             style={[
                               styles.timerButtonCircle,
-                              { borderColor: theme.accent.orange },
+                              { borderColor: theme.accent.orange, backgroundColor: theme.surface.card },
                               (!runningTimers.has(index) && !pausedTimers.has(index)) && [styles.timerButtonDisabled, { borderColor: theme.accent.orangeLight }],
                             ]}
                             onPress={() => stopTimer(index)}
@@ -1624,10 +1647,10 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
                             value={set.repsInput}
                             onChangeText={(value) => handleRepsInput(index, value)}
                             keyboardType="numeric"
-                            style={styles.metricValue}
+                            style={[styles.metricValue, { color: theme.text.primary, backgroundColor: 'transparent' }]}
                             textAlign="center"
                             placeholder="0"
-                            placeholderTextColor={colors.text.tertiary}
+                            placeholderTextColor={theme.text.tertiary}
                             cursorColor={theme.accent.primary}
                             selectionColor={theme.accent.orangeLight}
                             selection={
@@ -1674,7 +1697,7 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
         )}
         {!supportsGpsTracking && (
           <Pressable
-            style={[styles.addSetButton, { borderColor: theme.accent.orange }]}
+            style={[styles.addSetButton, { borderColor: theme.accent.orange, backgroundColor: theme.surface.card }]}
             onPress={addSet}
             accessibilityRole="button"
             accessibilityLabel="Add set"

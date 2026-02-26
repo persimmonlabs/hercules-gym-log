@@ -11,6 +11,7 @@ import { triggerHaptic } from '@/utils/haptics';
 import { Text } from '@/components/atoms/Text';
 import { ExerciseSetEditor } from '@/components/molecules/ExerciseSetEditor';
 import { colors, radius, shadows, sizing, spacing } from '@/constants/theme';
+import { useTheme } from '@/hooks/useTheme';
 import { exercises as exerciseCatalog } from '@/constants/exercises';
 import type { SetLog, WorkoutExercise } from '@/types/workout';
 
@@ -43,6 +44,7 @@ export const EditableWorkoutExerciseCard: React.FC<EditableWorkoutExerciseCardPr
   onProgressChange,
   isInteractionDisabled = false,
 }) => {
+  const { theme } = useTheme();
   const badgeLabel = useMemo(() => String(index + 1).padStart(2, '0'), [index]);
 
   const handleMove = (callback: () => void) => {
@@ -53,7 +55,7 @@ export const EditableWorkoutExerciseCard: React.FC<EditableWorkoutExerciseCardPr
   return (
     <View style={styles.container}>
       <Pressable
-        style={styles.card}
+        style={[styles.card, { backgroundColor: theme.surface.card, borderColor: theme.accent.orangeMuted }]}
         onPress={onToggle}
         accessibilityRole="button"
         accessibilityLabel={`Toggle exercise ${exercise.name}`}
@@ -61,13 +63,13 @@ export const EditableWorkoutExerciseCard: React.FC<EditableWorkoutExerciseCardPr
       >
         <View style={styles.headerRow}>
           <View style={styles.leftColumn}>
-            <View style={styles.badge}>
+            <View style={[styles.badge, { backgroundColor: theme.surface.elevated, borderColor: theme.accent.orangeMuted }]}>
               <Text variant="bodySemibold" color="primary">
                 {badgeLabel}
               </Text>
             </View>
             <View style={styles.titleColumn}>
-              <Text variant="bodySemibold" color="primary">
+              <Text variant="bodySemibold" color="secondary">
                 {exercise.name}
               </Text>
               <Text variant="caption" color="secondary">
@@ -77,7 +79,7 @@ export const EditableWorkoutExerciseCard: React.FC<EditableWorkoutExerciseCardPr
           </View>
           <View style={styles.actionsColumn}>
             <Pressable
-              style={[styles.iconButton, (!canMoveUp || isInteractionDisabled) && styles.iconButtonDisabled]}
+              style={[styles.iconButton, { backgroundColor: theme.surface.elevated }, (!canMoveUp || isInteractionDisabled) && { backgroundColor: theme.surface.card, borderWidth: 1, borderColor: theme.border.medium }]}
               onPress={() => handleMove(onMoveUp)}
               disabled={!canMoveUp || isInteractionDisabled}
               accessibilityRole="button"
@@ -86,11 +88,11 @@ export const EditableWorkoutExerciseCard: React.FC<EditableWorkoutExerciseCardPr
               <MaterialCommunityIcons
                 name="chevron-up"
                 size={sizing.iconMD}
-                color={canMoveUp ? colors.text.primary : colors.text.tertiary}
+                color={canMoveUp ? theme.text.primary : theme.text.tertiary}
               />
             </Pressable>
             <Pressable
-              style={[styles.iconButton, (!canMoveDown || isInteractionDisabled) && styles.iconButtonDisabled]}
+              style={[styles.iconButton, { backgroundColor: theme.surface.elevated }, (!canMoveDown || isInteractionDisabled) && { backgroundColor: theme.surface.card, borderWidth: 1, borderColor: theme.border.medium }]}
               onPress={() => handleMove(onMoveDown)}
               disabled={!canMoveDown || isInteractionDisabled}
               accessibilityRole="button"
@@ -99,22 +101,22 @@ export const EditableWorkoutExerciseCard: React.FC<EditableWorkoutExerciseCardPr
               <MaterialCommunityIcons
                 name="chevron-down"
                 size={sizing.iconMD}
-                color={canMoveDown ? colors.text.primary : colors.text.tertiary}
+                color={canMoveDown ? theme.text.primary : theme.text.tertiary}
               />
             </Pressable>
             <Pressable
-              style={[styles.iconButton, isInteractionDisabled && styles.iconButtonDisabled]}
+              style={[styles.iconButton, { backgroundColor: theme.surface.elevated }, isInteractionDisabled && { backgroundColor: theme.surface.card, borderWidth: 1, borderColor: theme.border.medium }]}
               onPress={() => handleMove(onRemove)}
               disabled={isInteractionDisabled}
               accessibilityRole="button"
               accessibilityLabel="Remove exercise"
             >
-              <MaterialCommunityIcons name="trash-can-outline" size={sizing.iconMD} color={colors.accent.warning} />
+              <MaterialCommunityIcons name="trash-can-outline" size={sizing.iconMD} color={theme.accent.orange} />
             </Pressable>
             <MaterialCommunityIcons
               name={isExpanded ? 'chevron-up' : 'chevron-down'}
               size={sizing.iconMD}
-              color={colors.text.secondary}
+              color={theme.text.secondary}
             />
           </View>
         </View>
@@ -141,11 +143,9 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
   },
   card: {
-    backgroundColor: colors.surface.card,
     borderRadius: radius.lg,
     padding: spacing.md,
     borderWidth: 1,
-    borderColor: colors.border.light,
     ...shadows.cardSoft,
   },
   headerRow: {
@@ -165,10 +165,8 @@ const styles = StyleSheet.create({
     height: sizing.iconLG,
     borderRadius: radius.full,
     borderWidth: 1,
-    borderColor: colors.border.light,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: colors.surface.subtle,
   },
   titleColumn: {
     flex: 1,
@@ -185,11 +183,8 @@ const styles = StyleSheet.create({
     borderRadius: radius.full,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: colors.surface.subtle,
   },
   iconButtonDisabled: {
-    backgroundColor: colors.surface.card,
     borderWidth: 1,
-    borderColor: colors.border.light,
   },
 });

@@ -53,10 +53,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.sm,
   },
-  scheduleTypeOptionSelected: {
-    borderColor: colors.accent.primary,
-    backgroundColor: colors.surface.tint,
-  },
+  scheduleTypeOptionSelected: {},
   scheduleTypeIconContainer: {
     width: 40,
     height: 40,
@@ -64,9 +61,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  scheduleTypeIconContainerSelected: {
-    backgroundColor: colors.accent.primary,
-  },
+  scheduleTypeIconContainerSelected: {},
   scheduleTypeTextContainer: {
     alignItems: 'center',
     gap: spacing.xs,
@@ -91,7 +86,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  dayPressablePressed: { borderColor: colors.accent.primary, opacity: opacity.hover },
+  dayPressablePressed: { opacity: opacity.hover },
   dayLabel: { flexShrink: 0 },
   dayPlanName: { flex: 1, textAlign: 'right' },
   rotatingDayRow: {
@@ -117,7 +112,6 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: radius.full,
-    backgroundColor: colors.accent.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -187,7 +181,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.lg,
   },
-  modalOptionActive: { borderColor: colors.accent.primary, backgroundColor: colors.surface.elevated },
+  modalOptionActive: {},
   modalOptionText: { textAlign: 'left' },
   helperText: {
     paddingHorizontal: spacing.md,
@@ -340,12 +334,12 @@ const ScheduleEditorScreen: React.FC = () => {
             <Text variant="heading3" color="primary">Schedule Type</Text>
             <View style={styles.scheduleTypeContainer}>
               <Pressable
-                style={[styles.scheduleTypeOption, { borderColor: theme.border.light, backgroundColor: theme.surface.card }, scheduleType === 'weekly' && styles.scheduleTypeOptionSelected]}
+                style={[styles.scheduleTypeOption, { borderColor: theme.border.light, backgroundColor: theme.surface.card }, scheduleType === 'weekly' && { borderColor: theme.accent.primary, backgroundColor: theme.surface.elevated }]}
                 onPress={() => handleScheduleTypeChange('weekly')}
                 accessibilityRole="radio"
                 accessibilityState={{ selected: scheduleType === 'weekly' }}
               >
-                <View style={[styles.scheduleTypeIconContainer, { backgroundColor: theme.surface.elevated }, scheduleType === 'weekly' && styles.scheduleTypeIconContainerSelected]}>
+                <View style={[styles.scheduleTypeIconContainer, { backgroundColor: theme.surface.elevated }, scheduleType === 'weekly' && { backgroundColor: theme.accent.primary }]}>
                   <IconSymbol
                     name="calendar-today"
                     size={20}
@@ -364,12 +358,12 @@ const ScheduleEditorScreen: React.FC = () => {
               </Pressable>
 
               <Pressable
-                style={[styles.scheduleTypeOption, { borderColor: theme.border.light, backgroundColor: theme.surface.card }, scheduleType === 'rotating' && styles.scheduleTypeOptionSelected]}
+                style={[styles.scheduleTypeOption, { borderColor: theme.border.light, backgroundColor: theme.surface.card }, scheduleType === 'rotating' && { borderColor: theme.accent.primary, backgroundColor: theme.surface.elevated }]}
                 onPress={() => handleScheduleTypeChange('rotating')}
                 accessibilityRole="radio"
                 accessibilityState={{ selected: scheduleType === 'rotating' }}
               >
-                <View style={[styles.scheduleTypeIconContainer, { backgroundColor: theme.surface.elevated }, scheduleType === 'rotating' && styles.scheduleTypeIconContainerSelected]}>
+                <View style={[styles.scheduleTypeIconContainer, { backgroundColor: theme.surface.elevated }, scheduleType === 'rotating' && { backgroundColor: theme.accent.primary }]}>
                   <IconSymbol
                     name="sync"
                     size={20}
@@ -494,7 +488,7 @@ const ScheduleEditorScreen: React.FC = () => {
                               <IconSymbol
                                 name="keyboard-arrow-up"
                                 size={18}
-                                color={isFirst ? colors.text.muted : colors.text.secondary}
+                                color={isFirst ? theme.text.muted : theme.text.secondary}
                               />
                             </Pressable>
                             <Pressable
@@ -506,12 +500,12 @@ const ScheduleEditorScreen: React.FC = () => {
                               <IconSymbol
                                 name="keyboard-arrow-down"
                                 size={18}
-                                color={isLast ? colors.text.muted : colors.text.secondary}
+                                color={isLast ? theme.text.muted : theme.text.secondary}
                               />
                             </Pressable>
                           </View>
 
-                          <View style={styles.rotatingDayBadge}>
+                          <View style={[styles.rotatingDayBadge, { backgroundColor: theme.accent.primary }]}>
                             <Text variant="caption" color="onAccent">
                               {index + 1}
                             </Text>
@@ -606,7 +600,7 @@ const ScheduleEditorScreen: React.FC = () => {
                         style={({ pressed }) => [
                           styles.modalOption,
                           { borderColor: theme.border.light, backgroundColor: theme.surface.card },
-                          isActive ? styles.modalOptionActive : null,
+                          isActive ? { borderColor: theme.accent.primary, backgroundColor: theme.surface.elevated } : null,
                           pressed ? styles.dayPressablePressed : null
                         ]}
                         onPress={() => handleAssignPlan(option.value)}

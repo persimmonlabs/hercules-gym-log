@@ -8,7 +8,7 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import type { Workout, WorkoutExercise, SetLog } from '@/types/workout';
-import type { ExerciseDataPoint } from '@/types/smartSuggestions';
+import type { ExerciseDataPoint, RepRange, SessionRepIntent, PendingIntentShift } from '@/types/smartSuggestions';
 
 interface SessionDraft {
   planId: string | null;
@@ -22,18 +22,36 @@ interface SessionDraft {
   exerciseDataPoints: Record<string, ExerciseDataPoint[]>;
   /** Tracks how many intra-session pattern shifts have occurred per exercise. */
   patternShiftCounts: Record<string, number>;
+  /** Per-exercise per-set-position rep ranges (v2). */
+  exerciseRepRanges: Record<string, RepRange[]>;
+  /** Detected training intent for compound exercises (v2). */
+  compoundRepIntent: SessionRepIntent | null;
+  /** Detected training intent for isolation exercises (v2). */
+  isolationRepIntent: SessionRepIntent | null;
+  /** Whether user historically splits compound/isolation rep ranges (v2). */
+  hasCompoundIsolationSplit: boolean;
+  /** Number of confirmed intent-shifting sets awaiting propagation (v2). */
+  intentShiftConfirmations: number;
+  /** Pending intent shift waiting for second confirmation (v2). */
+  pendingIntentShift: PendingIntentShift | null;
 }
 
 export interface SessionState {
   currentSession: SessionDraft | null;
   isSessionActive: boolean;
-  startSession: (planId: string | null, exercises?: WorkoutExercise[], name?: string | null, historySetCounts?: Record<string, number>, suggestedSets?: Record<string, SetLog[]>, exerciseDataPoints?: Record<string, ExerciseDataPoint[]>) => void;
-  addExercise: (exercise: WorkoutExercise, historySetCount?: number, suggested?: SetLog[], dataPoints?: ExerciseDataPoint[]) => void;
+  startSession: (planId: string | null, exercises?: WorkoutExercise[], name?: string | null, historySetCounts?: Record<string, number>, suggestedSets?: Record<string, SetLog[]>, exerciseDataPoints?: Record<string, ExerciseDataPoint[]>, exerciseRepRanges?: Record<string, RepRange[]>, hasCompoundIsolationSplit?: boolean) => void;
+  addExercise: (exercise: WorkoutExercise, historySetCount?: number, suggested?: SetLog[], dataPoints?: ExerciseDataPoint[], repRanges?: RepRange[]) => void;
   getHistorySetCount: (exerciseName: string) => number;
   getSuggestedSets: (exerciseName: string) => SetLog[] | null;
   getExerciseDataPoints: (exerciseName: string) => ExerciseDataPoint[];
   getPatternShiftCount: (exerciseName: string) => number;
   incrementPatternShiftCount: (exerciseName: string) => void;
+  getExerciseRepRanges: (exerciseName: string) => RepRange[];
+  setExerciseRepRanges: (exerciseName: string, ranges: RepRange[]) => void;
+  setRepIntent: (intent: SessionRepIntent, isCompound: boolean) => void;
+  getPendingIntentShift: () => PendingIntentShift | null;
+  recordIntentShift: (intent: SessionRepIntent, isCompound: boolean) => boolean;
+  updateExerciseSuggestedSets: (exerciseName: string, sets: SetLog[]) => void;
   updateExercise: (exerciseName: string, updatedExercise: WorkoutExercise) => void;
   removeExercise: (exerciseName: string) => void;
   reorderExercises: (fromIndex: number, toIndex: number) => void;
@@ -60,7 +78,7 @@ export const useSessionStore = create<SessionState>()(
       setHasHydrated: (state) => {
         set({ _hasHydrated: state });
       },
-      startSession: (planId, exercises = [], name = null, historySetCounts = {}, suggestedSets = {}, exerciseDataPoints = {}) => {
+      startSession: (planId, exercises = [], name = null, historySetCounts = {}, suggestedSets = {}, exerciseDataPoints = {}, exerciseRepRanges = {}, hasCompoundIsolationSplit = false) => {
         const nextSession: SessionDraft = {
           planId,
           name,
@@ -70,11 +88,17 @@ export const useSessionStore = create<SessionState>()(
           suggestedSets: { ...suggestedSets },
           exerciseDataPoints: { ...exerciseDataPoints },
           patternShiftCounts: {},
+          exerciseRepRanges: { ...exerciseRepRanges },
+          compoundRepIntent: null,
+          isolationRepIntent: null,
+          hasCompoundIsolationSplit,
+          intentShiftConfirmations: 0,
+          pendingIntentShift: null,
         };
 
         set({ currentSession: nextSession, isSessionActive: true, isCompletionOverlayVisible: false });
       },
-      addExercise: (exercise, historySetCount = 0, suggested, dataPoints) => {
+      addExercise: (exercise, historySetCount = 0, suggested, dataPoints, repRanges) => {
         const { currentSession } = get();
 
         if (!currentSession) {
@@ -91,6 +115,11 @@ export const useSessionStore = create<SessionState>()(
           nextDataPoints[exercise.name] = dataPoints;
         }
 
+        const nextRepRanges = { ...currentSession.exerciseRepRanges };
+        if (repRanges && repRanges.length > 0) {
+          nextRepRanges[exercise.name] = repRanges;
+        }
+
         const nextSession: SessionDraft = {
           ...currentSession,
           exercises: [...currentSession.exercises, exercise],
@@ -100,6 +129,7 @@ export const useSessionStore = create<SessionState>()(
           },
           suggestedSets: nextSuggested,
           exerciseDataPoints: nextDataPoints,
+          exerciseRepRanges: nextRepRanges,
         };
 
         set({ currentSession: nextSession });
@@ -129,6 +159,93 @@ export const useSessionStore = create<SessionState>()(
             patternShiftCounts: {
               ...currentSession.patternShiftCounts,
               [exerciseName]: (currentSession.patternShiftCounts[exerciseName] ?? 0) + 1,
+            },
+          },
+        });
+      },
+      getExerciseRepRanges: (exerciseName) => {
+        const { currentSession } = get();
+        return currentSession?.exerciseRepRanges[exerciseName] ?? [];
+      },
+      setExerciseRepRanges: (exerciseName, ranges) => {
+        const { currentSession } = get();
+        if (!currentSession) return;
+        set({
+          currentSession: {
+            ...currentSession,
+            exerciseRepRanges: {
+              ...currentSession.exerciseRepRanges,
+              [exerciseName]: ranges,
+            },
+          },
+        });
+      },
+      setRepIntent: (intent, isCompound) => {
+        const { currentSession } = get();
+        if (!currentSession) return;
+        set({
+          currentSession: {
+            ...currentSession,
+            ...(isCompound
+              ? { compoundRepIntent: intent }
+              : { isolationRepIntent: intent }),
+          },
+        });
+      },
+      getPendingIntentShift: () => {
+        const { currentSession } = get();
+        return currentSession?.pendingIntentShift ?? null;
+      },
+      recordIntentShift: (intent, isCompound) => {
+        const { currentSession } = get();
+        if (!currentSession) return false;
+
+        const pending = currentSession.pendingIntentShift;
+
+        // If no pending shift, record this as the first occurrence
+        if (!pending) {
+          set({
+            currentSession: {
+              ...currentSession,
+              pendingIntentShift: { intent, isCompound },
+              intentShiftConfirmations: 1,
+            },
+          });
+          return false;
+        }
+
+        // If same intent direction, this is a confirmation
+        if (pending.intent === intent) {
+          const newCount = currentSession.intentShiftConfirmations + 1;
+          set({
+            currentSession: {
+              ...currentSession,
+              intentShiftConfirmations: newCount,
+            },
+          });
+          // Return true when we hit the required confirmations
+          return newCount >= 2;
+        }
+
+        // Different intent — replace the pending shift
+        set({
+          currentSession: {
+            ...currentSession,
+            pendingIntentShift: { intent, isCompound },
+            intentShiftConfirmations: 1,
+          },
+        });
+        return false;
+      },
+      updateExerciseSuggestedSets: (exerciseName, sets) => {
+        const { currentSession } = get();
+        if (!currentSession) return;
+        set({
+          currentSession: {
+            ...currentSession,
+            suggestedSets: {
+              ...currentSession.suggestedSets,
+              [exerciseName]: sets,
             },
           },
         });

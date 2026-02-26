@@ -12,7 +12,7 @@ import { SurfaceCard } from '@/components/atoms/SurfaceCard';
 import { Text } from '@/components/atoms/Text';
 import { Button } from '@/components/atoms/Button';
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { colors, spacing, radius } from '@/constants/theme';
+import { spacing, radius } from '@/constants/theme';
 import { useTheme } from '@/hooks/useTheme';
 
 type EmptyStateVariant = 'workout' | 'plan' | 'exercises' | 'generic';
@@ -76,7 +76,7 @@ export const PlanEmptyStateCard: React.FC<PlanEmptyStateCardProps> = ({
     <SurfaceCard tone="card" padding="xl" showAccentStripe style={style}>
       <Animated.View entering={FadeIn.duration(300)} style={styles.content}>
         {/* Icon */}
-        <View style={styles.iconContainer}>
+        <View style={[styles.iconContainer, { backgroundColor: theme.accent.orangeMuted }]}>
           <IconSymbol
             name={config.icon as any}
             size={40}
@@ -98,11 +98,11 @@ export const PlanEmptyStateCard: React.FC<PlanEmptyStateCardProps> = ({
 
         {/* Hint */}
         {showHint && (
-          <View style={styles.hintContainer}>
+          <View style={[styles.hintContainer, { backgroundColor: theme.surface.elevated }]}>
             <IconSymbol
               name="lightbulb-outline"
               size={16}
-              color={colors.text.tertiary}
+              color={theme.text.tertiary}
             />
             <Text variant="caption" color="tertiary" style={styles.hintText}>
               {displayHint}
@@ -142,7 +142,6 @@ const styles = StyleSheet.create({
     width: 72,
     height: 72,
     borderRadius: radius.full,
-    backgroundColor: colors.accent.orangeMuted,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: spacing.xs,
@@ -164,7 +163,6 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
-    backgroundColor: colors.surface.subtle,
     borderRadius: radius.md,
   },
   hintText: {

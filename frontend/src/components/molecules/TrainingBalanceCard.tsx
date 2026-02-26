@@ -63,7 +63,7 @@ const BalanceBar: React.FC<BalanceBarProps> = ({
             {Math.round(leftPercent)}%
           </Text>
         </View>
-        {isBalanced && <View style={styles.divider} />}
+        {isBalanced && <View style={[styles.divider, { backgroundColor: theme.primary.bg }]} />}
         <View style={[styles.barSegment, { flex: rightPercent, backgroundColor: rightBarColor }]}>
           <Text variant="captionSmall" color="primary" style={styles.barText}>
             {Math.round(rightPercent)}%

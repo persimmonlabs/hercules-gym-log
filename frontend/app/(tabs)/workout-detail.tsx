@@ -254,7 +254,7 @@ const WorkoutDetailScreen: React.FC = () => {
                 returnKeyType="done"
               />
             ) : (
-              <Text variant="heading1" style={{ color: theme.text.secondary }}>
+              <Text variant="heading1" style={{ color: theme.text.primary }}>
                 {workoutTitle}
               </Text>
             )}
@@ -273,7 +273,7 @@ const WorkoutDetailScreen: React.FC = () => {
                     hitSlop={spacing.sm}
                     style={styles.backButtonPressable}
                   >
-                    <IconSymbol name="arrow-back" color={theme.text.secondary} size={24} />
+                    <IconSymbol name="arrow-back" color={theme.text.primary} size={24} />
                   </Pressable>
                 </Animated.View>
                 {workout ? (
@@ -330,12 +330,12 @@ const WorkoutDetailScreen: React.FC = () => {
         animationType="fade"
         onRequestClose={handleDismissDeleteDialog}
       >
-        <Pressable style={styles.dialogOverlay} onPress={handleDismissDeleteDialog}>
+        <Pressable style={[styles.dialogOverlay, { backgroundColor: theme.overlay?.scrim ?? 'rgba(0,0,0,0.6)' }]} onPress={handleDismissDeleteDialog}>
           <Pressable
             style={styles.dialogCardPressable}
             onPress={(event) => event.stopPropagation()}
           >
-            <SurfaceCard tone="neutral" padding="lg" showAccentStripe={false} style={styles.dialogCard}>
+            <SurfaceCard tone="neutral" padding="lg" showAccentStripe={false} style={[styles.dialogCard, { backgroundColor: theme.surface.card, borderColor: theme.border.medium }]}>
               <View style={styles.dialogContent}>
                 <Text variant="heading3" color="primary">
                   Delete workout
@@ -464,7 +464,6 @@ const styles = StyleSheet.create({
   },
   dialogOverlay: {
     flex: 1,
-    backgroundColor: colors.overlay.scrim,
     justifyContent: 'center',
     alignItems: 'center',
     padding: spacing.lg,
@@ -474,9 +473,7 @@ const styles = StyleSheet.create({
     maxWidth: 360,
     gap: spacing.md,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border.light,
     borderRadius: radius.lg,
-    backgroundColor: colors.surface.card,
   },
   dialogContent: {
     gap: spacing.xs,

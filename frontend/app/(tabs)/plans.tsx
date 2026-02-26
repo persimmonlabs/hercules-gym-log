@@ -25,8 +25,12 @@ import { useOutdoorSessionStore } from '@/store/outdoorSessionStore';
 import { useWorkoutSessionsStore, type WorkoutSessionsState } from '@/store/workoutSessionsStore';
 import type { WorkoutExercise, SetLog } from '@/types/workout';
 import { createSetsWithSmartSuggestions } from '@/utils/workout';
+import { detectCompoundIsolationSplit } from '@/utils/smartSuggestions';
+import { exercises as exerciseCatalogData } from '@/constants/exercises';
 import { useSettingsStore } from '@/store/settingsStore';
 import { useCustomExerciseStore } from '@/store/customExerciseStore';
+import { useUserProfileStore } from '@/store/userProfileStore';
+import type { RepRange } from '@/types/smartSuggestions';
 
 const styles = StyleSheet.create({
   contentContainer: {
@@ -509,11 +513,13 @@ const PlansScreen: React.FC = () => {
     const doStartSession = () => {
       setCompletionOverlayVisible(false);
 
+      const userGoal = useUserProfileStore.getState().profile?.primaryGoal;
       const historySetCounts: Record<string, number> = {};
       const suggestedSetsMap: Record<string, SetLog[]> = {};
       const dataPointsMap: Record<string, any[]> = {};
+      const repRangesMap: Record<string, RepRange[]> = {};
       const workoutExercises: WorkoutExercise[] = item.exercises.map((exercise: any) => {
-        const result = createSetsWithSmartSuggestions(exercise.name, allWorkouts, smartSuggestionsEnabled, undefined, undefined, customExercises);
+        const result = createSetsWithSmartSuggestions(exercise.name, allWorkouts, smartSuggestionsEnabled, undefined, undefined, customExercises, userGoal);
         historySetCounts[exercise.name] = result.historySetCount;
         if (result.smartSuggestedSets.length > 0) {
           suggestedSetsMap[exercise.name] = result.smartSuggestedSets;
@@ -521,16 +527,24 @@ const PlansScreen: React.FC = () => {
         if (result.dataPoints && result.dataPoints.length > 0) {
           dataPointsMap[exercise.name] = result.dataPoints;
         }
+        if (result.repRanges && result.repRanges.length > 0) {
+          repRangesMap[exercise.name] = result.repRanges;
+        }
         return {
           name: exercise.name,
           sets: result.sets,
         };
       });
 
+      const hasSplit = detectCompoundIsolationSplit(
+        allWorkouts,
+        (name) => exerciseCatalogData.find((e) => e.name === name)?.isCompound ?? false,
+      );
+
       const planId = item.type === 'program' ? (item.programId || item.programIds?.[0]) : item.id;
       const sessionName = item.name;
 
-      startSession(planId, workoutExercises, sessionName, historySetCounts, suggestedSetsMap, dataPointsMap);
+      startSession(planId, workoutExercises, sessionName, historySetCounts, suggestedSetsMap, dataPointsMap, repRangesMap, hasSplit);
       setExpandedPlanId(null);
       router.push('/(tabs)/workout');
     };

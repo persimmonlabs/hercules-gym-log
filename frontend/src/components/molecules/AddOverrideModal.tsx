@@ -10,7 +10,7 @@ import { useActiveScheduleStore } from '@/store/activeScheduleStore';
 import { useProgramsStore } from '@/store/programsStore';
 import { usePlansStore } from '@/store/plansStore';
 import { useTheme } from '@/hooks/useTheme';
-import { spacing, radius, colors } from '@/constants/theme';
+import { spacing, radius } from '@/constants/theme';
 import type { ScheduleOverride } from '@/types/activeSchedule';
 import { SheetModal } from './SheetModal';
 
@@ -188,7 +188,7 @@ export const AddOverrideModal: React.FC<AddOverrideModalProps> = ({
                     styles.dateChip,
                     { backgroundColor: theme.surface.elevated, borderColor: theme.accent.orange },
                     isSelected && { backgroundColor: theme.accent.orange },
-                    hasExistingOverride && !isSelected && { backgroundColor: theme.accent.warning + '20' },
+                    hasExistingOverride && !isSelected && { backgroundColor: theme.accent.orange + '20' },
                   ]}
                   onPress={() => handleDateSelect(date)}
                 >
@@ -199,7 +199,7 @@ export const AddOverrideModal: React.FC<AddOverrideModalProps> = ({
                     {label}
                   </Text>
                   {hasExistingOverride && (
-                    <Text variant="captionSmall" color="tertiary">
+                    <Text variant="captionSmall" color="secondary">
                       (has override)
                     </Text>
                   )}
@@ -262,7 +262,7 @@ export const AddOverrideModal: React.FC<AddOverrideModalProps> = ({
             variant="ghost"
             size="md"
             onPress={handleRemove}
-            textColor={colors.accent.warning}
+            textColor={theme.accent.orange}
             style={styles.removeButton}
           />
         )}

@@ -6,6 +6,7 @@
 
 import type { SetLog } from '@/types/workout';
 import type { EquipmentType } from '@/types/exercise';
+import type { PrimaryGoal } from '@/store/userProfileStore';
 
 /** Per-set-position weight and reps from a single session */
 export interface SetPositionData {
@@ -75,6 +76,42 @@ export interface PatternShiftResult {
   /** Replacement targets for all remaining (uncompleted) sets, indexed from 0 */
   newTargets: { weight: number; reps: number }[];
 }
+
+/** Per-set-position rep range */
+export interface RepRange {
+  min: number;
+  max: number;
+}
+
+/** Session-level training intent classification */
+export type SessionRepIntent = 'strength' | 'hypertrophy' | 'endurance';
+
+/** Pending cross-exercise intent shift awaiting confirmation */
+export interface PendingIntentShift {
+  intent: SessionRepIntent;
+  isCompound: boolean;
+}
+
+/** Goal-based default rep range configuration */
+export interface GoalRepRangeDefaults {
+  compound: RepRange;
+  isolation: RepRange;
+}
+
+/** Map of primary goals to default rep ranges */
+export const GOAL_REP_RANGES: Record<string, GoalRepRangeDefaults> = {
+  'gain-strength':     { compound: { min: 3, max: 6 },  isolation: { min: 5, max: 8 } },
+  'build-muscle':      { compound: { min: 6, max: 12 }, isolation: { min: 8, max: 15 } },
+  'general-fitness':   { compound: { min: 8, max: 12 }, isolation: { min: 10, max: 15 } },
+  'improve-endurance': { compound: { min: 12, max: 20 }, isolation: { min: 15, max: 25 } },
+  'lose-fat':          { compound: { min: 8, max: 15 }, isolation: { min: 10, max: 15 } },
+};
+
+/** Default rep ranges when no goal is set */
+export const DEFAULT_REP_RANGES: GoalRepRangeDefaults = {
+  compound: { min: 8, max: 12 },
+  isolation: { min: 10, max: 15 },
+};
 
 /** Equipment-aware weight increment configuration */
 export interface WeightIncrement {
@@ -161,4 +198,25 @@ export const SMART_CONFIG = {
   MIN_CLUSTER_SESSIONS: 2,
   /** Progression bump for single-session clusters or straight-across rep increment */
   SMALL_BUMP_PERCENT: 0.025,
+
+  // --- V2: Per-set rep range & progressive overload bias ---
+
+  /** Rep range padding for strength-oriented medians (median ≤ 8): range = [median - PAD, median + PAD] */
+  REP_RANGE_PAD_STRENGTH: 2,
+  /** Rep range padding for hypertrophy/endurance-oriented medians (median > 8) */
+  REP_RANGE_PAD_HYPERTROPHY: 3,
+  /** Minimum sessions needed before trusting per-set-position rep ranges from history */
+  MIN_SESSIONS_REP_RANGE: 3,
+  /** Significant miss threshold: reps below range min by this amount triggers weight reduction */
+  SIGNIFICANT_MISS_REPS: 3,
+  /** Compound/isolation split detection: avg reps must differ by at least this many */
+  SPLIT_REP_DIFFERENCE: 3,
+  /** Compound/isolation split detection: must occur in this fraction of sessions */
+  SPLIT_SESSION_FRACTION: 0.6,
+  /** Cross-exercise intent shift: number of confirming sets required before propagation */
+  INTENT_SHIFT_CONFIRMATIONS_REQUIRED: 2,
+  /** Intent shift detection: reps must be outside predicted range by this fraction to count */
+  INTENT_SHIFT_REP_THRESHOLD: 0.4,
+  /** Pyramid detection: must appear in this fraction of recent sessions to be predicted */
+  PYRAMID_HISTORY_FRACTION: 0.6,
 } as const;

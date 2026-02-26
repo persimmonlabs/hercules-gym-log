@@ -87,7 +87,7 @@ const ActionButton: React.FC<ActionButtonProps> = ({ iconName, label, onPress, v
         };
       case 'pause':
         return { 
-          backgroundColor: '#FFFFFF',
+          backgroundColor: theme.surface.card,
           borderWidth: 2,
           borderColor: theme.accent.orange,
         };
@@ -98,9 +98,9 @@ const ActionButton: React.FC<ActionButtonProps> = ({ iconName, label, onPress, v
         };
       case 'stop':
         return { 
-          backgroundColor: '#FFFFFF',
+          backgroundColor: theme.surface.card,
           borderWidth: 2,
-          borderColor: '#FF0000',
+          borderColor: theme.accent.orange,
         };
       case 'done':
         return { 
@@ -120,11 +120,11 @@ const ActionButton: React.FC<ActionButtonProps> = ({ iconName, label, onPress, v
       case 'pause':
         return theme.accent.orange;
       case 'stop':
-        return '#FF0000';
+        return theme.accent.orange;
       case 'done':
-        return '#FFFFFF';
+        return theme.text.onAccent;
       default:
-        return '#FFFFFF';
+        return theme.text.onAccent;
     }
   };
 
@@ -133,11 +133,11 @@ const ActionButton: React.FC<ActionButtonProps> = ({ iconName, label, onPress, v
       case 'pause':
         return theme.accent.orange;
       case 'stop':
-        return '#FF0000';
+        return theme.accent.orange;
       case 'done':
-        return '#FFFFFF';
+        return theme.text.onAccent;
       default:
-        return '#FFFFFF';
+        return theme.text.onAccent;
     }
   };
 
@@ -252,12 +252,12 @@ export const GpsActivityTracker: React.FC<GpsActivityTrackerProps> = ({ onComple
   if (state === 'idle') {
     return (
       <Pressable
-        style={styles.startButton}
+        style={[styles.startButton, { borderColor: theme.accent.orange }]}
         onPress={start}
         accessibilityRole="button"
         accessibilityLabel="Start Activity"
       >
-        <Text style={styles.startButtonText}>Start Activity</Text>
+        <Text style={[styles.startButtonText, { color: theme.accent.orange }]}>Start Activity</Text>
       </Pressable>
     );
   }
@@ -485,7 +485,6 @@ const styles = StyleSheet.create({
     marginBottom: spacing.lg,
     borderRadius: radius.lg,
     borderWidth: 1,
-    borderColor: '#FF6B35',
     backgroundColor: 'transparent',
     alignItems: 'center',
     justifyContent: 'center',
@@ -495,6 +494,5 @@ const styles = StyleSheet.create({
   startButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FF6B35',
   },
 });

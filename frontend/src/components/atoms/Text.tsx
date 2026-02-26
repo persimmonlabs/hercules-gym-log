@@ -9,6 +9,7 @@ import {
   Text as RNText,
   TextProps,
   StyleSheet,
+  ViewStyle,
 } from 'react-native';
 import Animated, {
   useSharedValue,
@@ -60,6 +61,8 @@ interface TextComponentProps extends TextProps {
   fadeIn?: boolean;
   /** Animation delay (ms) */
   delay?: number;
+  /** Style applied to the outer Animated.View wrapper */
+  wrapperStyle?: ViewStyle;
 }
 
 // ============================================================================
@@ -73,6 +76,7 @@ export const Text: React.FC<TextComponentProps> = ({
   delay = 0,
   children,
   style,
+  wrapperStyle,
   ...props
 }) => {
   const { theme } = useTheme();
@@ -121,7 +125,7 @@ export const Text: React.FC<TextComponentProps> = ({
   ];
 
   return (
-    <Animated.View style={animatedStyle}>
+    <Animated.View style={[animatedStyle, wrapperStyle]}>
       <RNText style={textStyle} {...props}>
         {children}
       </RNText>

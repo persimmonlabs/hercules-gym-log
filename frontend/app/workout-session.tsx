@@ -41,8 +41,11 @@ import { DeleteConfirmationModal } from '@/components/molecules/DeleteConfirmati
 import { normalizeSearchText } from '@/utils/strings';
 import { createSetsWithSmartSuggestions } from '@/utils/exerciseHistory';
 import { getExerciseDisplayTagText } from '@/utils/exerciseDisplayTags';
+import { determinePerSetRepRanges, classifyRepIntent } from '@/utils/smartSuggestions';
+import { useUserProfileStore } from '@/store/userProfileStore';
 import type { Exercise, ExerciseCatalogItem } from '@/constants/exercises';
 import type { SetLog, WorkoutExercise } from '@/types/workout';
+import type { SessionRepIntent } from '@/types/smartSuggestions';
 
 interface ExerciseProgressSnapshot {
   completedSets: number;
@@ -69,7 +72,7 @@ const formatElapsed = (seconds: number): string => {
 
 const WorkoutSessionScreen: React.FC = () => {
   const router = useRouter();
-  const { theme } = useTheme();
+  const { theme, isDarkMode } = useTheme();
   const currentSession = useSessionStore((state) => state.currentSession);
   const lastKnownSessionRef = useRef(currentSession);
   if (currentSession) {
@@ -297,6 +300,38 @@ const WorkoutSessionScreen: React.FC = () => {
   );
 
   const smartSuggestionsEnabled = useSettingsStore((state) => state.smartSuggestionsEnabled);
+  const userGoal = useUserProfileStore((state) => state.profile?.primaryGoal);
+
+  const handleIntentShift = useCallback((exerciseName: string, isCompound: boolean, intent: SessionRepIntent) => {
+    const store = useSessionStore.getState();
+    const confirmed = store.recordIntentShift(intent, isCompound);
+    if (!confirmed) return;
+
+    // Cross-exercise propagation: re-target exercises with 0 completed sets
+    const session = store.currentSession;
+    if (!session) return;
+
+    const hasSplit = session.hasCompoundIsolationSplit;
+    store.setRepIntent(intent, isCompound);
+
+    for (const ex of session.exercises) {
+      const completedCount = ex.sets.filter((s) => s.completed).length;
+      if (completedCount > 0) continue; // Already in progress — don't re-target
+      if (ex.name === exerciseName) continue; // Current exercise already adapted
+
+      const catalogEntry = exerciseCatalog.find((e) => e.name === ex.name);
+      const exIsCompound = catalogEntry?.isCompound ?? false;
+
+      // If split detected, only shift matching category
+      if (hasSplit && exIsCompound !== isCompound) continue;
+
+      // Re-compute rep ranges for this exercise using the new intent
+      const dataPoints = session.exerciseDataPoints[ex.name] ?? [];
+      const setCount = ex.sets.length || 3;
+      const newRanges = determinePerSetRepRanges(dataPoints, setCount, exIsCompound, userGoal);
+      store.setExerciseRepRanges(ex.name, newRanges);
+    }
+  }, [exerciseCatalog, userGoal]);
 
   const handleSelectExercise = (exercise: Exercise) => {
     const targetName = replaceTargetName;
@@ -304,7 +339,7 @@ const WorkoutSessionScreen: React.FC = () => {
 
     if (targetName) {
       // Always fetch new exercise's history when replacing
-      const result = createSetsWithSmartSuggestions(exercise.name, allWorkouts, smartSuggestionsEnabled, undefined, undefined, customExercises);
+      const result = createSetsWithSmartSuggestions(exercise.name, allWorkouts, smartSuggestionsEnabled, undefined, undefined, customExercises, userGoal);
 
       const nextExercise: WorkoutExercise = {
         name: exercise.name,
@@ -327,6 +362,11 @@ const WorkoutSessionScreen: React.FC = () => {
         if (result.dataPoints && result.dataPoints.length > 0) {
           nextDP[exercise.name] = result.dataPoints;
         }
+        const { [targetName]: _removedRR, ...remainingRR } = (currentSession as any).exerciseRepRanges ?? {};
+        const nextRR = { ...remainingRR };
+        if (result.repRanges && result.repRanges.length > 0) {
+          nextRR[exercise.name] = result.repRanges;
+        }
         useSessionStore.setState({
           currentSession: {
             ...currentSession,
@@ -336,6 +376,7 @@ const WorkoutSessionScreen: React.FC = () => {
             },
             suggestedSets: nextSuggested,
             exerciseDataPoints: nextDP,
+            exerciseRepRanges: nextRR,
           },
         });
       }
@@ -359,13 +400,13 @@ const WorkoutSessionScreen: React.FC = () => {
         return rest;
       });
     } else {
-      const result = createSetsWithSmartSuggestions(exercise.name, allWorkouts, smartSuggestionsEnabled, undefined, undefined, customExercises);
+      const result = createSetsWithSmartSuggestions(exercise.name, allWorkouts, smartSuggestionsEnabled, undefined, undefined, customExercises, userGoal);
       const nextExercise: WorkoutExercise = {
         name: exercise.name,
         sets: result.sets,
       };
 
-      addExerciseToSession(nextExercise, result.historySetCount, result.smartSuggestedSets.length > 0 ? result.smartSuggestedSets : undefined, result.dataPoints && result.dataPoints.length > 0 ? result.dataPoints : undefined);
+      addExerciseToSession(nextExercise, result.historySetCount, result.smartSuggestedSets.length > 0 ? result.smartSuggestedSets : undefined, result.dataPoints && result.dataPoints.length > 0 ? result.dataPoints : undefined, result.repRanges && result.repRanges.length > 0 ? result.repRanges : undefined);
       hasUserAddedExerciseRef.current = true;
     }
 
@@ -794,7 +835,7 @@ const WorkoutSessionScreen: React.FC = () => {
 
   return (
     <View style={[styles.safeAreaRoot, { paddingTop: insets.top, backgroundColor: theme.surface.tint }]}>
-      <StatusBar style="auto" backgroundColor="transparent" translucent />
+      <StatusBar style={isDarkMode ? 'light' : 'dark'} backgroundColor="transparent" translucent />
       <View style={styles.root}>
         {activeMenu?.type === 'exercise' ? (
           <Pressable style={styles.menuBackdrop} onPress={closeAllMenus} accessibilityLabel="Dismiss exercise menu" />
@@ -916,6 +957,11 @@ const WorkoutSessionScreen: React.FC = () => {
                       exerciseDataPoints={(sessionToDisplay as any)?.exerciseDataPoints?.[item.name] ?? []}
                       patternShiftCount={(sessionToDisplay as any)?.patternShiftCounts?.[item.name] ?? 0}
                       onPatternShift={() => useSessionStore.getState().incrementPatternShiftCount(item.name)}
+                      exerciseRepRanges={(sessionToDisplay as any)?.exerciseRepRanges?.[item.name] ?? []}
+                      onIntentShift={(intent: SessionRepIntent) => {
+                        const catalogEntry = exerciseCatalog.find((e) => e.name === item.name);
+                        handleIntentShift(item.name, catalogEntry?.isCompound ?? false, intent);
+                      }}
                       activeSetMenuIndex={activeMenu?.type === 'set' && activeMenu.exerciseName === item.name ? activeMenu.setIndex : null}
                       onOpenSetMenu={(index) => handleOpenSetMenu(item.name, index)}
                       onCloseSetMenu={closeAllMenus}
@@ -1073,7 +1119,7 @@ const WorkoutSessionScreen: React.FC = () => {
               handleDeleteExercise();
             }}
           >
-            <Text variant="body" color="warning">Delete</Text>
+            <Text variant="body" style={{ color: theme.accent.red }}>Delete</Text>
           </Pressable>
         </View>
       )}

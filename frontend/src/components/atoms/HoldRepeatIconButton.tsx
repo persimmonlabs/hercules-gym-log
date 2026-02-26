@@ -74,7 +74,7 @@ const HoldRepeatIconButtonInner: React.FC<HoldRepeatIconButtonProps> = ({
         <MaterialCommunityIcons
           name={iconName}
           size={sizing.iconMD}
-          color={colors.text.primary}
+          color={theme.text.primary}
         />
       </Animated.View>
     </Pressable>

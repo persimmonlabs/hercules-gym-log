@@ -105,7 +105,7 @@ export const WorkoutBuilderCard: React.FC<WorkoutBuilderCardProps> = ({
   // Animated styles for name input
   const animatedNameBorderStyle = useAnimatedStyle(() => ({
     borderColor:
-      nameFocusProgress.value > 0 ? theme.accent.primary : colors.border.light,
+      nameFocusProgress.value > 0 ? theme.accent.primary : theme.border.light,
   }));
 
   const handleNameFocus = useCallback(() => {
@@ -153,15 +153,15 @@ export const WorkoutBuilderCard: React.FC<WorkoutBuilderCardProps> = ({
               Name
             </Text>
           </View>
-          <Animated.View style={[styles.nameInputContainer, animatedNameBorderStyle]}>
+          <Animated.View style={[styles.nameInputContainer, { backgroundColor: theme.surface.elevated }, animatedNameBorderStyle]}>
             <TextInput
               value={workoutName}
               onChangeText={onWorkoutNameChange}
               placeholder={namePlaceholder}
-              placeholderTextColor={colors.text.muted}
+              placeholderTextColor={theme.text.tertiary}
               selectionColor={theme.accent.primary}
               cursorColor={theme.accent.primary}
-              style={styles.nameInput}
+              style={[styles.nameInput, { color: theme.text.primary }]}
               onFocus={handleNameFocus}
               onBlur={handleNameBlur}
               returnKeyType="next"
@@ -176,7 +176,7 @@ export const WorkoutBuilderCard: React.FC<WorkoutBuilderCardProps> = ({
         </View>
 
         {/* Divider */}
-        <View style={styles.divider} />
+        <View style={[styles.divider, { backgroundColor: theme.border.light }]} />
 
         {/* Section 2: Your Exercises */}
         <View style={styles.section}>
@@ -186,7 +186,7 @@ export const WorkoutBuilderCard: React.FC<WorkoutBuilderCardProps> = ({
                 Exercises
               </Text>
               {hasExercises && (
-                <View style={styles.countBadge}>
+                <View style={[styles.countBadge, { backgroundColor: theme.accent.orange }]}>
                   <Text variant="caption" color="primary" style={styles.countText}>
                     {exercises.length}
                   </Text>
@@ -218,6 +218,7 @@ export const WorkoutBuilderCard: React.FC<WorkoutBuilderCardProps> = ({
             onPress={handleOpenSearchModal}
             style={({ pressed }) => [
               styles.addExerciseButton,
+              { backgroundColor: theme.accent.orangeMuted, borderColor: theme.accent.orange },
               pressed && styles.addExerciseButtonPressed,
             ]}
           >
@@ -229,7 +230,7 @@ export const WorkoutBuilderCard: React.FC<WorkoutBuilderCardProps> = ({
         </View>
 
         {/* Divider */}
-        <View style={styles.divider} />
+        <View style={[styles.divider, { backgroundColor: theme.border.light }]} />
 
         {/* Section 4: Progress & Save */}
         <View style={styles.section}>

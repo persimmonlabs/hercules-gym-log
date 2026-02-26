@@ -13,7 +13,7 @@ import { SurfaceCard } from '@/components/atoms/SurfaceCard';
 import { Button } from '@/components/atoms/Button';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import type { Exercise } from '@/constants/exercises';
-import { colors, radius, sizing, spacing } from '@/constants/theme';
+import { radius, sizing, spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/useTheme';
 import { getExerciseDisplayTagText } from '@/utils/exerciseDisplayTags';
 
@@ -99,7 +99,7 @@ export const PlanSelectedExerciseList: React.FC<PlanSelectedExerciseListProps> =
                 entering={FadeIn}
                 style={styles.row}
               >
-                <View style={styles.rowContent}>
+                <View style={[styles.rowContent, { backgroundColor: theme.surface.elevated, borderColor: theme.accent.orange }]}>
                   <View style={styles.textContainer}>
                     <Text variant="bodySemibold" color="primary">
                       {exercise.name}
@@ -112,7 +112,7 @@ export const PlanSelectedExerciseList: React.FC<PlanSelectedExerciseListProps> =
                   </View>
 
                   <View style={styles.actions}>
-                    <View style={styles.reorderControls}>
+                    <View style={[styles.reorderControls, { borderColor: theme.border.light }]}>
                       <Pressable
                         onPress={() => handleMove(index, 'up')}
                         disabled={isFirst}
@@ -126,7 +126,7 @@ export const PlanSelectedExerciseList: React.FC<PlanSelectedExerciseListProps> =
                         <IconSymbol
                           name="keyboard-arrow-up"
                           size={20}
-                          color={isFirst ? colors.text.tertiary : colors.text.primary}
+                          color={isFirst ? theme.text.muted : theme.text.primary}
                         />
                       </Pressable>
 
@@ -143,12 +143,12 @@ export const PlanSelectedExerciseList: React.FC<PlanSelectedExerciseListProps> =
                         <IconSymbol
                           name="keyboard-arrow-down"
                           size={20}
-                          color={isLast ? colors.text.tertiary : colors.text.primary}
+                          color={isLast ? theme.text.muted : theme.text.primary}
                         />
                       </Pressable>
                     </View>
 
-                    <View style={styles.divider} />
+                    <View style={[styles.divider, { backgroundColor: theme.border.light }]} />
 
                     <Pressable
                       onPress={() => {
@@ -157,7 +157,8 @@ export const PlanSelectedExerciseList: React.FC<PlanSelectedExerciseListProps> =
                       }}
                       style={({ pressed }) => [
                         styles.deleteButton,
-                        pressed && styles.deleteButtonPressed
+                        { borderColor: theme.border.light },
+                        pressed && { backgroundColor: theme.surface.elevated }
                       ]}
                       hitSlop={8}
                     >
@@ -218,9 +219,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.md,
     borderRadius: radius.md,
-    backgroundColor: colors.surface.card,
     borderWidth: 1,
-    borderColor: colors.accent.orange,
     gap: spacing.md,
   },
   textContainer: {
@@ -237,7 +236,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: colors.border.light,
     borderRadius: radius.sm,
     padding: 2,
   },
@@ -251,13 +249,10 @@ const styles = StyleSheet.create({
   iconButtonDisabled: {
     opacity: 0.3,
   },
-  iconButtonPressed: {
-    backgroundColor: colors.surface.subtle,
-  },
+  iconButtonPressed: {},
   divider: {
     width: 1,
     height: 24,
-    backgroundColor: colors.border.light,
   },
   deleteButton: {
     width: 32,
@@ -266,11 +261,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderRadius: radius.full,
     borderWidth: 1,
-    borderColor: colors.border.light,
   },
-  deleteButtonPressed: {
-    backgroundColor: colors.surface.subtle,
-  },
+  deleteButtonPressed: {},
   footer: {
     gap: spacing.md,
     marginTop: spacing.xs,

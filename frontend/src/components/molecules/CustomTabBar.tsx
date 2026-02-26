@@ -47,6 +47,7 @@ type TabBarItemProps = {
   iconName: keyof typeof Ionicons.glyphMap;
   onPress: () => void;
   theme: any;
+  isDarkMode: boolean;
   createGradientIcon: (iconName: keyof typeof Ionicons.glyphMap) => React.ReactElement;
 };
 
@@ -57,6 +58,7 @@ const TabBarItem: React.FC<TabBarItemProps> = ({
   iconName,
   onPress,
   theme,
+  isDarkMode,
   createGradientIcon,
 }) => {
   const scale = useSharedValue(1);
@@ -93,7 +95,7 @@ const TabBarItem: React.FC<TabBarItemProps> = ({
             createGradientIcon(iconName)
           )
         ) : (
-          <Ionicons name={iconName} size={ICON_SIZE} color={theme.text.secondary} />
+          <Ionicons name={iconName} size={ICON_SIZE} color={isDarkMode ? theme.text.primary : theme.text.secondary} />
         )}
       </TouchableOpacity>
     </Animated.View>
@@ -255,6 +257,7 @@ export const CustomTabBar: React.FC<BottomTabBarProps> = ({ state, navigation })
                       showActiveSessionGlow={showActiveSessionGlow}
                       iconName={tabMeta.icon}
                       theme={theme}
+                      isDarkMode={isDarkMode}
                       createGradientIcon={createGradientIcon}
                       onPress={() => focusTab(route.key, route.name)}
                     />

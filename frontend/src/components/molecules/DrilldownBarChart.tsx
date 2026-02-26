@@ -224,7 +224,8 @@ export const DrilldownBarChart: React.FC<DrilldownBarChartProps> = ({
                 onPress={() => handleBreadcrumbPress(index)}
                 style={[
                   styles.breadcrumbButton,
-                  index === breadcrumb.length - 1 && styles.breadcrumbButtonActive,
+                  { backgroundColor: theme.surface.card, borderColor: theme.accent.orangeMuted },
+                  index === breadcrumb.length - 1 && { backgroundColor: theme.accent.orangeMuted, borderColor: theme.accent.orange },
                 ]}
               >
                 <Text
@@ -369,12 +370,10 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
   },
   breadcrumbButton: {
-    paddingHorizontal: spacing.xs,
-    paddingVertical: 2,
-    borderRadius: radius.sm,
-  },
-  breadcrumbButtonActive: {
-    backgroundColor: colors.glass.light,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderRadius: radius.full,
+    borderWidth: 1,
   },
   emptyContainer: {
     alignItems: 'center',

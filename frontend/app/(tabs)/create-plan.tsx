@@ -13,13 +13,12 @@ import { PlanSelectedExerciseList } from '@/components/molecules/PlanSelectedExe
 import { PlanEmptyStateCard } from '@/components/molecules/PlanEmptyStateCard';
 import { PlanNameCard } from '@/components/molecules/PlanNameCard';
 import { usePlanBuilderContext } from '@/providers/PlanBuilderProvider';
-import { colors, radius, spacing, sizing } from '@/constants/theme';
+import { radius, spacing, sizing } from '@/constants/theme';
 import { useTheme } from '@/hooks/useTheme';
 
 const styles = StyleSheet.create({
   container: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: colors.primary.bg,
   },
   scrollContent: {
     flexGrow: 1,
@@ -55,9 +54,7 @@ const styles = StyleSheet.create({
   missingPlanCard: {
     gap: spacing.md,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border.light,
     borderRadius: radius.lg,
-    backgroundColor: colors.surface.card,
     position: 'relative',
   },
   nameCardContainer: {
@@ -130,7 +127,6 @@ const CreatePlanScreen: React.FC = () => {
     router.prefetch('/add-exercises');
   }, [router]);
 
-
   const handleBackPress = useCallback(() => {
     triggerHaptic('selection');
     router.replace('/(tabs)/workout');
@@ -162,7 +158,7 @@ const CreatePlanScreen: React.FC = () => {
 
   if (isLoading) {
     return (
-      <View style={[styles.container, { paddingTop: insets.top, justifyContent: 'center', alignItems: 'center' }]}>
+      <View style={[styles.container, { backgroundColor: theme.primary.bg, paddingTop: insets.top, justifyContent: 'center', alignItems: 'center' }]}>
         <ActivityIndicator size="large" color={theme.accent.orange} />
         <Text variant="body" color="secondary" style={{ marginTop: spacing.md }}>
           Loading plan...
@@ -172,7 +168,7 @@ const CreatePlanScreen: React.FC = () => {
   }
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
+    <View style={[styles.container, { backgroundColor: theme.primary.bg, paddingTop: insets.top }]}>
       <KeyboardAwareScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
@@ -190,7 +186,7 @@ const CreatePlanScreen: React.FC = () => {
             onPress={handleBackPress}
             style={{ padding: spacing.sm, paddingTop: spacing.xs, borderRadius: radius.full, position: 'absolute', left: 0, top: 0 }}
           >
-            <IconSymbol name="arrow-back" size={sizing.iconMD} color={colors.text.primary} />
+            <IconSymbol name="arrow-back" size={sizing.iconMD} color={theme.text.primary} />
           </Pressable>
           <View style={styles.headerContent}>
             <Text variant="display1" color="primary" style={styles.headerTitle} fadeIn>
@@ -203,7 +199,7 @@ const CreatePlanScreen: React.FC = () => {
         </View>
 
         {isEditing && isEditingPlanMissing ? (
-          <SurfaceCard tone="neutral" padding="xl" showAccentStripe={false} style={styles.missingPlanCard}>
+          <SurfaceCard tone="neutral" padding="xl" showAccentStripe={false} style={[styles.missingPlanCard, { borderColor: theme.border.light }]}>
             <Text variant="bodySemibold" color="primary">
               Plan unavailable
             </Text>

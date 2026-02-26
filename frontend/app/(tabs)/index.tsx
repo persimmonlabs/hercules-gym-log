@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState, useRef } from 'react';
-import { View, StyleSheet, Pressable, ScrollView } from 'react-native';
+import { View, StyleSheet, Pressable, ScrollView, Text as RNText } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useScrollToTop, useFocusEffect } from '@react-navigation/native';
 import type { ViewStyle } from 'react-native';
@@ -20,7 +20,7 @@ import { Button } from '@/components/atoms/Button';
 import { GradientText } from '@/components/atoms/GradientText';
 import { ScreenHeader } from '@/components/molecules/ScreenHeader';
 import { TabSwipeContainer } from '@/components/templates/TabSwipeContainer';
-import { colors, spacing, radius, shadows, sizing } from '@/constants/theme';
+import { colors, spacing, radius, shadows, sizing, typography } from '@/constants/theme';
 import { useTheme } from '@/hooks/useTheme';
 import { WeekDayTracker } from '@/types/dashboard';
 import { createWeekTracker } from '@/utils/dashboard';
@@ -38,7 +38,10 @@ import { useBirthdayWelcome } from '@/hooks/useBirthdayWelcome';
 import { WorkoutInProgressModal } from '@/components/molecules/WorkoutInProgressModal';
 import type { ProgramWorkout } from '@/types/premadePlan';
 import { createSetsWithSmartSuggestions } from '@/utils/workout';
+import { detectCompoundIsolationSplit } from '@/utils/smartSuggestions';
+import { exercises as exerciseCatalogData } from '@/constants/exercises';
 import { useSettingsStore } from '@/store/settingsStore';
+import type { RepRange } from '@/types/smartSuggestions';
 import { useActiveScheduleStore, computeTodaysWorkout } from '@/store/activeScheduleStore';
 import { useCustomExerciseStore } from '@/store/customExerciseStore';
 import { useOutdoorSessionStore } from '@/store/outdoorSessionStore';
@@ -708,11 +711,13 @@ const DashboardScreen: React.FC = () => {
       const target = todaysPlan || rotationWorkout;
       if (!target) return;
 
+      const userGoal = useUserProfileStore.getState().profile?.primaryGoal;
       const historySetCounts: Record<string, number> = {};
       const suggestedSetsMap: Record<string, SetLog[]> = {};
       const dataPointsMap: Record<string, any[]> = {};
+      const repRangesMap: Record<string, RepRange[]> = {};
       const workoutExercises: WorkoutExercise[] = target.exercises.map((exercise) => {
-        const result = createSetsWithSmartSuggestions(exercise.name, workouts, smartSuggestionsEnabled, undefined, undefined, customExercises);
+        const result = createSetsWithSmartSuggestions(exercise.name, workouts, smartSuggestionsEnabled, undefined, undefined, customExercises, userGoal);
         historySetCounts[exercise.name] = result.historySetCount;
         if (result.smartSuggestedSets.length > 0) {
           suggestedSetsMap[exercise.name] = result.smartSuggestedSets;
@@ -720,11 +725,19 @@ const DashboardScreen: React.FC = () => {
         if (result.dataPoints && result.dataPoints.length > 0) {
           dataPointsMap[exercise.name] = result.dataPoints;
         }
+        if (result.repRanges && result.repRanges.length > 0) {
+          repRangesMap[exercise.name] = result.repRanges;
+        }
         return {
           name: exercise.name,
           sets: result.sets,
         };
       });
+
+      const hasSplit = detectCompoundIsolationSplit(
+        workouts,
+        (name) => exerciseCatalogData.find((e) => e.name === name)?.isCompound ?? false,
+      );
 
       const planId = todaysCardState.variant === 'rotation'
         ? todaysCardState.programId
@@ -735,7 +748,7 @@ const DashboardScreen: React.FC = () => {
           ? `${todaysCardState.dayLabel}: ${todaysPlan?.name ?? 'Workout'}`
           : (todaysPlan?.name ?? null);
 
-      startSession(planId, workoutExercises, sessionName, historySetCounts, suggestedSetsMap, dataPointsMap);
+      startSession(planId, workoutExercises, sessionName, historySetCounts, suggestedSetsMap, dataPointsMap, repRangesMap, hasSplit);
       router.push('/(tabs)/workout');
     };
 
@@ -1037,11 +1050,13 @@ const DashboardScreen: React.FC = () => {
                                   }
 
                                   if (targetWorkout) {
+                                    const userGoal2 = useUserProfileStore.getState().profile?.primaryGoal;
                                     const historySetCounts: Record<string, number> = {};
                                     const suggestedSetsMap2: Record<string, SetLog[]> = {};
                                     const dataPointsMap2: Record<string, any[]> = {};
+                                    const repRangesMap2: Record<string, RepRange[]> = {};
                                     const workoutExercises: WorkoutExercise[] = targetWorkout.exercises.map((exercise) => {
-                                      const result = createSetsWithSmartSuggestions(exercise.name, workouts, smartSuggestionsEnabled, undefined, undefined, customExercises);
+                                      const result = createSetsWithSmartSuggestions(exercise.name, workouts, smartSuggestionsEnabled, undefined, undefined, customExercises, userGoal2);
                                       historySetCounts[exercise.name] = result.historySetCount;
                                       if (result.smartSuggestedSets.length > 0) {
                                         suggestedSetsMap2[exercise.name] = result.smartSuggestedSets;
@@ -1049,13 +1064,21 @@ const DashboardScreen: React.FC = () => {
                                       if (result.dataPoints && result.dataPoints.length > 0) {
                                         dataPointsMap2[exercise.name] = result.dataPoints;
                                       }
+                                      if (result.repRanges && result.repRanges.length > 0) {
+                                        repRangesMap2[exercise.name] = result.repRanges;
+                                      }
                                       return {
                                         name: exercise.name,
                                         sets: result.sets,
                                       };
                                     });
 
-                                    startSession(planId, workoutExercises, sessionName, historySetCounts, suggestedSetsMap2, dataPointsMap2);
+                                    const hasSplit2 = detectCompoundIsolationSplit(
+                                      workouts,
+                                      (name) => exerciseCatalogData.find((e) => e.name === name)?.isCompound ?? false,
+                                    );
+
+                                    startSession(planId, workoutExercises, sessionName, historySetCounts, suggestedSetsMap2, dataPointsMap2, repRangesMap2, hasSplit2);
                                   }
 
                                   router.push('/(tabs)/workout');
@@ -1318,47 +1341,47 @@ const DashboardScreen: React.FC = () => {
             {/* Hercules AI Card */}
             <Animated.View style={recentWorkoutsAnimatedStyle}>
               <SurfaceCard tone="card" padding="xl" showAccentStripe={true} style={{ borderWidth: 0 }}>
-                <View style={styles.dashboardCardHeader}>
-                  <Text variant="heading3" color="primary">
-                    Hercules AI
-                  </Text>
+                <View style={styles.todaysPlanContainer}>
+                  <View style={styles.dashboardCardHeader}>
+                    <Text variant="heading3" color="primary">
+                      Hercules AI
+                    </Text>
+                  </View>
+                  <View style={styles.todaysPlanBody}>
+                    <SurfaceCard
+                      tone="subcard"
+                      padding="lg"
+                      showAccentStripe={false}
+                      style={styles.inlineCard}
+                    >
+                      <View style={styles.quickLinkRow}>
+                        <View style={{ flex: 1 }}>
+                          <RNText style={[typography.bodySemibold, { color: theme.text.primary, lineHeight: 12 }]}>Chat with your AI Coach</RNText>
+                          <RNText style={[typography.body, { color: theme.text.secondary }]}>Get workout advice, form tips, and personalized guidance</RNText>
+                        </View>
+                        <Pressable
+                          style={styles.planStartButton}
+                          onPress={() => {
+                            triggerHaptic('selection');
+                            router.push('/hercules-ai');
+                          }}
+                          accessibilityRole="button"
+                          accessibilityLabel="Chat with AI Coach"
+                        >
+                          <View style={styles.quickLinkButton}>
+                            <LinearGradient
+                              colors={[theme.accent.gradientStart, theme.accent.gradientEnd]}
+                              start={{ x: 0, y: 0 }}
+                              end={{ x: 1, y: 1 }}
+                              style={styles.planStartButtonGradient}
+                            />
+                            <Text variant="bodySemibold" color="onAccent">→</Text>
+                          </View>
+                        </Pressable>
+                      </View>
+                    </SurfaceCard>
+                  </View>
                 </View>
-                <Pressable
-                  style={styles.pressableStretch}
-                  onPress={() => {
-                    triggerHaptic('selection');
-                    router.push('/hercules-ai');
-                  }}
-                >
-                  <SurfaceCard
-                    tone="subcard"
-                    padding="lg"
-                    showAccentStripe={false}
-                    style={styles.inlineCard}
-                  >
-                    <View style={styles.quickLinkRow}>
-                      <View style={styles.quickLinkInfo}>
-                        <Text variant="bodySemibold" color="primary">
-                          Chat with your AI Coach
-                        </Text>
-                        <Text variant="body" color="secondary">
-                          Get workout advice, form tips, and personalized guidance
-                        </Text>
-                      </View>
-                      <View style={styles.quickLinkButton}>
-                        <LinearGradient
-                          colors={[theme.accent.gradientStart, theme.accent.gradientEnd]}
-                          start={{ x: 0, y: 0 }}
-                          end={{ x: 1, y: 1 }}
-                          style={styles.planStartButtonGradient}
-                        />
-                        <Text variant="bodySemibold" color="onAccent">
-                          →
-                        </Text>
-                      </View>
-                    </View>
-                  </SurfaceCard>
-                </Pressable>
               </SurfaceCard>
             </Animated.View>
 

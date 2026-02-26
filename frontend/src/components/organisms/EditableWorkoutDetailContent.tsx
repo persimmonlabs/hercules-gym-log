@@ -20,7 +20,9 @@ import { exercises as exerciseCatalog, getExerciseTypeByName, createCustomExerci
 import { useCustomExerciseStore } from '@/store/customExerciseStore';
 import { triggerHaptic } from '@/utils/haptics';
 import { formatDurationLabel, getWorkoutTotals, getWorkoutVolume } from '@/utils/workout';
-import { searchExercises } from '@/utils/exerciseSearch';
+import { useSemanticExerciseSearch } from '@/hooks/useSemanticExerciseSearch';
+import { normalizeSearchText } from '@/utils/strings';
+import { getExerciseDisplayTagText } from '@/utils/exerciseDisplayTags';
 import { useSettingsStore } from '@/store/settingsStore';
 import { useUserProfileStore } from '@/store/userProfileStore';
 import type { Workout, WorkoutExercise, SetLog } from '@/types/workout';
@@ -254,7 +256,7 @@ const EditableSetRow: React.FC<EditableSetRowProps> = ({
           <>
             <View style={styles.inputGroup}>
               <TextInput
-                style={[styles.metricInput, { backgroundColor: theme.surface.card, color: theme.text.primary }]}
+                style={[styles.metricInput, { backgroundColor: theme.surface.card, color: theme.text.primary, borderColor: theme.accent.orangeMuted }]}
                 value={distanceInput}
                 onChangeText={handleDistanceChange}
                 keyboardType="decimal-pad"
@@ -294,7 +296,7 @@ const EditableSetRow: React.FC<EditableSetRowProps> = ({
           <>
             <View style={styles.inputGroup}>
               <TextInput
-                style={[styles.metricInput, { backgroundColor: theme.surface.card, color: theme.text.primary }]}
+                style={[styles.metricInput, { backgroundColor: theme.surface.card, color: theme.text.primary, borderColor: theme.accent.orangeMuted }]}
                 value={assistanceInput}
                 onChangeText={handleAssistanceChange}
                 keyboardType="decimal-pad"
@@ -308,7 +310,7 @@ const EditableSetRow: React.FC<EditableSetRowProps> = ({
             </View>
             <View style={styles.inputGroup}>
               <TextInput
-                style={[styles.metricInput, { backgroundColor: theme.surface.card, color: theme.text.primary }]}
+                style={[styles.metricInput, { backgroundColor: theme.surface.card, color: theme.text.primary, borderColor: theme.accent.orangeMuted }]}
                 value={repsInput}
                 onChangeText={handleRepsChange}
                 keyboardType="number-pad"
@@ -329,7 +331,7 @@ const EditableSetRow: React.FC<EditableSetRowProps> = ({
           <>
             <View style={styles.inputGroup}>
               <TextInput
-                style={[styles.metricInput, { backgroundColor: theme.surface.card, color: theme.text.primary }]}
+                style={[styles.metricInput, { backgroundColor: theme.surface.card, color: theme.text.primary, borderColor: theme.accent.orangeMuted }]}
                 value={weightInput}
                 onChangeText={handleWeightChange}
                 keyboardType="decimal-pad"
@@ -343,7 +345,7 @@ const EditableSetRow: React.FC<EditableSetRowProps> = ({
             </View>
             <View style={styles.inputGroup}>
               <TextInput
-                style={[styles.metricInput, { backgroundColor: theme.surface.card, color: theme.text.primary }]}
+                style={[styles.metricInput, { backgroundColor: theme.surface.card, color: theme.text.primary, borderColor: theme.accent.orangeMuted }]}
                 value={repsInput}
                 onChangeText={handleRepsChange}
                 keyboardType="number-pad"
@@ -374,7 +376,7 @@ const EditableSetRow: React.FC<EditableSetRowProps> = ({
             { backgroundColor: theme.surface.card, borderColor: theme.accent.orangeMuted }
           ]}
         >
-          <Text variant="bodySemibold" style={[styles.setCircleText, { color: theme.text.primary }]}>
+          <Text variant="bodySemibold" style={[styles.setCircleText, { color: theme.text.secondary }]}>
             {setIndex + 1}
           </Text>
         </View>
@@ -421,25 +423,55 @@ const AddExerciseModal: React.FC<AddExerciseModalProps> = ({
     return [...exerciseCatalog, ...customCatalogItems];
   }, [customExercises]);
 
+  const semanticResults = useSemanticExerciseSearch(searchTerm, allExercises, {
+    limit: allExercises.length,
+  });
+
   const filteredExercises = useMemo(() => {
-    const excludeIds = allExercises
-      .filter(ex => existingExerciseNames.includes(ex.name))
-      .map(ex => ex.id);
-    return searchExercises(searchTerm, allExercises, { excludeIds, limit: 50 });
-  }, [searchTerm, existingExerciseNames, allExercises]);
+    const trimmedQuery = searchTerm.trim();
+    let candidates = allExercises;
+
+    if (trimmedQuery) {
+      if (semanticResults.length > 0) {
+        candidates = semanticResults;
+      } else {
+        const normalizedQuery = normalizeSearchText(trimmedQuery);
+        if (normalizedQuery) {
+          const tokens = normalizedQuery.split(' ').filter(Boolean);
+          if (tokens.length > 0) {
+            candidates = allExercises.filter((exercise) => {
+              const normalizedName = normalizeSearchText(exercise.name);
+              const target = `${normalizedName} ${exercise.searchIndex}`;
+              return tokens.every((token) => target.includes(token));
+            });
+          }
+        }
+      }
+    }
+
+    // Filter out exercises already in the workout
+    const existingNames = new Set(existingExerciseNames);
+    const filtered = candidates.filter((exercise) => !existingNames.has(exercise.name));
+
+    // Only sort alphabetically when NOT searching - preserve relevance ranking when searching
+    if (!trimmedQuery) {
+      return filtered.sort((a, b) => a.name.localeCompare(b.name));
+    }
+
+    return filtered;
+  }, [searchTerm, semanticResults, existingExerciseNames, allExercises]);
 
   const handleOpenCreateModal = useCallback(() => {
     triggerHaptic('selection');
+    onClose();
     setIsCreateModalVisible(true);
-  }, []);
+  }, [onClose]);
 
   const handleExerciseCreated = useCallback((exerciseName: string, exerciseType: ExerciseType) => {
-    // Auto-add the newly created exercise to the workout
     onSelectExercise({ name: exerciseName, exerciseType });
     setSearchTerm('');
     setIsCreateModalVisible(false);
-    onClose();
-  }, [onSelectExercise, onClose]);
+  }, [onSelectExercise]);
   
   return (
     <>
@@ -449,13 +481,11 @@ const AddExerciseModal: React.FC<AddExerciseModalProps> = ({
         title="Add Exercise"
         headerContent={
           <TextInput
-            style={[styles.searchInput, { backgroundColor: theme.surface.elevated, color: theme.text.primary, borderColor: theme.border.light }]}
+            style={[styles.searchInput, { borderColor: theme.accent.orange, color: theme.text.primary }]}
             placeholder="Search by name or category"
             placeholderTextColor={theme.text.tertiary}
             value={searchTerm}
             onChangeText={setSearchTerm}
-            autoCapitalize="none"
-            autoCorrect={false}
           />
         }
       >
@@ -475,10 +505,12 @@ const AddExerciseModal: React.FC<AddExerciseModalProps> = ({
               <Pressable
                 onPress={handleOpenCreateModal}
                 style={styles.createExerciseRow}
+                accessibilityRole="button"
+                accessibilityLabel="Create a new custom exercise"
               >
-                <MaterialCommunityIcons name="plus-circle-outline" size={sizing.iconSM} color={theme.accent.orange} />
-                <Text variant="bodySemibold" style={{ color: theme.accent.orange }}>
-                  Create Custom Exercise
+                <MaterialCommunityIcons name="plus-circle-outline" size={sizing.iconMD} color={theme.accent.primary} />
+                <Text variant="bodySemibold" style={{ color: theme.accent.primary }}>
+                  Create Exercise
                 </Text>
               </Pressable>
             </View>
@@ -487,27 +519,38 @@ const AddExerciseModal: React.FC<AddExerciseModalProps> = ({
             <Pressable
               onPress={handleOpenCreateModal}
               style={styles.createExerciseRow}
+              accessibilityRole="button"
+              accessibilityLabel="Create a new custom exercise"
             >
-              <MaterialCommunityIcons name="plus-circle-outline" size={sizing.iconSM} color={theme.accent.orange} />
-              <Text variant="bodySemibold" style={{ color: theme.accent.orange }}>
-                Create Custom Exercise
+              <MaterialCommunityIcons name="plus-circle-outline" size={sizing.iconMD} color={theme.accent.primary} />
+              <Text variant="bodySemibold" style={{ color: theme.accent.primary }}>
+                Create Exercise
               </Text>
             </Pressable>
           }
-          renderItem={({ item }) => (
-            <Pressable
-              style={styles.modalItem}
-              onPress={() => {
-                triggerHaptic('selection');
-                onSelectExercise({ name: item.name, exerciseType: item.exerciseType });
-                setSearchTerm('');
-                onClose();
-              }}
-            >
-              <Text variant="bodySemibold" color="primary">{item.name}</Text>
-              <Text variant="caption" color="secondary">{item.muscleGroup}</Text>
-            </Pressable>
-          )}
+          renderItem={({ item }) => {
+            const musclesLabel = getExerciseDisplayTagText({
+              muscles: item.muscles,
+              exerciseType: item.exerciseType || 'weight',
+            });
+
+            return (
+              <Pressable
+                style={styles.modalItem}
+                onPress={() => {
+                  triggerHaptic('selection');
+                  onSelectExercise({ name: item.name, exerciseType: item.exerciseType });
+                  setSearchTerm('');
+                  onClose();
+                }}
+                accessibilityRole="button"
+                accessibilityLabel={`Add ${item.name}`}
+              >
+                <Text variant="bodySemibold" color="primary">{item.name}</Text>
+                <Text variant="caption" color="secondary">{musclesLabel || 'General'}</Text>
+              </Pressable>
+            );
+          }}
         />
       </SheetModal>
       <CreateExerciseModal
@@ -606,13 +649,13 @@ export const EditableWorkoutDetailContent: React.FC<EditableWorkoutDetailContent
   return (
     <Animated.View layout={Layout.springify()} style={[styles.container, { paddingBottom: 100 }]}>
       <View style={styles.summarySection}>
-        <Text style={{ fontSize: 24, fontWeight: '600', color: theme.text.primary }}>
+        <Text style={{ fontSize: 24, fontWeight: '600', color: theme.text.secondary }}>
           Summary
         </Text>
         <SurfaceCard tone="card" padding="xl" showAccentStripe={false} style={styles.metricsCard}>
           <View style={styles.metricsColumn}>
             <View style={styles.metricRow}>
-              <Text style={{ fontSize: 20, fontWeight: '500', color: theme.text.primary }}>
+              <Text style={{ fontSize: 20, fontWeight: '500', color: theme.text.secondary }}>
                 Duration:
               </Text>
               <Text style={{ fontSize: 20, fontWeight: '700', color: theme.accent.orange, textAlign: 'right', flexShrink: 0 }}>
@@ -620,7 +663,7 @@ export const EditableWorkoutDetailContent: React.FC<EditableWorkoutDetailContent
               </Text>
             </View>
             <View style={styles.metricRow}>
-              <Text style={{ fontSize: 20, fontWeight: '500', color: theme.text.primary }}>
+              <Text style={{ fontSize: 20, fontWeight: '500', color: theme.text.secondary }}>
                 Sets:
               </Text>
               <Text style={{ fontSize: 20, fontWeight: '700', color: theme.accent.orange, textAlign: 'right', flexShrink: 0 }}>
@@ -628,7 +671,7 @@ export const EditableWorkoutDetailContent: React.FC<EditableWorkoutDetailContent
               </Text>
             </View>
             <View style={styles.metricRow}>
-              <Text style={{ fontSize: 20, fontWeight: '500', color: theme.text.primary }}>
+              <Text style={{ fontSize: 20, fontWeight: '500', color: theme.text.secondary }}>
                 Volume:
               </Text>
               <Text style={{ fontSize: 20, fontWeight: '700', color: theme.accent.orange, textAlign: 'right', flexShrink: 0 }}>
@@ -640,7 +683,7 @@ export const EditableWorkoutDetailContent: React.FC<EditableWorkoutDetailContent
       </View>
 
       <View style={styles.exerciseSection}>
-        <Text style={{ fontSize: 24, fontWeight: '600', color: theme.text.primary }}>
+        <Text style={{ fontSize: 24, fontWeight: '600', color: theme.text.secondary }}>
           Exercises
         </Text>
         <View style={styles.exerciseList}>
@@ -662,7 +705,7 @@ export const EditableWorkoutDetailContent: React.FC<EditableWorkoutDetailContent
                 >
                   <View style={styles.exerciseHeader}>
                     <View style={styles.exerciseTitleGroup}>
-                      <Text style={{ fontSize: 18, fontWeight: '500', color: theme.text.primary }}>
+                      <Text style={{ fontSize: 18, fontWeight: '500', color: theme.text.secondary }}>
                         {exercise.name}
                       </Text>
                     </View>
@@ -688,7 +731,7 @@ export const EditableWorkoutDetailContent: React.FC<EditableWorkoutDetailContent
                         <MaterialCommunityIcons 
                           name="trash-can-outline" 
                           size={20} 
-                          color={theme.accent.warning} 
+                          color={theme.accent.orange} 
                         />
                       </Pressable>
                     </View>
@@ -777,7 +820,6 @@ const styles = StyleSheet.create({
   exerciseCard: {
     gap: spacing.md,
     borderWidth: 1,
-    borderColor: colors.accent.orangeMuted,
   },
   exerciseHeader: {
     flexDirection: 'row',
@@ -803,26 +845,20 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xs,
     paddingHorizontal: spacing.sm,
     gap: spacing.md,
-    backgroundColor: colors.surface.subtle,
     borderRadius: radius.md,
   },
   setCircle: {
     width: sizing.iconLG,
     height: sizing.iconLG,
     borderRadius: radius.full,
-    backgroundColor: colors.surface.card,
     borderWidth: 1,
-    borderColor: colors.accent.orangeMuted,
     justifyContent: 'center',
     alignItems: 'center',
     flexShrink: 0,
   },
   setCircleCompleted: {
-    backgroundColor: colors.accent.orange,
-    borderColor: colors.accent.orange,
   },
   setCircleText: {
-    color: colors.text.primary,
     fontSize: 16,
     fontWeight: '600',
     lineHeight: 16,
@@ -846,11 +882,8 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xs,
     borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: colors.accent.orangeMuted,
-    backgroundColor: colors.surface.card,
     fontSize: 16,
     fontWeight: '600',
-    color: colors.text.primary,
     textAlign: 'center',
   },
   metricInput: {
@@ -860,9 +893,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xs,
     paddingHorizontal: spacing.sm,
     borderRadius: radius.md,
-    backgroundColor: colors.surface.card,
     borderWidth: 1,
-    borderColor: colors.accent.orangeMuted,
   },
   deleteSetButton: {
     padding: spacing.xs,
@@ -876,7 +907,6 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
     borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: colors.accent.orangeMuted,
   },
   timeDisplayButton: {
     paddingHorizontal: spacing.sm,
@@ -914,12 +944,12 @@ const styles = StyleSheet.create({
     padding: spacing.xs,
   },
   searchInput: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: radius.md,
     borderWidth: 1,
-    fontSize: 16,
-    marginBottom: spacing.md,
+    borderRadius: radius.md,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    backgroundColor: 'transparent',
+    marginHorizontal: 0,
   },
   exerciseListModal: {
     flex: 1,
@@ -951,30 +981,37 @@ const styles = StyleSheet.create({
   },
   modalList: {
     flex: 1,
+    width: '100%',
+    minHeight: 0,
   },
   modalListContent: {
     paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.xl,
+    paddingBottom: spacing['2xl'] * 2,
+    paddingTop: spacing.xs,
+    gap: spacing.xs,
+    flexGrow: 1,
   },
   modalEmptyState: {
-    paddingVertical: spacing['2xl'],
+    paddingVertical: spacing.lg,
+    paddingHorizontal: spacing.lg,
     alignItems: 'center',
     gap: spacing.md,
   },
   modalItem: {
-    paddingVertical: spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border.light,
-    gap: spacing.xxs,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    gap: spacing.xs,
+    minHeight: 'auto',
   },
   createExerciseRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
     paddingVertical: spacing.md,
+    paddingHorizontal: spacing.md,
     marginTop: spacing.sm,
     borderTopWidth: 1,
-    borderTopColor: colors.border.light,
+    borderTopColor: 'rgba(128, 128, 128, 0.2)',
   },
   spacer: {
     height: spacing.xl * 2,

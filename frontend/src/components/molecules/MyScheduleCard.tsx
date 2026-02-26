@@ -13,7 +13,7 @@ import { useActiveScheduleStore } from '@/store/activeScheduleStore';
 import { useProgramsStore } from '@/store/programsStore';
 import { usePlansStore } from '@/store/plansStore';
 import { useTheme } from '@/hooks/useTheme';
-import { spacing, radius, colors, shadows } from '@/constants/theme';
+import { spacing, radius, shadows } from '@/constants/theme';
 import type { WeekdayKey } from '@/types/activeSchedule';
 
 interface MyScheduleCardProps {
@@ -37,7 +37,7 @@ export const MyScheduleCard: React.FC<MyScheduleCardProps> = ({
   onAddOverridePress,
   onDeletePress,
 }) => {
-  const { theme, isDarkMode } = useTheme();
+  const { theme } = useTheme();
   const activeRule = useActiveScheduleStore((state) => state.state.activeRule);
   const overrides = useActiveScheduleStore((state) => state.state.overrides);
 
@@ -96,8 +96,8 @@ export const MyScheduleCard: React.FC<MyScheduleCardProps> = ({
             <View
               key={visualIndex}
               style={[styles.scheduleRow, {
-                backgroundColor: isDarkMode ? theme.surface.card : theme.surface.elevated,
-                borderColor: isDarkMode ? theme.border.medium : 'rgba(0, 0, 0, 0.06)',
+                backgroundColor: theme.surface.elevated,
+                borderColor: theme.border.light,
               }]}
             >
               <Text
@@ -127,7 +127,7 @@ export const MyScheduleCard: React.FC<MyScheduleCardProps> = ({
       tone="subcard"
       padding="md"
       showAccentStripe={false}
-      style={styles.emptyCard}
+      style={[styles.emptyCard, { borderColor: theme.border.light }]}
     >
       <View style={styles.emptyContent}>
         <Text variant="bodySemibold" color="primary" style={styles.emptyTitle}>
@@ -168,8 +168,8 @@ export const MyScheduleCard: React.FC<MyScheduleCardProps> = ({
             <View
               key={key}
               style={[styles.scheduleRow, {
-                backgroundColor: isDarkMode ? theme.surface.card : theme.surface.elevated,
-                borderColor: isDarkMode ? theme.border.medium : 'rgba(0, 0, 0, 0.06)',
+                backgroundColor: theme.surface.elevated,
+                borderColor: theme.border.light,
               }]}
             >
               <Text variant="bodySemibold" color={isCurrentDay ? 'orange' : 'primary'} style={styles.dayLabel}>
@@ -211,8 +211,8 @@ export const MyScheduleCard: React.FC<MyScheduleCardProps> = ({
               style={[
                 styles.scheduleRow,
                 {
-                  backgroundColor: isDarkMode ? theme.surface.card : theme.surface.elevated,
-                  borderColor: isDarkMode ? theme.border.medium : 'rgba(0, 0, 0, 0.06)',
+                  backgroundColor: theme.surface.elevated,
+                  borderColor: theme.border.light,
                 },
               ]}
             >
@@ -309,9 +309,7 @@ const styles = StyleSheet.create({
   },
   emptyCard: {
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border.light,
     borderRadius: radius.lg,
-    backgroundColor: colors.surface.card,
     shadowColor: 'transparent',
     shadowOpacity: 0,
     shadowRadius: 0,

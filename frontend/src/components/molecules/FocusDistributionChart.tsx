@@ -98,7 +98,7 @@ interface ChartPageProps {
 }
 
 const ChartPage: React.FC<ChartPageProps> = ({ title, data, selectedSlice, onSelectSlice, onLayout, pageIndex, showTapHint = true, breadcrumb = [] }) => {
-  const { theme } = useTheme();
+  const { theme, isDarkMode } = useTheme();
   // Prepare chart data for Victory
   const chartData = useMemo(() => {
     return data.map((item) => ({
@@ -150,7 +150,7 @@ const ChartPage: React.FC<ChartPageProps> = ({ title, data, selectedSlice, onSel
               padAngle={2}
               style={{
                 data: {
-                  fill: ({ datum }) => selectedSlice && selectedSlice !== datum.x ? colors.neutral.gray200 : datum.color,
+                  fill: ({ datum }) => selectedSlice && selectedSlice !== datum.x ? (isDarkMode ? theme.surface.elevated : theme.neutral.gray200) : datum.color,
                 },
                 labels: {
                   fill: 'transparent', // Hide labels on the chart itself for cleaner look, or use them if desired

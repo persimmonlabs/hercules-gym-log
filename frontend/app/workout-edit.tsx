@@ -17,16 +17,16 @@ import { Text } from '@/components/atoms/Text';
 import { EditableWorkoutExerciseCard } from '@/components/molecules/EditableWorkoutExerciseCard';
 import { CreateExerciseModal } from '@/components/molecules/CreateExerciseModal';
 import { DeleteConfirmationModal } from '@/components/molecules/DeleteConfirmationModal';
+import { SheetModal } from '@/components/molecules/SheetModal';
 import { colors, radius, spacing, sizing } from '@/constants/theme';
 import { useTheme } from '@/hooks/useTheme';
 import { useWorkoutEditor } from '@/hooks/useWorkoutEditor';
-import { exercises, createCustomExerciseCatalogItem } from '@/constants/exercises';
+import { exercises as baseExerciseCatalog, createCustomExerciseCatalogItem } from '@/constants/exercises';
 import { useCustomExerciseStore } from '@/store/customExerciseStore';
-import { useWorkoutSessionsStore } from '@/store/workoutSessionsStore';
-import { searchExercises } from '@/utils/exerciseSearch';
+import { useSemanticExerciseSearch } from '@/hooks/useSemanticExerciseSearch';
+import { normalizeSearchText } from '@/utils/strings';
 import { getExerciseDisplayTagText } from '@/utils/exerciseDisplayTags';
-import type { Exercise } from '@/constants/exercises';
-import hierarchyData from '@/data/hierarchy.json';
+import type { ExerciseCatalogItem } from '@/constants/exercises';
 
 const WorkoutEditScreen: React.FC = () => {
   const { theme } = useTheme();
@@ -46,35 +46,10 @@ const WorkoutEditScreen: React.FC = () => {
     moveExercise,
     addExercise,
     saveWorkout,
-    openPicker,
-    closePicker,
-    filteredExercises,
     searchTerm,
     setSearchTerm,
   } = useWorkoutEditor(workoutId);
 
-  // Build muscle to mid-level group mapping
-  const muscleToMidLevelMap = useMemo(() => {
-    const map: Record<string, string> = {};
-    const hierarchy = hierarchyData.muscle_hierarchy;
-
-    Object.entries(hierarchy).forEach(([l1, l1Data]: [string, any]) => {
-      if (l1Data?.muscles) {
-        Object.entries(l1Data.muscles).forEach(([midLevel, midLevelData]: [string, any]) => {
-          // Map the mid-level group to itself
-          map[midLevel] = midLevel;
-
-          // Map all low-level muscles to their mid-level parent
-          if (midLevelData?.muscles) {
-            Object.keys(midLevelData.muscles).forEach(lowLevel => {
-              map[lowLevel] = midLevel;
-            });
-          }
-        });
-      }
-    });
-    return map;
-  }, []);
 
   const handleSelectExercise = useCallback(
     (exercise: any) => {
@@ -113,15 +88,51 @@ const WorkoutEditScreen: React.FC = () => {
   const pickerListRef = useRef<FlatList>(null);
   const customExercises = useCustomExerciseStore((state) => state.customExercises);
 
-  // Merge custom exercises with filtered exercises and apply search
-  const allFilteredExercises = useMemo(() => {
+  // Merge custom exercises into catalog
+  const exerciseCatalog = useMemo<ExerciseCatalogItem[]>(() => {
     const customCatalogItems = customExercises.map((ce) =>
       createCustomExerciseCatalogItem(ce.id, ce.name, ce.exerciseType, ce.supportsGpsTracking)
     );
-    const combinedExercises = [...filteredExercises, ...customCatalogItems];
-    // Use unified search with fuzzy matching and relevance ranking
-    return searchExercises(searchTerm, combinedExercises);
-  }, [filteredExercises, customExercises, searchTerm]);
+    return [...baseExerciseCatalog, ...customCatalogItems];
+  }, [customExercises]);
+
+  const semanticResults = useSemanticExerciseSearch(searchTerm, exerciseCatalog, {
+    limit: exerciseCatalog.length,
+  });
+
+  const allFilteredExercises = useMemo(() => {
+    const trimmedQuery = searchTerm.trim();
+    let candidates = exerciseCatalog;
+
+    if (trimmedQuery) {
+      if (semanticResults.length > 0) {
+        candidates = semanticResults;
+      } else {
+        const normalizedQuery = normalizeSearchText(trimmedQuery);
+        if (normalizedQuery) {
+          const tokens = normalizedQuery.split(' ').filter(Boolean);
+          if (tokens.length > 0) {
+            candidates = exerciseCatalog.filter((exercise) => {
+              const normalizedName = normalizeSearchText(exercise.name);
+              const target = `${normalizedName} ${exercise.searchIndex}`;
+              return tokens.every((token) => target.includes(token));
+            });
+          }
+        }
+      }
+    }
+
+    // Filter out exercises already in the workout
+    const existingNames = new Set(exerciseDrafts.map((e) => e.name));
+    const filtered = candidates.filter((exercise) => !existingNames.has(exercise.name));
+
+    // Only sort alphabetically when NOT searching - preserve relevance ranking when searching
+    if (!trimmedQuery) {
+      return filtered.sort((a, b) => a.name.localeCompare(b.name));
+    }
+
+    return filtered;
+  }, [searchTerm, semanticResults, exerciseDrafts, exerciseCatalog]);
 
   const handleOpenPicker = useCallback(() => {
     setIsPickerVisible(true);
@@ -217,96 +228,100 @@ const WorkoutEditScreen: React.FC = () => {
         ItemSeparatorComponent={() => <View style={styles.itemSeparator} />}
       />
 
-      {isPickerVisible ? (
-        <Pressable style={styles.overlay} onPress={handleClosePicker}>
-          <Pressable style={styles.modal} onPress={() => undefined}>
-            <Text variant="heading3">Add Exercise</Text>
-            <TextInput
-              value={searchTerm}
-              onChangeText={setSearchTerm}
-              placeholder="Search by name or category"
-              placeholderTextColor={colors.text.tertiary}
-              style={styles.searchInput}
-            />
-            <FlatList
-              ref={pickerListRef}
-              data={allFilteredExercises}
-              keyExtractor={(item) => item.id}
-              style={styles.modalList}
-              keyboardShouldPersistTaps="handled"
-              ListEmptyComponent={(
-                <View style={{ alignItems: 'center', paddingVertical: spacing.xl, gap: spacing.md }}>
-                  <Text variant="body" color="secondary">
-                    No exercises match that search yet.
-                  </Text>
-                  <Pressable
-                    style={styles.createExerciseButton}
-                    onPress={() => {
-                      triggerHaptic('selection');
-                      setIsPickerVisible(false);
-                      setIsCreateExerciseModalVisible(true);
-                    }}
-                    accessibilityRole="button"
-                    accessibilityLabel="Create a new custom exercise"
-                  >
-                    <MaterialCommunityIcons
-                      name="plus-circle-outline"
-                      size={sizing.iconMD}
-                      color={theme.accent.primary}
-                    />
-                    <Text variant="bodySemibold" style={{ color: theme.accent.primary }}>
-                      Create Exercise
-                    </Text>
-                  </Pressable>
-                </View>
-              )}
-              renderItem={({ item }) => {
-                const musclesLabel = getExerciseDisplayTagText({
-                  muscles: item.muscles,
-                  exerciseType: item.exerciseType || 'weight',
-                });
+      <SheetModal
+        visible={isPickerVisible}
+        onClose={handleClosePicker}
+        title="Add Exercise"
+        headerContent={
+          <TextInput
+            value={searchTerm}
+            onChangeText={setSearchTerm}
+            placeholder="Search by name or category"
+            placeholderTextColor={theme.text.tertiary}
+            style={[styles.searchInput, { borderColor: theme.accent.orange, color: theme.text.primary }]}
+          />
+        }
+      >
+        <FlatList
+          ref={pickerListRef}
+          data={allFilteredExercises}
+          keyExtractor={(item) => item.id}
+          style={styles.modalList}
+          contentContainerStyle={styles.modalListContent}
+          showsVerticalScrollIndicator
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+          ListEmptyComponent={(
+            <View style={styles.modalEmptyState}>
+              <Text variant="body" color="secondary">
+                No exercises match that search yet.
+              </Text>
+              <Pressable
+                style={styles.createExerciseButton}
+                onPress={() => {
+                  triggerHaptic('selection');
+                  handleClosePicker();
+                  setIsCreateExerciseModalVisible(true);
+                }}
+                accessibilityRole="button"
+                accessibilityLabel="Create a new custom exercise"
+              >
+                <MaterialCommunityIcons
+                  name="plus-circle-outline"
+                  size={sizing.iconMD}
+                  color={theme.accent.primary}
+                />
+                <Text variant="bodySemibold" style={{ color: theme.accent.primary }}>
+                  Create Exercise
+                </Text>
+              </Pressable>
+            </View>
+          )}
+          renderItem={({ item }) => {
+            const musclesLabel = getExerciseDisplayTagText({
+              muscles: item.muscles,
+              exerciseType: item.exerciseType || 'weight',
+            });
 
-                return (
-                  <Pressable
-                    key={item.id}
-                    style={styles.modalItem}
-                    onPress={() => handleSelectExercise(item)}
-                  >
-                    <Text variant="bodySemibold" color="primary">
-                      {item.name}
-                    </Text>
-                    <Text variant="caption" color="secondary">
-                      {musclesLabel || 'General'}
-                    </Text>
-                  </Pressable>
-                );
+            return (
+              <Pressable
+                style={styles.modalItem}
+                onPress={() => handleSelectExercise(item)}
+                accessibilityRole="button"
+                accessibilityLabel={`Add ${item.name}`}
+              >
+                <Text variant="bodySemibold" color="primary">
+                  {item.name}
+                </Text>
+                <Text variant="caption" color="secondary">
+                  {musclesLabel || 'General'}
+                </Text>
+              </Pressable>
+            );
+          }}
+          ListFooterComponent={(
+            <Pressable
+              style={styles.createExerciseButton}
+              onPress={() => {
+                triggerHaptic('selection');
+                handleClosePicker();
+                setIsCreateExerciseModalVisible(true);
               }}
-              ListFooterComponent={(
-                <Pressable
-                  style={styles.createExerciseButton}
-                  onPress={() => {
-                    triggerHaptic('selection');
-                    setIsPickerVisible(false);
-                    setIsCreateExerciseModalVisible(true);
-                  }}
-                  accessibilityRole="button"
-                  accessibilityLabel="Create a new custom exercise"
-                >
-                  <MaterialCommunityIcons
-                    name="plus-circle-outline"
-                    size={sizing.iconMD}
-                    color={theme.accent.primary}
-                  />
-                  <Text variant="bodySemibold" style={{ color: theme.accent.primary }}>
-                    Create Exercise
-                  </Text>
-                </Pressable>
-              )}
-            />
-            <Button label="Close" variant="ghost" onPress={handleClosePicker} />
-          </Pressable>
-        </Pressable>
-      ) : null}
+              accessibilityRole="button"
+              accessibilityLabel="Create a new custom exercise"
+            >
+              <MaterialCommunityIcons
+                name="plus-circle-outline"
+                size={sizing.iconMD}
+                color={theme.accent.primary}
+              />
+              <Text variant="bodySemibold" style={{ color: theme.accent.primary }}>
+                Create Exercise
+              </Text>
+            </Pressable>
+          )}
+        />
+      </SheetModal>
       <CreateExerciseModal
         visible={isCreateExerciseModalVisible}
         onClose={() => setIsCreateExerciseModalVisible(false)}
@@ -381,38 +396,37 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.lg,
     gap: spacing.md,
   },
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: colors.overlay.scrim,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: spacing.md,
-  },
-  modal: {
-    width: '100%',
-    maxHeight: '80%',
-    backgroundColor: colors.surface.card,
-    borderRadius: radius.lg,
-    padding: spacing.lg,
-    gap: spacing.md,
-  },
   searchInput: {
-    width: '100%',
-    borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: colors.border.light,
+    borderRadius: radius.md,
+    paddingVertical: spacing.sm,
     paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
-    color: colors.text.primary,
+    backgroundColor: 'transparent',
+    marginHorizontal: 0,
   },
   modalList: {
-    maxHeight: 400,
+    flex: 1,
+    width: '100%',
+    minHeight: 0,
+  },
+  modalListContent: {
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing['2xl'] * 2,
+    paddingTop: spacing.xs,
+    gap: spacing.xs,
+    flexGrow: 1,
   },
   modalItem: {
     paddingVertical: spacing.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border.light,
-    gap: spacing.xxxs,
+    paddingHorizontal: spacing.md,
+    gap: spacing.xs,
+    minHeight: 'auto',
+  },
+  modalEmptyState: {
+    paddingVertical: spacing.lg,
+    paddingHorizontal: spacing.lg,
+    alignItems: 'center',
+    gap: spacing.md,
   },
   emptyContainer: {
     flex: 1,
@@ -429,9 +443,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.sm,
     paddingVertical: spacing.md,
+    paddingHorizontal: spacing.md,
     marginTop: spacing.sm,
-    marginBottom: spacing.xl,
     borderTopWidth: 1,
-    borderTopColor: colors.border.light,
+    borderTopColor: 'rgba(128, 128, 128, 0.2)',
   },
 });

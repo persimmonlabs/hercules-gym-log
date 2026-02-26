@@ -19,7 +19,7 @@ import { useProgramsStore } from '@/store/programsStore';
 import { usePlansStore } from '@/store/plansStore';
 import { useTheme } from '@/hooks/useTheme';
 import { useAuth } from '@/providers/AuthProvider';
-import { spacing, radius, colors, shadows } from '@/constants/theme';
+import { spacing, radius, shadows } from '@/constants/theme';
 import type { PlanScheduleConfig, UserProgram } from '@/types/premadePlan';
 import type {
   ScheduleRule,
@@ -585,7 +585,7 @@ const ScheduleSetupScreen: React.FC = () => {
             variant="ghost"
             size="md"
             onPress={handleClearSchedule}
-            textColor={colors.accent.warning}
+            textColor={theme.accent.orange}
           />
         </View>
       )}
@@ -702,7 +702,7 @@ const ScheduleSetupScreen: React.FC = () => {
                     style={styles.removeButton}
                     onPress={() => removeCycleDay(visualIndex)}
                   >
-                    <IconSymbol name="close" size={18} color={theme.accent.warning} />
+                    <IconSymbol name="close" size={18} color={theme.accent.orange} />
                   </Pressable>
                 )}
               </View>
@@ -711,11 +711,11 @@ const ScheduleSetupScreen: React.FC = () => {
         </View>
 
         <Pressable
-          style={[styles.addDayButton, { backgroundColor: theme.surface.elevated }]}
+          style={[styles.addDayButton, { backgroundColor: theme.surface.elevated, borderColor: theme.border.light }]}
           onPress={addCycleDay}
           disabled={normalizedCycle.length >= MAX_ROTATING_CYCLE_DAYS}
         >
-          <IconSymbol name="add" size={24} color={theme.accent.warning} />
+          <IconSymbol name="add" size={24} color={theme.accent.orange} />
         </Pressable>
 
         <View style={styles.saveButtonWrapper}>
@@ -750,13 +750,13 @@ const ScheduleSetupScreen: React.FC = () => {
                     style={[
                       styles.planChip,
                       {
-                        backgroundColor: isSelected ? theme.accent.warning + '20' : theme.surface.elevated,
-                        borderColor: isSelected ? theme.accent.warning : theme.border.light,
+                        backgroundColor: isSelected ? theme.accent.orange + '20' : theme.surface.elevated,
+                        borderColor: isSelected ? theme.accent.orange : theme.border.light,
                       },
                     ]}
                     onPress={() => updatePlanDrivenPlan(plan.id)}
                   >
-                    <Text variant="caption" color={isSelected ? 'warning' : 'primary'}>
+                    <Text variant="caption" color={isSelected ? 'orange' : 'primary'}>
                       {plan.name}
                     </Text>
                   </Pressable>
@@ -828,7 +828,7 @@ const ScheduleSetupScreen: React.FC = () => {
                     style={styles.removeButton}
                     onPress={() => removePlanDrivenDay(visualIndex)}
                   >
-                    <IconSymbol name="close" size={18} color={theme.accent.warning} />
+                    <IconSymbol name="close" size={18} color={theme.accent.orange} />
                   </Pressable>
                 )}
               </View>
@@ -837,11 +837,11 @@ const ScheduleSetupScreen: React.FC = () => {
         </View>
 
         <Pressable
-          style={[styles.addDayButton, { backgroundColor: theme.surface.elevated }]}
+          style={[styles.addDayButton, { backgroundColor: theme.surface.elevated, borderColor: theme.border.light }]}
           onPress={addPlanDrivenDay}
           disabled={cycleWorkouts.length >= MAX_ROTATING_CYCLE_DAYS}
         >
-          <IconSymbol name="add" size={24} color={theme.accent.warning} />
+          <IconSymbol name="add" size={24} color={theme.accent.orange} />
         </Pressable>
 
         <View style={styles.saveButtonWrapper}>
@@ -1429,22 +1429,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderStyle: 'dashed',
     borderWidth: 1,
-    borderColor: colors.accent.warning + '40',
   },
   addDayContent: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
   },
-  addDayText: {
-    color: colors.accent.warning,
-  },
+  addDayText: {},
   addDayButton: {
     width: 48,
     height: 48,
     borderRadius: radius.full,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.accent.warning + '40',
     alignItems: 'center',
     justifyContent: 'center',
     alignSelf: 'center',
@@ -1459,7 +1455,6 @@ const styles = StyleSheet.create({
   swipeBar: {
     width: 36,
     height: 4,
-    backgroundColor: colors.border.light,
     borderRadius: radius.full,
   },
 });

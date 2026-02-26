@@ -10,7 +10,7 @@ import { SurfaceCard } from '@/components/atoms/SurfaceCard';
 import { Button } from '@/components/atoms/Button';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { PlanBuilderCard } from '@/components/molecules/PlanBuilderCard';
-import { colors, radius, spacing, sizing } from '@/constants/theme';
+import { radius, spacing, sizing } from '@/constants/theme';
 import { useTheme } from '@/hooks/useTheme';
 import { exercises as exerciseCatalog } from '@/constants/exercises';
 import { usePlansStore, type Plan } from '@/store/plansStore';
@@ -21,7 +21,6 @@ import type { ProgramWorkout, UserProgram } from '@/types/premadePlan';
 const styles = StyleSheet.create({
   container: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: colors.primary.bg,
   },
   scrollContent: {
     flexGrow: 1,
@@ -310,7 +309,7 @@ export default function EditPlanScreen() {
 
   if (isLoading) {
     return (
-      <View style={[styles.container, { paddingTop: insets.top, justifyContent: 'center', alignItems: 'center' }]}>
+      <View style={[styles.container, { backgroundColor: theme.primary.bg, paddingTop: insets.top, justifyContent: 'center', alignItems: 'center' }]}>
         <ActivityIndicator size="large" color={theme.accent.primary} />
         <Text variant="body" color="secondary" style={{ marginTop: spacing.md }}>
           Loading plan...
@@ -321,7 +320,7 @@ export default function EditPlanScreen() {
 
   if (!program) {
     return (
-      <View style={[styles.container, { paddingTop: insets.top }]}>
+      <View style={[styles.container, { backgroundColor: theme.primary.bg, paddingTop: insets.top }]}>
         <View style={styles.scrollContent}>
           <View style={styles.headerRow}>
             <View style={styles.headerContent}>
@@ -330,12 +329,12 @@ export default function EditPlanScreen() {
               </Text>
             </View>
             <Pressable onPress={handleBackPress} style={{ padding: spacing.sm }}>
-              <IconSymbol name="arrow-back" size={24} color={colors.text.primary} />
+              <IconSymbol name="arrow-back" size={24} color={theme.text.primary} />
             </Pressable>
           </View>
 
           <SurfaceCard tone="neutral" padding="xl" showAccentStripe={false} style={styles.notFoundCard}>
-            <IconSymbol name="error-outline" size={48} color={colors.text.tertiary} />
+            <IconSymbol name="error-outline" size={48} color={theme.text.tertiary} />
             <Text variant="bodySemibold" color="primary">
               Plan Not Found
             </Text>
@@ -347,7 +346,7 @@ export default function EditPlanScreen() {
   }
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
+    <View style={[styles.container, { backgroundColor: theme.primary.bg, paddingTop: insets.top }]}>
       <KeyboardAwareScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
@@ -373,7 +372,7 @@ export default function EditPlanScreen() {
             onPress={handleBackPress}
             style={{ padding: spacing.sm, paddingTop: spacing.xs, borderRadius: radius.full }}
           >
-            <IconSymbol name="arrow-back" size={sizing.iconMD} color={colors.text.primary} />
+            <IconSymbol name="arrow-back" size={sizing.iconMD} color={theme.text.primary} />
           </Pressable>
         </View>
 

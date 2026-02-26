@@ -55,7 +55,6 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: radius.full,
-    backgroundColor: colors.surface.tint,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -68,7 +67,6 @@ const styles = StyleSheet.create({
   ctaButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.accent.orange,
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.lg,
     borderRadius: radius.full,
@@ -103,7 +101,7 @@ export const ProgramCard: React.FC<ProgramCardProps> = ({ program, onPress, styl
     return (
       <SurfaceCard tone="neutral" padding="lg" style={[styles.container, style]} showAccentStripe={true}>
         <View style={styles.lockedCard}>
-          <View style={styles.lockBadge}>
+          <View style={[styles.lockBadge, { backgroundColor: theme.surface.elevated }]}>
             <Ionicons name="lock-closed" size={20} color={theme.accent.orange} />
           </View>
 
@@ -116,7 +114,7 @@ export const ProgramCard: React.FC<ProgramCardProps> = ({ program, onPress, styl
           </Text>
 
           <TouchableOpacity
-            style={styles.ctaButton}
+            style={[styles.ctaButton, { backgroundColor: theme.accent.orange }]}
             onPress={onUnlock}
             activeOpacity={0.8}
           >

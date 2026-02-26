@@ -43,7 +43,7 @@ export const WorkoutDetailContent: React.FC<WorkoutDetailContentProps> = ({ work
   return (
     <Animated.View layout={Layout.springify()} style={styles.container}>
       <View style={styles.summarySection}>
-        <Text style={{ fontSize: 24, fontWeight: '600', color: theme.text.secondary }}>
+        <Text style={{ fontSize: 24, fontWeight: '600', color: theme.text.primary }}>
           Summary
         </Text>
         <SurfaceCard tone="card" padding="xl" showAccentStripe={false} style={styles.metricsCard}>
@@ -77,7 +77,7 @@ export const WorkoutDetailContent: React.FC<WorkoutDetailContentProps> = ({ work
       </View>
 
       <View style={styles.exerciseSection}>
-        <Text style={{ fontSize: 24, fontWeight: '600', color: theme.text.secondary }}>
+        <Text style={{ fontSize: 24, fontWeight: '600', color: theme.text.primary }}>
           Exercises
         </Text>
         <View style={styles.exerciseList}>

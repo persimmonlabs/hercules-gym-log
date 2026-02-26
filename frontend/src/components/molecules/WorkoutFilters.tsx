@@ -12,7 +12,7 @@ import { Text } from '@/components/atoms/Text';
 import { QuickFilterChip } from '@/components/atoms/QuickFilterChip';
 import { FilterChip } from '@/components/atoms/FilterChip';
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { colors, spacing, radius, shadows } from '@/constants/theme';
+import { spacing, radius, shadows } from '@/constants/theme';
 import { useTheme } from '@/hooks/useTheme';
 import { springBouncy } from '@/constants/animations';
 
@@ -156,7 +156,7 @@ export const WorkoutFilters: React.FC<WorkoutFiltersProps> = ({ filters, onFilte
             <IconSymbol name="filter-list" size={20} color={theme.accent.primary} />
             <Text variant="bodySemibold" color="primary">Filter</Text>
             {activeFiltersCount > 0 && (
-              <View style={styles.badge}>
+              <View style={[styles.badge, { backgroundColor: theme.accent.primary }]}>
                 <Text variant="caption" color="onAccent" style={styles.badgeText}>{activeFiltersCount}</Text>
               </View>
             )}
@@ -165,7 +165,7 @@ export const WorkoutFilters: React.FC<WorkoutFiltersProps> = ({ filters, onFilte
             <IconSymbol 
               name="keyboard-arrow-down" 
               size={24} 
-              color={colors.text.secondary} 
+              color={theme.text.secondary} 
             />
           </Animated.View>
         </View>
@@ -355,7 +355,6 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   badge: {
-    backgroundColor: colors.accent.primary,
     borderRadius: radius.full,
     paddingHorizontal: spacing.xs + 2,
     paddingVertical: 2,

@@ -11,14 +11,14 @@ import { Badge } from '@/components/atoms';
 import { SurfaceCard } from '@/components/atoms/SurfaceCard';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { PremiumLimitModal } from '@/components/molecules/PremiumLimitModal';
-import { colors, spacing, radius, sizing } from '@/constants/theme';
+import { spacing, radius, sizing } from '@/constants/theme';
+import { useTheme } from '@/hooks/useTheme';
 import { useProgramsStore } from '@/store/programsStore';
 import type { PremadeProgram, UserProgram, RotationSchedule } from '@/types/premadePlan';
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.primary.bg,
   },
   header: {
     flexDirection: 'row',
@@ -61,7 +61,6 @@ const styles = StyleSheet.create({
   },
   workoutDivider: {
     height: StyleSheet.hairlineWidth,
-    backgroundColor: colors.border.light,
     marginVertical: spacing.md,
   },
   exerciseRow: {
@@ -83,6 +82,7 @@ const styles = StyleSheet.create({
 export default function ProgramDetailsScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { theme } = useTheme();
   const { programId } = useLocalSearchParams<{ programId: string }>();
   const { premadePrograms, userPrograms, clonePremadeProgram, setActiveRotation } = useProgramsStore();
   const [isAdding, setIsAdding] = useState(false);
@@ -183,14 +183,14 @@ export default function ProgramDetailsScreen() {
 
   if (!program) {
     return (
-      <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom + sizing.tabBarHeight }]}>
+      <View style={[styles.container, { backgroundColor: theme.primary.bg, paddingTop: insets.top, paddingBottom: insets.bottom + sizing.tabBarHeight }]}>
         <View style={styles.header}>
           <View style={styles.titleContainer}>
             <Text variant="heading2" color="primary">Program Not Found</Text>
             <Text variant="body" color="secondary">The requested program could not be found.</Text>
           </View>
           <Pressable onPress={handleBack} style={styles.backButton} hitSlop={8}>
-            <IconSymbol name="arrow-back" size={24} color={colors.text.primary} />
+            <IconSymbol name="arrow-back" size={24} color={theme.text.primary} />
           </Pressable>
         </View>
         <View style={{ justifyContent: 'center', alignItems: 'center', flex: 1 }}>
@@ -206,8 +206,7 @@ export default function ProgramDetailsScreen() {
         onClose={() => setShowLimitModal(false)}
         limitType={limitType}
       />
-      <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom + sizing.tabBarHeight }]}>
-        {/* Content */}
+      <View style={[styles.container, { backgroundColor: theme.primary.bg, paddingTop: insets.top, paddingBottom: insets.bottom + sizing.tabBarHeight }]}>
         <ScrollView ref={scrollRef} contentContainerStyle={styles.scrollContent}>
           {/* Header */}
           <View style={styles.header}>
@@ -226,7 +225,7 @@ export default function ProgramDetailsScreen() {
               </View>
             </View>
             <Pressable onPress={handleBack} style={styles.backButton} hitSlop={8}>
-              <IconSymbol name="arrow-back" size={24} color={colors.text.primary} />
+              <IconSymbol name="arrow-back" size={24} color={theme.text.primary} />
             </Pressable>
           </View>
 
@@ -255,7 +254,7 @@ export default function ProgramDetailsScreen() {
                         </View>
                       ))}
 
-                      {index < arr.length - 1 && <View style={styles.workoutDivider} />}
+                      {index < arr.length - 1 && <View style={[styles.workoutDivider, { backgroundColor: theme.border.light }]} />}
                     </View>
                   ))}
               </View>

@@ -46,7 +46,7 @@ export const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = (
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
 
         <View style={styles.container}>
-          <View style={styles.card}>
+          <View style={[styles.card, { backgroundColor: theme.surface.card, borderColor: theme.accent.orange }]}>
             <Text variant="heading3" style={styles.title}>{title}</Text>
             <Text variant="body" color="secondary" style={styles.message}>
               {message}
@@ -64,8 +64,8 @@ export const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = (
                 onPress={onConfirm}
                 loading={isLoading}
                 disabled={isLoading}
-                contentStyle={styles.deleteButton}
-                textColor={colors.text.onAccent}
+                contentStyle={[styles.deleteButton, { backgroundColor: theme.accent.orange, borderColor: theme.accent.orange }]}
+                textColor={theme.text.onAccent}
               />
             </View>
           </View>

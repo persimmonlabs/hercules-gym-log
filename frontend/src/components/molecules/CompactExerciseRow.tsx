@@ -9,7 +9,8 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { Text } from '@/components/atoms/Text';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { triggerHaptic } from '@/utils/haptics';
-import { colors, radius, spacing } from '@/constants/theme';
+import { radius, spacing } from '@/constants/theme';
+import { useTheme } from '@/hooks/useTheme';
 import type { Exercise } from '@/constants/exercises';
 
 interface CompactExerciseRowProps {
@@ -31,6 +32,7 @@ export const CompactExerciseRow: React.FC<CompactExerciseRowProps> = React.memo(
   onMoveDown,
   showReorderControls = true,
 }) => {
+  const { theme } = useTheme();
   const isFirst = index === 0;
   const isLast = index === totalCount - 1;
 
@@ -54,7 +56,7 @@ export const CompactExerciseRow: React.FC<CompactExerciseRowProps> = React.memo(
   }, [index, isLast, onMoveDown]);
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.surface.elevated, borderColor: theme.border.light }]}>
       {/* Drag Handle / Reorder Area */}
       {showReorderControls && totalCount > 1 ? (
         <View style={styles.reorderArea}>
@@ -67,7 +69,7 @@ export const CompactExerciseRow: React.FC<CompactExerciseRowProps> = React.memo(
             <IconSymbol
               name="keyboard-arrow-up"
               size={20}
-              color={isFirst ? colors.text.muted : colors.text.secondary}
+              color={isFirst ? theme.text.tertiary : theme.text.secondary}
             />
           </Pressable>
           <Pressable
@@ -79,7 +81,7 @@ export const CompactExerciseRow: React.FC<CompactExerciseRowProps> = React.memo(
             <IconSymbol
               name="keyboard-arrow-down"
               size={20}
-              color={isLast ? colors.text.muted : colors.text.secondary}
+              color={isLast ? theme.text.tertiary : theme.text.secondary}
             />
           </Pressable>
         </View>
@@ -111,7 +113,7 @@ export const CompactExerciseRow: React.FC<CompactExerciseRowProps> = React.memo(
         <IconSymbol
           name="close"
           size={18}
-          color={colors.text.tertiary}
+          color={theme.text.tertiary}
         />
       </Pressable>
     </View>
@@ -125,10 +127,8 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.md,
     paddingRight: spacing.md,
     paddingLeft: spacing.sm,
-    backgroundColor: colors.surface.card,
     borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: colors.border.light,
     minHeight: 56,
     gap: spacing.sm,
   },

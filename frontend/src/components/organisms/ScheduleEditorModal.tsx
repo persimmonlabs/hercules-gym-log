@@ -15,7 +15,7 @@ import { useActiveScheduleStore } from '@/store/activeScheduleStore';
 import { useProgramsStore } from '@/store/programsStore';
 import { usePlansStore } from '@/store/plansStore';
 import { useTheme } from '@/hooks/useTheme';
-import { spacing, radius, colors } from '@/constants/theme';
+import { spacing, radius } from '@/constants/theme';
 import type {
   ScheduleRule,
   ScheduleRuleType,
@@ -270,7 +270,7 @@ export const ScheduleEditorModal: React.FC<ScheduleEditorModalProps> = ({
           variant="ghost"
           size="md"
           onPress={handleClearSchedule}
-          textColor={theme.accent.warning}
+          textColor={theme.accent.orange}
         />
       )}
     </View>
@@ -367,7 +367,7 @@ export const ScheduleEditorModal: React.FC<ScheduleEditorModalProps> = ({
                   style={styles.removeButton}
                   onPress={() => removeCycleDay(visualIndex)}
                 >
-                  <IconSymbol name="close" size={18} color={theme.accent.warning} />
+                  <IconSymbol name="close" size={18} color={theme.accent.orange} />
                 </Pressable>
               </View>
             );
@@ -450,9 +450,9 @@ export const ScheduleEditorModal: React.FC<ScheduleEditorModalProps> = ({
       animationType="slide"
       onRequestClose={handleClose}
     >
-      <View style={[styles.overlay, { backgroundColor: colors.overlay.scrim }]}>
+      <View style={[styles.overlay, { backgroundColor: theme.overlay.scrim }]}>
         <View style={[styles.modalContainer, { backgroundColor: theme.surface.card }]}>
-          <View style={styles.header}>
+          <View style={[styles.header, { borderBottomColor: theme.border.light }]}>
             {step === 'configure' && (
               <Pressable style={styles.backButton} onPress={handleBack}>
                 <IconSymbol name="arrow-back" size={24} color={theme.text.primary} />
@@ -469,7 +469,7 @@ export const ScheduleEditorModal: React.FC<ScheduleEditorModalProps> = ({
           {step === 'type-select' ? renderTypeSelection() : renderConfigureStep()}
 
           {step === 'configure' && (
-            <View style={styles.footer}>
+            <View style={[styles.footer, { borderTopColor: theme.border.light }]}>
               <Button
                 label="Save Schedule"
                 variant="primary"
@@ -502,7 +502,6 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.lg,
     paddingHorizontal: spacing.lg,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.border.light,
   },
   headerTitle: {
     flex: 1,
@@ -587,6 +586,5 @@ const styles = StyleSheet.create({
   footer: {
     padding: spacing.lg,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.border.light,
   },
 });
