@@ -220,9 +220,15 @@ const calculateExpectedHeight = (itemCount: number): number => {
   return PIE_CHART_HEIGHT + TITLE_HEIGHT + (legendRows * LEGEND_ROW_HEIGHT) + spacing.md + spacing.sm;
 };
 
-export const FocusDistributionChart: React.FC = () => {
+interface FocusDistributionChartProps {
+  /** Pre-computed workouts from parent — avoids independent store subscription */
+  precomputedWorkouts?: any[];
+}
+
+export const FocusDistributionChart: React.FC<FocusDistributionChartProps> = ({ precomputedWorkouts }) => {
   const { theme } = useTheme();
-  const workouts = useWorkoutSessionsStore((state) => state.workouts);
+  const storeWorkouts = useWorkoutSessionsStore((state) => state.workouts);
+  const workouts = precomputedWorkouts ?? storeWorkouts;
   const [currentPage, setCurrentPage] = useState(0);
   const [selections, setSelections] = useState<Record<number, string | null>>({});
   const [pageHeights, setPageHeights] = useState<Record<number, number>>({});
@@ -238,13 +244,13 @@ export const FocusDistributionChart: React.FC = () => {
     const distL3: Record<string, number> = {};
     let totalSets = 0;
 
-    workouts.forEach(workout => {
-      workout.exercises.forEach(exercise => {
+    workouts.forEach((workout: any) => {
+      workout.exercises.forEach((exercise: any) => {
         const weights = EXERCISE_NAME_TO_MUSCLES[exercise.name];
         if (!weights) return;
 
         // Exclude sets with 0 weight
-        const completedSets = exercise.sets.filter(s => s.completed && (s.weight ?? 0) > 0).length;
+        const completedSets = exercise.sets.filter((s: any) => s.completed && (s.weight ?? 0) > 0).length;
         if (completedSets === 0) return;
 
         totalSets += completedSets;

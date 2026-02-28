@@ -127,7 +127,7 @@ export const MyScheduleCard: React.FC<MyScheduleCardProps> = ({
       tone="subcard"
       padding="md"
       showAccentStripe={false}
-      style={[styles.emptyCard, { borderColor: theme.border.light }]}
+      style={styles.emptyCard}
     >
       <View style={styles.emptyContent}>
         <Text variant="bodySemibold" color="primary" style={styles.emptyTitle}>
@@ -308,7 +308,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   emptyCard: {
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: 0.75,
     borderRadius: radius.lg,
     shadowColor: 'transparent',
     shadowOpacity: 0,

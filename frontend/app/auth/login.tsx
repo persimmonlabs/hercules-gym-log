@@ -11,7 +11,7 @@ import {
     Platform,
     ScrollView,
 } from 'react-native';
-import { useRouter, Link } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
 import { colors, spacing, typography, radius, sizing } from '@/constants/theme';
@@ -105,11 +105,9 @@ export default function LoginScreen() {
 
                     <View style={styles.footer}>
                         <Text style={styles.footerText}>Don&apos;t have an account? </Text>
-                        <Link href="/auth/signup" asChild>
-                            <TouchableOpacity>
-                                <Text style={styles.linkText}>Sign Up</Text>
-                            </TouchableOpacity>
-                        </Link>
+                        <TouchableOpacity onPress={() => router.push('/onboarding' as any)}>
+                            <Text style={styles.linkText}>Sign Up</Text>
+                        </TouchableOpacity>
                     </View>
                 </View>
             </ScrollView>

@@ -346,11 +346,17 @@ Deno.serve(async (request: Request): Promise<Response> => {
       ? `Knowledge base excerpts (JSON): ${JSON.stringify(kbMatches)}`
       : null;
     const kbMessages = kbMessage ? [buildChatMessage('system', kbMessage)] : [];
+    // Build the recency separator to help the LLM distinguish old history from the current question
+    const recencySeparator = recentMessages.length > 0
+      ? [buildChatMessage('system', '=== CURRENT USER MESSAGE BELOW ===\nThe message immediately following this marker is the user\'s LATEST question. Your ENTIRE response must address THIS message. Prior conversation history above is for context only — do NOT let earlier topics bleed into your answer unless the user explicitly references them.')]
+      : [];
+
     const modelMessages: ChatMessage[] = [
       buildChatMessage('system', SYSTEM_PROMPT),
       buildChatMessage('system', buildContextMessage(context, body.timezone, body.appStats)),
       ...kbMessages,
       ...recentMessages,
+      ...recencySeparator,
       buildChatMessage('user', message),
     ];
 

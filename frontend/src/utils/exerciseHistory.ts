@@ -12,6 +12,22 @@ import type { PrimaryGoal } from '@/store/userProfileStore';
 
 const DEFAULT_SET_COUNT = 3;
 
+// Reference-based cache for sorted workouts — avoids re-sorting the same array
+// when called in a loop (e.g., 6× during session start for each exercise)
+let _cachedWorkoutsRef: Workout[] | null = null;
+let _cachedSortedWorkouts: Workout[] | null = null;
+
+const getSortedWorkouts = (workouts: Workout[]): Workout[] => {
+    if (workouts === _cachedWorkoutsRef && _cachedSortedWorkouts) {
+        return _cachedSortedWorkouts;
+    }
+    _cachedSortedWorkouts = [...workouts].sort((a, b) =>
+        new Date(b.date).getTime() - new Date(a.date).getTime()
+    );
+    _cachedWorkoutsRef = workouts;
+    return _cachedSortedWorkouts;
+};
+
 export interface SetsWithHistoryResult {
     sets: SetLog[];
     historySetCount: number;
@@ -38,10 +54,8 @@ export const getLastCompletedSetsForExercise = (
     exerciseName: string,
     workouts: Workout[],
 ): SetLog[] | null => {
-    // Sort workouts by date (most recent first) to ensure we get the latest data
-    const sortedWorkouts = [...workouts].sort((a, b) => {
-        return new Date(b.date).getTime() - new Date(a.date).getTime();
-    });
+    // Sort workouts by date (most recent first) — uses reference cache to avoid re-sorting in loops
+    const sortedWorkouts = getSortedWorkouts(workouts);
 
     // Find the most recent workout that contains this exercise with at least one completed set
     for (const workout of sortedWorkouts) {

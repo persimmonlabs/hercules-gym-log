@@ -24,7 +24,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { triggerHaptic } from '@/utils/haptics';
 import { colors, spacing, radius, typography, sizing, opacity, shadows } from '@/constants/theme';
 import { useTheme } from '@/hooks/useTheme';
-import { springBouncy, buttonPressAnimation } from '@/constants/animations';
+import { springBouncy } from '@/constants/animations';
 
 const clamp = (value: number, min: number, max: number): number => {
   return Math.min(Math.max(value, min), max);
@@ -124,10 +124,7 @@ export const Button: React.FC<ButtonProps> = ({
     // Haptic feedback
     triggerHaptic('selection');
 
-    // Reset scale after brief delay
-    setTimeout(() => {
-      onPress();
-    }, buttonPressAnimation.duration);
+    onPress();
   }, [disabled, loading, onPress]);
 
   const handlePressIn = useCallback(() => {

@@ -48,7 +48,7 @@ export const FinishConfirmationModal: React.FC<FinishConfirmationModalProps> = (
                 label="Continue Workout"
                 onPress={onClose}
                 variant="ghost"
-                contentStyle={[styles.continueButton, { borderColor: theme.accent.orange }]}
+                contentStyle={[styles.continueButton, { borderColor: theme.accent.orange, backgroundColor: theme.surface.card }]}
                 textColor={theme.accent.orange}
                 disabled={isLoading}
               />
@@ -98,7 +98,6 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   continueButton: {
-    backgroundColor: '#FFFFFF',
     borderWidth: 2,
     borderRadius: radius.lg,
   },

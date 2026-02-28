@@ -263,6 +263,10 @@ const EditableSetRow: React.FC<EditableSetRowProps> = ({
                 placeholder="0"
                 placeholderTextColor={theme.text.tertiary}
                 textAlign="center"
+                scrollEnabled={false}
+                multiline={false}
+                maxLength={8}
+                numberOfLines={1}
                 cursorColor={theme.accent.primary}
                 selectionColor={theme.accent.orangeLight}
               />
@@ -303,6 +307,10 @@ const EditableSetRow: React.FC<EditableSetRowProps> = ({
                 placeholder="0"
                 placeholderTextColor={theme.text.tertiary}
                 textAlign="center"
+                scrollEnabled={false}
+                multiline={false}
+                maxLength={7}
+                numberOfLines={1}
                 cursorColor={theme.accent.primary}
                 selectionColor={theme.accent.orangeLight}
               />
@@ -317,6 +325,10 @@ const EditableSetRow: React.FC<EditableSetRowProps> = ({
                 placeholder="0"
                 placeholderTextColor={theme.text.tertiary}
                 textAlign="center"
+                scrollEnabled={false}
+                multiline={false}
+                maxLength={4}
+                numberOfLines={1}
                 cursorColor={theme.accent.primary}
                 selectionColor={theme.accent.orangeLight}
               />
@@ -338,6 +350,10 @@ const EditableSetRow: React.FC<EditableSetRowProps> = ({
                 placeholder="0"
                 placeholderTextColor={theme.text.tertiary}
                 textAlign="center"
+                scrollEnabled={false}
+                multiline={false}
+                maxLength={7}
+                numberOfLines={1}
                 cursorColor={theme.accent.primary}
                 selectionColor={theme.accent.orangeLight}
               />
@@ -352,6 +368,10 @@ const EditableSetRow: React.FC<EditableSetRowProps> = ({
                 placeholder="0"
                 placeholderTextColor={theme.text.tertiary}
                 textAlign="center"
+                scrollEnabled={false}
+                multiline={false}
+                maxLength={4}
+                numberOfLines={1}
                 cursorColor={theme.accent.primary}
                 selectionColor={theme.accent.orangeLight}
               />
@@ -894,6 +914,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.sm,
     borderRadius: radius.md,
     borderWidth: 1,
+    overflow: 'hidden',
   },
   deleteSetButton: {
     padding: spacing.xs,

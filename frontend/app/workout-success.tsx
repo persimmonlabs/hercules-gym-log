@@ -83,7 +83,7 @@ const WorkoutSuccessScreen: React.FC = () => {
   }));
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom + sizing.tabBarHeight }]}>
+    <View style={[styles.container, { backgroundColor: theme.primary.bg, paddingTop: insets.top, paddingBottom: insets.bottom + sizing.tabBarHeight }]}>
       <Animated.View style={[styles.messageStack, cardAnimatedStyle]}>
         <Text variant="display1" color="orange" style={styles.successTitle}>
           Great Work!

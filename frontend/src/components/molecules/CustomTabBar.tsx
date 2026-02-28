@@ -2,7 +2,7 @@
  * CustomTabBar
  * Floating, glassmorphism tab bar with animated interactions and haptics.
  */
-import React from 'react';
+import React, { useCallback } from 'react';
 import { Platform, StyleSheet, View, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import type { ColorValue } from 'react-native';
@@ -51,7 +51,7 @@ type TabBarItemProps = {
   createGradientIcon: (iconName: keyof typeof Ionicons.glyphMap) => React.ReactElement;
 };
 
-const TabBarItem: React.FC<TabBarItemProps> = ({
+const TabBarItem: React.FC<TabBarItemProps> = React.memo(({
   isFocused,
   isWorkoutRoute,
   showActiveSessionGlow,
@@ -100,7 +100,7 @@ const TabBarItem: React.FC<TabBarItemProps> = ({
       </TouchableOpacity>
     </Animated.View>
   );
-};
+});
 
 export const CustomTabBar: React.FC<BottomTabBarProps> = ({ state, navigation }) => {
   const insets = useSafeAreaInsets();
@@ -149,7 +149,7 @@ export const CustomTabBar: React.FC<BottomTabBarProps> = ({ state, navigation })
 
     triggerHaptic('light');
   };
-  const createGradientIcon = (iconName: keyof typeof Ionicons.glyphMap) => (
+  const createGradientIcon = useCallback((iconName: keyof typeof Ionicons.glyphMap) => (
     <MaskedView
       style={styles.gradientMask}
       maskElement={(
@@ -165,7 +165,7 @@ export const CustomTabBar: React.FC<BottomTabBarProps> = ({ state, navigation })
         style={styles.gradientFill}
       />
     </MaskedView>
-  );
+  ), [ACTIVE_GRADIENT]);
 
   return (
     <>

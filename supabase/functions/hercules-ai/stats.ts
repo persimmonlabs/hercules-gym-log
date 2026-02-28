@@ -148,6 +148,151 @@ const normalizeString = (str: string): string => {
   return str.toLowerCase().replace(/[^a-z0-9]/g, '');
 };
 
+// ---------------------------------------------------------------------------
+// Exercise synonym / alias system
+// Each group contains alternate names, abbreviations, and common synonyms
+// that users might use to refer to the same or a very similar exercise.
+// All entries are lowercase for matching purposes.
+// ---------------------------------------------------------------------------
+const EXERCISE_SYNONYM_GROUPS: string[][] = [
+  // Chest — fly / pec deck variants
+  ['pec deck', 'pec fly', 'pec deck machine', 'butterfly machine', 'chest fly machine', 'machine fly'],
+  ['dumbbell fly', 'dumbbell chest fly', 'db fly', 'db chest fly', 'flat dumbbell fly'],
+  ['incline dumbbell fly', 'incline db fly'],
+  ['cable crossover', 'cable fly', 'cable chest fly'],
+  ['cable flat bench fly', 'flat cable fly'],
+  ['incline cable fly', 'incline cable crossover'],
+  ['seated cable fly', 'seated cable crossover'],
+  // Chest — press variants
+  ['barbell bench press', 'bench press', 'flat bench press', 'flat bench', 'bb bench press', 'barbell flat bench press', 'bench'],
+  ['dumbbell bench press', 'db bench press', 'dumbbell flat bench press', 'db flat bench'],
+  ['incline barbell bench press', 'incline bench press', 'incline bench', 'incline barbell bench'],
+  ['incline dumbbell bench press', 'incline db bench press', 'incline dumbbell press', 'incline db press'],
+  ['decline barbell bench press', 'decline bench press', 'decline bench', 'decline barbell bench'],
+  ['decline dumbbell bench press', 'decline db bench press', 'decline dumbbell press'],
+  ['chest press machine', 'machine chest press', 'chest press', 'seated chest press'],
+  ['smith machine bench press', 'smith bench press', 'smith machine flat bench'],
+  ['barbell floor press', 'floor press'],
+  ['close grip barbell bench press', 'close grip bench press', 'close grip bench', 'cgbp'],
+  // Back — rows
+  ['barbell bent-over row', 'barbell row', 'bent over row', 'bb row', 'bent-over barbell row', 'bent over barbell row'],
+  ['dumbbell row', 'db row', 'one arm dumbbell row', 'single arm dumbbell row', 'single-arm dumbbell row'],
+  ['seated cable rows', 'seated cable row', 'cable row', 'seated row', 'low row'],
+  ['seated row machine', 'machine row', 'seated row'],
+  ['chest supported t-bar row', 't-bar row', 't bar row', 'tbar row'],
+  ['smith machine bent over row', 'smith machine row', 'smith row'],
+  ['reverse grip bent over barbell row', 'reverse grip row', 'underhand barbell row'],
+  // Back — pulldowns / pull-ups
+  ['wide grip lat pulldown', 'lat pulldown', 'pulldown', 'lat pull down', 'wide pulldown'],
+  ['close grip lat pulldown', 'close grip pulldown', 'narrow grip pulldown', 'v-bar pulldown'],
+  ['cable underhand pulldown', 'underhand pulldown', 'reverse grip pulldown'],
+  ['pull-ups', 'pullup', 'pullups', 'pull up', 'pull ups'],
+  ['chin-ups', 'chinup', 'chinups', 'chin up', 'chin ups'],
+  ['assisted pull-ups', 'assisted pullup', 'assisted pull up', 'machine pull-ups'],
+  ['assisted chin-ups', 'assisted chinup', 'assisted chin up'],
+  // Back — deadlifts
+  ['barbell deadlift', 'deadlift', 'conventional deadlift', 'bb deadlift'],
+  ['dumbbell deadlifts', 'dumbbell deadlift', 'db deadlift', 'db deadlifts'],
+  ['barbell romanian deadlift', 'romanian deadlift', 'rdl', 'barbell rdl', 'bb rdl', 'stiff leg deadlift'],
+  ['dumbbell romanian deadlifts', 'dumbbell romanian deadlift', 'dumbbell rdl', 'db rdl', 'db romanian deadlift'],
+  ['kettlebell romanian deadlift', 'kettlebell rdl', 'kb rdl'],
+  // Shoulders
+  ['dumbbell shoulder press', 'shoulder press', 'db shoulder press', 'dumbbell overhead press', 'db ohp'],
+  ['seated barbell military press', 'military press', 'barbell military press', 'overhead press', 'ohp', 'barbell overhead press'],
+  ['seated shoulder press machine', 'machine shoulder press', 'shoulder press machine'],
+  ['arnold press', 'arnold dumbbell press'],
+  ['lateral raises', 'lateral raise', 'side raises', 'side raise', 'dumbbell lateral raise', 'db lateral raise', 'side lateral raise'],
+  ['lateral raise machine', 'machine lateral raise'],
+  ['dumbbell front raises', 'front raise', 'front raises', 'db front raise'],
+  ['rear delt machine', 'reverse fly machine', 'reverse pec deck', 'rear delt fly machine'],
+  ['face pull', 'face pulls', 'cable face pull', 'cable face pulls'],
+  ['band face pulls', 'band face pull', 'resistance band face pull'],
+  ['barbell upright rows', 'upright row', 'upright rows', 'barbell upright row'],
+  // Biceps
+  ['barbell bicep curl', 'barbell curl', 'bb curl', 'standing barbell curl'],
+  ['dumbbell bicep curls', 'dumbbell curl', 'dumbbell curls', 'db curl', 'db curls', 'db bicep curl'],
+  ['dumbbell hammer curls', 'hammer curl', 'hammer curls', 'db hammer curl', 'db hammer curls'],
+  ['cable bicep curl', 'cable curl', 'cable curls'],
+  ['ez bar curls', 'ez curl', 'ez bar curl', 'ez curls', 'easy bar curl'],
+  ['barbell preacher curl', 'preacher curl', 'preacher curls'],
+  ['preacher curl machine', 'machine preacher curl'],
+  ['bicep curl machine', 'machine curl', 'machine bicep curl'],
+  ['dumbbell concentration curl', 'concentration curl', 'concentration curls'],
+  // Triceps
+  ['cable triceps pushdown', 'triceps pushdown', 'tricep pushdown', 'cable pushdown', 'pushdown', 'pushdowns', 'rope pushdown'],
+  ['overhead cable triceps extension', 'overhead cable extension', 'cable overhead extension', 'overhead triceps extension'],
+  ['skullcrusher', 'skull crusher', 'skull crushers', 'skullcrushers', 'lying triceps extension'],
+  ['dips', 'parallel bar dips', 'chest dips', 'tricep dips'],
+  ['assisted dips', 'machine dips', 'assisted parallel bar dips'],
+  ['seated dumbbell triceps extension', 'dumbbell triceps extension', 'db triceps extension', 'overhead dumbbell extension'],
+  ['triceps extension machine', 'machine triceps extension'],
+  ['triceps kickback', 'dumbbell triceps kickback', 'kickback', 'kickbacks', 'db kickback'],
+  // Quads
+  ['barbell squat', 'squat', 'back squat', 'bb squat', 'barbell back squat'],
+  ['barbell front squat', 'front squat'],
+  ['dumbbell squats', 'dumbbell squat', 'db squat', 'db squats', 'goblet squat'],
+  ['kettlebell goblet squat', 'goblet squat', 'kb goblet squat'],
+  ['leg press', 'leg press machine', 'machine leg press', 'seated leg press'],
+  ['leg extensions', 'leg extension', 'leg extension machine', 'quad extension'],
+  ['hack squat machine', 'hack squat', 'machine hack squat'],
+  ['dumbbell lunges', 'lunge', 'db lunges', 'walking lunges'],
+  ['dumbbell bulgarian split squat', 'bulgarian split squat', 'split squat', 'bss', 'db split squat', 'dumbbell split squat'],
+  ['bodyweight squats', 'air squats', 'air squat', 'bw squats', 'bodyweight squat'],
+  ['pistol squats', 'pistol squat', 'single leg squat'],
+  // Hamstrings
+  ['seated leg curl', 'leg curl', 'hamstring curl', 'leg curls', 'hamstring curls'],
+  ['lying leg curl', 'prone leg curl', 'lying hamstring curl'],
+  ['barbell good mornings', 'good morning', 'good mornings', 'barbell good morning'],
+  // Glutes
+  ['barbell hip thrust', 'hip thrust', 'hip thrusts', 'bb hip thrust', 'barbell hip thrusts'],
+  ['hip thrust machine', 'machine hip thrust'],
+  ['barbell glute bridge', 'glute bridge', 'bb glute bridge'],
+  ['cable pull through', 'pull through', 'cable pull-through'],
+  ['thigh abductor', 'hip abductor', 'abductor machine', 'abductor', 'hip abduction machine', 'cable hip abduction'],
+  ['thigh adductor', 'hip adductor', 'adductor machine', 'adductor', 'hip adduction machine', 'cable hip adduction'],
+  // Calves
+  ['standing calf raise machine', 'calf raise', 'calf raises', 'standing calf raise'],
+  ['seated calf raise machine', 'seated calf raise'],
+  // Core
+  ['cable crunch', 'cable crunches', 'kneeling cable crunch'],
+  ['seated ab crunch machine', 'ab machine', 'ab crunch machine', 'crunch machine'],
+  ['russian twist', 'russian twists'],
+  ['hanging leg raise', 'leg raises', 'hanging leg raises'],
+  // Traps
+  ['barbell shrugs', 'shrugs', 'barbell shrug', 'bb shrugs'],
+  ['dumbbell shrugs', 'db shrugs', 'dumbbell shrug'],
+  // Misc
+  ['hyperextensions', 'hyperextension', 'back extension', 'back extensions', 'roman chair'],
+  ['seated back extension machine', 'back extension machine', 'machine back extension'],
+  ['inverted rows', 'inverted row', 'body row', 'australian pull-up'],
+];
+
+// Build a fast lookup: normalized alias → list of canonical group entries
+const _synonymLookup: Map<string, string[]> = new Map();
+for (const group of EXERCISE_SYNONYM_GROUPS) {
+  const normalized = group.map(s => s.toLowerCase());
+  for (const alias of normalized) {
+    _synonymLookup.set(alias, normalized);
+  }
+}
+
+/**
+ * Given a search term, returns all synonym aliases the user might have meant.
+ * E.g., "pec deck" → ["pec deck", "butterfly machine", "pec fly", ...]
+ */
+const getSynonyms = (searchName: string): string[] => {
+  const lower = searchName.toLowerCase().trim();
+  // Direct lookup
+  const group = _synonymLookup.get(lower);
+  if (group) return group;
+  // Try normalized (strip non-alphanum) lookup
+  const norm = normalizeString(searchName);
+  for (const [alias, grp] of _synonymLookup.entries()) {
+    if (normalizeString(alias) === norm) return grp;
+  }
+  return [];
+};
+
 const fuzzyMatch = (query: string, target: string): boolean => {
   const normalizedQuery = normalizeString(query);
   const normalizedTarget = normalizeString(target);
@@ -176,9 +321,10 @@ const fuzzyMatch = (query: string, target: string): boolean => {
 const findMatchingExercises = (
   allExerciseNames: string[],
   searchName: string
-): { exact: string | null; fuzzy: string[] } => {
+): { exact: string | null; fuzzy: string[]; synonymMatch?: string } => {
   const normalizedSearch = normalizeString(searchName);
   
+  // 1. Exact match (normalized)
   const exactMatch = allExerciseNames.find(
     name => normalizeString(name) === normalizedSearch
   );
@@ -186,9 +332,46 @@ const findMatchingExercises = (
   if (exactMatch) {
     return { exact: exactMatch, fuzzy: [] };
   }
-  
+
+  // 2. Synonym-aware match: expand the search term to all known aliases,
+  //    then check if any user exercise name matches any alias
+  const synonyms = getSynonyms(searchName);
+  if (synonyms.length > 0) {
+    for (const alias of synonyms) {
+      const aliasNorm = normalizeString(alias);
+      const match = allExerciseNames.find(name => normalizeString(name) === aliasNorm);
+      if (match) {
+        return { exact: match, fuzzy: [], synonymMatch: searchName };
+      }
+    }
+    // Also try fuzzy matching each synonym against the user's exercises
+    for (const alias of synonyms) {
+      const matches = allExerciseNames.filter(name => fuzzyMatch(alias, name));
+      if (matches.length > 0) {
+        return { exact: null, fuzzy: matches, synonymMatch: searchName };
+      }
+    }
+  }
+
+  // 3. Standard fuzzy matching on the original search term
   const fuzzyMatches = allExerciseNames.filter(name => fuzzyMatch(searchName, name));
-  return { exact: null, fuzzy: fuzzyMatches };
+  if (fuzzyMatches.length > 0) {
+    return { exact: null, fuzzy: fuzzyMatches };
+  }
+
+  // 4. Muscle-group-based similarity: if the search term looks like an exercise
+  //    that targets a known muscle group, suggest user exercises for that muscle
+  const searchMuscle = getMuscleGroupForExercise(searchName);
+  if (searchMuscle !== 'Other') {
+    const sameMuscleExercises = allExerciseNames.filter(name => {
+      return getMuscleGroupForExercise(name) === searchMuscle;
+    });
+    if (sameMuscleExercises.length > 0) {
+      return { exact: null, fuzzy: sameMuscleExercises };
+    }
+  }
+
+  return { exact: null, fuzzy: [] };
 };
 
 const fetchAllSessions = async (
@@ -258,7 +441,7 @@ export const getExerciseVolumeAllTime = async (
   }
 
   if (exerciseName) {
-    const { exact, fuzzy } = findMatchingExercises(allExerciseNames, exerciseName);
+    const { exact, fuzzy, synonymMatch } = findMatchingExercises(allExerciseNames, exerciseName);
     
     if (exact) {
       const total = volumeByExercise[exact] ?? 0;
@@ -266,6 +449,7 @@ export const getExerciseVolumeAllTime = async (
         success: true,
         data: {
           exerciseName: exact,
+          ...(synonymMatch ? { searchedFor: synonymMatch, resolvedViaSynonym: true } : {}),
           totalVolume: total,
           totalVolumeFormatted: formatVolume(total),
           unit: 'lbs',
@@ -287,8 +471,11 @@ export const getExerciseVolumeAllTime = async (
         data: {
           searchedFor: exerciseName,
           exactMatchFound: false,
+          ...(synonymMatch ? { resolvedViaSynonym: true } : {}),
           similarExercises: results,
-          suggestion: `No exact match for "${exerciseName}". Did you mean: ${fuzzy.join(', ')}?`,
+          suggestion: synonymMatch
+            ? `No exact match for "${exerciseName}", but found similar exercises the user has performed: ${fuzzy.join(', ')}. Present data for these exercises since they are likely what the user meant.`
+            : `No exact match for "${exerciseName}". Did you mean: ${fuzzy.join(', ')}?`,
           unit: 'lbs',
         },
       };
@@ -365,7 +552,7 @@ export const getExerciseMaxWeight = async (
   }
 
   if (exerciseName) {
-    const { exact, fuzzy } = findMatchingExercises(allExerciseNames, exerciseName);
+    const { exact, fuzzy, synonymMatch } = findMatchingExercises(allExerciseNames, exerciseName);
     
     if (exact) {
       const record = maxByExercise[exact] ?? null;
@@ -374,6 +561,7 @@ export const getExerciseMaxWeight = async (
         success: true,
         data: {
           exerciseName: exact,
+          ...(synonymMatch ? { searchedFor: synonymMatch, resolvedViaSynonym: true } : {}),
           maxWeight: weight,
           maxWeightFormatted: formatWeight(weight),
           repsAtMax: record?.reps ?? 0,
@@ -393,8 +581,11 @@ export const getExerciseMaxWeight = async (
         data: {
           searchedFor: exerciseName,
           exactMatchFound: false,
+          ...(synonymMatch ? { resolvedViaSynonym: true } : {}),
           similarExercises: results,
-          suggestion: `No exact match for "${exerciseName}". Did you mean: ${fuzzy.join(', ')}?`,
+          suggestion: synonymMatch
+            ? `No exact match for "${exerciseName}", but found similar exercises the user has performed: ${fuzzy.join(', ')}. Present data for these exercises since they are likely what the user meant.`
+            : `No exact match for "${exerciseName}". Did you mean: ${fuzzy.join(', ')}?`,
           unit: 'lbs',
         },
       };
@@ -523,7 +714,7 @@ export const getExerciseProgress = async (
     fetchUserBodyWeight(supabase, userId),
   ]);
   const allExerciseNames = getAllExerciseNames(sessions);
-  const { exact, fuzzy } = findMatchingExercises(allExerciseNames, exerciseName);
+  const { exact, fuzzy, synonymMatch } = findMatchingExercises(allExerciseNames, exerciseName);
   
   const targetName = exact ?? (fuzzy.length === 1 ? fuzzy[0] : null);
   
@@ -533,8 +724,11 @@ export const getExerciseProgress = async (
       data: {
         searchedFor: exerciseName,
         exactMatchFound: false,
+        ...(synonymMatch ? { resolvedViaSynonym: true } : {}),
         similarExercises: fuzzy,
-        suggestion: `Multiple matches found for "${exerciseName}". Did you mean: ${fuzzy.join(', ')}?`,
+        suggestion: synonymMatch
+          ? `No exact match for "${exerciseName}", but found similar exercises the user has performed: ${fuzzy.join(', ')}. Present data for these exercises since they are likely what the user meant.`
+          : `Multiple matches found for "${exerciseName}". Did you mean: ${fuzzy.join(', ')}?`,
       },
     };
   }
@@ -598,6 +792,7 @@ export const getExerciseProgress = async (
     success: true,
     data: {
       exerciseName: targetName,
+      ...(synonymMatch ? { searchedFor: synonymMatch, resolvedViaSynonym: true } : {}),
       sessions: sorted,
       totalSessions: sorted.length,
       weightChangeOverTime: weightChange,

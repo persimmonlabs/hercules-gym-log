@@ -13,7 +13,7 @@ import { ChartWrapper } from '@/components/atoms/ChartWrapper';
 import { colors, spacing, radius } from '@/constants/theme';
 import { useTheme } from '@/hooks/useTheme';
 import { useAnalyticsData } from '@/hooks/useAnalyticsData';
-import { TIME_RANGE_SUBTITLES } from '@/types/analytics';
+import { TIME_RANGE_SUBTITLES, type WeeklyVolumeData } from '@/types/analytics';
 import { useSettingsStore } from '@/store/settingsStore';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
@@ -22,11 +22,17 @@ const CHART_HEIGHT = 200;
 
 interface SimpleVolumeChartProps {
   timeRange?: 'week' | 'month' | 'year' | 'all';
+  /** Pre-computed data from parent — skips internal useAnalyticsData when provided */
+  precomputedWeeklyVolume?: WeeklyVolumeData;
+  precomputedHasFilteredData?: boolean;
 }
 
-export const SimpleVolumeChart: React.FC<SimpleVolumeChartProps> = ({ timeRange = 'week' }) => {
+export const SimpleVolumeChart: React.FC<SimpleVolumeChartProps> = ({ timeRange = 'week', precomputedWeeklyVolume, precomputedHasFilteredData }) => {
   const { theme } = useTheme();
-  const { weeklyVolume, hasFilteredData } = useAnalyticsData({ timeRange });
+  // Only call the hook if no precomputed data provided
+  const hookData = useAnalyticsData({ timeRange, enabled: precomputedWeeklyVolume === undefined });
+  const weeklyVolume = precomputedWeeklyVolume ?? hookData.weeklyVolume;
+  const hasFilteredData = precomputedHasFilteredData ?? hookData.hasFilteredData;
   const weightUnit = useSettingsStore((state) => state.weightUnit);
 
   const rawData = weeklyVolume.high;

@@ -161,10 +161,13 @@ const generateSliceColor = (baseHex: string, index: number, total: number): stri
 
 interface UseAnalyticsDataOptions {
   timeRange?: TimeRange;
+  /** When false, skips expensive computations by returning empty filteredWorkouts.
+   *  Useful for inactive tabs to avoid redundant O(W×E×S) iterations. */
+  enabled?: boolean;
 }
 
 export const useAnalyticsData = (options: UseAnalyticsDataOptions = {}) => {
-  const { timeRange = 'week' } = options;
+  const { timeRange = 'week', enabled = true } = options;
   const { theme } = useTheme();
   const forceEmptyAnalytics = useDevToolsStore((state) => state.forceEmptyAnalytics);
   const rawWorkouts = useWorkoutSessionsStore((state) => state.workouts);
@@ -173,7 +176,8 @@ export const useAnalyticsData = (options: UseAnalyticsDataOptions = {}) => {
     [forceEmptyAnalytics, rawWorkouts],
   );
   const userBodyWeight = useUserProfileStore((state) => state.profile?.weightLbs);
-  const { convertWeight, weightUnit } = useSettingsStore();
+  const convertWeight = useSettingsStore((state) => state.convertWeight);
+  const weightUnit = useSettingsStore((state) => state.weightUnit);
   const customExercises = useCustomExerciseStore((state) => state.customExercises);
 
   // Merge custom exercises into exercise type map
@@ -192,10 +196,11 @@ export const useAnalyticsData = (options: UseAnalyticsDataOptions = {}) => {
     return map;
   }, [customExercises]);
 
-  // Filter workouts based on time range
+  // Filter workouts based on time range — returns empty when disabled to skip downstream computation
   const filteredWorkouts = useMemo(() => {
+    if (!enabled) return [];
     return filterByTimeRange(workouts, timeRange);
-  }, [workouts, timeRange]);
+  }, [workouts, timeRange, enabled]);
 
   // Calculate cardio statistics
   const cardioStats = useMemo((): CardioStats => {

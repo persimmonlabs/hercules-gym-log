@@ -37,15 +37,23 @@ const CHART_HEIGHT = 220;
 interface VolumeTrendChartProps {
   timeRange?: 'week' | 'month' | 'year' | 'all';
   selectedExercise?: string | null;
+  /** Pre-computed data from parent — skips internal useAnalyticsData when provided */
+  precomputedVolumeTrendData?: Record<string, number>;
+  precomputedHasFilteredData?: boolean;
+  precomputedFilteredWorkouts?: any[];
 }
 
 // Weight-based exercise types that contribute to volume
 export const WEIGHT_EXERCISE_TYPES = ['weight', 'bodyweight', 'assisted'];
 
-export const VolumeTrendChart: React.FC<VolumeTrendChartProps> = ({ timeRange = 'week', selectedExercise = null }) => {
+export const VolumeTrendChart: React.FC<VolumeTrendChartProps> = ({ timeRange = 'week', selectedExercise = null, precomputedVolumeTrendData, precomputedHasFilteredData, precomputedFilteredWorkouts }) => {
   const { theme } = useTheme();
-  const { volumeTrendData, hasFilteredData, filteredWorkouts } = useAnalyticsData({ timeRange });
-  const { convertWeight } = useSettingsStore();
+  // Only call the hook if no precomputed data provided
+  const hookData = useAnalyticsData({ timeRange, enabled: precomputedVolumeTrendData === undefined });
+  const volumeTrendData = precomputedVolumeTrendData ?? hookData.volumeTrendData;
+  const hasFilteredData = precomputedHasFilteredData ?? hookData.hasFilteredData;
+  const filteredWorkouts = precomputedFilteredWorkouts ?? hookData.filteredWorkouts;
+  const convertWeight = useSettingsStore((state) => state.convertWeight);
   const userBodyWeight = useUserProfileStore((state) => state.profile?.weightLbs);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
 

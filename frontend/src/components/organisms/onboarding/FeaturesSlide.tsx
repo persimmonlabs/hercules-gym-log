@@ -11,7 +11,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { Button } from '@/components/atoms/Button';
 import { spacing, typography } from '@/constants/theme';
-import { lt, slideStyles } from '@/constants/onboarding';
+import { lt, slideStyles, SCREEN_WIDTH } from '@/constants/onboarding';
 
 interface FeaturesSlideProps {
   onNext: () => void;
@@ -55,11 +55,12 @@ const FEATURES: FeatureItem[] = [
 
 export const FeaturesSlide: React.FC<FeaturesSlideProps> = ({ onNext }) => {
   return (
-    <View style={[slideStyles.slide]}>
+    <View style={[slideStyles.slide, { width: SCREEN_WIDTH }]}>
       <ScrollView 
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
         bounces={false}
+        style={styles.scrollView}
       >
         <RNText style={[typography.heading2, styles.title, { color: lt.text.primary }]}>
           Everything You Need to Train Smarter
@@ -105,6 +106,9 @@ export const FeaturesSlide: React.FC<FeaturesSlideProps> = ({ onNext }) => {
 };
 
 const styles = StyleSheet.create({
+  scrollView: {
+    flex: 1,
+  },
   scrollContent: {
     paddingTop: spacing.xl,
     paddingBottom: spacing.xl,

@@ -338,7 +338,7 @@ const StatsScreen: React.FC = () => {
     return () => backHandler.remove();
   }, [router]);
 
-  const styles = StyleSheet.create({
+  const styles = useMemo(() => StyleSheet.create({
     contentContainer: {
       flexGrow: 1,
       backgroundColor: theme.primary.bg,
@@ -375,7 +375,7 @@ const StatsScreen: React.FC = () => {
     tabPillLabelActive: {
       color: theme.text.onAccent,
     },
-  });
+  }), [theme]);
 
   // Independent state for each card
   const [generalTimeRange, setGeneralTimeRange] = useState<TimeRange>('week');
@@ -408,20 +408,24 @@ const StatsScreen: React.FC = () => {
     }, [])
   );
 
-  // Fetch data separately for each time range
+  // Fetch data separately for each time range — only compute for the active tab
+  const isGeneralTab = activeTab === 'general';
+  const isWeightsTab = activeTab === 'weights';
+  const isCardioTab = activeTab === 'cardio';
+
   const {
     filteredWorkouts: generalFilteredWorkouts,
     weeklyVolume: generalWeeklyVolume,
     cardioStats: generalCardioStats,
     hasData: hasAnyWorkoutData,
     hasFilteredData: hasGeneralFilteredData,
-  } = useAnalyticsData({ timeRange: generalTimeRange });
+  } = useAnalyticsData({ timeRange: generalTimeRange, enabled: isGeneralTab });
 
-  const { hasFilteredData: hasVolumeData, filteredWorkouts: volumeFilteredWorkouts } = useAnalyticsData({ timeRange: volumeTimeRange });
-  const { filteredWorkouts: topExercisesFilteredWorkouts } = useAnalyticsData({ timeRange: topExercisesTimeRange });
-  const { filteredWorkouts: volumeTrendFilteredWorkouts } = useAnalyticsData({ timeRange: volumeTrendTimeRange });
+  const { hasFilteredData: hasVolumeData, filteredWorkouts: volumeFilteredWorkouts, weeklyVolume: volumeWeeklyVolume } = useAnalyticsData({ timeRange: volumeTimeRange, enabled: isWeightsTab });
+  const { filteredWorkouts: topExercisesFilteredWorkouts } = useAnalyticsData({ timeRange: topExercisesTimeRange, enabled: isWeightsTab });
+  const { filteredWorkouts: volumeTrendFilteredWorkouts, volumeTrendData: volumeTrendChartData, hasFilteredData: hasVolumeTrendData } = useAnalyticsData({ timeRange: volumeTrendTimeRange, enabled: isWeightsTab });
   const weightUnit = useSettingsStore((state) => state.weightUnit);
-  const { cardioStats } = useAnalyticsData({ timeRange: cardioTimeRange });
+  const { cardioStats } = useAnalyticsData({ timeRange: cardioTimeRange, enabled: isCardioTab });
 
   // Get list of weight exercises the user has performed for the volume trend filter
   const performedWeightExercises = useMemo(() => {
@@ -677,7 +681,7 @@ const StatsScreen: React.FC = () => {
           </View>
         }
       >
-        <VolumeTrendChart timeRange={volumeTrendTimeRange} selectedExercise={volumeTrendExercise} />
+        <VolumeTrendChart timeRange={volumeTrendTimeRange} selectedExercise={volumeTrendExercise} precomputedVolumeTrendData={volumeTrendChartData} precomputedHasFilteredData={hasVolumeTrendData} precomputedFilteredWorkouts={volumeTrendFilteredWorkouts} />
         
         {/* Exercise selection modal */}
         <SheetModal
@@ -748,7 +752,7 @@ const StatsScreen: React.FC = () => {
         titleCentered={true}
         showHorizontalAccentBar={false}
       >
-        <SimpleVolumeChart timeRange={volumeTimeRange} />
+        <SimpleVolumeChart timeRange={volumeTimeRange} precomputedWeeklyVolume={volumeWeeklyVolume} precomputedHasFilteredData={hasVolumeData} />
       </AnalyticsCard>
 
       <AnalyticsCard

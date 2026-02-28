@@ -111,9 +111,6 @@ export const AccentColorModal: React.FC<AccentColorModalProps> = ({
           <Text variant="heading2" color="primary" style={styles.title}>
             Accent Color
           </Text>
-          <Text variant="body" color="secondary" style={styles.subtitle}>
-            Choose a color that appears throughout the app
-          </Text>
 
           <View style={styles.grid}>
             {ACCENT_COLOR_OPTIONS.map((option) => (
@@ -158,10 +155,8 @@ const styles = StyleSheet.create({
     ...shadows.lg,
   },
   title: {
-    marginBottom: spacing.xs,
-  },
-  subtitle: {
     marginBottom: spacing.lg,
+    textAlign: 'center',
   },
   grid: {
     flexDirection: 'row',

@@ -102,7 +102,8 @@ const WorkoutSessionScreen: React.FC = () => {
   const removeExercise = useSessionStore((state) => state.removeExercise);
   const reorderExercises = useSessionStore((state) => state.reorderExercises);
   const addWorkout = useWorkoutSessionsStore((state) => state.addWorkout);
-  const { activeRotation, advanceRotation } = useProgramsStore();
+  const activeRotation = useProgramsStore((state) => state.activeRotation);
+  const advanceRotation = useProgramsStore((state) => state.advanceRotation);
   const customExercises = useCustomExerciseStore((state) => state.customExercises);
   const convertWeightToLbs = useSettingsStore((state) => state.convertWeightToLbs);
 
@@ -128,15 +129,6 @@ const WorkoutSessionScreen: React.FC = () => {
   const [finishModalVisible, setFinishModalVisible] = useState<boolean>(false);
   const [historyTargetName, setHistoryTargetName] = useState<string | null>(null);
   const [menuPosition, setMenuPosition] = useState<{ top: number; right: number }>({ top: 0, right: 0 });
-
-  // Debug: Log state changes
-  useEffect(() => {
-    console.log('[WorkoutSession] historyModalVisible changed to:', historyModalVisible);
-  }, [historyModalVisible]);
-
-  useEffect(() => {
-    console.log('[WorkoutSession] pickerVisible changed to:', pickerVisible);
-  }, [pickerVisible]);
 
   // Dismiss keyboard on component mount to prevent unwanted keyboard popup on app re-entry
   useEffect(() => {
@@ -230,8 +222,17 @@ const WorkoutSessionScreen: React.FC = () => {
     return [...baseExerciseCatalog, ...customCatalogItems];
   }, [customExercises]);
 
+  // O(1) lookup map keyed by exercise name — avoids repeated .find() in renderItem
+  const catalogLookup = useMemo(() => {
+    const map = new Map<string, ExerciseCatalogItem>();
+    for (const item of exerciseCatalog) {
+      map.set(item.name, item);
+    }
+    return map;
+  }, [exerciseCatalog]);
+
   const semanticResults = useSemanticExerciseSearch(searchTerm, exerciseCatalog, {
-    limit: exerciseCatalog.length,
+    limit: 50,
   });
 
 
@@ -283,8 +284,6 @@ const WorkoutSessionScreen: React.FC = () => {
 
   const handleReplaceExercisePress = useCallback(
     (exerciseName: string) => {
-      console.log('[WorkoutSession] Replace exercise pressed:', exerciseName);
-      console.log('[WorkoutSession] Setting pickerVisible to true');
       triggerHaptic('selection');
       setActiveMenu(null);
       setReplaceTargetName(exerciseName);
@@ -294,7 +293,6 @@ const WorkoutSessionScreen: React.FC = () => {
       requestAnimationFrame(() => {
         pickerListRef.current?.scrollToOffset({ offset: 0, animated: false });
       });
-      console.log('[WorkoutSession] State updates dispatched');
     },
     [],
   );
@@ -560,15 +558,12 @@ const WorkoutSessionScreen: React.FC = () => {
   }, [clearSession, router]);
 
   const openExerciseMenu = useCallback((exerciseName: string, pageX: number, pageY: number, width: number, height: number) => {
-    console.log('[Menu] Opening at:', { pageX, pageY, width, height, insetsTop: insets.top });
     triggerHaptic('selection');
     setActiveMenu({ type: 'exercise', exerciseName });
     // Position menu below the button
     // Removing insets.top subtraction to push the menu down further
     const top = pageY + height + spacing.xs;
     const right = Dimensions.get('window').width - (pageX + width);
-    console.log('[Menu] Calculated position:', { top, right });
-
     setMenuPosition({
       top,
       right,
@@ -608,13 +603,10 @@ const WorkoutSessionScreen: React.FC = () => {
   }, [exerciseToDelete, removeExercise]);
 
   const handleHistoryPress = useCallback((exerciseName: string) => {
-    console.log('[WorkoutSession] History pressed:', exerciseName);
-    console.log('[WorkoutSession] Setting historyModalVisible to true');
     triggerHaptic('selection');
     setActiveMenu(null);
     setHistoryTargetName(exerciseName);
     setHistoryModalVisible(true);
-    console.log('[WorkoutSession] State updates dispatched');
   }, []);
 
   const closeHistoryModal = useCallback(() => {
@@ -786,6 +778,7 @@ const WorkoutSessionScreen: React.FC = () => {
           size="md"
           onPress={handleAddExercisePress}
           disabled={isFinishingWorkout}
+          textColor={isDarkMode ? theme.text.primary : theme.accent.orange}
         />
         {hasExercises ? (
           <Button
@@ -827,6 +820,13 @@ const WorkoutSessionScreen: React.FC = () => {
   );
   const renderExerciseSeparator = useCallback(() => <View style={styles.exerciseSeparator} />, []);
 
+  // Stable extraData key — only changes when expanded exercises, progress, or active menu actually change
+  const extraDataKey = useMemo(() => ({
+    expanded: Array.from(expandedExercises).sort().join(','),
+    progress: exerciseProgress,
+    menu: activeMenu,
+  }), [expandedExercises, exerciseProgress, activeMenu]);
+
   // If we are active or have a session to display (even if finishing), render the UI.
   // Otherwise return null to allow redirect effect to handle navigation.
   if ((!isSessionActive || !currentSession) && !isFinishingWorkout) {
@@ -846,7 +846,7 @@ const WorkoutSessionScreen: React.FC = () => {
           keyExtractor={(item) => item.name}
           style={[styles.list, { marginBottom: tabBarTopOffset }]}
           contentContainerStyle={listContentStyle}
-          extraData={{ expandedExercises: Array.from(expandedExercises), exerciseProgress, activeMenu }}
+          extraData={extraDataKey}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="interactive"
           onScroll={(event) => {
@@ -947,20 +947,19 @@ const WorkoutSessionScreen: React.FC = () => {
                       initialSets={item.sets}
                       onSetsChange={(updatedSets) => handleExerciseSetsChange(item.name, updatedSets)}
                       onProgressChange={(progress) => handleExerciseProgressChange(item.name, progress)}
-                      exerciseType={exerciseCatalog.find(e => e.name === item.name)?.exerciseType || 'weight'}
-                      distanceUnit={exerciseCatalog.find(e => e.name === item.name)?.distanceUnit}
+                      exerciseType={catalogLookup.get(item.name)?.exerciseType || 'weight'}
+                      distanceUnit={catalogLookup.get(item.name)?.distanceUnit}
                       historySetCount={sessionToDisplay?.historySetCounts?.[item.name] ?? 0}
-                      supportsGpsTracking={exerciseCatalog.find(e => e.name === item.name)?.supportsGpsTracking ?? false}
+                      supportsGpsTracking={catalogLookup.get(item.name)?.supportsGpsTracking ?? false}
                       suggestedSets={sessionToDisplay?.suggestedSets?.[item.name]}
-                      exerciseEquipment={exerciseCatalog.find(e => e.name === item.name)?.equipment}
-                      isCompound={exerciseCatalog.find(e => e.name === item.name)?.isCompound ?? false}
+                      exerciseEquipment={catalogLookup.get(item.name)?.equipment}
+                      isCompound={catalogLookup.get(item.name)?.isCompound ?? false}
                       exerciseDataPoints={(sessionToDisplay as any)?.exerciseDataPoints?.[item.name] ?? []}
                       patternShiftCount={(sessionToDisplay as any)?.patternShiftCounts?.[item.name] ?? 0}
                       onPatternShift={() => useSessionStore.getState().incrementPatternShiftCount(item.name)}
                       exerciseRepRanges={(sessionToDisplay as any)?.exerciseRepRanges?.[item.name] ?? []}
                       onIntentShift={(intent: SessionRepIntent) => {
-                        const catalogEntry = exerciseCatalog.find((e) => e.name === item.name);
-                        handleIntentShift(item.name, catalogEntry?.isCompound ?? false, intent);
+                        handleIntentShift(item.name, catalogLookup.get(item.name)?.isCompound ?? false, intent);
                       }}
                       activeSetMenuIndex={activeMenu?.type === 'set' && activeMenu.exerciseName === item.name ? activeMenu.setIndex : null}
                       onOpenSetMenu={(index) => handleOpenSetMenu(item.name, index)}
@@ -1097,7 +1096,6 @@ const WorkoutSessionScreen: React.FC = () => {
           <Pressable
             style={styles.menuPopoverItem}
             onPress={() => {
-              console.log('[Menu] History item pressed');
               handleHistoryPress(activeMenu.exerciseName);
             }}
           >
@@ -1106,7 +1104,6 @@ const WorkoutSessionScreen: React.FC = () => {
           <Pressable
             style={styles.menuPopoverItem}
             onPress={() => {
-              console.log('[Menu] Replace item pressed');
               handleReplaceExercisePress(activeMenu.exerciseName);
             }}
           >
@@ -1115,7 +1112,6 @@ const WorkoutSessionScreen: React.FC = () => {
           <Pressable
             style={styles.menuPopoverItem}
             onPress={() => {
-              console.log('[Menu] Delete item pressed');
               handleDeleteExercise();
             }}
           >

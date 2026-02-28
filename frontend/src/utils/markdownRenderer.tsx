@@ -174,53 +174,52 @@ const parseInlineMarkdown = (text: string): (string | { type: string; content: s
   let i = 0;
 
   while (i < text.length) {
-    // Bold **text**
+    // Bold **text** — only consume if closing ** exists
     if (text[i] === '*' && text[i + 1] === '*') {
-      if (current) {
-        parts.push(current);
-        current = '';
+      const closeIdx = text.indexOf('**', i + 2);
+      if (closeIdx !== -1) {
+        if (current) { parts.push(current); current = ''; }
+        const boldText = text.substring(i + 2, closeIdx);
+        if (boldText) parts.push({ type: 'bold', content: boldText });
+        i = closeIdx + 2;
+        continue;
       }
-      i += 2;
-      let boldText = '';
-      while (i < text.length && !(text[i] === '*' && text[i + 1] === '*')) {
-        boldText += text[i];
-        i++;
-      }
-      if (boldText) parts.push({ type: 'bold', content: boldText });
+      // Unclosed ** — skip the markers silently (don't show literal asterisks)
       i += 2;
       continue;
     }
 
-    // Italic *text*
+    // Italic *text* — only consume if closing * exists (and not **)
     if (text[i] === '*' && text[i + 1] !== '*') {
-      if (current) {
-        parts.push(current);
-        current = '';
+      let closeIdx = i + 1;
+      let found = false;
+      while (closeIdx < text.length) {
+        if (text[closeIdx] === '*') { found = true; break; }
+        closeIdx++;
       }
-      i += 1;
-      let italicText = '';
-      while (i < text.length && text[i] !== '*') {
-        italicText += text[i];
-        i++;
+      if (found && closeIdx > i + 1) {
+        if (current) { parts.push(current); current = ''; }
+        const italicText = text.substring(i + 1, closeIdx);
+        parts.push({ type: 'italic', content: italicText });
+        i = closeIdx + 1;
+        continue;
       }
-      if (italicText) parts.push({ type: 'italic', content: italicText });
+      // Unclosed * — skip the marker silently
       i += 1;
       continue;
     }
 
     // Inline code `text`
     if (text[i] === '`') {
-      if (current) {
-        parts.push(current);
-        current = '';
+      const closeIdx = text.indexOf('`', i + 1);
+      if (closeIdx !== -1) {
+        if (current) { parts.push(current); current = ''; }
+        const codeText = text.substring(i + 1, closeIdx);
+        if (codeText) parts.push({ type: 'code', content: codeText });
+        i = closeIdx + 1;
+        continue;
       }
-      i += 1;
-      let codeText = '';
-      while (i < text.length && text[i] !== '`') {
-        codeText += text[i];
-        i++;
-      }
-      if (codeText) parts.push({ type: 'code', content: codeText });
+      // Unclosed ` — skip silently
       i += 1;
       continue;
     }

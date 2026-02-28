@@ -573,6 +573,10 @@ const ProfileModal: React.FC = () => {
           </>
         )}
 
+        {!__DEV__ && (
+          <View style={[styles.sectionDivider, { backgroundColor: theme.text.tertiary }]} />
+        )}
+
         {/* Account */}
         <View style={styles.section}>
           <Text variant="caption" color="secondary" style={styles.sectionTitle}>

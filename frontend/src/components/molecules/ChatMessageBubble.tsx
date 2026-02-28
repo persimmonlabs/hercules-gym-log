@@ -32,8 +32,11 @@ export const ChatMessageBubble: React.FC<ChatMessageBubbleProps> = ({
   onAnimationComplete,
   onTypingProgress,
 }) => {
-  const { theme } = useTheme();
+  const { theme, isDarkMode } = useTheme();
   const isUser = role === 'user';
+  
+  // In dark mode, use a softer light/medium grey for AI response text instead of near-white
+  const aiTextPrimary = isDarkMode ? '#B0B0B5' : theme.text.primary;
   
   // Track if animation has already completed to prevent infinite loops
   const animationCompletedRef = useRef(false);
@@ -137,7 +140,7 @@ export const ChatMessageBubble: React.FC<ChatMessageBubbleProps> = ({
       style={styles.aiContainer}
     >
       {renderMarkdown(parsedMarkdown, {
-        text: { primary: theme.text.primary, secondary: theme.text.secondary },
+        text: { primary: aiTextPrimary, secondary: theme.text.secondary },
         accent: { primary: theme.accent.primary },
         surface: { elevated: theme.surface.elevated },
         border: { medium: theme.border.medium },

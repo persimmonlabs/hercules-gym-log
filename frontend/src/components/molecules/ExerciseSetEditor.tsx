@@ -224,18 +224,16 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
   onShowHistory,
   onInputFocus,
 }) => {
-  const { theme } = useTheme();
+  const { theme, isDarkMode } = useTheme();
   // Subscribe to smart suggestions setting
   const smartSuggestionsEnabled = useSettingsStore((state) => state.smartSuggestionsEnabled);
   // Subscribe to unit values to trigger re-renders when units change
   const distanceUnitPref = useSettingsStore((state) => state.distanceUnit);
-  const {
-    getWeightUnit,
-    getDistanceUnitForExercise,
-    formatDistanceForExercise,
-    convertDistanceForExercise,
-    convertDistanceToMilesForExercise,
-  } = useSettingsStore();
+  const getWeightUnit = useSettingsStore((state) => state.getWeightUnit);
+  const getDistanceUnitForExercise = useSettingsStore((state) => state.getDistanceUnitForExercise);
+  const formatDistanceForExercise = useSettingsStore((state) => state.formatDistanceForExercise);
+  const convertDistanceForExercise = useSettingsStore((state) => state.convertDistanceForExercise);
+  const convertDistanceToMilesForExercise = useSettingsStore((state) => state.convertDistanceToMilesForExercise);
   const weightUnit = getWeightUnit();
   const distanceUnitLabel = getDistanceUnitForExercise(distanceUnit);
   const [sets, setSets] = useState<SetDraft[]>(() =>
@@ -324,7 +322,16 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
     return openMenuIndex === index;
   }, [isMenuControlled, activeSetMenuIndex, openMenuIndex]);
 
-  const initialSignature = useMemo(() => JSON.stringify(initialSets), [initialSets]);
+  // Lightweight change-detection fingerprint: captures set count, completion state, and key values
+  // without serializing every field of every set on each render
+  const initialSignature = useMemo(() => {
+    let sig = `${initialSets.length}:`;
+    for (let i = 0; i < initialSets.length; i++) {
+      const s = initialSets[i];
+      sig += `${s.completed ? 1 : 0},${s.weight ?? 0},${s.reps ?? 0},${s.duration ?? 0};`;
+    }
+    return sig;
+  }, [initialSets]);
 
   useEffect(() => {
     onSetsChangeRef.current = onSetsChange;
@@ -1081,17 +1088,20 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
       const mins = Math.floor((totalSeconds % 3600) / 60);
       const secs = totalSeconds % 60;
 
-      const next = [...setsRef.current];
-      next[index] = {
-        ...next[index],
-        duration: totalSeconds,
-        durationInput: formatDuration(totalSeconds),
-        hoursInput: hours.toString().padStart(2, '0'),
-        minutesInput: mins.toString().padStart(2, '0'),
-        secondsInput: secs.toString().padStart(2, '0'),
-      };
-      setsRef.current = next;
-      setSets(next);
+      // Update only the specific set at this index — avoids full array spread every tick
+      setSets(prev => {
+        const next = prev.slice();
+        next[index] = {
+          ...prev[index],
+          duration: totalSeconds,
+          durationInput: formatDuration(totalSeconds),
+          hoursInput: hours.toString().padStart(2, '0'),
+          minutesInput: mins.toString().padStart(2, '0'),
+          secondsInput: secs.toString().padStart(2, '0'),
+        };
+        setsRef.current = next;
+        return next;
+      });
     }, 1000);
 
     timerIntervalsRef.current.set(index, interval);
@@ -1204,6 +1214,8 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
         stickyHeaderIndices={embedded ? undefined : [0]}
         contentContainerStyle={contentStyle}
         keyboardShouldPersistTaps="handled"
+        scrollEnabled={!embedded}
+        nestedScrollEnabled={!embedded}
       >
         {embedded ? null : (
           <View style={styles.headerRow}>
@@ -1441,6 +1453,10 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
                             keyboardType="decimal-pad"
                             style={[styles.metricValue, { color: theme.text.primary, backgroundColor: 'transparent' }]}
                             textAlign="center"
+                            scrollEnabled={false}
+                            multiline={false}
+                            maxLength={7}
+                            numberOfLines={1}
                             placeholder="0"
                             placeholderTextColor={theme.text.tertiary}
                             cursorColor={theme.accent.primary}
@@ -1507,6 +1523,9 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
                             style={[styles.metricValue, { color: theme.text.primary, backgroundColor: 'transparent' }]}
                             textAlign="center"
                             scrollEnabled={false}
+                            multiline={false}
+                            maxLength={8}
+                            numberOfLines={1}
                             placeholder={distanceUnit === 'meters' || distanceUnit === 'floors' ? '0' : '0.00'}
                             placeholderTextColor={theme.text.tertiary}
                             cursorColor={theme.accent.primary}
@@ -1649,6 +1668,10 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
                             keyboardType="numeric"
                             style={[styles.metricValue, { color: theme.text.primary, backgroundColor: 'transparent' }]}
                             textAlign="center"
+                            scrollEnabled={false}
+                            multiline={false}
+                            maxLength={4}
+                            numberOfLines={1}
                             placeholder="0"
                             placeholderTextColor={theme.text.tertiary}
                             cursorColor={theme.accent.primary}
@@ -1702,7 +1725,7 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
             accessibilityRole="button"
             accessibilityLabel="Add set"
           >
-            <Text variant="bodySemibold" color="orange">
+            <Text variant="bodySemibold" style={{ color: isDarkMode ? theme.text.primary : theme.accent.orange }}>
               Add set
             </Text>
           </Pressable>
@@ -1874,13 +1897,15 @@ const styles = StyleSheet.create({
   },
   metricValue: {
     minWidth: spacing['2xl'] + spacing.lg,
+    height: sizing.iconLG + spacing.sm + spacing.xxs,
     fontSize: sizing.iconLG,
     color: colors.text.primary,
     fontWeight: '600',
-    paddingVertical: spacing.xxxs,
+    paddingVertical: 0,
     paddingHorizontal: spacing.xs,
     borderRadius: radius.md,
     backgroundColor: colors.surface.card,
+    overflow: 'hidden',
   },
   setActionButton: {
     marginTop: spacing.xs,

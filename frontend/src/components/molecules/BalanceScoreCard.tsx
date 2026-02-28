@@ -317,7 +317,7 @@ export const BalanceScoreCard: React.FC = () => {
             
             {/* Tap for details indicator */}
             <TouchableOpacity onPress={toggleExpanded} activeOpacity={0.8}>
-              <View style={styles.detailsIndicator}>
+              <View style={[styles.detailsIndicator, { borderTopColor: theme.border.light }]}>
                 <Text variant="caption" color="secondary">
                   {isExpanded ? 'Tap to hide details' : 'Tap for details'}
                 </Text>
@@ -422,7 +422,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingTop: spacing.sm,
     borderTopWidth: 1,
-    borderTopColor: colors.border.light,
   },
   expandedContent: {
     marginTop: spacing.md,

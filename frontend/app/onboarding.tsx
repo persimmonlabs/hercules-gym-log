@@ -37,17 +37,22 @@ export default function OnboardingScreen() {
   const {
     sizeUnit, setSizeUnit, weightUnit, setWeightUnit,
     themePreference, setThemePreference,
+    accentColor, setAccentColor,
   } = useSettingsStore();
   
   const { width: screenWidth } = useWindowDimensions();
 
-  // Force light mode during onboarding; restore user's preference on unmount
+  // Force light mode + orange accent during onboarding; restore user's preferences on unmount
   const savedThemeRef = useRef(themePreference);
+  const savedAccentRef = useRef(accentColor);
   useEffect(() => {
     savedThemeRef.current = themePreference;
+    savedAccentRef.current = accentColor;
     if (themePreference !== 'light') setThemePreference('light');
+    if (accentColor !== 'orange') setAccentColor('orange');
     return () => {
       if (savedThemeRef.current !== 'light') setThemePreference(savedThemeRef.current);
+      if (savedAccentRef.current !== 'orange') setAccentColor(savedAccentRef.current);
     };
   }, []);
 
@@ -94,14 +99,16 @@ export default function OnboardingScreen() {
   const finishOnboarding = useCallback(async () => {
     triggerHaptic('success');
     if (savedThemeRef.current !== 'light') setThemePreference(savedThemeRef.current);
+    if (savedAccentRef.current !== 'orange') setAccentColor(savedAccentRef.current);
     await updateProfileField('onboardingCompleted', true);
     router.replace('/(tabs)');
-  }, [updateProfileField, router, setThemePreference]);
+  }, [updateProfileField, router, setThemePreference, setAccentColor]);
 
   const handleSignIn = useCallback(() => {
     if (savedThemeRef.current !== 'light') setThemePreference(savedThemeRef.current);
+    if (savedAccentRef.current !== 'orange') setAccentColor(savedAccentRef.current);
     router.push('/auth/login');
-  }, [router, setThemePreference]);
+  }, [router, setThemePreference, setAccentColor]);
 
   const handleSignupComplete = useCallback((firstName: string, lastName: string) => {
     if (firstName) updateProfileField('firstName', firstName);
@@ -146,7 +153,7 @@ export default function OnboardingScreen() {
     goNext();
   }, [weightMetric, weightInput, profile?.heightFeet, profile?.heightInches, updateBodyMetrics, goNext, setWeightUnit]);
 
-  const renderSlide = ({ item }: { item: SlideType }) => {
+  const renderSlide = useCallback(({ item }: { item: SlideType }) => {
     let slideContent = null;
     switch (item) {
       case 'welcome':
@@ -259,8 +266,6 @@ export default function OnboardingScreen() {
       case 'premium':
         slideContent = (
           <PremiumSlide
-            experienceLevel={profile?.experienceLevel}
-            primaryGoal={profile?.primaryGoal}
             onUpgrade={finishOnboarding}
             onSkip={finishOnboarding}
           />
@@ -275,7 +280,7 @@ export default function OnboardingScreen() {
         {slideContent}
       </View>
     );
-  };
+  }, [goNext, handleSignIn, handleSignupComplete, selectOption, saveDob, saveHeight, saveWeight, finishOnboarding, profile, dobMonth, dobDay, dobYear, heightFt, heightIn, heightCm, weightInput, heightMetric, weightMetric, screenWidth]);
 
   const showProgress = PROFILE_SLIDES.includes(currentSlide);
 
@@ -310,7 +315,10 @@ export default function OnboardingScreen() {
         scrollEnabled={false}
         showsHorizontalScrollIndicator={false}
         getItemLayout={(_, index) => ({ length: screenWidth, offset: screenWidth * index, index })}
-        style={{ width: screenWidth }}
+        style={{ width: screenWidth, flex: 1 }}
+        windowSize={3}
+        initialNumToRender={2}
+        removeClippedSubviews={false}
       />
     </SafeAreaView>
   );

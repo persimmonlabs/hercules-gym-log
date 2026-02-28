@@ -41,9 +41,9 @@ export const PremiumLock: React.FC<PremiumLockProps> = ({
 
   // When locked, show clean lock card instead of blurred content
   return (
-    <SurfaceCard tone="neutral" padding="md" showAccentStripe={false}>
+    <SurfaceCard tone="card" padding="md" showAccentStripe={false}>
       <View style={styles.lockedCard}>
-        <View style={styles.lockBadge}>
+        <View style={[styles.lockBadge, { backgroundColor: theme.surface.elevated }]}>
           <Ionicons name="lock-closed" size={24} color={theme.accent.orange} />
         </View>
 

@@ -13,8 +13,6 @@ import {
   Pressable,
   ActivityIndicator,
   Keyboard,
-  NativeSyntheticEvent,
-  NativeScrollEvent,
   Text as RNText,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -172,19 +170,10 @@ const HerculesAIScreen: React.FC = () => {
   const flatListRef = useRef<FlatList>(null);
   const inputRef = useRef<TextInput>(null);
 
-  // Track if user has manually scrolled - only reset when user sends a new message
-  const userHasScrolled = useRef(false);
-  
-  // CRITICAL: Counter to trigger scroll to end when user sends a message
-  // Incrementing this triggers a useEffect that scrolls after render
-  const [scrollTrigger, setScrollTrigger] = useState(0);
-  
-  // Track scroll dimensions for smart scrolling
-  const scrollMetrics = useRef<{
-    contentHeight: number;
-    layoutHeight: number;
-    currentOffset: number;
-  }>({ contentHeight: 0, layoutHeight: 0, currentOffset: 0 });
+  // Flag: when true, the next onContentSizeChange will scrollToEnd
+  const shouldScrollOnNextLayout = useRef(false);
+  // Track the FlatList visible height for computing bottom padding
+  const listLayoutHeight = useRef<number>(0);
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputText, setInputText] = useState('');
@@ -202,62 +191,19 @@ const HerculesAIScreen: React.FC = () => {
   const [creditsNextReset, setCreditsNextReset] = useState<string>('');
   const [hasAttemptedFallbackRetry, setHasAttemptedFallbackRetry] = useState(false);
 
-  // CRITICAL: Trigger scroll to end when user sends a message
-  // This function increments the trigger which fires a useEffect after React's render cycle
-  const scrollToUserMessageTop = useCallback(() => {
-    setScrollTrigger((prev) => prev + 1);
-  }, []);
   
-  // CRITICAL: useEffect that fires AFTER React has processed the state update
-  // This ensures the FlatList has the new message before we scroll
-  useEffect(() => {
-    if (scrollTrigger === 0) return; // Skip initial render
-    
-    // Use multiple timeouts to ensure scroll happens after render is complete
-    // First timeout: Allow React to commit the update
-    const timer1 = setTimeout(() => {
-      flatListRef.current?.scrollToEnd({ animated: false });
-    }, 50);
-    
-    // Second timeout: Ensure scroll sticks after any layout adjustments
-    const timer2 = setTimeout(() => {
-      flatListRef.current?.scrollToEnd({ animated: false });
-    }, 150);
-    
-    // Third timeout: Final scroll to guarantee position
-    const timer3 = setTimeout(() => {
-      flatListRef.current?.scrollToEnd({ animated: false });
-    }, 300);
-    
-    return () => {
-      clearTimeout(timer1);
-      clearTimeout(timer2);
-      clearTimeout(timer3);
-    };
-  }, [scrollTrigger]);
-  
-  // Called when content size changes - update metrics
-  const handleContentSizeChange = useCallback((width: number, height: number) => {
-    scrollMetrics.current.contentHeight = height;
-  }, []);
-
-  // Smooth half-page scroll: only scroll when content is within threshold of bottom
-  // Scrolls by half the visible height with smooth animation
-  const scrollChunkedIfNeeded = useCallback(() => {
-    if (userHasScrolled.current) return;
-    
-    const { contentHeight, layoutHeight, currentOffset } = scrollMetrics.current;
-    const visibleBottom = currentOffset + layoutHeight;
-    const distanceFromBottom = contentHeight - visibleBottom;
-    
-    // Only scroll if content is within 80px of being hidden (positive = content below visible area)
-    if (distanceFromBottom < 80) return;
-    
-    // Scroll by half the visible page height for smooth, substantial movement
-    const scrollAmount = layoutHeight / 2;
-    const newOffset = currentOffset + scrollAmount;
-    
-    flatListRef.current?.scrollToOffset({ offset: newOffset, animated: true });
+  // Called when content size changes - if a scroll was requested, scrollToEnd
+  const handleContentSizeChange = useCallback((_width: number, _height: number) => {
+    if (shouldScrollOnNextLayout.current) {
+      shouldScrollOnNextLayout.current = false;
+      // Use multiple timeouts to ensure scroll sticks after layout adjustments
+      setTimeout(() => {
+        flatListRef.current?.scrollToEnd({ animated: false });
+      }, 50);
+      setTimeout(() => {
+        flatListRef.current?.scrollToEnd({ animated: false });
+      }, 150);
+    }
   }, []);
 
   // Keyboard handling with Reanimated
@@ -268,7 +214,6 @@ const HerculesAIScreen: React.FC = () => {
     const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
 
     const showSubscription = Keyboard.addListener(showEvent, (e) => {
-      // Add extra padding between input and keyboard for visual buffer
       keyboardHeight.value = withTiming(e.endCoordinates.height - (insets.bottom || 0) + 60, {
         duration: Platform.OS === 'ios' ? 250 : 150,
         easing: Easing.out(Easing.cubic),
@@ -293,9 +238,6 @@ const HerculesAIScreen: React.FC = () => {
     transform: [{ translateY: -keyboardHeight.value }],
   }));
 
-  const messageListAnimatedStyle = useAnimatedStyle(() => ({
-    paddingBottom: keyboardHeight.value,
-  }));
 
   useEffect(() => {
     if (isPremium && disclaimerAccepted) {
@@ -313,8 +255,6 @@ const HerculesAIScreen: React.FC = () => {
   const handleSend = useCallback(async () => {
     if (!inputText.trim() || isLoading) return;
 
-    // Reset scroll behavior when user sends a message - they want to see the response
-    userHasScrolled.current = false;
     // Reset fallback retry flag so user can retry again after new conversation
     setHasAttemptedFallbackRetry(false);
 
@@ -346,9 +286,9 @@ const HerculesAIScreen: React.FC = () => {
     setIsLoading(true);
     triggerHaptic('light');
 
-    // CRITICAL: Scroll user's message to top of visible area
-    // This triggers a useEffect that scrolls AFTER the state update is processed
-    scrollToUserMessageTop();
+    // ALWAYS scroll user's message to the top of the chat window
+    // The large bottom padding on the FlatList ensures scrollToEnd places the message at the top
+    shouldScrollOnNextLayout.current = true;
 
     const { data, error } = await sendChatMessage(userMessage.content, sessionId ?? undefined, appStats);
 
@@ -418,8 +358,7 @@ const HerculesAIScreen: React.FC = () => {
     }
 
     setIsLoading(false);
-    // Don't scroll here - typing animation will handle scrolling via scrollChunkedIfNeeded
-  }, [inputText, isLoading, sessionId, scrollToUserMessageTop, pendingAction]);
+  }, [inputText, isLoading, sessionId, pendingAction]);
 
   const handleActionDecision = useCallback(
     async (decision: 'approve' | 'reject', actionFromCard?: ActionProposal | null) => {
@@ -673,8 +612,6 @@ const HerculesAIScreen: React.FC = () => {
     // Mark that we've attempted a retry - prevents infinite loop
     setHasAttemptedFallbackRetry(true);
     
-    // Reset scroll behavior - user is taking action
-    userHasScrolled.current = false;
     
     // Show loading state but do NOT add a visible user message.
     // The retry is invisible to the user — they just see a loading spinner.
@@ -744,7 +681,7 @@ const HerculesAIScreen: React.FC = () => {
     
     setIsLoading(false);
     // Don't scroll here - typing animation will handle scrolling
-  }, [isLoading, hasAttemptedFallbackRetry, sessionId, scrollToUserMessageTop]);
+  }, [isLoading, hasAttemptedFallbackRetry, sessionId]);
 
   const renderMessage = ({ item, index }: { item: ChatMessage; index: number }) => {
     const isAnimationComplete = animationCompleteIds.has(item.id) || !newMessageIds.has(item.id);
@@ -790,7 +727,7 @@ const HerculesAIScreen: React.FC = () => {
           index={index}
           isNewMessage={newMessageIds.has(item.id)}
           onAnimationComplete={() => handleAnimationComplete(item.id)}
-          onTypingProgress={scrollChunkedIfNeeded} // Chunked scroll when content nears bottom
+          onTypingProgress={undefined} // Auto-scroll during AI response disabled
         />
         {showActionCard && (
           <View style={{ paddingHorizontal: spacing.md, marginTop: spacing.sm }}>
@@ -1025,9 +962,10 @@ const HerculesAIScreen: React.FC = () => {
   }
 
 
-  // Calculate input area height for FlatList bottom padding
-  // Add buffer so content appears higher on screen, not hidden behind input
-  const inputAreaHeight = 52 + spacing.sm + (insets.bottom || spacing.xs) + spacing.sm + spacing.xl + 100;
+  // Bottom padding = nearly the full visible height of the FlatList
+  // This ensures scrollToEnd places the last message at the TOP of the visible area
+  // (the large padding fills the rest of the screen below the message)
+  const inputAreaHeight = Math.max(listLayoutHeight.current - 60, 400);
 
   return (
     <LinearGradient colors={gradientColors} style={styles.gradient}>
@@ -1061,29 +999,20 @@ const HerculesAIScreen: React.FC = () => {
           contentContainerStyle={[styles.messageList, { paddingBottom: inputAreaHeight }]}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
-          // Detect when user manually scrolls
-          onScrollBeginDrag={() => {
-            userHasScrolled.current = true;
-          }}
-          // Track scroll position for chunked scrolling
-          onScroll={(event: NativeSyntheticEvent<NativeScrollEvent>) => {
-            scrollMetrics.current.currentOffset = event.nativeEvent.contentOffset.y;
-          }}
-          scrollEventThrottle={16}
-          // Track content size changes and handle pending scroll-to-top
+          // Track content size changes and handle pending scroll
           onContentSizeChange={handleContentSizeChange}
           onLayout={(event) => {
-            scrollMetrics.current.layoutHeight = event.nativeEvent.layout.height;
+            listLayoutHeight.current = event.nativeEvent.layout.height;
           }}
           ListFooterComponent={<TypingIndicator isVisible={isLoading} />}
           ListEmptyComponent={
             <Animated.View entering={FadeIn.duration(500)} style={styles.emptyState}>
               <Text variant="heading2" color="primary" style={styles.emptyTitle}>
-                Hey there! 👋
+                Hey there!
               </Text>
               <Text variant="body" color="secondary" style={styles.emptyText}>
                 I&apos;m Hercules, your AI fitness assistant. Ask me anything about
-                workouts, form, nutrition, or let me help you plan your next session.
+                workouts, form, recovery, or let me help you plan your next session.
               </Text>
             </Animated.View>
           }
@@ -1145,6 +1074,8 @@ const HerculesAIScreen: React.FC = () => {
               </Pressable>
             </View>
           </View>
+          {/* Background filler: extends below the input wrapper to cover the gap when keyboard pushes it up */}
+          <View style={{ position: 'absolute', left: 0, right: 0, bottom: -400, height: 400, backgroundColor: theme.primary.bg }} />
         </Animated.View>
       </View>
       <ChatHistoryModal
