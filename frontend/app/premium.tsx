@@ -5,11 +5,13 @@ import {
   StyleSheet,
   TouchableOpacity,
   BackHandler,
+  Alert,
 } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import RevenueCatUI, { PAYWALL_RESULT } from 'react-native-purchases-ui';
 
 import { Text } from '@/components/atoms/Text';
 import { Button } from '@/components/atoms/Button';
@@ -18,16 +20,41 @@ import { FeatureComparisonTable } from '@/components/molecules/FeatureComparison
 import { useTheme } from '@/hooks/useTheme';
 import { triggerHaptic } from '@/utils/haptics';
 import { spacing } from '@/constants/theme';
+import { useSubscriptionStore } from '@/store/subscriptionStore';
 
 import { PREMIUM_FEATURES } from '@/constants/premiumFeatures';
 
 export default function PremiumScreen() {
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
+  const { refreshCustomerInfo } = useSubscriptionStore();
 
-  const handlePurchase = () => {
+  const handlePurchase = async () => {
     triggerHaptic('medium');
-    console.log('Purchase premium');
+    try {
+      const result = await RevenueCatUI.presentPaywall();
+
+      switch (result) {
+        case PAYWALL_RESULT.PURCHASED:
+        case PAYWALL_RESULT.RESTORED:
+          await refreshCustomerInfo();
+          Alert.alert(
+            'Welcome to Hercules Pro!',
+            'You now have access to all premium features.',
+            [{ text: 'OK', onPress: () => router.back() }]
+          );
+          break;
+        case PAYWALL_RESULT.CANCELLED:
+          // User cancelled — stay on screen
+          break;
+        case PAYWALL_RESULT.ERROR:
+          Alert.alert('Error', 'Something went wrong. Please try again.');
+          break;
+      }
+    } catch (error) {
+      console.error('[Premium] Error presenting paywall:', error);
+      Alert.alert('Error', 'Failed to load subscription options. Please try again.');
+    }
   };
 
   const handleBack = useCallback(() => {

@@ -2,7 +2,9 @@
  * usePremiumStatus Hook
  * Manages premium subscription status for gating analytics features
  * 
- * Now connected to settingsStore for real Pro status management
+ * Uses RevenueCat subscription store as primary source of truth,
+ * with settingsStore.isPro as a fallback for backward compatibility
+ * (e.g. promo codes or manual overrides in Supabase).
  */
 
 import { useState, useEffect } from 'react';
@@ -10,6 +12,7 @@ import { useState, useEffect } from 'react';
 import type { PremiumStatus } from '@/types/analytics';
 import { useDevToolsStore } from '@/store/devToolsStore';
 import { useSettingsStore } from '@/store/settingsStore';
+import { useSubscriptionStore } from '@/store/subscriptionStore';
 
 // Default free tier status
 const FREE_STATUS: PremiumStatus = {
@@ -17,10 +20,6 @@ const FREE_STATUS: PremiumStatus = {
   expiresAt: null,
   tier: 'free',
 };
-
-// DEV MODE: Set to false to test free tier by default
-// Use the dev toggle in Profile settings to switch between free/premium
-const DEV_PREMIUM_ENABLED = false;
 
 // Mock premium status for development/testing
 const MOCK_PREMIUM_STATUS: PremiumStatus = {
@@ -37,6 +36,12 @@ interface UsePremiumStatusOptions {
 export const usePremiumStatus = (_options: UsePremiumStatusOptions = {}) => {
   const premiumOverride = useDevToolsStore((state) => state.premiumOverride);
   const isPro = useSettingsStore((state) => state.isPro);
+  const {
+    isProUser: rcIsProUser,
+    subscriptionTier: rcTier,
+    expirationDate: rcExpirationDate,
+    isLoading: rcIsLoading,
+  } = useSubscriptionStore();
   const [status, setStatus] = useState<PremiumStatus>(FREE_STATUS);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -48,8 +53,15 @@ export const usePremiumStatus = (_options: UsePremiumStatusOptions = {}) => {
       finalStatus = MOCK_PREMIUM_STATUS;
     } else if (premiumOverride === 'free') {
       finalStatus = FREE_STATUS;
+    } else if (rcIsProUser) {
+      // RevenueCat says user has active entitlement
+      finalStatus = {
+        isPremium: true,
+        expiresAt: rcExpirationDate,
+        tier: rcTier === 'lifetime' ? 'lifetime' : 'pro',
+      };
     } else if (isPro) {
-      // User has Pro status from promo code or purchase (synced from Supabase)
+      // Fallback: Supabase profiles.is_pro (promo codes, manual grants)
       finalStatus = {
         isPremium: true,
         expiresAt: null,
@@ -61,8 +73,8 @@ export const usePremiumStatus = (_options: UsePremiumStatusOptions = {}) => {
     }
     
     setStatus(finalStatus);
-    setIsLoading(false);
-  }, [premiumOverride, isPro]);
+    setIsLoading(rcIsLoading);
+  }, [premiumOverride, isPro, rcIsProUser, rcTier, rcExpirationDate, rcIsLoading]);
 
   // Helper functions for feature gating
   const canAccessMidTier = status.isPremium || status.tier === 'pro' || status.tier === 'lifetime';

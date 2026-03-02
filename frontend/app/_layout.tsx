@@ -21,6 +21,7 @@ import { useSettingsStore } from '@/store/settingsStore';
 import { useNotificationStore } from '@/store/notificationStore';
 import { useSessionStore } from '@/store/sessionStore';
 import { useWorkoutSessionsStore } from '@/store/workoutSessionsStore';
+import { useSubscriptionStore } from '@/store/subscriptionStore';
 import { scheduleNotifications } from '@/services/notificationService';
 
 import './add-exercises';
@@ -175,6 +176,7 @@ const RootLayoutNav = ({
   const hydrateActiveSchedule = useActiveScheduleStore((state) => state.hydrateActiveSchedule);
   const hydrateCustomExercises = useCustomExerciseStore((state) => state.hydrateCustomExercises);
   const syncFromSupabase = useSettingsStore((state) => state.syncFromSupabase);
+  const initializeSubscription = useSubscriptionStore((state) => state.initializeSubscription);
   const { notificationsEnabled, configs: notificationConfigs } = useNotificationStore();
 
   // Fetch profile and hydrate stores when user session is established
@@ -184,8 +186,9 @@ const RootLayoutNav = ({
       hydrateActiveSchedule(user.id);
       hydrateCustomExercises(user.id);
       syncFromSupabase();
+      initializeSubscription(user.id);
     }
-  }, [user?.id, fetchProfile, hydrateActiveSchedule, hydrateCustomExercises, syncFromSupabase]);
+  }, [user?.id, fetchProfile, hydrateActiveSchedule, hydrateCustomExercises, syncFromSupabase, initializeSubscription]);
 
   // Retry any pending workout saves that failed during previous app session.
   // The pendingWorkoutSave is persisted in AsyncStorage (via sessionStore) so

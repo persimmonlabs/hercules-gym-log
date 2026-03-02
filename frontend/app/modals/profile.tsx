@@ -31,6 +31,7 @@ import { useUserProfileStore } from '@/store/userProfileStore';
 import { useSettingsStore } from '@/store/settingsStore';
 import { useNotificationStore } from '@/store/notificationStore';
 import { useDevToolsStore } from '@/store/devToolsStore';
+import { useSubscriptionStore } from '@/store/subscriptionStore';
 
 const ProfileModal: React.FC = () => {
   const router = useRouter();
@@ -58,6 +59,7 @@ const ProfileModal: React.FC = () => {
   const { notificationsEnabled, configs } = useNotificationStore();
   const { isPremium, isLoading: isPremiumLoading } = usePremiumStatus();
   const { premiumOverride, setPremiumOverride } = useDevToolsStore();
+  const { isProUser, subscriptionTier, expirationDate, willRenew, isLifetime, isLoading: isSubscriptionLoading } = useSubscriptionStore();
   const backScale = useSharedValue(1);
   const backScaleStyle = useAnimatedStyle(() => ({ transform: [{ scale: backScale.value }] }));
 
@@ -339,29 +341,58 @@ const ProfileModal: React.FC = () => {
           </Text>
 
           <View style={[styles.settingsGroup, { backgroundColor: theme.surface.card }]}>
-            {!isPremiumLoading && !isPremium ? (
-              <SettingsItem
-                title="Go Premium"
-                subtitle="Unlock advanced analytics and unlimited workouts"
-                onPress={() => router.push('/premium' as any)}
-              />
-            ) : isPremiumLoading ? (
+            {isSubscriptionLoading ? (
               <View style={styles.settingsItem}>
                 <View style={styles.settingsItemContent}>
                   <Text variant="bodySemibold" color="primary" style={{ fontSize: 15 }}>
-                    Loading Premium Status
+                    Loading Subscription Status
                   </Text>
                   <Text variant="caption" color="secondary" style={{ fontSize: 13 }}>
                     Checking subscription details...
                   </Text>
                 </View>
               </View>
-            ) : (
+            ) : !isProUser ? (
               <SettingsItem
-                title="Manage Subscription"
-                subtitle="View billing history and manage your premium plan"
-                onPress={() => router.push('/manage-subscription' as any)}
+                title="Upgrade to Pro"
+                subtitle="Unlock advanced analytics and unlimited workouts"
+                onPress={() => {
+                  triggerHaptic('selection');
+                  router.push('/modals/paywall' as any);
+                }}
               />
+            ) : (
+              <>
+                <SettingsItem
+                  title="Subscription Status"
+                  subtitle={
+                    isLifetime 
+                      ? 'Lifetime Pro' 
+                      : subscriptionTier === 'yearly' 
+                        ? 'Annual Pro Subscription' 
+                        : 'Monthly Pro Subscription'
+                  }
+                  onPress={() => {
+                    triggerHaptic('selection');
+                    router.push('/modals/customer-center' as any);
+                  }}
+                  showDivider
+                />
+                {!isLifetime && expirationDate && (
+                  <SettingsItem
+                    title={willRenew ? "Next Billing Date" : "Expires On"}
+                    subtitle={new Date(expirationDate).toLocaleDateString('en-US', { 
+                      month: 'long', 
+                      day: 'numeric', 
+                      year: 'numeric' 
+                    })}
+                    onPress={() => {
+                      triggerHaptic('selection');
+                      router.push('/modals/customer-center' as any);
+                    }}
+                  />
+                )}
+              </>
             )}
           </View>
         </View>
@@ -404,9 +435,9 @@ const ProfileModal: React.FC = () => {
               subtitle="Suggests weights and reps based on your training patterns"
               value={smartSuggestionsEnabled}
               onValueChange={(val) => {
-                if (val && !isPremium) {
+                if (val && !isProUser) {
                   triggerHaptic('warning');
-                  router.push('/premium' as any);
+                  router.push('/modals/paywall' as any);
                   return;
                 }
                 setSmartSuggestionsEnabled(val);

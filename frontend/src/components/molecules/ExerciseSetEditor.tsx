@@ -848,7 +848,7 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
 
     if (justCompleted) {
       // Stop timer if this is a timed exercise and timer is running
-      if (exerciseType === 'duration' && (runningTimers.has(index) || pausedTimers.has(index))) {
+      if ((exerciseType === 'duration' || exerciseType === 'cardio') && (runningTimers.has(index) || pausedTimers.has(index))) {
         const interval = timerIntervalsRef.current.get(index);
         if (interval) {
           clearInterval(interval);
@@ -1143,7 +1143,7 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
       timerIntervalsRef.current.delete(index);
     }
 
-    // Keep the elapsed time but transition to paused state
+    // Keep the elapsed time and fully stop the timer
     const currentSet = setsRef.current[index];
     timerPausedSecondsRef.current.set(index, currentSet?.duration ?? 0);
     timerStartTimesRef.current.delete(index);
@@ -1153,7 +1153,11 @@ export const ExerciseSetEditor: React.FC<ExerciseSetEditorProps> = ({
       next.delete(index);
       return next;
     });
-    setPausedTimers(prev => new Set(prev).add(index));
+    setPausedTimers(prev => {
+      const next = new Set(prev);
+      next.delete(index);
+      return next;
+    });
   }, []);
 
   const resetTimer = useCallback((index: number) => {

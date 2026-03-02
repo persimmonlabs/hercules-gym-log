@@ -83,14 +83,25 @@ export const MyScheduleCard: React.FC<MyScheduleCardProps> = ({
 
     return (
       <View style={styles.scheduleList}>
-        {cycleWorkouts.map((workoutId, visualIndex) => {
-          const workoutName = getWorkoutName(workoutId);
-          const isRest = workoutId === null || workoutId === undefined || workoutName === 'Rest';
-
+        {cycleWorkouts.map((baseWorkoutId, visualIndex) => {
           const today = new Date();
           const daysSinceStart = Math.floor((today.getTime() - activeRule.startDate) / (1000 * 60 * 60 * 24));
           const currentDayIndex = ((daysSinceStart % cycleWorkouts.length) + cycleWorkouts.length) % cycleWorkouts.length;
           const isCurrentDay = daysSinceStart >= 0 && visualIndex === currentDayIndex;
+
+          // Calculate the actual date for this cycle day
+          const targetDate = new Date(activeRule.startDate);
+          targetDate.setDate(targetDate.getDate() + visualIndex);
+          const dateKey = targetDate.toISOString().split('T')[0];
+          
+          // Check for override
+          const override = overrides.find((o: any) => o.date === dateKey);
+          
+          // Use override if exists, otherwise use base schedule
+          const workoutId = override ? override.workoutId : baseWorkoutId;
+          const workoutName = getWorkoutName(workoutId);
+          const isRest = workoutId === null || workoutId === undefined || workoutName === 'Rest';
+          const hasOverride = !!override;
 
           return (
             <View
@@ -113,7 +124,7 @@ export const MyScheduleCard: React.FC<MyScheduleCardProps> = ({
                 numberOfLines={1}
                 style={styles.workoutLabel}
               >
-                {workoutName}
+                {workoutName}{hasOverride ? '*' : ''}
               </Text>
             </View>
           );
@@ -195,15 +206,26 @@ export const MyScheduleCard: React.FC<MyScheduleCardProps> = ({
 
     return (
       <View style={styles.scheduleList}>
-        {activeRule.cycleWorkouts.map((workoutId, visualIndex) => {
-          const workoutName = getWorkoutName(workoutId);
-          const isRest = workoutId === null || workoutName === 'Rest';
-
+        {activeRule.cycleWorkouts.map((baseWorkoutId, visualIndex) => {
           // Calculate if this is the current day in the rotating cycle
           const today = new Date();
           const daysSinceStart = Math.floor((today.getTime() - activeRule.startDate) / (1000 * 60 * 60 * 24));
           const currentDayIndex = daysSinceStart % activeRule.cycleWorkouts.length;
           const isCurrentDay = visualIndex === currentDayIndex;
+
+          // Calculate the actual date for this cycle day
+          const targetDate = new Date(activeRule.startDate);
+          targetDate.setDate(targetDate.getDate() + visualIndex);
+          const dateKey = targetDate.toISOString().split('T')[0];
+          
+          // Check for override
+          const override = overrides.find((o: any) => o.date === dateKey);
+          
+          // Use override if exists, otherwise use base schedule
+          const workoutId = override ? override.workoutId : baseWorkoutId;
+          const workoutName = getWorkoutName(workoutId);
+          const isRest = workoutId === null || workoutName === 'Rest';
+          const hasOverride = !!override;
 
           return (
             <View
@@ -229,7 +251,7 @@ export const MyScheduleCard: React.FC<MyScheduleCardProps> = ({
                 numberOfLines={1}
                 style={styles.workoutLabel}
               >
-                {workoutName}
+                {workoutName}{hasOverride ? '*' : ''}
               </Text>
             </View>
           );
