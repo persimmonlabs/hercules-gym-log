@@ -51,16 +51,51 @@ export const normalizeScheduleData = (value: unknown): Record<string, unknown> |
 };
 
 /**
+ * Returns true if the content inside parentheses looks like an instruction or
+ * annotation rather than a legitimate exercise name qualifier.
+ * e.g. "3 sets of 10 reps" → true, "30 seconds each side" → true,
+ *      "Bodyweight" → false, "EZ Bar" → false
+ */
+const isInstructionAnnotation = (content: string): boolean => {
+  const lower = content.toLowerCase().trim();
+  return (
+    // Set/rep patterns: "3 sets", "10 reps", "3x10", "3 × 10", "sets of"
+    /\d+\s*(sets?|reps?|rounds?)\b/i.test(lower) ||
+    /\bsets?\s*(of|x)\s*\d+/i.test(lower) ||
+    /\d+\s*[x×]\s*\d+/i.test(lower) ||
+    // Duration patterns: "30 seconds", "60 sec", "2 minutes", "30s", "1 min"
+    /\d+\s*(seconds?|sec|s|minutes?|min|m)\b/i.test(lower) ||
+    // Per-side/per-limb patterns: "each side", "per side", "per leg", "per arm"
+    /\b(each|per)\s+(side|leg|arm|hand)\b/i.test(lower) ||
+    // Exercise type annotations the AI sometimes appends (never part of canonical names)
+    /^(bodyweight|weight|assisted|cardio|duration|reps.only)$/i.test(lower) ||
+    // Standalone instruction words
+    /^(optional|superset|dropset|drop set|warmup|warm-up|burnout|to failure|amrap|emom)$/i.test(lower) ||
+    // Source annotations (existing patterns, kept for completeness)
+    /\bfrom existing\b/i.test(lower) ||
+    /^existing\b/i.test(lower) ||
+    /\bfrom\s+\w/i.test(lower) ||
+    /^new$/i.test(lower) ||
+    /^keep$/i.test(lower)
+  );
+};
+
+/**
  * Strips parenthetical annotations the AI sometimes appends to exercise names.
- * e.g. "Bench Press (from existing Push Day)" → "Bench Press"
- *      "Cable Fly (existing)" → "Cable Fly"
+ * Removes parenthetical content that looks like instructions, annotations,
+ * or exercise type labels (e.g. "(Bodyweight)", "(Weight)").
+ *
+ * e.g. "Bench Press (3 sets of 10 reps)" → "Bench Press"
+ *      "Plank (30 seconds each side)" → "Plank"
+ *      "Cable Fly (from existing Push Day)" → "Cable Fly"
+ *      "Dips (Bodyweight)" → "Dips" (type annotation stripped)
  */
 export const stripExerciseAnnotations = (name: string): string => {
+  // Match all trailing parenthetical groups and strip ones that are instructions
   return name
-    .replace(/\s*\(from existing[^)]*\)/gi, '')
-    .replace(/\s*\(existing[^)]*\)/gi, '')
-    .replace(/\s*\(from [^)]*\)/gi, '')
-    .replace(/\s*\(new\)/gi, '')
+    .replace(/\s*\(([^)]*)\)/g, (_match, content: string) => {
+      return isInstructionAnnotation(content) ? '' : _match;
+    })
     .trim();
 };
 
@@ -112,6 +147,7 @@ export const isRestDayRef = (ref: unknown): boolean => {
     lower === '' ||
     lower === 'rest' ||
     lower === 'rest day' ||
+    lower === 'restday' ||
     lower === 'off' ||
     lower === 'recovery' ||
     lower === 'recovery day' ||

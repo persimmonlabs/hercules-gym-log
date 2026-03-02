@@ -5,7 +5,8 @@
  */
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, Platform, Pressable, StyleSheet, View } from 'react-native';
+import { AppState, Platform, Pressable, StyleSheet, View } from 'react-native';
+import type { AppStateStatus } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -18,12 +19,14 @@ import { OutdoorMetricsBar } from '@/components/molecules/OutdoorMetricsBar';
 import { OutdoorControlBar } from '@/components/molecules/OutdoorControlBar';
 import { useOutdoorSessionStore } from '@/store/outdoorSessionStore';
 import { useWorkoutSessionsStore } from '@/store/workoutSessionsStore';
+import { useSessionStore } from '@/store/sessionStore';
 import { useTheme } from '@/hooks/useTheme';
 import { outdoorTrackingService } from '@/services/outdoorTrackingService';
 import { useSettingsStore } from '@/store/settingsStore';
 import { triggerHaptic } from '@/utils/haptics';
 import { colors, spacing, radius, sizing } from '@/constants/theme';
 import { DARK_MAP_STYLE } from '@/constants/mapStyles';
+import { segmentRouteByGaps } from '@/utils/geo';
 import type { Workout } from '@/types/workout';
 import * as Location from 'expo-location';
 
@@ -54,7 +57,7 @@ const OutdoorSessionScreen: React.FC = () => {
   const endSession = useOutdoorSessionStore((s) => s.endSession);
   const clearSession = useOutdoorSessionStore((s) => s.clearSession);
 
-  const addWorkout = useWorkoutSessionsStore((s) => s.addWorkout);
+  // addWorkoutLocally + syncWorkoutToSupabase are called via getState() in handleFinish
   const convertDistanceToMiles = useSettingsStore((s) => s.convertDistanceToMiles);
 
   // Get current location immediately on mount so map centers before tracking starts
@@ -118,9 +121,21 @@ const OutdoorSessionScreen: React.FC = () => {
     }
   }, [theme.primary.bg]);
 
-  // Build polyline coordinates for map
-  const routeCoords = useMemo(
-    () => coordinates.map((c) => ({ latitude: c.latitude, longitude: c.longitude })),
+  // Restart foreground watcher when app returns from background
+  useEffect(() => {
+    const handleAppState = (nextState: AppStateStatus) => {
+      if (nextState === 'active' && status === 'active') {
+        void outdoorTrackingService.startGpsTracking();
+      }
+    };
+
+    const sub = AppState.addEventListener('change', handleAppState);
+    return () => sub.remove();
+  }, [status]);
+
+  // Build segmented polyline coordinates — splits at GPS gaps to avoid misleading straight lines
+  const routeSegments = useMemo(
+    () => segmentRouteByGaps(coordinates),
     [coordinates],
   );
 
@@ -145,10 +160,10 @@ const OutdoorSessionScreen: React.FC = () => {
     }
   }, [beginTracking]);
 
-  const handlePause = useCallback(() => {
+  const handlePause = useCallback(async () => {
     triggerHaptic('selection');
     pauseSession();
-    outdoorTrackingService.stopGpsTracking();
+    await outdoorTrackingService.stopGpsTracking();
     outdoorTrackingService.stopTimer();
   }, [pauseSession]);
 
@@ -164,7 +179,7 @@ const OutdoorSessionScreen: React.FC = () => {
 
     triggerHaptic('selection');
     setIsFinishing(true);
-    outdoorTrackingService.stopGpsTracking();
+    await outdoorTrackingService.stopGpsTracking();
     outdoorTrackingService.stopTimer();
 
     const result = endSession();
@@ -197,18 +212,38 @@ const OutdoorSessionScreen: React.FC = () => {
           ],
         },
       ],
+      routeCoordinates: result.coordinates.map((c) => ({
+        latitude: c.latitude,
+        longitude: c.longitude,
+        timestamp: c.timestamp,
+      })),
     };
 
-    try {
-      await addWorkout(workout);
-      router.replace('/workout-success');
-    } catch (error) {
-      console.error('[outdoor-session] Failed to save workout:', error);
-      router.replace('/(tabs)');
-    } finally {
-      setIsFinishing(false);
-    }
-  }, [isFinishing, endSession, addWorkout, clearSession, router]);
+    // ── Crash-safe save: persist locally first, navigate immediately ──
+    const { setPendingWorkoutSave, clearPendingWorkoutSave } = useSessionStore.getState();
+    setPendingWorkoutSave(workout);
+
+    const { addWorkoutLocally, syncWorkoutToSupabase } = useWorkoutSessionsStore.getState();
+    addWorkoutLocally(workout);
+
+    router.replace('/workout-success');
+    setIsFinishing(false);
+
+    // Background Supabase sync (fire-and-forget)
+    (async () => {
+      try {
+        const synced = await syncWorkoutToSupabase(workout);
+        if (synced) {
+          clearPendingWorkoutSave();
+          console.log('[outdoor-session] Background sync succeeded');
+        } else {
+          console.warn('[outdoor-session] Background sync failed — will retry on next startup');
+        }
+      } catch (error) {
+        console.warn('[outdoor-session] Background sync error:', error);
+      }
+    })();
+  }, [isFinishing, endSession, clearSession, router]);
 
   // Handle permission denied state
   const showPermissionDenied = permissionStatus === 'denied' && status === 'idle';
@@ -238,13 +273,31 @@ const OutdoorSessionScreen: React.FC = () => {
           provider={Platform.OS === 'android' ? PROVIDER_GOOGLE : undefined}
           mapPadding={{ top: insets.top, right: 0, bottom: 0, left: 0 }}
         >
-          {routeCoords.length >= 2 && (
-            <Polyline
-              coordinates={routeCoords}
-              strokeColor={theme.accent.orange}
-              strokeWidth={4}
-            />
+          {routeSegments.map((segment, idx) =>
+            segment.length >= 2 ? (
+              <Polyline
+                key={`seg-${idx}`}
+                coordinates={segment}
+                strokeColor={theme.accent.orange}
+                strokeWidth={4}
+              />
+            ) : null,
           )}
+          {/* Dashed lines connecting gap endpoints */}
+          {routeSegments.length >= 2 &&
+            routeSegments.slice(0, -1).map((seg, idx) => {
+              const nextSeg = routeSegments[idx + 1];
+              if (!seg.length || !nextSeg.length) return null;
+              return (
+                <Polyline
+                  key={`gap-${idx}`}
+                  coordinates={[seg[seg.length - 1], nextSeg[0]]}
+                  strokeColor={theme.accent.orangeMuted}
+                  strokeWidth={2}
+                  lineDashPattern={[8, 8]}
+                />
+              );
+            })}
         </MapView>
 
         {/* Back button */}

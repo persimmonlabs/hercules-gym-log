@@ -150,7 +150,7 @@ const ChartPage: React.FC<ChartPageProps> = ({ title, data, selectedSlice, onSel
               padAngle={2}
               style={{
                 data: {
-                  fill: ({ datum }) => selectedSlice && selectedSlice !== datum.x ? (isDarkMode ? theme.surface.elevated : theme.neutral.gray200) : datum.color,
+                  fill: ({ datum }) => selectedSlice && selectedSlice !== datum.x ? (isDarkMode ? theme.surface.card : theme.neutral.gray200) : datum.color,
                 },
                 labels: {
                   fill: 'transparent', // Hide labels on the chart itself for cleaner look, or use them if desired

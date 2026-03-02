@@ -17,7 +17,7 @@ import {
 } from './messages.ts';
 import { callOpenRouter, type ToolCall, type OpenRouterUsage } from './openrouter.ts';
 import { buildContextMessage, SYSTEM_PROMPT } from './prompts.ts';
-import { parseAssistantResponse, constructActionFromMessage } from './response.ts';
+import { parseAssistantResponse, constructActionFromMessage, crossValidateActionPayload } from './response.ts';
 import { executeStatFunction, type StatFunction } from './stats.ts';
 import { createSupabaseAdmin } from './supabase.ts';
 import { STAT_TOOLS } from './tools.ts';
@@ -573,6 +573,17 @@ Deno.serve(async (request: Request): Promise<Response> => {
     if (parsed.action && parsed.type !== 'action') {
       console.log('[HerculesAI] Correcting type to action since action payload is present');
       parsed = { ...parsed, type: 'action' };
+    }
+
+    // CRITICAL: Cross-validate payload exercises against message text.
+    // Catches the bug where the AI describes "Pull Day" in the message but
+    // the payload contains "Push Day" exercises from a previous proposal.
+    if (parsed.action) {
+      const validated = crossValidateActionPayload(parsed.message, parsed.action);
+      if (validated !== parsed.action) {
+        console.log('[HerculesAI] Payload was corrected by cross-validation');
+        parsed = { ...parsed, action: validated };
+      }
     }
 
     const actionRequest =

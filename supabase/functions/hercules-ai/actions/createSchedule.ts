@@ -40,6 +40,7 @@ export const createSchedule = async (
     }
 
     const resolvedDays: Record<string, string | null> = {};
+    const unresolvedEntries: string[] = [];
     for (const day of WEEKDAY_KEYS) {
       const ref = days[day];
       if (isRestDayRef(ref)) {
@@ -55,15 +56,28 @@ export const createSchedule = async (
           resolvedDays[day] = resolvedId;
           console.log(`[HerculesAI] createSchedule: resolved ${day}: "${refStr}" → ${resolvedId}`);
         } else {
-          console.warn(`[HerculesAI] createSchedule: could not resolve "${refStr}" for ${day} — marking rest`);
-          resolvedDays[day] = null;
+          console.error(`[HerculesAI] createSchedule: FAILED to resolve "${refStr}" for ${day}`);
+          unresolvedEntries.push(`${day}: "${refStr}"`);
         }
       }
+    }
+
+    if (unresolvedEntries.length > 0) {
+      throw new Error(
+        `Could not resolve these workout names to existing workouts: ${unresolvedEntries.join(', ')}. ` +
+        'Make sure the workouts exist in My Workouts or a Plan first, and that names match exactly.'
+      );
     }
 
     const workoutDayCount = Object.values(resolvedDays).filter((id) => id !== null).length;
     if (workoutDayCount === 0) {
       throw new Error('Could not resolve any workout names to existing workouts. Make sure the workouts exist in My Workouts or a Plan first.');
+    }
+
+    // Safety net: warn if all 7 days have workouts (no rest days)
+    const restDayCount = Object.values(resolvedDays).filter((id) => id === null).length;
+    if (restDayCount === 0) {
+      console.warn('[HerculesAI] createSchedule: weekly schedule has 0 rest days — all 7 days are workouts');
     }
 
     activeRule = { type: 'weekly', days: resolvedDays };
@@ -75,7 +89,9 @@ export const createSchedule = async (
     }
 
     const resolvedCycle: (string | null)[] = [];
-    for (const ref of cycleRefs) {
+    const unresolvedEntries: string[] = [];
+    for (let i = 0; i < cycleRefs.length; i++) {
+      const ref = cycleRefs[i];
       if (isRestDayRef(ref)) {
         resolvedCycle.push(null);
       } else {
@@ -86,15 +102,29 @@ export const createSchedule = async (
           resolvedCycle.push(resolvedId);
           console.log(`[HerculesAI] createSchedule: resolved cycle entry "${refStr}" → ${resolvedId}`);
         } else {
-          console.warn(`[HerculesAI] createSchedule: could not resolve "${refStr}" in cycle — marking rest`);
-          resolvedCycle.push(null);
+          console.error(`[HerculesAI] createSchedule: FAILED to resolve "${refStr}" at cycle position ${i + 1}`);
+          unresolvedEntries.push(`Day ${i + 1}: "${refStr}"`);
         }
       }
+    }
+
+    if (unresolvedEntries.length > 0) {
+      throw new Error(
+        `Could not resolve these workout names in the cycle: ${unresolvedEntries.join(', ')}. ` +
+        'Make sure the workouts exist in My Workouts or a Plan first, and that names match exactly.'
+      );
     }
 
     const workoutCount = resolvedCycle.filter((id) => id !== null).length;
     if (workoutCount === 0) {
       throw new Error('Could not resolve any workout names in the cycle. Make sure the workouts exist first.');
+    }
+
+    // Safety net: if the AI forgot to include rest days, auto-append one
+    const hasRestDay = resolvedCycle.some((id) => id === null);
+    if (!hasRestDay) {
+      console.warn('[HerculesAI] createSchedule: rotating cycle has 0 rest days — auto-appending a rest day');
+      resolvedCycle.push(null);
     }
 
     activeRule = { type: 'rotating', cycleWorkouts: resolvedCycle, startDate: Date.now() };

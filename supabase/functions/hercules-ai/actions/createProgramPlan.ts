@@ -196,29 +196,6 @@ export const createProgramPlan = async (
 
   console.log('[HerculesAI] createProgramPlan: plan created with ID:', planData.id);
 
-  // ── SAFETY NET: Load existing workouts so we can copy exercises if names match ──
-  const [existingTemplatesResult, existingPlanWorkoutsResult] = await Promise.all([
-    supabase.from('workout_templates').select('name, exercises').eq('user_id', userId),
-    supabase.from('plan_workouts').select('name, exercises').eq('user_id', userId),
-  ]);
-
-  // Build a lookup: lowercase name → exercises array (templates take priority)
-  const existingWorkoutExercises = new Map<string, Array<{ id: string; name: string }>>();
-  if (existingPlanWorkoutsResult.data) {
-    for (const w of existingPlanWorkoutsResult.data) {
-      const key = (w.name as string).trim().toLowerCase();
-      const exercises = Array.isArray(w.exercises) ? w.exercises as Array<{ id: string; name: string }> : [];
-      if (exercises.length > 0) existingWorkoutExercises.set(key, exercises);
-    }
-  }
-  if (existingTemplatesResult.data) {
-    for (const w of existingTemplatesResult.data) {
-      const key = (w.name as string).trim().toLowerCase();
-      const exercises = Array.isArray(w.exercises) ? w.exercises as Array<{ id: string; name: string }> : [];
-      if (exercises.length > 0) existingWorkoutExercises.set(key, exercises); // overwrites plan_workouts
-    }
-  }
-
   // Extract all workout names first, stripping parenthetical annotations the AI sometimes adds
   // e.g. "Full Body (Optional)" → "Full Body", "Arms (Advanced)" → "Arms"
   const rawWorkoutNames = workouts.map((workout, index) => {
@@ -232,47 +209,19 @@ export const createProgramPlan = async (
   const workoutsToInsert = workouts.map((workout, index) => {
     const workoutName = uniqueWorkoutNames[index];
     const originalName = rawWorkoutNames[index];
-    const useExisting = workout.useExisting === true;
-    const existingKey = originalName.trim().toLowerCase();
 
-    // SAFETY NET: Check if this workout should use existing exercises.
-    // Triggers when: (1) AI set useExisting: true, OR (2) exact name match, OR (3) fuzzy name match
-    let matchedExercises: Array<{ id: string; name: string }> | undefined;
+    // CRITICAL: Always use the exercises from the AI payload — these are what the user
+    // approved in the proposal. Never silently replace them with existing workout exercises
+    // based on name matching. The AI is instructed to copy exact {id, name} pairs from
+    // context when useExisting is true, so the payload exercises ARE the correct ones
+    // regardless of whether the workout is new or references an existing one.
+    //
+    // Previous "safety net" code here would replace AI-proposed exercises with existing
+    // workout exercises on name match, causing the created workouts to differ from the
+    // approved proposal. This was the root cause of the bug.
 
-    // Priority 1: Exact name match
-    matchedExercises = existingWorkoutExercises.get(existingKey);
-
-    // Priority 2: Fuzzy match — check if an existing workout name is contained in the proposed name or vice versa
-    if (!matchedExercises) {
-      for (const [existingName, existingEx] of existingWorkoutExercises.entries()) {
-        if (existingKey.includes(existingName) || existingName.includes(existingKey)) {
-          console.log('[HerculesAI] SAFETY NET (fuzzy): "' + originalName + '" ~ "' + existingName + '"');
-          matchedExercises = existingEx;
-          break;
-        }
-      }
-    }
-
-    // Use existing exercises when:
-    // (A) useExisting flag is set AND any match found (exact or fuzzy), OR
-    // (B) exact name match exists (even without useExisting flag — safety net)
-    const hasExactMatch = existingWorkoutExercises.has(existingKey);
-    const shouldUseExisting = matchedExercises && matchedExercises.length > 0 && (useExisting || hasExactMatch);
-    if (shouldUseExisting) {
-      console.log('[HerculesAI] SAFETY NET: Workout "' + originalName + '" (useExisting=' + useExisting + ') — using existing exercises (' + matchedExercises.length + ')');
-      return {
-        plan_id: planData.id,
-        user_id: userId,
-        name: workoutName,
-        exercises: matchedExercises,
-        order_index: index,
-        source_workout_id: getString(workout.sourceWorkoutId),
-      };
-    }
-
-    // If useExisting was set but no match found, log a warning (AI referenced a non-existent workout)
-    if (useExisting && !matchedExercises) {
-      console.warn('[HerculesAI] SAFETY NET WARNING: useExisting=true but no matching workout found for "' + originalName + '" — falling through to AI exercises');
+    if (workout.useExisting === true) {
+      console.log('[HerculesAI] Workout "' + originalName + '" marked useExisting=true — using exercises from AI payload (should match existing)');
     }
 
     const rawWorkoutExercises = normalizeExercises(workout.exercises);
@@ -290,15 +239,22 @@ export const createProgramPlan = async (
         continue;
       }
       
-      if (exId && exName) {
-        // AI provided both id and name — use cleaned name
-        workoutExercises.push({ id: exId, name: exName });
-      } else if (exName) {
-        // AI provided name but no valid id — resolve from catalog
+      if (exName) {
+        // CRITICAL FIX: ALWAYS resolve by name first. The AI can provide stale/wrong IDs
+        // from previous proposals in multi-turn conversations. The exercise name is the
+        // source of truth (it's what the user sees and approves).
         const resolved = resolveExerciseByName(exName);
         if (resolved) {
-          console.log('[HerculesAI] Resolved exercise by name:', rawName, '→', resolved.id, resolved.name);
+          if (exId && exId !== resolved.id) {
+            console.warn('[HerculesAI] Exercise ID mismatch corrected:', exName,
+              '— AI provided ID', exId, 'but catalog says', resolved.id);
+          }
           workoutExercises.push(resolved);
+        } else if (exId) {
+          // Fallback: name resolution failed but AI provided an ID
+          console.warn('[HerculesAI] Could not resolve by name:', rawName,
+            '(cleaned:', exName, ') — falling back to AI-provided ID:', exId);
+          workoutExercises.push({ id: exId, name: exName });
         } else {
           console.warn('[HerculesAI] Could not resolve exercise:', rawName, '(cleaned:', exName, ') — skipping');
         }
@@ -397,18 +353,35 @@ export const createProgramPlan = async (
       const days = (isRecord(setSchedule.days) ? setSchedule.days : null) as Record<string, unknown> | null;
       if (days) {
         const resolvedDays: Record<string, string | null> = {};
+        const unresolvedEntries: string[] = [];
         for (const day of WEEKDAY_KEYS_SCHED) {
           const dayRef = days[day];
           if (isRestDayRef(dayRef)) {
             resolvedDays[day] = null;
           } else {
             const refStr = typeof dayRef === 'string' ? dayRef : null;
-            resolvedDays[day] = refStr ? resolveRef(refStr) : null;
+            if (!refStr) {
+              resolvedDays[day] = null;
+              continue;
+            }
+            const resolvedId = resolveRef(refStr);
+            if (resolvedId) {
+              resolvedDays[day] = resolvedId;
+              console.log(`[HerculesAI] setActiveSchedule: resolved ${day}: "${refStr}" → ${resolvedId}`);
+            } else {
+              console.error(`[HerculesAI] setActiveSchedule: FAILED to resolve "${refStr}" for ${day}`);
+              unresolvedEntries.push(`${day}: "${refStr}"`);
+            }
           }
         }
-        const hasWorkout = Object.values(resolvedDays).some((id) => id !== null);
-        if (hasWorkout) {
-          activeRule = { type: 'weekly', days: resolvedDays };
+        if (unresolvedEntries.length > 0) {
+          console.error('[HerculesAI] setActiveSchedule: unresolved workout names:', unresolvedEntries);
+          scheduleSummary = ` Schedule could not be set — could not resolve: ${unresolvedEntries.join(', ')}.`;
+        } else {
+          const hasWorkout = Object.values(resolvedDays).some((id) => id !== null);
+          if (hasWorkout) {
+            activeRule = { type: 'weekly', days: resolvedDays };
+          }
         }
       }
     } else {
@@ -417,14 +390,42 @@ export const createProgramPlan = async (
       let resolvedCycle: (string | null)[];
 
       if (cycleRefs.length > 0) {
-        resolvedCycle = cycleRefs.map((ref) => {
-          if (isRestDayRef(ref)) return null;
-          const refStr = typeof ref === 'string' ? ref : null;
-          return refStr ? resolveRef(refStr) : null;
-        });
+        const unresolvedEntries: string[] = [];
+        resolvedCycle = [];
+        for (let i = 0; i < cycleRefs.length; i++) {
+          const ref = cycleRefs[i];
+          if (isRestDayRef(ref)) {
+            resolvedCycle.push(null);
+          } else {
+            const refStr = typeof ref === 'string' ? ref : null;
+            if (!refStr) { resolvedCycle.push(null); continue; }
+            const resolvedId = resolveRef(refStr);
+            if (resolvedId) {
+              resolvedCycle.push(resolvedId);
+              console.log(`[HerculesAI] setActiveSchedule: resolved cycle entry "${refStr}" → ${resolvedId}`);
+            } else {
+              console.error(`[HerculesAI] setActiveSchedule: FAILED to resolve "${refStr}" at position ${i + 1}`);
+              unresolvedEntries.push(`Day ${i + 1}: "${refStr}"`);
+            }
+          }
+        }
+        if (unresolvedEntries.length > 0) {
+          console.error('[HerculesAI] setActiveSchedule: unresolved workout names:', unresolvedEntries);
+          scheduleSummary = ` Schedule could not be set — could not resolve: ${unresolvedEntries.join(', ')}.`;
+          resolvedCycle = []; // prevent schedule creation
+        }
       } else {
-        // Default: all created workouts in order, no rest days
+        // Default: all created workouts in order + a rest day
         resolvedCycle = sortedInserted.map((w) => w.id as string);
+        resolvedCycle.push(null); // auto-append rest day
+        console.log('[HerculesAI] setActiveSchedule: default cycle — added rest day to', resolvedCycle.length - 1, 'workouts');
+      }
+
+      // Safety net: if the AI forgot to include rest days, auto-append one
+      const hasRestDay = resolvedCycle.some((id) => id === null);
+      if (!hasRestDay && resolvedCycle.length > 0) {
+        console.warn('[HerculesAI] setActiveSchedule: rotating cycle has 0 rest days — auto-appending a rest day');
+        resolvedCycle.push(null);
       }
 
       const hasWorkout = resolvedCycle.some((id) => id !== null);

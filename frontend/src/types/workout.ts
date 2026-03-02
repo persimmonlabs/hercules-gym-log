@@ -28,4 +28,6 @@ export interface Workout {
   endTime?: number;
   duration?: number;
   exercises: WorkoutExercise[];
+  /** GPS route coordinates for outdoor exercise sessions */
+  routeCoordinates?: { latitude: number; longitude: number; timestamp: number }[];
 }

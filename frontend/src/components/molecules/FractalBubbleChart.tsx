@@ -50,7 +50,7 @@ const getDisplayName = (fullName: string): string => {
 };
 
 export const FractalBubbleChart: React.FC<FractalBubbleChartProps> = ({ data, onMusclePress, rootGroup, showTapHint = true }) => {
-  const { theme } = useTheme();
+  const { theme, isDarkMode } = useTheme();
   // If rootGroup is provided, start at L1 level with that group
   const initialBreadcrumb: BreadcrumbItem[] = rootGroup 
     ? [{ name: rootGroup, level: 'L1' }]
@@ -158,7 +158,7 @@ export const FractalBubbleChart: React.FC<FractalBubbleChartProps> = ({ data, on
       </View>
 
       {/* Tap hint or breadcrumb */}
-      {hasData && (
+      {hasData && rootGroup !== 'Core' && (
         <View style={styles.breadcrumbContainer}>
           {isRootLevel && showTapHint ? (
             <Text variant="caption" color="tertiary">
@@ -201,7 +201,7 @@ export const FractalBubbleChart: React.FC<FractalBubbleChartProps> = ({ data, on
               padAngle={2}
               style={{
                 data: {
-                  fill: ({ datum }) => selectedSlice && selectedSlice !== datum.x ? colors.neutral.gray200 : datum.color,
+                  fill: ({ datum }) => selectedSlice && selectedSlice !== datum.x ? (isDarkMode ? theme.surface.elevated : theme.neutral.gray200) : datum.color,
                 },
                 labels: { fill: 'transparent' },
               }}

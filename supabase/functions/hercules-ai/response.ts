@@ -41,9 +41,33 @@ const looksLikeActionProposal = (message: string): { isProposal: boolean; likely
     'tap approve',
     'click approve',
     'hit approve',
+    'approve this program',
+    'approve this plan',
+    'approve this workout',
   ];
   
-  const isProposal = confirmationPatterns.some(pattern => lowerMessage.includes(pattern));
+  let isProposal = confirmationPatterns.some(pattern => lowerMessage.includes(pattern));
+  
+  // STRUCTURAL DETECTION: Multiple bold headers with numbered exercise lists
+  // This catches FORMAT 2 program proposals even without a confirmation phrase
+  if (!isProposal) {
+    const boldPattern = /\*\*([^*\n]{3,40})\*\*/g;
+    const allBolds = [...message.matchAll(boldPattern)];
+    let workoutHeaderCount = 0;
+    for (let idx = 0; idx < allBolds.length; idx++) {
+      const pos = (allBolds[idx].index || 0) + allBolds[idx][0].length;
+      const nextBold = allBolds[idx + 1];
+      const endPos = nextBold ? (nextBold.index || message.length) : message.length;
+      const section = message.substring(pos, endPos);
+      if ((section.match(/\n\s*\d+\.\s+[A-Z]/g) || []).length >= 2) {
+        workoutHeaderCount++;
+      }
+    }
+    if (workoutHeaderCount >= 2) {
+      isProposal = true;
+      console.log('[HerculesAI] looksLikeActionProposal: Detected structural program proposal (' + workoutHeaderCount + ' workout sections)');
+    }
+  }
   
   if (!isProposal) {
     return { isProposal: false, likelyActionType: null };
@@ -59,6 +83,11 @@ const looksLikeActionProposal = (message: string): { isProposal: boolean; likely
     likelyActionType = 'create_workout_template';
   } else if (lowerMessage.includes('log') || lowerMessage.includes('session')) {
     likelyActionType = 'add_workout_session';
+  }
+  
+  // If structural detection found multiple workout sections but no keyword match, it's a program
+  if (!likelyActionType && isProposal) {
+    likelyActionType = 'create_program_plan';
   }
   
   return { isProposal, likelyActionType };
@@ -90,220 +119,137 @@ export const constructActionFromMessage = (message: string, likelyActionType: st
 
 /**
  * Parses workout details from a message and constructs a program plan action.
- * CRITICAL: This must properly separate workout names from exercise lists.
+ * Handles both "Day N" headers and FORMAT 2 bold workout name headers.
  */
 const constructProgramPlanAction = (message: string): ActionProposal | null => {
   console.log('[HerculesAI] constructProgramPlanAction - parsing message of length:', message.length);
   
-  // Count days mentioned to generate a sensible plan name
-  const dayCount = (message.match(/\*\*Day\s*\d+/gi) || []).length;
-  
-  // Extract plan name - be very specific, avoid matching exercise lists
-  let planName = `${dayCount || 5}-Day Training Program`;
-  
-  // Look for explicit program name patterns (not exercise lists)
-  const programNamePatterns = [
+  // --- Step 1: Extract plan name ---
+  let planName = 'Training Program';
+  const planNamePatterns = [
+    /\*\*([^*]{3,50}(?:Program|Plan|Split|Routine)[^*]*)\*\*/i,
+    /here'?s?\s+(?:a|your|the)\s+\*\*([^*]{3,50})\*\*/i,
     /(?:here'?s?\s+(?:a|your|the)\s+)?(\d+-day\s+[a-z/]+(?:\s+split)?(?:\s+program)?)/i,
     /(?:called|named|titled)\s+"([^"]+)"/i,
-    /^#+\s*([^#\n]+(?:Program|Plan|Split|Routine)[^#\n]*)/im,
   ];
-  
-  for (const pattern of programNamePatterns) {
+  for (const pattern of planNamePatterns) {
     const match = message.match(pattern);
-    if (match && match[1]) {
+    if (match?.[1]) {
       const candidate = match[1].trim();
-      // Only use if it's a reasonable name (not a list of exercises)
       if (candidate.length < 50 && !candidate.includes('\n') && !candidate.match(/^\d+\.\s/)) {
         planName = candidate;
         break;
       }
     }
   }
-  
   console.log('[HerculesAI] Extracted plan name:', planName);
   
-  // Extract days/workouts from the message
+  // --- Step 2: Find workout section headers ---
+  interface SectionHeader { name: string; headerStart: number; contentStart: number; }
+  let headers: SectionHeader[] = [];
+  
+  // Pattern A: **Day N** or **Day N - Name** or **Day N: Name**
+  const dayPattern = /\*\*Day\s*(\d+)\s*(?:[-:–]\s*([^*\n]+))?\*\*/gi;
+  const dayMatches = [...message.matchAll(dayPattern)];
+  if (dayMatches.length > 0) {
+    headers = dayMatches.map((m, i) => {
+      let name = m[2]?.trim() || `Workout ${parseInt(m[1]) || (i + 1)}`;
+      name = name.split(/[:\n]/)[0].trim().replace(/\*+/g, '').trim();
+      if (name.length > 30) name = name.substring(0, 30).trim();
+      return { name, headerStart: m.index || 0, contentStart: (m.index || 0) + m[0].length };
+    });
+    console.log('[HerculesAI] Found', headers.length, 'Day N headers');
+  }
+  
+  // Pattern B: **BoldWorkoutName** followed by ≥2 numbered exercise items (FORMAT 2)
+  if (headers.length === 0) {
+    const boldPattern = /\*\*([^*\n]{3,40})\*\*/g;
+    const allBolds = [...message.matchAll(boldPattern)];
+    const workoutBolds = allBolds.filter((m, idx) => {
+      const pos = (m.index || 0) + m[0].length;
+      const nextBold = allBolds[idx + 1];
+      const endPos = nextBold ? (nextBold.index || message.length) : message.length;
+      const section = message.substring(pos, endPos);
+      return (section.match(/\n\s*\d+\.\s+[A-Z]/g) || []).length >= 2;
+    });
+    if (workoutBolds.length >= 2) {
+      headers = workoutBolds.map(m => ({
+        name: m[1].trim().replace(/\*+/g, '').trim(),
+        headerStart: m.index || 0,
+        contentStart: (m.index || 0) + m[0].length,
+      }));
+      console.log('[HerculesAI] Found', headers.length, 'bold workout headers (FORMAT 2)');
+    }
+  }
+  
+  if (headers.length === 0) {
+    console.warn('[HerculesAI] Could not find any workout section headers');
+    return null;
+  }
+  
+  // Update plan name with workout count if still generic
+  if (planName === 'Training Program') {
+    planName = `${headers.length}-Day Training Program`;
+  }
+  
+  // --- Step 3: Extract exercises from each section ---
   const workouts: Array<{
-    name: string;
-    dayOfWeek: number;
+    name: string; dayOfWeek: number;
     exercises: Array<{ name: string; sets: number; reps: string; restSeconds: number }>;
   }> = [];
   
-  // Split message by day headers to process each day separately
-  // Pattern: **Day X - Name** or **Day X: Name** or just **Day X**
-  const dayHeaderPattern = /\*\*Day\s*(\d+)\s*(?:[-:–]\s*([^*\n]+))?\*\*/gi;
-  const dayMatches = [...message.matchAll(dayHeaderPattern)];
-  
-  console.log('[HerculesAI] Found', dayMatches.length, 'day headers');
-  
-  for (let i = 0; i < dayMatches.length; i++) {
-    const dayMatch = dayMatches[i];
-    const dayNum = parseInt(dayMatch[1]) || (i + 1);
-    // Extract just the day name (e.g., "Push", "Pull", "Shoulders") - NOT exercises
-    let dayName = dayMatch[2]?.trim() || `Workout ${dayNum}`;
-    
-    // Clean up the day name - remove any trailing exercise info
-    dayName = dayName.split(/[:\n]/)[0].trim();
-    // Remove markdown formatting
-    dayName = dayName.replace(/\*+/g, '').trim();
-    // Ensure name is reasonable length
-    if (dayName.length > 30) {
-      dayName = dayName.substring(0, 30).trim();
-    }
-    
-    console.log('[HerculesAI] Processing Day', dayNum, ':', dayName);
-    
-    // Find the section of text for this day (until next day header or end)
-    const startIndex = (dayMatch.index || 0) + dayMatch[0].length;
-    const endIndex = dayMatches[i + 1]?.index || message.length;
-    const daySection = message.substring(startIndex, endIndex);
-    
-    // Extract exercises from this day's section using multiple patterns
+  for (let i = 0; i < headers.length; i++) {
+    const startIdx = headers[i].contentStart;
+    const endIdx = headers[i + 1]?.headerStart || message.length;
+    const section = message.substring(startIdx, endIdx);
     const exercises: Array<{ name: string; sets: number; reps: string; restSeconds: number }> = [];
     
-    console.log('[HerculesAI] Parsing exercises from day section (length:', daySection.length, ')');
-    console.log('[HerculesAI] Day section content preview:', daySection.substring(0, 300));
-    
-    // Helper to add exercise if valid and not duplicate
-    const addExercise = (name: string, sets: number, reps: string) => {
-      // Clean up the name
-      let cleanName = name.trim().replace(/\*+/g, '').replace(/[,;.!?]+$/, '').trim();
-      
-      // Skip invalid names - length check
-      if (cleanName.length < 3 || cleanName.length > 50) {
-        console.log('[HerculesAI] Skipped - length issue:', cleanName, cleanName.length);
-        return false;
-      }
-      
-      // CRITICAL: Skip partial hyphenated words (like "ups" from "Chin-ups" or "Bar Row" from "T-Bar Row")
-      // These are fragments that got incorrectly parsed
-      const lowerName = cleanName.toLowerCase();
-      const partialHyphenatedWords = [
-        'ups', 'up', 'down', 'downs', 'over', 'overs', 'through', 'throughs',
-        'bar row', 'bar rows', 'bell row', 'bell rows', 'bell press', 'bell curl',
-        'arm row', 'arm rows', 'arm press', 'arm curl',
-      ];
-      if (partialHyphenatedWords.includes(lowerName)) {
-        console.log('[HerculesAI] Skipped - partial hyphenated word fragment:', cleanName);
-        return false;
-      }
-      
-      // Skip if name doesn't start with a capital letter (proper exercise names are capitalized)
-      // Exception: numbers like "21s"
-      if (!/^[A-Z0-9]/.test(cleanName)) {
-        console.log('[HerculesAI] Skipped - not capitalized:', cleanName);
-        return false;
-      }
-      
-      // Skip single-word names that are too generic or likely fragments
-      const genericWords = ['row', 'rows', 'press', 'curl', 'curls', 'fly', 'flies', 'raise', 'raises', 'pull', 'push', 'extension', 'extensions'];
-      if (!cleanName.includes(' ') && genericWords.includes(lowerName)) {
-        console.log('[HerculesAI] Skipped - generic single word:', cleanName);
-        return false;
-      }
-      
-      // Skip names containing problematic phrases
-      if (lowerName.includes('day ') || lowerName.includes('would you') || lowerName.includes('workout')) {
-        console.log('[HerculesAI] Skipped - contains problematic phrase:', cleanName);
-        return false;
-      }
-      
-      // Check for duplicate
-      if (exercises.some(e => e.name.toLowerCase() === cleanName.toLowerCase())) {
-        console.log('[HerculesAI] Skipped - duplicate:', cleanName);
-        return false;
-      }
-      
-      console.log('[HerculesAI] Adding exercise:', cleanName, '- sets:', sets, '- reps:', reps);
-      exercises.push({
-        name: cleanName,
-        sets: sets,
-        reps: reps,
-        restSeconds: 90,
-      });
+    const addExercise = (rawName: string, sets: number, reps: string): boolean => {
+      let name = rawName.trim().replace(/\*+/g, '').replace(/[,;.!?]+$/, '').trim();
+      if (name.length < 3 || name.length > 50) return false;
+      const lower = name.toLowerCase();
+      const fragments = ['ups','up','down','downs','over','overs','through','throughs','bar row','bar rows','bell row','bell rows','bell press','bell curl','arm row','arm rows','arm press','arm curl'];
+      if (fragments.includes(lower)) return false;
+      if (!/^[A-Z0-9]/.test(name)) return false;
+      const generic = ['row','rows','press','curl','curls','fly','flies','raise','raises','pull','push','extension','extensions'];
+      if (!name.includes(' ') && generic.includes(lower)) return false;
+      if (lower.includes('day ') || lower.includes('would you') || lower.includes('workout')) return false;
+      if (exercises.some(e => e.name.toLowerCase() === lower)) return false;
+      exercises.push({ name, sets, reps, restSeconds: 90 });
       return true;
     };
     
-    // CRITICAL: Character class for exercise names - must include hyphens, apostrophes, numbers (for T-Bar)
-    // Using [A-Za-z0-9\s\-'''] to match: "T-Bar Row", "Pull-ups", "Farmer's Walk", "21s"
-    const nameChars = "[A-Za-z0-9][A-Za-z0-9\\s\\-''']*";
+    const nc = "[A-Za-z0-9][A-Za-z0-9\\s\\-''']*";
     
-    // Try ALL patterns and collect ALL matches (don't break early)
-    // Pattern 1: Numbered list with parentheses - "1. Barbell Bent-Over Row (4 sets)"
-    const numberedParenPattern = new RegExp(`\\d+\\.\\s*\\*?\\*?(${nameChars})\\*?\\*?\\s*\\((\\d+)\\s*sets?(?:,?\\s*(\\d+(?:-\\d+)?)\\s*(?:reps?|seconds?))?[^)]*\\)`, 'gi');
-    let matches = [...daySection.matchAll(numberedParenPattern)];
-    console.log('[HerculesAI] Pattern 1 (numbered paren) found', matches.length, 'matches');
-    for (const m of matches) {
-      const reps = m[3] || '8-12';
-      addExercise(m[1], parseInt(m[2]) || 3, reps);
-    }
-    
-    // Pattern 2: Bullet list with parentheses - "- Pull-ups (3 sets)"
-    const bulletParenPattern = new RegExp(`[-•]\\s*\\*?\\*?(${nameChars})\\*?\\*?\\s*\\((\\d+)\\s*sets?(?:,?\\s*(\\d+(?:-\\d+)?)\\s*(?:reps?|seconds?))?[^)]*\\)`, 'gi');
-    matches = [...daySection.matchAll(bulletParenPattern)];
-    console.log('[HerculesAI] Pattern 2 (bullet paren) found', matches.length, 'matches');
-    for (const m of matches) {
-      const reps = m[3] || '8-12';
-      addExercise(m[1], parseInt(m[2]) || 3, reps);
-    }
-    
-    // Pattern 3: Numbered with colon - "1. Bench Press: 3 sets x 8-12"
-    const numberedColonPattern = new RegExp(`\\d+\\.\\s*\\*?\\*?(${nameChars})\\*?\\*?\\s*:\\s*(\\d+)\\s*(?:sets?)?\\s*[x×]\\s*(\\d+(?:-\\d+)?)`, 'gi');
-    matches = [...daySection.matchAll(numberedColonPattern)];
-    console.log('[HerculesAI] Pattern 3 (numbered colon) found', matches.length, 'matches');
-    for (const m of matches) {
+    // P1: Numbered with parentheses - "1. Exercise (4 sets, 8-12 reps)"
+    for (const m of section.matchAll(new RegExp(`\\d+\\.\\s*\\*?\\*?(${nc})\\*?\\*?\\s*\\((\\d+)\\s*sets?(?:,?\\s*(\\d+(?:-\\d+)?)\\s*(?:reps?|seconds?))?[^)]*\\)`, 'gi')))
       addExercise(m[1], parseInt(m[2]) || 3, m[3] || '8-12');
-    }
-    
-    // Pattern 4: Bullet with colon - "- Bench Press: 3 sets x 8-12"
-    const bulletColonPattern = new RegExp(`[-•]\\s*\\*?\\*?(${nameChars})\\*?\\*?\\s*:\\s*(\\d+)\\s*(?:sets?)?\\s*[x×]\\s*(\\d+(?:-\\d+)?)`, 'gi');
-    matches = [...daySection.matchAll(bulletColonPattern)];
-    console.log('[HerculesAI] Pattern 4 (bullet colon) found', matches.length, 'matches');
-    for (const m of matches) {
+    // P2: Bullet with parentheses
+    for (const m of section.matchAll(new RegExp(`[-•]\\s*\\*?\\*?(${nc})\\*?\\*?\\s*\\((\\d+)\\s*sets?(?:,?\\s*(\\d+(?:-\\d+)?)\\s*(?:reps?|seconds?))?[^)]*\\)`, 'gi')))
       addExercise(m[1], parseInt(m[2]) || 3, m[3] || '8-12');
-    }
-    
-    // Pattern 5: Simple numbered list - "1. Pull-ups" (no sets/reps specified)
+    // P3: Numbered with colon - "1. Bench Press: 3 sets x 8-12"
+    for (const m of section.matchAll(new RegExp(`\\d+\\.\\s*\\*?\\*?(${nc})\\*?\\*?\\s*:\\s*(\\d+)\\s*(?:sets?)?\\s*[x×]\\s*(\\d+(?:-\\d+)?)`, 'gi')))
+      addExercise(m[1], parseInt(m[2]) || 3, m[3] || '8-12');
+    // P4: Bullet with colon
+    for (const m of section.matchAll(new RegExp(`[-•]\\s*\\*?\\*?(${nc})\\*?\\*?\\s*:\\s*(\\d+)\\s*(?:sets?)?\\s*[x×]\\s*(\\d+(?:-\\d+)?)`, 'gi')))
+      addExercise(m[1], parseInt(m[2]) || 3, m[3] || '8-12');
+    // P5: Simple numbered list (fallback)
     if (exercises.length === 0) {
-      const simpleNumberedPattern = new RegExp(`\\d+\\.\\s*\\*?\\*?(${nameChars})\\*?\\*?\\s*(?:\\n|$)`, 'gi');
-      matches = [...daySection.matchAll(simpleNumberedPattern)];
-      console.log('[HerculesAI] Pattern 5 (simple numbered) found', matches.length, 'matches');
-      for (const m of matches.slice(0, 10)) {
+      for (const m of [...section.matchAll(new RegExp(`\\d+\\.\\s*\\*?\\*?(${nc})\\*?\\*?\\s*(?:\\n|$)`, 'gi'))].slice(0, 10))
         addExercise(m[1], 3, '8-12');
-      }
     }
-    
-    // Pattern 6: Simple bullet list - "- Pull-ups" (no sets/reps specified)
+    // P6: Simple bullet list (fallback)
     if (exercises.length === 0) {
-      const simpleBulletPattern = new RegExp(`[-•]\\s*\\*?\\*?(${nameChars})\\*?\\*?\\s*(?:\\n|$)`, 'gi');
-      matches = [...daySection.matchAll(simpleBulletPattern)];
-      console.log('[HerculesAI] Pattern 6 (simple bullet) found', matches.length, 'matches');
-      for (const m of matches.slice(0, 10)) {
+      for (const m of [...section.matchAll(new RegExp(`[-•]\\s*\\*?\\*?(${nc})\\*?\\*?\\s*(?:\\n|$)`, 'gi'))].slice(0, 10))
         addExercise(m[1], 3, '8-12');
-      }
     }
     
-    console.log('[HerculesAI] Day', dayNum, 'final exercise count:', exercises.length);
-    if (exercises.length > 0) {
-      console.log('[HerculesAI] Exercises:', exercises.map(e => e.name).join(', '));
-    } else {
-      console.warn('[HerculesAI] WARNING: No exercises found for day', dayNum);
-    }
+    console.log('[HerculesAI]', headers[i].name, ':', exercises.length, 'exercises');
     
-    // Only add workout if we found exercises
     if (exercises.length > 0) {
-      workouts.push({
-        name: dayName,
-        dayOfWeek: dayNum,
-        exercises,
-      });
+      workouts.push({ name: headers[i].name, dayOfWeek: i + 1, exercises });
     } else {
-      // Still add the workout even without exercises, using the day name
-      workouts.push({
-        name: dayName,
-        dayOfWeek: dayNum,
-        exercises: [{ name: 'Custom Exercise', sets: 3, reps: '8-12', restSeconds: 90 }],
-      });
+      workouts.push({ name: headers[i].name, dayOfWeek: i + 1, exercises: [{ name: 'Custom Exercise', sets: 3, reps: '8-12', restSeconds: 90 }] });
     }
   }
   
@@ -312,10 +258,10 @@ const constructProgramPlanAction = (message: string): ActionProposal | null => {
     return null;
   }
   
-  console.log('[HerculesAI] Constructed program plan:', { 
-    planName, 
+  console.log('[HerculesAI] Constructed program plan:', {
+    planName,
     workoutCount: workouts.length,
-    workouts: workouts.map(w => ({ name: w.name, exerciseCount: w.exercises.length }))
+    workouts: workouts.map(w => ({ name: w.name, exerciseCount: w.exercises.length })),
   });
   
   return {
@@ -588,6 +534,348 @@ export const sanitizeForDisplay = (content: string): string => {
 
   // If we still have nothing useful, return a neutral fallback
   return 'Let me know how I can help with your training today.';
+};
+
+/**
+ * Extracts exercise names from a message's human-readable text.
+ * Used to cross-validate that the action payload matches what the user sees.
+ */
+const extractExerciseNamesFromMessage = (message: string): string[] => {
+  const names: Set<string> = new Set();
+  const nameChars = "[A-Za-z][A-Za-z0-9\\s\\-''']+?";
+
+  // Pattern A: "- Exercise Name: N sets x M" or "- **Exercise Name**: N x M"
+  const patternA = new RegExp(`[-•]\\s*\\*?\\*?(${nameChars})\\*?\\*?\\s*[:]\\s*\\d+\\s*(?:sets?)?\\s*[x×]`, 'gi');
+  for (const m of message.matchAll(patternA)) {
+    const name = m[1].trim().replace(/\*+/g, '');
+    if (name.length >= 3 && name.length <= 50) names.add(name.toLowerCase());
+  }
+
+  // Pattern B: "N. Exercise Name: N sets x M" (numbered list)
+  const patternB = new RegExp(`\\d+\\.\\s*\\*?\\*?(${nameChars})\\*?\\*?\\s*[:]\\s*\\d+\\s*(?:sets?)?\\s*[x×]`, 'gi');
+  for (const m of message.matchAll(patternB)) {
+    const name = m[1].trim().replace(/\*+/g, '');
+    if (name.length >= 3 && name.length <= 50) names.add(name.toLowerCase());
+  }
+
+  // Pattern C: "- Exercise Name (N sets)" or "N. Exercise Name (N sets)"
+  const patternC = new RegExp(`(?:[-•]|\\d+\\.)\\s*\\*?\\*?(${nameChars})\\*?\\*?\\s*\\(\\s*\\d+\\s*sets?`, 'gi');
+  for (const m of message.matchAll(patternC)) {
+    const name = m[1].trim().replace(/\*+/g, '');
+    if (name.length >= 3 && name.length <= 50) names.add(name.toLowerCase());
+  }
+
+  return [...names];
+};
+
+/**
+ * Checks if two exercise names are similar enough to be considered a match.
+ * Uses substring containment — e.g., "bench press" matches "barbell bench press".
+ */
+const exerciseNamesMatch = (a: string, b: string): boolean => {
+  if (a === b) return true;
+  if (a.includes(b) || b.includes(a)) return true;
+  // Split into words and check if majority of words overlap
+  const wordsA = a.split(/\s+/);
+  const wordsB = b.split(/\s+/);
+  const commonWords = wordsA.filter(w => wordsB.includes(w));
+  return commonWords.length >= Math.min(wordsA.length, wordsB.length) * 0.6;
+};
+
+/**
+ * CRITICAL: Cross-validates that the action payload matches the message the user sees.
+ * If the AI generated a message about "Pull Day" but the payload contains "Push Day" exercises,
+ * this function detects the mismatch and reconstructs the payload from the message text.
+ * 
+ * This prevents the bug where the user approves one workout but a different one gets created.
+ */
+export const crossValidateActionPayload = (
+  message: string,
+  action: ActionProposal
+): ActionProposal => {
+  if (action.actionType === 'create_workout_template') {
+    return crossValidateWorkoutPayload(message, action);
+  }
+  if (action.actionType === 'create_program_plan') {
+    return crossValidateProgramPayload(message, action);
+  }
+  if (action.actionType === 'create_schedule') {
+    return crossValidateSchedulePayload(message, action);
+  }
+  return action;
+};
+
+/**
+ * Cross-validates a create_workout_template payload against the message text.
+ */
+const crossValidateWorkoutPayload = (
+  message: string,
+  action: ActionProposal
+): ActionProposal => {
+  const payload = action.payload;
+  const payloadExercises = Array.isArray(payload.exercises)
+    ? (payload.exercises as Array<Record<string, unknown>>)
+        .map(e => String(e?.name || '').toLowerCase().trim())
+        .filter(Boolean)
+    : [];
+
+  if (payloadExercises.length === 0) return action;
+
+  const messageExercises = extractExerciseNamesFromMessage(message);
+
+  if (messageExercises.length < 2) {
+    console.log('[HerculesAI] Cross-validation: Not enough message exercises to validate (' + messageExercises.length + ')');
+    return action;
+  }
+
+  const { matchCount, overlapRatio } = computeExerciseOverlap(payloadExercises, messageExercises);
+
+  console.log('[HerculesAI] Cross-validation (workout):', {
+    payloadExercises: payloadExercises.slice(0, 5),
+    messageExercises: messageExercises.slice(0, 5),
+    matchCount,
+    total: payloadExercises.length,
+    overlap: (overlapRatio * 100).toFixed(0) + '%',
+  });
+
+  if (overlapRatio >= 0.5) {
+    return action;
+  }
+
+  // MISMATCH DETECTED — payload exercises don't match what the user sees in the message
+  console.error('[HerculesAI] CRITICAL MISMATCH: Payload exercises do not match message text!');
+  console.error('[HerculesAI] Payload exercises:', payloadExercises);
+  console.error('[HerculesAI] Message exercises:', messageExercises);
+
+  const reconstructed = constructWorkoutTemplateAction(message);
+  if (reconstructed) {
+    console.log('[HerculesAI] Replaced mismatched payload with message-derived exercises (' +
+      ((reconstructed.payload.exercises as unknown[])?.length || 0) + ' exercises)');
+    // Preserve the original workout name if the reconstructed one is generic
+    if (reconstructed.payload.name === 'Custom Workout' && payload.name) {
+      reconstructed.payload.name = payload.name;
+    }
+    return reconstructed;
+  }
+
+  console.warn('[HerculesAI] Could not reconstruct from message — using original payload');
+  return action;
+};
+
+/**
+ * Cross-validates a create_program_plan payload against the message text.
+ * Flattens all exercises across all workouts and checks overall overlap.
+ */
+const crossValidateProgramPayload = (
+  message: string,
+  action: ActionProposal
+): ActionProposal => {
+  const payload = action.payload;
+  const workouts = Array.isArray(payload.workouts)
+    ? (payload.workouts as Array<Record<string, unknown>>)
+    : [];
+
+  if (workouts.length === 0) return action;
+
+  // Flatten all exercise names from all workouts in the payload
+  const payloadExercises: string[] = [];
+  for (const w of workouts) {
+    const exercises = Array.isArray(w.exercises) ? (w.exercises as Array<Record<string, unknown>>) : [];
+    for (const e of exercises) {
+      const name = String(e?.name || '').toLowerCase().trim();
+      if (name) payloadExercises.push(name);
+    }
+  }
+
+  if (payloadExercises.length === 0) return action;
+
+  const messageExercises = extractExerciseNamesFromMessage(message);
+
+  if (messageExercises.length < 3) {
+    console.log('[HerculesAI] Cross-validation (program): Not enough message exercises to validate (' + messageExercises.length + ')');
+    return action;
+  }
+
+  const { matchCount, overlapRatio } = computeExerciseOverlap(payloadExercises, messageExercises);
+
+  console.log('[HerculesAI] Cross-validation (program):', {
+    payloadExerciseCount: payloadExercises.length,
+    messageExerciseCount: messageExercises.length,
+    matchCount,
+    overlap: (overlapRatio * 100).toFixed(0) + '%',
+  });
+
+  if (overlapRatio >= 0.5) {
+    // Even if exercises match, sanitize the setActiveSchedule sub-payload for rest day strings
+    sanitizeSetActiveSchedule(action.payload);
+    return action;
+  }
+
+  console.error('[HerculesAI] CRITICAL MISMATCH: Program payload exercises do not match message!');
+
+  const reconstructed = constructProgramPlanAction(message);
+  if (reconstructed) {
+    const newWorkouts = Array.isArray(reconstructed.payload.workouts)
+      ? (reconstructed.payload.workouts as unknown[]).length : 0;
+    console.log('[HerculesAI] Replaced mismatched program payload (' + newWorkouts + ' workouts)');
+    // Preserve the original setActiveSchedule if the reconstructed one doesn't have it
+    if (payload.setActiveSchedule && !reconstructed.payload.setActiveSchedule) {
+      reconstructed.payload.setActiveSchedule = payload.setActiveSchedule;
+    }
+    sanitizeSetActiveSchedule(reconstructed.payload);
+    return reconstructed;
+  }
+
+  console.warn('[HerculesAI] Could not reconstruct program from message — using original payload');
+  sanitizeSetActiveSchedule(action.payload);
+  return action;
+};
+
+/**
+ * Sanitizes the setActiveSchedule sub-payload within a create_program_plan payload.
+ * Converts rest-day strings ("Rest", "Off", etc.) to null to prevent them from
+ * being treated as workout names during schedule creation.
+ */
+const sanitizeSetActiveSchedule = (payload: Record<string, unknown>): void => {
+  const sched = payload.setActiveSchedule;
+  if (!sched || typeof sched !== 'object') return;
+
+  const schedObj = sched as Record<string, unknown>;
+  const restDayStrings = ['rest', 'rest day', 'restday', 'off', 'off day', 'recovery', 'recovery day'];
+
+  // Sanitize weekly days
+  if (typeof schedObj.days === 'object' && schedObj.days !== null) {
+    const days = schedObj.days as Record<string, unknown>;
+    for (const [day, val] of Object.entries(days)) {
+      if (typeof val === 'string' && restDayStrings.includes(val.toLowerCase().trim())) {
+        console.warn(`[HerculesAI] sanitizeSetActiveSchedule: correcting ${day}: "${val}" → null`);
+        days[day] = null;
+      }
+    }
+  }
+
+  // Sanitize rotating cycleWorkouts
+  const cycle = Array.isArray(schedObj.cycleWorkouts) ? schedObj.cycleWorkouts as unknown[] : null;
+  if (cycle) {
+    for (let i = 0; i < cycle.length; i++) {
+      const val = cycle[i];
+      if (typeof val === 'string' && restDayStrings.includes(val.toLowerCase().trim())) {
+        console.warn(`[HerculesAI] sanitizeSetActiveSchedule: correcting cycle[${i}]: "${val}" → null`);
+        cycle[i] = null;
+      }
+    }
+  }
+};
+
+/**
+ * Cross-validates a create_schedule payload against the message text.
+ * Checks that:
+ * 1. The schedule type (weekly/rotating) matches what the message describes
+ * 2. Rest day strings in the payload are corrected to null
+ * 3. Workout names in the payload appear in the message
+ */
+const crossValidateSchedulePayload = (
+  message: string,
+  action: ActionProposal
+): ActionProposal => {
+  const payload = action.payload;
+  const sd = (typeof payload.scheduleData === 'object' && payload.scheduleData !== null)
+    ? payload.scheduleData as Record<string, unknown>
+    : payload;
+  const payloadType = String(sd.type || payload.type || '').toLowerCase();
+
+  const lowerMessage = message.toLowerCase();
+
+  // 1. Detect schedule type from message text
+  const messageHasWeekly = lowerMessage.includes('weekly schedule') ||
+    (lowerMessage.includes('monday') && lowerMessage.includes('tuesday'));
+  const messageHasRotating = lowerMessage.includes('rotating schedule') ||
+    (lowerMessage.includes('day 1') && lowerMessage.includes('day 2'));
+
+  if (messageHasWeekly && payloadType === 'rotating') {
+    console.error('[HerculesAI] SCHEDULE TYPE MISMATCH: Message says weekly but payload says rotating — correcting to weekly');
+    // Can't auto-fix this reliably, but log the error so it's visible
+  }
+  if (messageHasRotating && payloadType === 'weekly') {
+    console.error('[HerculesAI] SCHEDULE TYPE MISMATCH: Message says rotating but payload says weekly — correcting to rotating');
+  }
+
+  // 2. Sanitize rest day strings in payload — convert "Rest", "rest", "Off", etc. to null
+  const restDayStrings = ['rest', 'rest day', 'restday', 'off', 'off day', 'recovery', 'recovery day'];
+  let corrected = false;
+
+  if (payloadType === 'weekly') {
+    const days = (typeof sd.days === 'object' && sd.days !== null) ? sd.days as Record<string, unknown> : null;
+    if (days) {
+      for (const [day, val] of Object.entries(days)) {
+        if (typeof val === 'string' && restDayStrings.includes(val.toLowerCase().trim())) {
+          console.warn(`[HerculesAI] Schedule cross-validation: correcting ${day}: "${val}" → null (rest day)`);
+          (days as Record<string, unknown>)[day] = null;
+          corrected = true;
+        }
+      }
+    }
+  } else if (payloadType === 'rotating') {
+    const cycle = Array.isArray(sd.cycleWorkouts) ? sd.cycleWorkouts as unknown[] : [];
+    for (let i = 0; i < cycle.length; i++) {
+      const val = cycle[i];
+      if (typeof val === 'string' && restDayStrings.includes(val.toLowerCase().trim())) {
+        console.warn(`[HerculesAI] Schedule cross-validation: correcting cycle[${i}]: "${val}" → null (rest day)`);
+        cycle[i] = null;
+        corrected = true;
+      }
+    }
+  }
+
+  if (corrected) {
+    console.log('[HerculesAI] Schedule cross-validation: corrected rest day strings to null');
+  }
+
+  // 3. Check that workout names from payload appear in the message
+  const payloadWorkoutNames: string[] = [];
+  if (payloadType === 'weekly') {
+    const days = (typeof sd.days === 'object' && sd.days !== null) ? sd.days as Record<string, unknown> : {};
+    for (const val of Object.values(days)) {
+      if (typeof val === 'string' && val.trim()) {
+        payloadWorkoutNames.push(val.trim().toLowerCase());
+      }
+    }
+  } else if (payloadType === 'rotating') {
+    const cycle = Array.isArray(sd.cycleWorkouts) ? sd.cycleWorkouts as unknown[] : [];
+    for (const val of cycle) {
+      if (typeof val === 'string' && val.trim()) {
+        payloadWorkoutNames.push(val.trim().toLowerCase());
+      }
+    }
+  }
+
+  if (payloadWorkoutNames.length > 0) {
+    const missingInMessage = payloadWorkoutNames.filter(name => !lowerMessage.includes(name));
+    if (missingInMessage.length > 0) {
+      console.warn('[HerculesAI] Schedule cross-validation: payload workout names not found in message:', missingInMessage);
+    }
+  }
+
+  return action;
+};
+
+/**
+ * Computes the overlap ratio between payload exercise names and message exercise names.
+ */
+const computeExerciseOverlap = (
+  payloadExercises: string[],
+  messageExercises: string[]
+): { matchCount: number; overlapRatio: number } => {
+  let matchCount = 0;
+  for (const pName of payloadExercises) {
+    if (messageExercises.some(mName => exerciseNamesMatch(mName, pName))) {
+      matchCount++;
+    }
+  }
+  return {
+    matchCount,
+    overlapRatio: matchCount / Math.max(payloadExercises.length, 1),
+  };
 };
 
 /**

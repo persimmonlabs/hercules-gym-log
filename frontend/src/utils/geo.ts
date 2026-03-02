@@ -97,6 +97,51 @@ export const isAccurateEnough = (
   return coord.accuracy <= thresholdMeters;
 };
 
+/** Threshold in seconds — gaps longer than this indicate a background tracking gap. */
+const GAP_THRESHOLD_SECONDS = 30;
+
+/**
+ * Segments an array of GPS coordinates into continuous route segments.
+ * A new segment starts whenever the time gap between consecutive points
+ * exceeds GAP_THRESHOLD_SECONDS. This prevents a single straight polyline
+ * from being drawn across periods where no GPS data was collected.
+ *
+ * @returns Array of segments, each being an array of {latitude, longitude}.
+ */
+export const segmentRouteByGaps = (
+  coordinates: GpsCoordinate[],
+): { latitude: number; longitude: number }[][] => {
+  if (coordinates.length === 0) return [];
+
+  const segments: { latitude: number; longitude: number }[][] = [];
+  let current: { latitude: number; longitude: number }[] = [
+    { latitude: coordinates[0].latitude, longitude: coordinates[0].longitude },
+  ];
+
+  for (let i = 1; i < coordinates.length; i++) {
+    const timeDiffSec = (coordinates[i].timestamp - coordinates[i - 1].timestamp) / 1000;
+
+    if (timeDiffSec > GAP_THRESHOLD_SECONDS) {
+      // Close current segment and start a new one
+      if (current.length >= 1) {
+        segments.push(current);
+      }
+      current = [];
+    }
+
+    current.push({
+      latitude: coordinates[i].latitude,
+      longitude: coordinates[i].longitude,
+    });
+  }
+
+  if (current.length >= 1) {
+    segments.push(current);
+  }
+
+  return segments;
+};
+
 /**
  * Checks if a new coordinate represents meaningful movement (not GPS jitter).
  * Filters out points that are unrealistically close or far from the previous point.

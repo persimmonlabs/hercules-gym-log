@@ -61,6 +61,7 @@ export const ActionApprovalCard: React.FC<ActionApprovalCardProps> = ({
           style={[
             styles.button,
             styles.rejectButton,
+            { borderColor: theme.border.medium },
             isLoading && styles.buttonDisabled,
           ]}
         >
@@ -109,7 +110,6 @@ const styles = StyleSheet.create({
   },
   rejectButton: {
     borderWidth: 1,
-    borderColor: '#000000',
   },
   approveButton: {},
   buttonDisabled: {

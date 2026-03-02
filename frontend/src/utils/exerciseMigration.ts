@@ -17,6 +17,9 @@ const EXERCISE_NAME_MIGRATIONS: Record<string, string> = {
   // Format: 'Old Name': 'New Name'
   'Thigh Adductor': 'Hip Adductor',
   'Thigh Abductor': 'Hip Abductor',
+  'Pistol Squats': 'Bodyweight Pistol Squats',
+  'Pistol Squats (Bodyweight)': 'Bodyweight Pistol Squats',
+  'Bulgarian Split Squats (Bodyweight)': 'Bodyweight Bulgarian Split Squats',
 };
 
 /**

@@ -117,7 +117,7 @@ export const STAT_TOOLS: ToolDefinition[] = [
     function: {
       name: 'getExercisesByMuscleGroup',
       description:
-        'REQUIRED: Call this FIRST when creating a workout to discover available exercises. Returns all exercises for specified muscle groups with their IDs. Use this to pick NEW exercises - do NOT copy exercises from user\'s existing workouts in context.',
+        'REQUIRED: Call this FIRST when creating a workout to discover available exercises. Returns all exercises for specified muscle groups with their IDs. Use this to pick NEW exercises - do NOT copy exercises from user\'s existing workouts in context. IMPORTANT: When creating a PROGRAM with multiple workouts, make a SEPARATE call for EACH workout with ONLY that workout\'s target muscle groups. Push Day = chest,shoulders,triceps ONLY. Pull Day = back,biceps ONLY. Leg Day = quads,hamstrings,glutes,calves ONLY. NEVER mix muscle groups across workouts.',
       parameters: {
         type: 'object',
         properties: {

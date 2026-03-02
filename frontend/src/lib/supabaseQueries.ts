@@ -169,6 +169,7 @@ export async function fetchWorkoutSessions(userId: string): Promise<Workout[]> {
                 endTime: row.end_time,
                 duration: row.duration,
                 exercises: migrateWorkoutExercises(row.exercises || []),
+                ...(row.route_coordinates ? { routeCoordinates: row.route_coordinates } : {}),
             }));
         },
         [], // fallback to empty array
@@ -194,9 +195,7 @@ export async function createWorkoutSession(userId: string, workout: Workout): Pr
             }
         }
 
-        const { data, error } = await supabaseClient
-            .from('workout_sessions')
-            .insert({
+        const insertPayload: Record<string, unknown> = {
                 user_id: userId,
                 plan_id: validPlanId,
                 name: workout.name,
@@ -205,7 +204,15 @@ export async function createWorkoutSession(userId: string, workout: Workout): Pr
                 end_time: workout.endTime,
                 duration: workout.duration,
                 exercises: workout.exercises,
-            })
+        };
+
+        if (workout.routeCoordinates && workout.routeCoordinates.length > 0) {
+            insertPayload.route_coordinates = workout.routeCoordinates;
+        }
+
+        const { data, error } = await supabaseClient
+            .from('workout_sessions')
+            .insert(insertPayload)
             .select('id')
             .single();
 
@@ -235,9 +242,7 @@ export async function updateWorkoutSession(userId: string, workout: Workout): Pr
             }
         }
 
-        const { error } = await supabaseClient
-            .from('workout_sessions')
-            .update({
+        const updatePayload: Record<string, unknown> = {
                 plan_id: validPlanId,
                 name: workout.name,
                 date: workout.date,
@@ -245,7 +250,15 @@ export async function updateWorkoutSession(userId: string, workout: Workout): Pr
                 end_time: workout.endTime,
                 duration: workout.duration,
                 exercises: workout.exercises,
-            })
+        };
+
+        if (workout.routeCoordinates !== undefined) {
+            updatePayload.route_coordinates = workout.routeCoordinates;
+        }
+
+        const { error } = await supabaseClient
+            .from('workout_sessions')
+            .update(updatePayload)
             .eq('id', workout.id)
             .eq('user_id', userId);
 

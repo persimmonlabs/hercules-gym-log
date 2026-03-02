@@ -19,6 +19,8 @@ import { useActiveScheduleStore } from '@/store/activeScheduleStore';
 import { useCustomExerciseStore } from '@/store/customExerciseStore';
 import { useSettingsStore } from '@/store/settingsStore';
 import { useNotificationStore } from '@/store/notificationStore';
+import { useSessionStore } from '@/store/sessionStore';
+import { useWorkoutSessionsStore } from '@/store/workoutSessionsStore';
 import { scheduleNotifications } from '@/services/notificationService';
 
 import './add-exercises';
@@ -184,6 +186,37 @@ const RootLayoutNav = ({
       syncFromSupabase();
     }
   }, [user?.id, fetchProfile, hydrateActiveSchedule, hydrateCustomExercises, syncFromSupabase]);
+
+  // Retry any pending workout saves that failed during previous app session.
+  // The pendingWorkoutSave is persisted in AsyncStorage (via sessionStore) so
+  // it survives app crashes, kills, and network failures.
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const retryPendingWorkout = async () => {
+      const { pendingWorkoutSave, clearPendingWorkoutSave } = useSessionStore.getState();
+      if (!pendingWorkoutSave) return;
+
+      console.log('[_layout] Found pending workout save, retrying sync...');
+
+      // Ensure it's in local state so it's visible in Performance/History
+      const { addWorkoutLocally, syncWorkoutToSupabase } = useWorkoutSessionsStore.getState();
+      addWorkoutLocally(pendingWorkoutSave);
+
+      // Attempt Supabase sync (has built-in 15s timeout)
+      const synced = await syncWorkoutToSupabase(pendingWorkoutSave);
+      if (synced) {
+        clearPendingWorkoutSave();
+        console.log('[_layout] Pending workout synced successfully');
+      } else {
+        console.warn('[_layout] Pending workout sync failed again — will retry next startup');
+      }
+    };
+
+    // Small delay to let other hydration complete first
+    const timer = setTimeout(retryPendingWorkout, 2000);
+    return () => clearTimeout(timer);
+  }, [user?.id]);
 
   // Re-register scheduled notifications on login (survives app updates/reinstalls).
   // Only runs when the user has notifications enabled — never loads expo-notifications

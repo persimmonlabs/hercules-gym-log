@@ -39,8 +39,10 @@
       [
         "expo-location",
         {
-          "locationAlwaysAndWhenInUsePermission": "Hercules uses your location to track your outdoor exercise route, distance, and pace.",
-          "locationWhenInUsePermission": "Hercules uses your location to track your outdoor exercise route, distance, and pace."
+          "locationAlwaysAndWhenInUsePermission": "Hercules uses your location in the background to continue tracking your outdoor exercise route.",
+          "locationWhenInUsePermission": "Hercules uses your location to track your outdoor exercise route, distance, and pace.",
+          "isAndroidBackgroundLocationEnabled": true,
+          "isAndroidForegroundServiceEnabled": true
         }
       ],
       [

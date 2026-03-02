@@ -39,6 +39,8 @@ interface SessionDraft {
 export interface SessionState {
   currentSession: SessionDraft | null;
   isSessionActive: boolean;
+  /** Completed workout awaiting Supabase sync. Persisted in AsyncStorage so data survives crashes. */
+  pendingWorkoutSave: Workout | null;
   startSession: (planId: string | null, exercises?: WorkoutExercise[], name?: string | null, historySetCounts?: Record<string, number>, suggestedSets?: Record<string, SetLog[]>, exerciseDataPoints?: Record<string, ExerciseDataPoint[]>, exerciseRepRanges?: Record<string, RepRange[]>, hasCompoundIsolationSplit?: boolean) => void;
   addExercise: (exercise: WorkoutExercise, historySetCount?: number, suggested?: SetLog[], dataPoints?: ExerciseDataPoint[], repRanges?: RepRange[]) => void;
   getHistorySetCount: (exerciseName: string) => number;
@@ -58,6 +60,12 @@ export interface SessionState {
   endSession: () => Workout | null;
   clearSession: () => void;
   getCurrentSession: () => SessionDraft | null;
+  /** Store a completed workout for background Supabase sync. Persisted in AsyncStorage. */
+  setPendingWorkoutSave: (workout: Workout | null) => void;
+  /** Retrieve the pending workout (if any). */
+  getPendingWorkoutSave: () => Workout | null;
+  /** Clear the pending workout after successful Supabase sync. */
+  clearPendingWorkoutSave: () => void;
   isCompletionOverlayVisible: boolean;
   setCompletionOverlayVisible: (visible: boolean) => void;
   _hasHydrated: boolean;
@@ -73,6 +81,7 @@ export const useSessionStore = create<SessionState>()(
     (set, get) => ({
       currentSession: null,
       isSessionActive: false,
+      pendingWorkoutSave: null,
       isCompletionOverlayVisible: false,
       _hasHydrated: false,
       setHasHydrated: (state) => {
@@ -337,6 +346,15 @@ export const useSessionStore = create<SessionState>()(
       clearSession: () => {
         set({ currentSession: null, isSessionActive: false, isCompletionOverlayVisible: false });
       },
+      setPendingWorkoutSave: (workout) => {
+        set({ pendingWorkoutSave: workout });
+      },
+      getPendingWorkoutSave: () => {
+        return get().pendingWorkoutSave;
+      },
+      clearPendingWorkoutSave: () => {
+        set({ pendingWorkoutSave: null });
+      },
       getCurrentSession: () => {
         return get().currentSession;
       },
@@ -350,6 +368,7 @@ export const useSessionStore = create<SessionState>()(
       partialize: (state) => ({
         currentSession: state.currentSession,
         isSessionActive: state.isSessionActive,
+        pendingWorkoutSave: state.pendingWorkoutSave,
       }),
       onRehydrateStorage: () => (state) => {
         state?.setHasHydrated(true);

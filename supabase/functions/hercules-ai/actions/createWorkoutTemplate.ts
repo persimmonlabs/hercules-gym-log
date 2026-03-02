@@ -1,7 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 import type { ActionExecutionResult } from './types.ts';
-import { getString, normalizeExercises, resolveExerciseByName } from './helpers.ts';
+import { getString, normalizeExercises, resolveExerciseByName, stripExerciseAnnotations } from './helpers.ts';
 
 // CRITICAL: Filter out rest day workouts - rest days are NOT workouts
 const isRestDayWorkout = (workoutName: string): boolean => {
@@ -114,29 +114,37 @@ export const createWorkoutTemplate = async (
   const validatedExercises: Array<{ id: string; name: string }> = [];
   
   for (const ex of rawExercises) {
-    const exerciseName = getString(ex.name);
+    // CRITICAL: Strip AI annotations like "(3 sets of 10 reps)" before processing
+    const rawName = getString(ex.name) ?? '';
+    const exerciseName = stripExerciseAnnotations(rawName);
     const exerciseId = getString(ex.id);
     
     if (!exerciseName) continue;
     
     // CRITICAL: Filter out invalid/placeholder exercises
     if (isInvalidExercise(exerciseName)) {
-      console.warn('[HerculesAI] FILTERED OUT invalid exercise:', exerciseName);
+      console.warn('[HerculesAI] FILTERED OUT invalid exercise:', rawName);
       continue;
     }
     
-    if (exerciseId) {
-      // AI provided both id and name — use as-is
+    // CRITICAL FIX: ALWAYS resolve by name first. The AI can provide stale/wrong IDs
+    // from previous proposals in multi-turn conversations. The exercise name is the
+    // source of truth (it's what the user sees and approves). Resolving by name
+    // guarantees the stored ID matches the actual exercise in the catalog.
+    const resolved = resolveExerciseByName(exerciseName);
+    if (resolved) {
+      if (exerciseId && exerciseId !== resolved.id) {
+        console.warn('[HerculesAI] Exercise ID mismatch corrected:', exerciseName,
+          '— AI provided ID', exerciseId, 'but catalog says', resolved.id);
+      }
+      validatedExercises.push(resolved);
+    } else if (exerciseId) {
+      // Fallback: name resolution failed but AI provided an ID
+      console.warn('[HerculesAI] Could not resolve by name:', rawName,
+        '(cleaned:', exerciseName, ') — falling back to AI-provided ID:', exerciseId);
       validatedExercises.push({ id: exerciseId, name: exerciseName });
     } else {
-      // AI provided name but no valid id — resolve from catalog
-      const resolved = resolveExerciseByName(exerciseName);
-      if (resolved) {
-        console.log('[HerculesAI] Resolved exercise by name:', exerciseName, '→', resolved.id, resolved.name);
-        validatedExercises.push(resolved);
-      } else {
-        console.warn('[HerculesAI] Could not resolve exercise:', exerciseName, '— skipping');
-      }
+      console.warn('[HerculesAI] Could not resolve exercise:', rawName, '(cleaned:', exerciseName, ') — skipping');
     }
   }
 

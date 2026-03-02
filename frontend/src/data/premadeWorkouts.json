@@ -341,8 +341,8 @@
         { "id": "bodyweight_002", "name": "Pull-ups", "sets": 4 },
         { "id": "bodyweight_004", "name": "Dips", "sets": 4 },
         { "id": "bodyweight_001", "name": "Push-ups", "sets": 3 },
-        { "id": "bodyweight_014", "name": "Pistol Squats (Bodyweight)", "sets": 3 },
-        { "id": "bodyweight_021", "name": "Bulgarian Split Squats (Bodyweight)", "sets": 3 },
+        { "id": "bodyweight_013", "name": "Bodyweight Pistol Squats", "sets": 3 },
+        { "id": "bodyweight_021", "name": "Bodyweight Bulgarian Split Squats", "sets": 3 },
         { "id": "bodyweight_007", "name": "Leg Raises", "sets": 3 },
         { "id": "duration_007", "name": "L-Sit Hold", "sets": 3 }
       ],
@@ -562,7 +562,7 @@
         { "id": "exercise_150", "name": "Weighted Pull-ups", "sets": 4 },
         { "id": "exercise_151", "name": "Weighted Dips", "sets": 4 },
         { "id": "bodyweight_022", "name": "One-Arm Push-ups", "sets": 3 },
-        { "id": "bodyweight_013", "name": "Pistol Squats", "sets": 3 },
+        { "id": "bodyweight_013", "name": "Bodyweight Pistol Squats", "sets": 3 },
         { "id": "bodyweight_024", "name": "Dragon Flags", "sets": 3 }
       ],
       "metadata": {

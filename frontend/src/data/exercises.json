@@ -5430,7 +5430,7 @@
   },
   {
     "id": "bodyweight_013",
-    "name": "Pistol Squats",
+    "name": "Bodyweight Pistol Squats",
     "exercise_type": "weight",
     "distance_unit": null,
     "muscles": {
@@ -5454,32 +5454,7 @@
     "upper_lower": "lower",
     "effectiveBodyweightMultiplier": 0.03
   },
-  {
-    "id": "bodyweight_014",
-    "name": "Pistol Squats (Bodyweight)",
-    "exercise_type": "bodyweight",
-    "distance_unit": null,
-    "muscles": {
-      "Quads": 0.35,
-      "Glutes": 0.25,
-      "Hamstrings": 0.15,
-      "Calves - Medial Head": 0.045,
-      "Calves - Lateral Head": 0.035,
-      "Soleus": 0.02,
-      "Upper Abs": 0.05,
-      "Lower Abs": 0.05,
-      "Obliques": 0.05
-    },
-    "equipment": [
-      "Bodyweight"
-    ],
-    "movement_pattern": "Squat",
-    "difficulty": "Advanced",
-    "is_compound": true,
-    "push_pull": null,
-    "upper_lower": "lower",
-    "effectiveBodyweightMultiplier": 0.14
-  },
+  
   {
     "id": "bodyweight_015",
     "name": "Handstand Push-ups",
@@ -5669,7 +5644,7 @@
   },
   {
     "id": "bodyweight_021",
-    "name": "Bulgarian Split Squats (Bodyweight)",
+    "name": "Bodyweight Bulgarian Split Squats",
     "exercise_type": "bodyweight",
     "distance_unit": null,
     "muscles": {

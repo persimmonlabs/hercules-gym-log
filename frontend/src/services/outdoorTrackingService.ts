@@ -1,36 +1,82 @@
 /**
  * outdoorTrackingService
  * Global service for GPS tracking and timer that persists across navigation.
- * Manages Location subscription and timer interval independently of component lifecycle.
+ * Uses expo-task-manager for background location updates so the route
+ * continues to be recorded when the app is backgrounded or the phone is locked.
  */
 import * as Location from 'expo-location';
+import * as TaskManager from 'expo-task-manager';
 import type { GpsCoordinate } from '@/types/outdoor';
 import { isAccurateEnough } from '@/utils/geo';
 import { useOutdoorSessionStore } from '@/store/outdoorSessionStore';
 
+const BACKGROUND_LOCATION_TASK = 'hercules-background-location';
+
+/**
+ * Background task definition — must be called at module level (outside of any
+ * component or class) so the JS runtime registers it before the OS delivers events.
+ */
+TaskManager.defineTask(BACKGROUND_LOCATION_TASK, async ({ data, error }) => {
+  if (error) {
+    console.error('[BackgroundLocation] Task error:', error.message);
+    return;
+  }
+
+  if (data) {
+    const { locations } = data as { locations: Location.LocationObject[] };
+    const { addCoordinate, status } = useOutdoorSessionStore.getState();
+
+    if (status !== 'active') return;
+
+    for (const loc of locations) {
+      const coord: GpsCoordinate = {
+        latitude: loc.coords.latitude,
+        longitude: loc.coords.longitude,
+        altitude: loc.coords.altitude ?? undefined,
+        accuracy: loc.coords.accuracy ?? undefined,
+        timestamp: loc.timestamp,
+      };
+
+      if (!isAccurateEnough(coord, 30)) continue;
+      addCoordinate(coord);
+    }
+  }
+});
+
 class OutdoorTrackingService {
-  private locationSubscription: Location.LocationSubscription | null = null;
+  private foregroundSubscription: Location.LocationSubscription | null = null;
   private timerInterval: ReturnType<typeof setInterval> | null = null;
   private isTrackingActive = false;
+  private backgroundRunning = false;
 
-  async startGpsTracking(): Promise<boolean> {
-    // Request permission
+  /**
+   * Request both foreground and background location permissions.
+   * Returns true only if at least foreground is granted.
+   */
+  private async ensurePermissions(): Promise<{ foreground: boolean; background: boolean }> {
     try {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') {
-        console.warn('[OutdoorTrackingService] Location permission denied');
-        return false;
+      const fg = await Location.requestForegroundPermissionsAsync();
+      if (fg.status !== 'granted') {
+        console.warn('[OutdoorTrackingService] Foreground permission denied');
+        return { foreground: false, background: false };
       }
+
+      const bg = await Location.requestBackgroundPermissionsAsync();
+      return { foreground: true, background: bg.status === 'granted' };
     } catch (error) {
       console.error('[OutdoorTrackingService] Permission request failed:', error);
-      return false;
+      return { foreground: false, background: false };
     }
+  }
 
-    // Stop any existing subscription
-    this.stopGpsTracking();
+  /**
+   * Start the foreground location watcher (high-frequency updates while app is visible).
+   */
+  private async startForegroundWatcher(): Promise<void> {
+    this.stopForegroundWatcher();
 
     try {
-      this.locationSubscription = await Location.watchPositionAsync(
+      this.foregroundSubscription = await Location.watchPositionAsync(
         {
           accuracy: Location.Accuracy.BestForNavigation,
           timeInterval: 2000,
@@ -45,35 +91,97 @@ class OutdoorTrackingService {
             timestamp: location.timestamp,
           };
 
-          // Only add accurate coordinates
           if (!isAccurateEnough(coord, 30)) return;
 
-          // Add to store
           const { addCoordinate } = useOutdoorSessionStore.getState();
           addCoordinate(coord);
         }
       );
-
-      this.isTrackingActive = true;
-      console.log('[OutdoorTrackingService] GPS tracking started');
-      return true;
     } catch (error) {
-      console.error('[OutdoorTrackingService] Failed to start GPS tracking:', error);
-      return false;
+      console.error('[OutdoorTrackingService] Failed to start foreground watcher:', error);
     }
   }
 
-  stopGpsTracking(): void {
-    if (this.locationSubscription) {
-      this.locationSubscription.remove();
-      this.locationSubscription = null;
-      this.isTrackingActive = false;
-      console.log('[OutdoorTrackingService] GPS tracking stopped');
+  private stopForegroundWatcher(): void {
+    if (this.foregroundSubscription) {
+      this.foregroundSubscription.remove();
+      this.foregroundSubscription = null;
     }
+  }
+
+  /**
+   * Start background location updates via TaskManager.
+   */
+  private async startBackgroundUpdates(): Promise<void> {
+    try {
+      const isRunning = await Location.hasStartedLocationUpdatesAsync(BACKGROUND_LOCATION_TASK);
+      if (isRunning) return;
+
+      await Location.startLocationUpdatesAsync(BACKGROUND_LOCATION_TASK, {
+        accuracy: Location.Accuracy.High,
+        timeInterval: 5000,
+        distanceInterval: 5,
+        deferredUpdatesInterval: 5000,
+        showsBackgroundLocationIndicator: true,
+        foregroundService: {
+          notificationTitle: 'Hercules — Tracking Route',
+          notificationBody: 'Your outdoor activity is being recorded.',
+          notificationColor: '#FF6B4A',
+        },
+      });
+
+      this.backgroundRunning = true;
+      console.log('[OutdoorTrackingService] Background location updates started');
+    } catch (error) {
+      console.error('[OutdoorTrackingService] Failed to start background updates:', error);
+    }
+  }
+
+  private async stopBackgroundUpdates(): Promise<void> {
+    try {
+      const isRunning = await Location.hasStartedLocationUpdatesAsync(BACKGROUND_LOCATION_TASK);
+      if (isRunning) {
+        await Location.stopLocationUpdatesAsync(BACKGROUND_LOCATION_TASK);
+      }
+    } catch {
+      // Task may not be registered — safe to ignore
+    }
+    this.backgroundRunning = false;
+  }
+
+  /**
+   * Start GPS tracking (foreground watcher + background task).
+   */
+  async startGpsTracking(): Promise<boolean> {
+    const perms = await this.ensurePermissions();
+    if (!perms.foreground) return false;
+
+    await this.stopGpsTracking();
+
+    await this.startForegroundWatcher();
+
+    if (perms.background) {
+      await this.startBackgroundUpdates();
+    } else {
+      console.warn('[OutdoorTrackingService] Background permission not granted — tracking will pause when app is backgrounded');
+    }
+
+    this.isTrackingActive = true;
+    console.log('[OutdoorTrackingService] GPS tracking started');
+    return true;
+  }
+
+  /**
+   * Stop all GPS tracking (foreground + background).
+   */
+  async stopGpsTracking(): Promise<void> {
+    this.stopForegroundWatcher();
+    await this.stopBackgroundUpdates();
+    this.isTrackingActive = false;
+    console.log('[OutdoorTrackingService] GPS tracking stopped');
   }
 
   startTimer(): void {
-    // Stop any existing timer
     this.stopTimer();
 
     const tick = () => {
@@ -107,8 +215,8 @@ class OutdoorTrackingService {
     return this.isTrackingActive;
   }
 
-  cleanup(): void {
-    this.stopGpsTracking();
+  async cleanup(): Promise<void> {
+    await this.stopGpsTracking();
     this.stopTimer();
   }
 }

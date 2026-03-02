@@ -76,6 +76,12 @@ const WorkoutDetailScreen: React.FC = () => {
 
   const workout = workoutFromStore ?? lastKnownWorkout;
 
+  // Detect outdoor sessions (have GPS route coordinates)
+  const isOutdoorSession = useMemo(
+    () => !!(workout?.routeCoordinates && workout.routeCoordinates.length >= 2),
+    [workout?.routeCoordinates],
+  );
+
   // Initialize edit state when entering edit mode
   const handleStartEditing = useCallback(() => {
     if (!workout) return;
@@ -278,15 +284,17 @@ const WorkoutDetailScreen: React.FC = () => {
                 </Animated.View>
                 {workout ? (
                   <>
-                    <Pressable
-                      accessibilityRole="button"
-                      accessibilityLabel="Edit workout"
-                      onPress={handleEditPress}
-                      hitSlop={spacing.xs}
-                      style={styles.iconButton}
-                    >
-                      <IconSymbol name="edit" color={theme.accent.orangeLight} size={24} />
-                    </Pressable>
+                    {!isOutdoorSession && (
+                      <Pressable
+                        accessibilityRole="button"
+                        accessibilityLabel="Edit workout"
+                        onPress={handleEditPress}
+                        hitSlop={spacing.xs}
+                        style={styles.iconButton}
+                      >
+                        <IconSymbol name="edit" color={theme.accent.orangeLight} size={24} />
+                      </Pressable>
+                    )}
                     <Pressable
                       accessibilityRole="button"
                       accessibilityLabel="Delete workout"

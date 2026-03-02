@@ -56,20 +56,38 @@ const formatCompactNumber = (value: number): string => {
 
   if (abs >= 1_000_000_000) {
     const num = abs / 1_000_000_000;
-    const rounded = num >= 100 ? Math.round(num) : parseFloat(num.toFixed(1));
-    return `${sign}${rounded}B`;
+    // 3 significant digits: 1.00B to 999B
+    if (num >= 100) {
+      return `${sign}${Math.round(num)}B`;
+    } else if (num >= 10) {
+      return `${sign}${num.toFixed(1)}B`;
+    } else {
+      return `${sign}${num.toFixed(2)}B`;
+    }
   }
 
   if (abs >= 1_000_000) {
     const num = abs / 1_000_000;
-    const rounded = num >= 100 ? Math.round(num) : parseFloat(num.toFixed(1));
-    return `${sign}${rounded}M`;
+    // 3 significant digits: 1.00M to 999M
+    if (num >= 100) {
+      return `${sign}${Math.round(num)}M`;
+    } else if (num >= 10) {
+      return `${sign}${num.toFixed(1)}M`;
+    } else {
+      return `${sign}${num.toFixed(2)}M`;
+    }
   }
 
   if (abs >= 1_000) {
     const num = abs / 1_000;
-    const rounded = num >= 100 ? Math.round(num) : parseFloat(num.toFixed(1));
-    return `${sign}${rounded}K`;
+    // 3 significant digits: 1.00K to 999K
+    if (num >= 100) {
+      return `${sign}${Math.round(num)}K`;
+    } else if (num >= 10) {
+      return `${sign}${num.toFixed(1)}K`;
+    } else {
+      return `${sign}${num.toFixed(2)}K`;
+    }
   }
 
   return `${sign}${Math.round(abs).toLocaleString()}`;
@@ -114,7 +132,7 @@ const CardioStatsContent: React.FC<CardioStatsContentProps> = ({ stats, timeRang
   const cardioSummaryValue = cardioDurationHasHours
     ? formatDuration(totalDuration)
     : cardioDurationMinutes.toString();
-  const cardioSummaryLabelSuffix = cardioDurationHasHours ? ' (hr:min)' : ' (min)';
+  const cardioSummaryLabelSuffix = cardioDurationHasHours ? '(hr:min)' : '(min)';
 
   // Distance formatting
   const distanceUnitShort = getDistanceUnitShort();
@@ -134,7 +152,7 @@ const CardioStatsContent: React.FC<CardioStatsContentProps> = ({ stats, timeRang
             </Text>
           </View>
           <Text variant="caption" color="secondary" style={{ marginTop: spacing.xs }}>
-            Total Time{cardioSummaryLabelSuffix}
+            Total Time {cardioSummaryLabelSuffix}
           </Text>
         </View>
 
@@ -147,7 +165,7 @@ const CardioStatsContent: React.FC<CardioStatsContentProps> = ({ stats, timeRang
               </Text>
             </View>
             <Text variant="caption" color="secondary" style={{ marginTop: spacing.xs }}>
-              Total Distance{distanceSummaryLabelSuffix}
+              Total Distance ({distanceUnitShort})
             </Text>
           </View>
         )}
@@ -569,7 +587,7 @@ const StatsScreen: React.FC = () => {
     const cardioSummaryValue = cardioDurationHasHours
       ? formatDuration(totalCardioTime)
       : cardioDurationMinutes.toString();
-    const cardioSummaryLabelSuffix = cardioDurationHasHours ? ' (hr:min)' : ' (min)';
+    const cardioSummaryLabelSuffix = cardioDurationHasHours ? '(hr:min)' : '(min)';
 
     return (
       <>
@@ -613,7 +631,7 @@ const StatsScreen: React.FC = () => {
                   </Text>
                 </View>
                 <Text variant="caption" color="secondary">
-                  {`Total Volume (${weightUnit})`}
+                  Total Volume ({weightUnit})
                 </Text>
               </View>
 
@@ -624,7 +642,7 @@ const StatsScreen: React.FC = () => {
                   </Text>
                 </View>
                 <Text variant="caption" color="secondary">
-                  Cardio Time{cardioSummaryLabelSuffix}
+                  Cardio Time {cardioSummaryLabelSuffix}
                 </Text>
               </View>
 
@@ -635,7 +653,7 @@ const StatsScreen: React.FC = () => {
                   </Text>
                 </View>
                 <Text variant="caption" color="secondary">
-                  {`Cardio Distance (${distanceUnitShort})`}
+                  Cardio Distance ({distanceUnitShort})
                 </Text>
               </View>
             </View>

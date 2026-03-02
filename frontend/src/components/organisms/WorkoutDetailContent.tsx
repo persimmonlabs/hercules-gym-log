@@ -1,6 +1,7 @@
 /**
  * WorkoutDetailContent
  * Organism that renders the core metrics and exercise list for a workout.
+ * For outdoor GPS sessions, shows a route map and Distance/Time/Pace instead.
  */
 
 import React, { useMemo } from 'react';
@@ -10,10 +11,12 @@ import Animated, { Layout } from 'react-native-reanimated';
 import { Text } from '@/components/atoms/Text';
 import { SurfaceCard } from '@/components/atoms/SurfaceCard';
 import { WorkoutExerciseSummaryCard } from '@/components/molecules/WorkoutExerciseSummaryCard';
+import { OutdoorRouteMapCard } from '@/components/molecules/OutdoorRouteMapCard';
 import { spacing, typography, colors } from '@/constants/theme';
 import { useTheme } from '@/hooks/useTheme';
 import type { Workout } from '@/types/workout';
 import { formatDurationLabel, getWorkoutTotals, getWorkoutVolume } from '@/utils/workout';
+import { formatElapsedTime, formatPace, calculatePace } from '@/utils/geo';
 import { useSettingsStore } from '@/store/settingsStore';
 import { useUserProfileStore } from '@/store/userProfileStore';
 
@@ -30,7 +33,15 @@ export const WorkoutDetailContent: React.FC<WorkoutDetailContentProps> = ({ work
   const { theme } = useTheme();
   // Subscribe to weightUnit to trigger re-renders when units change
   const weightUnit = useSettingsStore((state) => state.weightUnit);
-  const { formatWeight } = useSettingsStore();
+  const distanceUnitPref = useSettingsStore((state) => state.distanceUnit);
+  const { formatWeight, formatDistance } = useSettingsStore();
+
+  const isOutdoorSession = useMemo(
+    () => !!(workout.routeCoordinates && workout.routeCoordinates.length >= 2),
+    [workout.routeCoordinates],
+  );
+
+  // ── Standard workout metrics ──
   const durationLabel = useMemo(() => formatDurationLabel(workout.duration), [workout.duration]);
   const { completedSets } = useMemo(() => getWorkoutTotals(workout), [workout]);
   const userBodyWeight = useUserProfileStore((state) => state.profile?.weightLbs);
@@ -40,6 +51,70 @@ export const WorkoutDetailContent: React.FC<WorkoutDetailContentProps> = ({ work
     return formatWeight(totalVolume);
   }, [totalVolume, formatWeight, weightUnit]);
 
+  // ── Outdoor session metrics ──
+  const outdoorMetrics = useMemo(() => {
+    if (!isOutdoorSession) return null;
+
+    const set = workout.exercises[0]?.sets[0];
+    const distanceMiles = set?.distance ?? 0;
+    const durationSeconds = workout.duration ?? set?.duration ?? 0;
+
+    const distanceLabel = formatDistance(distanceMiles, 2);
+    const timeLabel = formatElapsedTime(durationSeconds);
+
+    const paceSecondsPerMile = calculatePace(distanceMiles, durationSeconds);
+    const pacePerUnit = distanceUnitPref === 'km' && paceSecondsPerMile
+      ? paceSecondsPerMile / 1.60934
+      : paceSecondsPerMile;
+    const paceLabel = `${formatPace(pacePerUnit)} ${distanceUnitPref === 'km' ? '/km' : '/mi'}`;
+
+    return { distanceLabel, timeLabel, paceLabel };
+  }, [isOutdoorSession, workout, formatDistance, distanceUnitPref]);
+
+  // ── Outdoor session layout ──
+  if (isOutdoorSession && outdoorMetrics) {
+    return (
+      <Animated.View layout={Layout.springify()} style={styles.container}>
+        <OutdoorRouteMapCard coordinates={workout.routeCoordinates!} />
+
+        <View style={styles.summarySection}>
+          <Text style={{ fontSize: 24, fontWeight: '600', color: theme.text.primary }}>
+            Summary
+          </Text>
+          <SurfaceCard tone="card" padding="xl" showAccentStripe={false} style={styles.metricsCard}>
+            <View style={styles.metricsColumn}>
+              <View style={styles.metricRow}>
+                <Text style={{ fontSize: 20, fontWeight: '500', color: theme.text.secondary }}>
+                  Distance:
+                </Text>
+                <Text style={{ fontSize: 20, fontWeight: '700', color: theme.accent.orange, textAlign: 'right', flexShrink: 0 }}>
+                  {outdoorMetrics.distanceLabel}
+                </Text>
+              </View>
+              <View style={styles.metricRow}>
+                <Text style={{ fontSize: 20, fontWeight: '500', color: theme.text.secondary }}>
+                  Time:
+                </Text>
+                <Text style={{ fontSize: 20, fontWeight: '700', color: theme.accent.orange, textAlign: 'right', flexShrink: 0 }}>
+                  {outdoorMetrics.timeLabel}
+                </Text>
+              </View>
+              <View style={styles.metricRow}>
+                <Text style={{ fontSize: 20, fontWeight: '500', color: theme.text.secondary }}>
+                  Pace:
+                </Text>
+                <Text style={{ fontSize: 20, fontWeight: '700', color: theme.accent.orange, textAlign: 'right', flexShrink: 0 }}>
+                  {outdoorMetrics.paceLabel}
+                </Text>
+              </View>
+            </View>
+          </SurfaceCard>
+        </View>
+      </Animated.View>
+    );
+  }
+
+  // ── Standard workout layout ──
   return (
     <Animated.View layout={Layout.springify()} style={styles.container}>
       <View style={styles.summarySection}>

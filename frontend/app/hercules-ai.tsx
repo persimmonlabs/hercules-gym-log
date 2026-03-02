@@ -59,107 +59,6 @@ import { useWorkoutSessionsStore } from '@/store/workoutSessionsStore';
 import { useAppStatsForAI } from '@/hooks/useAppStatsForAI';
 import type { ChatMessage, ActionProposal, UsageInfo, NavigationLink } from '@/types/herculesAI';
 
-/**
- * CRITICAL: Detects if a message looks like an action proposal that should have buttons.
- * This is a frontend safety net for when the AI forgets to include the action payload.
- */
-const looksLikeActionProposal = (content: string): boolean => {
-  const lowerContent = content.toLowerCase();
-  
-  // Check for confirmation questions that indicate a proposal
-  const confirmationPatterns = [
-    'would you like me to create',
-    'would you like me to set up',
-    'would you like me to schedule',
-    'would you like me to log',
-    'would you like me to add',
-    'shall i create',
-    'shall i set up',
-    'want me to create',
-    'ready to create',
-    'create this for you',
-    'set this up for you',
-    'tap approve',
-    'click approve',
-  ];
-  
-  if (confirmationPatterns.some(pattern => lowerContent.includes(pattern))) return true;
-
-  // Check if content has a numbered exercise list (strongest signal)
-  const hasNumberedList = /\b1\.\s+[A-Z]/.test(content) && /\b2\.\s+[A-Z]/.test(content);
-  const mentionsWorkoutContext = lowerContent.includes('workout') || lowerContent.includes('program') ||
-    lowerContent.includes('plan') || lowerContent.includes('push') || lowerContent.includes('pull') ||
-    lowerContent.includes('leg') || lowerContent.includes('chest') || lowerContent.includes('back') ||
-    lowerContent.includes('day');
-  if (hasNumberedList && mentionsWorkoutContext) return true;
-
-  return false;
-};
-
-/**
- * MissingActionFallback
- * Shows when message looks like a proposal but no action payload was included.
- * Uses "Create" / "Cancel" labels (not "Approve" / "Reject") to distinguish
- * from the real ActionApprovalCard. The retry is silent (no visible user message).
- */
-const MissingActionFallback: React.FC<{
-  onRetry: () => void;
-  onDismiss: () => void;
-  isLoading: boolean;
-  theme: any;
-}> = ({ onRetry, onDismiss, isLoading, theme }) => {
-  return (
-    <View style={{
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'center',
-      paddingVertical: spacing.sm,
-      paddingHorizontal: spacing.md,
-      marginHorizontal: spacing.md,
-      marginTop: spacing.sm,
-      borderRadius: radius.lg,
-      backgroundColor: theme.surface.elevated,
-      gap: spacing.sm,
-    }}>
-      <Pressable
-        onPress={onDismiss}
-        disabled={isLoading}
-        style={[{
-          paddingVertical: spacing.xs,
-          paddingHorizontal: spacing.md,
-          borderRadius: radius.md,
-          borderWidth: 1,
-          borderColor: '#000000',
-          minWidth: 70,
-          alignItems: 'center' as const,
-          opacity: isLoading ? 0.5 : 1,
-        }]}
-      >
-        <Text variant="bodySemibold" color="secondary">
-          Cancel
-        </Text>
-      </Pressable>
-      <Pressable
-        onPress={onRetry}
-        disabled={isLoading}
-        style={[{
-          paddingVertical: spacing.xs,
-          paddingHorizontal: spacing.md,
-          borderRadius: radius.md,
-          backgroundColor: theme.accent.primary,
-          minWidth: 70,
-          alignItems: 'center' as const,
-          opacity: isLoading ? 0.5 : 1,
-        }]}
-      >
-        <Text variant="bodySemibold" color="onAccent">
-          {isLoading ? 'Creating...' : 'Create'}
-        </Text>
-      </Pressable>
-    </View>
-  );
-};
-
 const HerculesAIScreen: React.FC = () => {
   const { theme, isDarkMode } = useTheme();
   const { isPremium, isLoading: isPremiumLoading } = usePremiumStatus();
@@ -189,7 +88,6 @@ const HerculesAIScreen: React.FC = () => {
   const [creditsModalVisible, setCreditsModalVisible] = useState(false);
   const [isPurchasing, setIsPurchasing] = useState(false);
   const [creditsNextReset, setCreditsNextReset] = useState<string>('');
-  const [hasAttemptedFallbackRetry, setHasAttemptedFallbackRetry] = useState(false);
 
   
   // Called when content size changes - if a scroll was requested, scrollToEnd
@@ -254,9 +152,6 @@ const HerculesAIScreen: React.FC = () => {
 
   const handleSend = useCallback(async () => {
     if (!inputText.trim() || isLoading) return;
-
-    // Reset fallback retry flag so user can retry again after new conversation
-    setHasAttemptedFallbackRetry(false);
 
     // CRITICAL: Clear any pending action when user types a new message
     // This removes the action buttons since user chose to continue conversation instead
@@ -391,6 +286,12 @@ const HerculesAIScreen: React.FC = () => {
       );
 
       if (decision === 'reject') {
+        // CRITICAL FIX: Notify backend of rejection so the ai_action_requests row
+        // is properly marked as 'rejected' (prevents orphaned pending requests)
+        submitActionDecision(actionToUse.id, 'reject').catch((err) => {
+          console.warn('[HerculesAI] Failed to send rejection to backend (non-critical):', err);
+        });
+
         // Show feedback prompt for rejection
         const feedbackMessage: ChatMessage = {
           id: `feedback-prompt-${Date.now()}`,
@@ -586,103 +487,6 @@ const HerculesAIScreen: React.FC = () => {
     // Don't scroll here - chunked scroll during typing handles positioning
   }, []);
 
-  // Handler for dismissing the fallback without taking action
-  const handleFallbackDismiss = useCallback(() => {
-    // Prevent fallback from showing again
-    setHasAttemptedFallbackRetry(true);
-    // Add a message acknowledging the dismissal
-    const dismissMessage: ChatMessage = {
-      id: `assistant-${Date.now()}`,
-      role: 'assistant',
-      content: 'No problem! Let me know if you\'d like to make any changes or try something different.',
-      createdAt: new Date().toISOString(),
-    };
-    setMessages((prev) => [...prev, dismissMessage]);
-    setNewMessageIds((prev) => new Set(prev).add(dismissMessage.id));
-    triggerHaptic('light');
-    // Don't scroll - typing animation will handle it
-  }, []);
-
-  // Handler for fallback retry - silently retries to get an action payload
-  // CRITICAL: Does NOT add a visible user message to prevent confusion and loops.
-  // Only allows ONE retry attempt to prevent infinite loop.
-  const handleFallbackRetry = useCallback(async () => {
-    if (isLoading || hasAttemptedFallbackRetry) return;
-    
-    // Mark that we've attempted a retry - prevents infinite loop
-    setHasAttemptedFallbackRetry(true);
-    
-    
-    // Show loading state but do NOT add a visible user message.
-    // The retry is invisible to the user — they just see a loading spinner.
-    setIsLoading(true);
-    triggerHaptic('light');
-    
-    // Explicit instruction to produce the action payload.
-    // CRITICAL: Must be >40 chars to avoid triggering the backend's userIsConfirming
-    // detection which could cause an infinite loop. Instead, we rely on the AI
-    // re-reading the conversation and producing the correct JSON action payload.
-    const retryInstruction = 'Please output the action with a complete JSON payload including the action type and all required fields. Do not explain — just output the JSON response with type action.';
-    
-    const { data, error } = await sendChatMessage(retryInstruction, sessionId ?? undefined, appStats);
-    
-    if (error) {
-      if (error.code === 'CREDITS_EXHAUSTED') {
-        setCreditsNextReset(error.nextResetAt || usage?.nextResetAt || '');
-        setCreditsModalVisible(true);
-      }
-      const errorMessage: ChatMessage = {
-        id: `error-${Date.now()}`,
-        role: 'assistant',
-        content: error.code === 'RATE_LIMITED'
-          ? 'You\'re sending messages too quickly. Please wait a moment and try again.'
-          : 'Something went wrong. Please try again in a moment.',
-        createdAt: new Date().toISOString(),
-      };
-      setMessages((prev) => [...prev, errorMessage]);
-    } else if (data) {
-      console.log('[HerculesAI] Fallback retry response:', {
-        hasAction: !!data.action,
-        actionType: data.action?.actionType,
-      });
-      
-      if (!sessionId) {
-        setSessionId(data.sessionId);
-      }
-      
-      if (data.action) {
-        // Retry succeeded - show the response with action buttons
-        console.log('[HerculesAI] Fallback retry succeeded - action received:', data.action.actionType);
-        const assistantMessage: ChatMessage = {
-          id: `assistant-${Date.now()}`,
-          role: 'assistant',
-          content: sanitizeMessageForDisplay(data.message),
-          createdAt: new Date().toISOString(),
-          action: { ...data.action, status: 'pending' as const },
-        };
-        setMessages((prev) => [...prev, assistantMessage]);
-        setNewMessageIds((prev) => new Set(prev).add(assistantMessage.id));
-        setPendingAction({ ...data.action, status: 'pending' });
-      } else {
-        // Retry failed - show a generic, user-friendly message
-        console.warn('[HerculesAI] Fallback retry failed - still no action.');
-        const failMessage: ChatMessage = {
-          id: `assistant-${Date.now()}`,
-          role: 'assistant',
-          content: 'Let me try a different approach. Could you rephrase what you\'d like me to create?',
-          createdAt: new Date().toISOString(),
-        };
-        setMessages((prev) => [...prev, failMessage]);
-        setNewMessageIds((prev) => new Set(prev).add(failMessage.id));
-      }
-      
-      loadUsage();
-    }
-    
-    setIsLoading(false);
-    // Don't scroll here - typing animation will handle scrolling
-  }, [isLoading, hasAttemptedFallbackRetry, sessionId]);
-
   const renderMessage = ({ item, index }: { item: ChatMessage; index: number }) => {
     const isAnimationComplete = animationCompleteIds.has(item.id) || !newMessageIds.has(item.id);
     
@@ -690,13 +494,6 @@ const HerculesAIScreen: React.FC = () => {
     const hasAction = item.action && item.action.status === 'pending';
     const showActionCard = hasAction && isAnimationComplete;
     
-    // CRITICAL: Detect if this message looks like a proposal but has no action
-    // Only show fallback after animation completes AND only if retry hasn't been attempted
-    const isLastAssistantMessage = item.role === 'assistant' && 
-      messages.filter(m => m.role === 'assistant').slice(-1)[0]?.id === item.id;
-    const looksLikeProposal = item.role === 'assistant' && looksLikeActionProposal(item.content);
-    const showMissingActionFallback = isAnimationComplete && isLastAssistantMessage && looksLikeProposal && !hasAction && !pendingAction && !isLoading && !hasAttemptedFallbackRetry;
-
     // Determine action label to append to message content
     const ACTION_LABELS: Record<string, string> = {
       create_workout_template: 'Create this workout?',
@@ -715,8 +512,6 @@ const HerculesAIScreen: React.FC = () => {
     if (showActionCard && item.action) {
       const label = ACTION_LABELS[item.action.actionType] || 'Proceed with this action?';
       displayContent = `${item.content}\n\n**${label}**`;
-    } else if (showMissingActionFallback) {
-      displayContent = `${item.content}\n\n**Ready to create?**`;
     }
 
     return (
@@ -738,14 +533,6 @@ const HerculesAIScreen: React.FC = () => {
               isLoading={actionLoading}
             />
           </View>
-        )}
-        {showMissingActionFallback && (
-          <MissingActionFallback
-            onRetry={handleFallbackRetry}
-            onDismiss={handleFallbackDismiss}
-            isLoading={isLoading}
-            theme={theme}
-          />
         )}
         {item.navigationLink && isAnimationComplete && (
           <View style={{ paddingHorizontal: spacing.md, marginTop: spacing.sm }}>
@@ -769,13 +556,13 @@ const HerculesAIScreen: React.FC = () => {
                 paddingVertical: spacing.xs,
                 paddingHorizontal: spacing.md,
                 borderRadius: radius.md,
-                backgroundColor: '#FFFFFF',
+                backgroundColor: theme.surface.card,
                 borderWidth: 1,
-                borderColor: '#000000',
+                borderColor: theme.border.medium,
               }}
             >
-              <Ionicons name="open-outline" size={16} color="#000000" />
-              <RNText style={{ color: '#000000', fontSize: 14, fontWeight: '600' }}>
+              <Ionicons name="open-outline" size={16} color={theme.text.primary} />
+              <RNText style={{ color: theme.text.primary, fontSize: 14, fontWeight: '600' }}>
                 {item.navigationLink!.label}
               </RNText>
             </Pressable>

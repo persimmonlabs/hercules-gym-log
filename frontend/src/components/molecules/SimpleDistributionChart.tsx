@@ -14,7 +14,7 @@ import { triggerHaptic } from '@/utils/haptics';
 import { Text } from '@/components/atoms/Text';
 import { ChartWrapper } from '@/components/atoms/ChartWrapper';
 import { TimeRangeSelector } from '@/components/atoms/TimeRangeSelector';
-import { colors, spacing, radius } from '@/constants/theme';
+import { spacing, radius } from '@/constants/theme';
 import { useTheme } from '@/hooks/useTheme';
 import { hexToRgba } from '@/utils/colorUtils';
 import { useAnalyticsData } from '@/hooks/useAnalyticsData';
@@ -51,7 +51,7 @@ const LegendItem: React.FC<LegendItemProps> = ({ item, isSelected, isDimmed, onP
 );
 
 export const SimpleDistributionChart: React.FC = () => {
-  const { theme } = useTheme();
+  const { theme, isDarkMode } = useTheme();
   const [timeRange, setTimeRange] = useState<TimeRange>('week');
   const { tieredVolumeDistribution, hasFilteredData } = useAnalyticsData({ timeRange });
   const [selectedSlice, setSelectedSlice] = useState<string | null>(null);
@@ -110,7 +110,7 @@ export const SimpleDistributionChart: React.FC = () => {
               data: {
                 fill: ({ datum }) =>
                   selectedSlice && selectedSlice !== datum.x
-                    ? colors.neutral.gray200
+                    ? (isDarkMode ? theme.surface.card : theme.neutral.gray200)
                     : datum.color,
               },
               labels: { fill: 'transparent' },

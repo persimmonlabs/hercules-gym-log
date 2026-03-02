@@ -101,7 +101,7 @@ const WorkoutSessionScreen: React.FC = () => {
   const updateExercise = useSessionStore((state) => state.updateExercise);
   const removeExercise = useSessionStore((state) => state.removeExercise);
   const reorderExercises = useSessionStore((state) => state.reorderExercises);
-  const addWorkout = useWorkoutSessionsStore((state) => state.addWorkout);
+  // addWorkoutLocally + syncWorkoutToSupabase are called via getState() in handleConfirmFinish
   const activeRotation = useProgramsStore((state) => state.activeRotation);
   const advanceRotation = useProgramsStore((state) => state.advanceRotation);
   const customExercises = useCustomExerciseStore((state) => state.customExercises);
@@ -465,8 +465,6 @@ const WorkoutSessionScreen: React.FC = () => {
     setIsFinishingWorkout(true);
     setFinishModalVisible(false);
 
-    // Build workout object WITHOUT clearing session state yet
-    // This keeps the session active so the UI doesn't flash to "Start your next session"
     const currentSessionData = sessionToDisplay;
 
     if (!currentSessionData) {
@@ -474,7 +472,7 @@ const WorkoutSessionScreen: React.FC = () => {
       return;
     }
 
-    // Create workout object manually to avoid clearing session state
+    // ── 1. Build workout object (synchronous, no network) ──
     const endTime = Date.now();
     const durationMilliseconds = endTime - currentSessionData.startTime;
     const durationSeconds = Math.max(Math.floor(durationMilliseconds / 1000), 0);
@@ -530,27 +528,47 @@ const WorkoutSessionScreen: React.FC = () => {
       exercises: exercisesInLbs,
     };
 
-    try {
-      await addWorkout(workout);
+    // ── 2. Persist workout to AsyncStorage as crash-safe backup ──
+    // This is written to disk BEFORE any network calls, so the data
+    // survives app crashes, kills, or network failures.
+    const { setPendingWorkoutSave, clearPendingWorkoutSave } = useSessionStore.getState();
+    setPendingWorkoutSave(workout);
 
-      // If this workout corresponds to the active rotation, advance it
-      if (activeRotation && currentSessionData.planId === activeRotation.programId) {
-        await advanceRotation();
+    // ── 3. Add to local state immediately (no network, instant) ──
+    const { addWorkoutLocally, syncWorkoutToSupabase } = useWorkoutSessionsStore.getState();
+    addWorkoutLocally(workout);
+
+    // ── 4. Clear session + navigate to success IMMEDIATELY ──
+    // The user should NEVER get stuck waiting. Workout data is safe in
+    // pendingWorkoutSave (AsyncStorage) and local workoutSessionsStore.
+    endSession();
+    router.replace('/workout-success');
+    setIsFinishingWorkout(false);
+
+    // ── 5. Background: Supabase sync + rotation advance (fire-and-forget) ──
+    // These run after navigation. If they fail, pendingWorkoutSave persists
+    // and will be retried on next app startup.
+    (async () => {
+      try {
+        const synced = await syncWorkoutToSupabase(workout);
+
+        if (synced) {
+          // Sync succeeded — clear the pending backup
+          clearPendingWorkoutSave();
+          console.log('[workout-session] Background sync succeeded');
+        } else {
+          console.warn('[workout-session] Background sync failed — will retry on next startup');
+        }
+
+        // Advance rotation (best-effort, non-critical)
+        if (activeRotation && currentSessionData.planId === activeRotation.programId) {
+          await advanceRotation();
+        }
+      } catch (error) {
+        console.warn('[workout-session] Background sync error:', error);
       }
-
-      // Navigate to success screen to show confirmation message before redirecting home
-      // Session clearing is handled here to ensure it happens reliably before navigation
-      endSession();
-      router.replace('/workout-success');
-      // Reset isFinishingWorkout is not strictly needed since we are navigating away,
-      // but good for cleanup if component stays mounted for any reason
-      setIsFinishingWorkout(false);
-    } catch (error) {
-      console.error('[workout-session] Failed to persist workout', error);
-      setIsFinishingWorkout(false);
-      router.replace('/(tabs)');
-    }
-  }, [isFinishingWorkout, sessionToDisplay, endSession, addWorkout, router, activeRotation, advanceRotation, convertWeightToLbs]);
+    })();
+  }, [isFinishingWorkout, sessionToDisplay, endSession, router, activeRotation, advanceRotation, convertWeightToLbs]);
 
   const handleCancel = useCallback(() => {
     clearSession();
