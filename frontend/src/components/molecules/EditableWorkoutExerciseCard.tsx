@@ -73,7 +73,7 @@ export const EditableWorkoutExerciseCard: React.FC<EditableWorkoutExerciseCardPr
                 {exercise.name}
               </Text>
               <Text variant="caption" color="secondary">
-                {`${exercise.sets.length} set${exercise.sets.length === 1 ? '' : 's'}`}
+                {`${(exercise.sets ?? []).length} set${(exercise.sets ?? []).length === 1 ? '' : 's'}`}
               </Text>
             </View>
           </View>
@@ -126,7 +126,7 @@ export const EditableWorkoutExerciseCard: React.FC<EditableWorkoutExerciseCardPr
         <ExerciseSetEditor
           isExpanded
           exerciseName={exercise.name}
-          initialSets={exercise.sets}
+          initialSets={exercise.sets ?? []}
           onSetsChange={onSaveSets}
           onProgressChange={onProgressChange}
           exerciseType={exerciseCatalog.find(e => e.name === exercise.name)?.exerciseType || 'weight'}

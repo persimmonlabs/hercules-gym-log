@@ -219,7 +219,7 @@ const CreatePlanScreen: React.FC = () => {
       setPlanName(premadeWorkout.name);
 
       // Map premade exercises (which might just have IDs) to full Exercise objects
-      const mappedExercises = premadeWorkout.exercises.map(ex => {
+      const mappedExercises = (premadeWorkout.exercises ?? []).map(ex => {
         const fullExercise = exercises.find(e => e.id === ex.id);
         return fullExercise ? { ...fullExercise } : null;
       }).filter((ex): ex is ExerciseCatalogItem => ex !== null);

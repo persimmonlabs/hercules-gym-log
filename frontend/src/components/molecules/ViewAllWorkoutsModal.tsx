@@ -107,12 +107,12 @@ export const ViewAllWorkoutsModal: React.FC<ViewAllWorkoutsModalProps> = ({
                                 {workout.programNames.join(', ')}
                               </Text>
                               <Text variant="caption" color="secondary" style={styles.metaText}>
-                                {workout.exercises.length} {workout.exercises.length === 1 ? 'exercise' : 'exercises'}
+                                {(workout.exercises ?? []).length} exercise{(workout.exercises ?? []).length === 1 ? '' : 's'}
                               </Text>
                             </View>
                           ) : (
                             <Text variant="caption" color="secondary">
-                              {workout.exercises.length} {workout.exercises.length === 1 ? 'exercise' : 'exercises'}
+                              {(workout.exercises ?? []).length} exercise{(workout.exercises ?? []).length === 1 ? '' : 's'}
                             </Text>
                           )}
                         </View>

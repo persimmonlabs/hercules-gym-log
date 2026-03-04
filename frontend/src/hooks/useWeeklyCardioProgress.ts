@@ -88,11 +88,11 @@ export const useWeeklyCardioProgress = (): WeeklyCardioProgress => {
     });
 
     weeklyWorkouts.forEach((workout) => {
-      workout.exercises.forEach((exercise: any) => {
+      (workout.exercises ?? []).forEach((exercise: any) => {
         const exerciseType = exerciseTypeMap[exercise.name];
         if (exerciseType !== 'cardio') return;
 
-        exercise.sets.forEach((set: any) => {
+        (exercise.sets ?? []).forEach((set: any) => {
           // Include sets that are completed OR have meaningful cardio data
           // (users often enter time/distance without pressing "Complete set")
           const hasData = (set.duration ?? 0) > 0 || (set.distance ?? 0) > 0;

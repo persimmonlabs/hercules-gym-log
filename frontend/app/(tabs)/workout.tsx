@@ -209,7 +209,7 @@ const WorkoutScreen: React.FC = () => {
           name: plan.name,
           exercises: plan.exercises,
           type: 'custom',
-          subtitle: `${plan.exercises.length} ${plan.exercises.length === 1 ? 'exercise' : 'exercises'}`
+          subtitle: `${(plan.exercises ?? []).length} ${(plan.exercises ?? []).length === 1 ? 'exercise' : 'exercises'}`
         };
       }
     });
@@ -218,7 +218,7 @@ const WorkoutScreen: React.FC = () => {
     // If already present, update to show plan info (the workout is part of a plan)
     userPrograms.forEach(prog => {
       prog.workouts.forEach(w => {
-        if (w.exercises.length === 0) return;
+        if ((w.exercises ?? []).length === 0) return;
 
         const nameKey = w.name.trim().toLowerCase();
         if (!workoutsGroupedByName[nameKey]) {
@@ -230,16 +230,14 @@ const WorkoutScreen: React.FC = () => {
             type: 'program',
             programId: prog.id,
             programName: prog.name,
-            subtitle: `${prog.name} • ${w.exercises.length} ${w.exercises.length === 1 ? 'exercise' : 'exercises'}`
+            subtitle: `${prog.name} • ${(w.exercises ?? []).length} ${(w.exercises ?? []).length === 1 ? 'exercise' : 'exercises'}`
           };
         } else {
           // Already exists - update to show it's part of a plan
-          // Use the program version's exercises (more up-to-date after edits)
-          workoutsGroupedByName[nameKey].exercises = w.exercises;
           workoutsGroupedByName[nameKey].type = 'program';
           workoutsGroupedByName[nameKey].programId = prog.id;
           workoutsGroupedByName[nameKey].programName = prog.name;
-          workoutsGroupedByName[nameKey].subtitle = `${prog.name} • ${w.exercises.length} ${w.exercises.length === 1 ? 'exercise' : 'exercises'}`;
+          workoutsGroupedByName[nameKey].subtitle = `${prog.name} • ${(w.exercises ?? []).length} ${(w.exercises ?? []).length === 1 ? 'exercise' : 'exercises'}`;
         }
       });
     });
@@ -275,7 +273,7 @@ const WorkoutScreen: React.FC = () => {
         const suggestedSetsMap: Record<string, SetLog[]> = {};
         const dataPointsMap: Record<string, any[]> = {};
         const repRangesMap: Record<string, RepRange[]> = {};
-        const mappedExercises: WorkoutExercise[] = workout.exercises.map((exercise: any) => {
+        const mappedExercises: WorkoutExercise[] = (workout.exercises ?? []).map((exercise: any) => {
           const result = createSetsWithSmartSuggestions(exercise.name, allWorkouts, smartSuggestionsEnabled, undefined, undefined, customExercises, userGoal);
           historySetCounts[exercise.name] = result.historySetCount;
           if (result.smartSuggestedSets.length > 0) {

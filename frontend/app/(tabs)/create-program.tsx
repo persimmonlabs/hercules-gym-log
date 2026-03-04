@@ -147,7 +147,7 @@ const CreatePlanScreen: React.FC = () => {
       const programWorkouts: ProgramWorkout[] = selectedWorkouts.map(plan => ({
         id: plan.id,
         name: plan.name,
-        exercises: plan.exercises.map((ex: Exercise) => ({
+        exercises: (plan.exercises ?? []).map((ex: Exercise) => ({
           id: ex.id,
           name: ex.name,
           sets: 3,

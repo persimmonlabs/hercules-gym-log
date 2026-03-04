@@ -107,8 +107,9 @@ export const formatDurationLabel = (duration?: number): string => {
  * Generates a brief summary string describing the workout contents.
  */
 export const getWorkoutSummary = (workout: Workout): string => {
-  const completedExercises = workout.exercises.filter((exercise) =>
-    exercise.sets.length > 0 ? exercise.sets.some((set) => set.completed) : false
+  const exercises = workout.exercises ?? [];
+  const completedExercises = exercises.filter((exercise) =>
+    exercise.sets?.length > 0 ? exercise.sets.some((set) => set.completed) : false
   );
   const completedCount = completedExercises.length;
   const base = `${completedCount} completed ${completedCount === 1 ? 'exercise' : 'exercises'}`;
@@ -131,12 +132,13 @@ export const getWorkoutTotals = (
     return { totalSets: 0, completedSets: 0 };
   }
 
-  return workout.exercises.reduce(
+  return (workout.exercises ?? []).reduce(
     (acc, exercise) => {
-      const completed = exercise.sets.filter((set) => set.completed).length;
+      const sets = exercise.sets ?? [];
+      const completed = sets.filter((set) => set.completed).length;
 
       return {
-        totalSets: acc.totalSets + exercise.sets.length,
+        totalSets: acc.totalSets + sets.length,
         completedSets: acc.completedSets + completed,
       };
     },
@@ -157,7 +159,7 @@ export const getWorkoutVolume = (
     return 0;
   }
 
-  return workout.exercises.reduce((totalVolume, exercise) => {
+  return (workout.exercises ?? []).reduce((totalVolume, exercise) => {
     const catalogEntry = exerciseCatalog.find(e => e.name === exercise.name);
     const exerciseType: ExerciseType = catalogEntry?.exerciseType || 'weight';
 
@@ -170,7 +172,7 @@ export const getWorkoutVolume = (
       ?? DEFAULT_BW_MULTIPLIER_BY_TYPE[exerciseType]
       ?? 0;
 
-    const exerciseVolume = exercise.sets
+    const exerciseVolume = (exercise.sets ?? [])
       .filter(set => set.completed)
       .reduce((exerciseTotal, set) => {
         return exerciseTotal + computeSetVolume(set, exerciseType, userBodyWeight, bwMult);

@@ -37,15 +37,17 @@ import { triggerHaptic } from '@/utils/haptics';
 const EMPTY_CARD_MIN_HEIGHT = 240;
 
 const formatDuration = (totalSeconds: number): string => {
-  const hours = Math.floor(totalSeconds / 3600);
+  const days = Math.floor(totalSeconds / 86400);
+  const hours = Math.floor((totalSeconds % 86400) / 3600);
   const minutes = Math.floor((totalSeconds % 3600) / 60);
 
+  if (days > 0) {
+    // Use d:hr:min format when days are present
+    return `${days}:${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+  }
   if (hours > 0) {
-    // Use colon format for hours:minutes when hours are present
-    if (minutes < 10) {
-      return `${hours}:0${minutes}`;
-    }
-    return `${hours}:${minutes}`;
+    // Use hr:min format when hours are present (but no days)
+    return `${hours}:${minutes.toString().padStart(2, '0')}`;
   }
   return `${minutes}m`;
 };
@@ -127,12 +129,17 @@ const CardioStatsContent: React.FC<CardioStatsContentProps> = ({ stats, timeRang
   }
 
   // Time formatting logic - same as overview summary
+  const cardioDurationHasDays = Math.floor(totalDuration / 86400) > 0;
   const cardioDurationHasHours = Math.floor(totalDuration / 3600) > 0;
   const cardioDurationMinutes = Math.floor((totalDuration % 3600) / 60);
   const cardioSummaryValue = cardioDurationHasHours
     ? formatDuration(totalDuration)
     : cardioDurationMinutes.toString();
-  const cardioSummaryLabelSuffix = cardioDurationHasHours ? '(hr:min)' : '(min)';
+  const cardioSummaryLabelSuffix = cardioDurationHasDays
+    ? '(d:hr:min)'
+    : cardioDurationHasHours
+    ? '(hr:min)'
+    : '(min)';
 
   // Distance formatting
   const distanceUnitShort = getDistanceUnitShort();
@@ -449,7 +456,7 @@ const StatsScreen: React.FC = () => {
   const performedWeightExercises = useMemo(() => {
     const exerciseNames = new Set<string>();
     volumeTrendFilteredWorkouts.forEach((workout) => {
-      workout.exercises.forEach((exercise: any) => {
+      (workout.exercises ?? []).forEach((exercise: any) => {
         const catalogEntry = exerciseCatalog.find((e) => e.name === exercise.name);
         const exerciseType = catalogEntry?.exerciseType || 'weight';
         if (WEIGHT_EXERCISE_TYPES.includes(exerciseType)) {
@@ -514,7 +521,7 @@ const StatsScreen: React.FC = () => {
     const volumes: Record<string, number> = {};
 
     topExercisesFilteredWorkouts.forEach((workout) => {
-      workout.exercises.forEach((exercise: any) => {
+      (workout.exercises ?? []).forEach((exercise: any) => {
         const catalogEntry = exerciseCatalog.find((e) => e.name === exercise.name);
         const exerciseType = catalogEntry?.exerciseType || 'weight';
 
@@ -525,7 +532,7 @@ const StatsScreen: React.FC = () => {
 
         let exerciseVolume = 0;
 
-        exercise.sets.forEach((set: any) => {
+        (exercise.sets ?? []).forEach((set: any) => {
           if (!set.completed) return;
           const reps = set.reps ?? 0;
           if (reps <= 0) return;
@@ -582,12 +589,17 @@ const StatsScreen: React.FC = () => {
   }, [topExercisesFilteredWorkouts, convertWeight, userBodyWeight]);
 
   const renderGeneralTab = () => {
+    const cardioDurationHasDays = Math.floor(totalCardioTime / 86400) > 0;
     const cardioDurationHasHours = Math.floor(totalCardioTime / 3600) > 0;
     const cardioDurationMinutes = Math.floor((totalCardioTime % 3600) / 60);
     const cardioSummaryValue = cardioDurationHasHours
       ? formatDuration(totalCardioTime)
       : cardioDurationMinutes.toString();
-    const cardioSummaryLabelSuffix = cardioDurationHasHours ? '(hr:min)' : '(min)';
+    const cardioSummaryLabelSuffix = cardioDurationHasDays
+      ? '(d:hr:min)'
+      : cardioDurationHasHours
+      ? '(hr:min)'
+      : '(min)';
 
     return (
       <>

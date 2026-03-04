@@ -37,7 +37,7 @@ export const getTotalUniqueWorkoutCount = (
   // 2. Collect all plan-specific workouts (program workouts)
   userPrograms.forEach(prog => {
     prog.workouts.forEach(w => {
-      if (w.exercises.length === 0) return; // Skip empty workouts
+      if ((w.exercises ?? []).length === 0) return; // Skip empty workouts
       const nameKey = w.name.trim().toLowerCase();
       workoutsGroupedByName[nameKey] = true;
     });

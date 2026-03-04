@@ -278,7 +278,7 @@ export const useTrainingBalanceMetrics = (timeRange: TimeRange): BalanceMetricsR
     const filtered = workouts.filter((w) => new Date(w.date) >= cutoff);
 
     filtered.forEach((workout) => {
-      workout.exercises.forEach((exercise: any) => {
+      (workout.exercises ?? []).forEach((exercise: any) => {
         const meta = EXERCISE_METADATA[exercise.name];
         if (!meta) return;
 
@@ -288,7 +288,7 @@ export const useTrainingBalanceMetrics = (timeRange: TimeRange): BalanceMetricsR
         const muscleWeights = EXERCISE_MUSCLES[exercise.name];
         const bwMult = BW_MULTIPLIER_MAP[exercise.name] ?? DEFAULT_BW_MULTIPLIER_BY_TYPE[et] ?? 0;
 
-        exercise.sets.forEach((set: any) => {
+        (exercise.sets ?? []).forEach((set: any) => {
           if (!isCompletedSet(set)) return;
 
           const vol = sharedComputeSetVolume(set, et, userBodyWeight, bwMult);

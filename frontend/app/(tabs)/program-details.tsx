@@ -236,7 +236,7 @@ export default function ProgramDetailsScreen() {
               </Text>
               <View style={styles.workoutsList}>
                 {program.workouts
-                  .filter(w => w.exercises.length > 0)
+                  .filter(w => (w.exercises ?? []).length > 0)
                   .map((workout, index, arr) => (
                     <View key={workout.id} style={styles.workoutSection}>
                       <View style={styles.workoutHeader}>
@@ -245,7 +245,7 @@ export default function ProgramDetailsScreen() {
                         </Text>
                       </View>
 
-                      {workout.exercises.map((ex) => (
+                      {(workout.exercises ?? []).map((ex) => (
                         <View key={ex.id} style={styles.exerciseRow}>
                           <Text variant="caption" color="tertiary" style={styles.exerciseDash}>–</Text>
                           <Text variant="body" color="secondary">

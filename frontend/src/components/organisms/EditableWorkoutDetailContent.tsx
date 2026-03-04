@@ -30,7 +30,9 @@ import type { ExerciseType, ExerciseCatalogItem } from '@/types/exercise';
 
 interface EditableWorkoutDetailContentProps {
   workout: Workout;
+  durationSeconds: number;
   onExercisesChange: (exercises: WorkoutExercise[]) => void;
+  onDurationChange: (seconds: number) => void;
 }
 
 interface AddExerciseModalProps {
@@ -584,13 +586,25 @@ const AddExerciseModal: React.FC<AddExerciseModalProps> = ({
 
 export const EditableWorkoutDetailContent: React.FC<EditableWorkoutDetailContentProps> = ({ 
   workout,
+  durationSeconds,
   onExercisesChange,
+  onDurationChange,
 }) => {
   const { theme } = useTheme();
   const weightUnit = useSettingsStore((state) => state.weightUnit);
   const { formatWeight } = useSettingsStore();
   const [isAddExerciseModalVisible, setIsAddExerciseModalVisible] = useState(false);
-  const durationLabel = useMemo(() => formatDurationLabel(workout.duration), [workout.duration]);
+  const [isDurationPickerVisible, setIsDurationPickerVisible] = useState(false);
+
+  const handleDurationPickerConfirm = useCallback((totalSeconds: number) => {
+    onDurationChange(totalSeconds);
+    setIsDurationPickerVisible(false);
+  }, [onDurationChange]);
+  
+  const durationDisplay = useMemo(() => {
+    if (durationSeconds <= 0) return 'Tap to set';
+    return formatDurationForSummary(durationSeconds);
+  }, [durationSeconds]);
   const { completedSets } = useMemo(() => getWorkoutTotals(workout), [workout]);
   const userBodyWeight = useUserProfileStore((state) => state.profile?.weightLbs);
   const totalVolume = useMemo(() => getWorkoutVolume(workout, userBodyWeight), [workout, userBodyWeight]);
@@ -678,9 +692,11 @@ export const EditableWorkoutDetailContent: React.FC<EditableWorkoutDetailContent
               <Text style={{ fontSize: 20, fontWeight: '500', color: theme.text.secondary }}>
                 Duration:
               </Text>
-              <Text style={{ fontSize: 20, fontWeight: '700', color: theme.accent.orange, textAlign: 'right', flexShrink: 0 }}>
-                {durationLabel}
-              </Text>
+              <Pressable onPress={() => setIsDurationPickerVisible(true)}>
+                <Text style={{ fontSize: 20, fontWeight: '700', color: theme.accent.orange, textAlign: 'right', flexShrink: 0 }}>
+                  {durationDisplay}
+                </Text>
+              </Pressable>
             </View>
             <View style={styles.metricRow}>
               <Text style={{ fontSize: 20, fontWeight: '500', color: theme.text.secondary }}>
@@ -801,6 +817,13 @@ export const EditableWorkoutDetailContent: React.FC<EditableWorkoutDetailContent
         </View>
       </View>
       
+      <TimePickerModal
+        visible={isDurationPickerVisible}
+        onClose={() => setIsDurationPickerVisible(false)}
+        onConfirm={handleDurationPickerConfirm}
+        initialSeconds={durationSeconds}
+      />
+
       <AddExerciseModal
         visible={isAddExerciseModalVisible}
         onClose={() => setIsAddExerciseModalVisible(false)}

@@ -94,12 +94,12 @@ export const WorkoutCarousel: React.FC<WorkoutCarouselProps> = ({
                               {workout.programNames[0]}
                             </Text>
                             <Text variant="body" color="secondary" style={styles.exerciseCount}>
-                              {workout.exercises.length} {workout.exercises.length === 1 ? 'exercise' : 'exercises'}
+                              {(workout.exercises ?? []).length} exercise{(workout.exercises ?? []).length === 1 ? '' : 's'}
                             </Text>
                           </View>
                         ) : (
                           <Text variant="body" color="secondary" style={styles.exerciseCount}>
-                            {workout.exercises.length} {workout.exercises.length === 1 ? 'exercise' : 'exercises'}
+                            {(workout.exercises ?? []).length} exercise{(workout.exercises ?? []).length === 1 ? '' : 's'}
                           </Text>
                         )}
                       </View>

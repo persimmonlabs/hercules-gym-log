@@ -478,7 +478,13 @@ Deno.serve(async (request: Request): Promise<Response> => {
       // CRITICAL: Detect if AI listed exercises (numbered list) — strongest signal of a proposal
       // Matches patterns like "1. Barbell Bench Press" or "1. Something\n2. Something"
       const hasNumberedExerciseList = /\b1\.\s+[A-Z]/.test(parsed.message) && /\b2\.\s+[A-Z]/.test(parsed.message);
-      const looksLikeWorkoutProposal = hasNumberedExerciseList && (
+
+      // CRITICAL: Detect navigation/how-to responses — these are INSTRUCTIONAL, not proposals.
+      // Numbered steps like "1. Go to the Programs tab\n2. Select the workout" must NOT trigger action buttons.
+      const looksLikeNavigationInstructions = /\b(go to|tap |navigate to|click |select |open |find |look for|scroll |swipe |head to|visit the)\b/i.test(parsed.message);
+      const userIsAskingHowTo = /^\s*(how do i|how can i|how to|where do i|where can i|where is|where are|what is the|can i |is there a way to)/i.test(message);
+
+      const looksLikeWorkoutProposal = hasNumberedExerciseList && !looksLikeNavigationInstructions && !userIsAskingHowTo && (
         lowerMessage.includes('workout') || lowerMessage.includes('program') ||
         lowerMessage.includes('plan') || lowerMessage.includes('push') ||
         lowerMessage.includes('pull') || lowerMessage.includes('leg') ||

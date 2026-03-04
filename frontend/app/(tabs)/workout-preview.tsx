@@ -233,7 +233,7 @@ export default function WorkoutPreviewScreen() {
                 Exercises Included
               </Text>
               <View style={styles.exercisesList}>
-                {workout.exercises.map((exercise) => (
+                {(workout.exercises ?? []).map((exercise) => (
                   <View key={exercise.id} style={styles.exerciseRow}>
                     <Text variant="caption" color="tertiary" style={styles.exerciseDash}>–</Text>
                     <Text variant="body" color="secondary">

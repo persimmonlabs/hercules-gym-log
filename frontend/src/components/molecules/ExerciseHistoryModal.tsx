@@ -50,10 +50,10 @@ export const ExerciseHistoryModal: React.FC<ExerciseHistoryModalProps> = ({
 
     return workouts
       .filter((workout) =>
-        workout.exercises.some((e) => e.name === exerciseName)
+        (workout.exercises ?? []).some((e) => e.name === exerciseName)
       )
       .map((workout) => {
-        const exercise = workout.exercises.find((e) => e.name === exerciseName);
+        const exercise = (workout.exercises ?? []).find((e) => e.name === exerciseName);
         // Only include completed sets in history
         const completedSets = (exercise?.sets || []).filter((set) => set.completed);
         return {

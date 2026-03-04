@@ -179,21 +179,21 @@ export const RotationScheduleEditor: React.FC<RotationScheduleEditorProps> = ({
 
               <Pressable 
                 style={styles.workoutInfo}
-                onPress={() => item.workout.exercises.length > 0 && onWorkoutPress(item.workout)}
+                onPress={() => (item.workout.exercises ?? []).length > 0 && onWorkoutPress(item.workout)}
               >
                 <Text variant="bodySemibold" color="primary">
                   {item.workout.name}
                 </Text>
                 <Text variant="bodySemibold" color="primary">
-                  {item.workout.exercises.length > 0 
-                    ? `${item.workout.exercises.length} exercises`
+                  {(item.workout.exercises ?? []).length > 0 
+                    ? `${(item.workout.exercises ?? []).length} exercises`
                     : 'Rest day'
                   }
                 </Text>
               </Pressable>
 
             <View style={styles.actionButtons}>
-              {item.workout.exercises.length > 0 && (
+              {(item.workout.exercises ?? []).length > 0 && (
                 <Pressable
                   style={styles.actionButton}
                   onPress={() => onWorkoutPress(item.workout)}

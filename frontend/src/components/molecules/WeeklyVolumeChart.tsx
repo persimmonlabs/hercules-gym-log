@@ -310,11 +310,11 @@ export const WeeklyVolumeChart: React.FC = () => {
         });
 
         recentWorkouts.forEach(workout => {
-            workout.exercises.forEach(exercise => {
+            (workout.exercises ?? []).forEach(exercise => {
                 const weights = EXERCISE_NAME_TO_MUSCLES[exercise.name];
                 if (!weights) return;
 
-                exercise.sets.forEach(set => {
+                (exercise.sets ?? []).forEach(set => {
                     if (!set.completed || (set.weight ?? 0) <= 0 || (set.reps ?? 0) <= 0) return;
 
                     const setVolume = convertWeight((set.weight ?? 0) * (set.reps ?? 0));

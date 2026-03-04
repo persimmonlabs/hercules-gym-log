@@ -73,10 +73,10 @@ export const VolumeTrendChart: React.FC<VolumeTrendChartProps> = ({ timeRange = 
     filteredWorkouts.forEach((workout) => {
       const dateKey = formatLocalDate(new Date(workout.startTime ?? workout.date));
       
-      workout.exercises.forEach((exercise: any) => {
+      (workout.exercises ?? []).forEach((exercise: any) => {
         if (exercise.name !== selectedExercise) return;
         
-        exercise.sets.forEach((set: any) => {
+        (exercise.sets ?? []).forEach((set: any) => {
           if (!set.completed) return;
           
           const reps = set.reps ?? 0;

@@ -30,8 +30,8 @@ export const useAppStatsForAI = (): AppStats => {
     let totalReps = 0;
 
     for (const workout of workouts) {
-      for (const exercise of workout.exercises) {
-        for (const set of exercise.sets) {
+      for (const exercise of (workout.exercises ?? [])) {
+        for (const set of (exercise.sets ?? [])) {
           if (set.completed) {
             totalSets++;
             totalReps += set.reps ?? 0;

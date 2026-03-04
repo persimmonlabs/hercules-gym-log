@@ -59,14 +59,14 @@ export const getLastCompletedSetsForExercise = (
 
     // Find the most recent workout that contains this exercise with at least one completed set
     for (const workout of sortedWorkouts) {
-        const exercise = workout.exercises.find((ex) => ex.name === exerciseName);
+        const exercise = (workout.exercises ?? []).find((ex) => ex.name === exerciseName);
 
         if (exercise) {
-            const hasCompletedSets = exercise.sets.some((set) => set.completed);
+            const hasCompletedSets = (exercise.sets ?? []).some((set) => set.completed);
 
             if (hasCompletedSets) {
                 // Return all sets from this exercise (both completed and uncompleted)
-                return exercise.sets;
+                return exercise.sets ?? [];
             }
         }
     }

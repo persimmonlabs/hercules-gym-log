@@ -63,14 +63,14 @@ export const PersonalRecordsSection: React.FC = () => {
     });
 
     workouts.forEach((workout: Workout) => {
-      workout.exercises.forEach((exercise) => {
+      (workout.exercises ?? []).forEach((exercise) => {
         if (!trackedSet.has(exercise.name)) return;
 
         const existing = recordMap.get(exercise.name);
         if (!existing) return;
         const exType = existing.exerciseType;
 
-        exercise.sets.forEach((set) => {
+        (exercise.sets ?? []).forEach((set) => {
           // For cardio/duration, include sets with meaningful data even if not completed
           if (!set.completed) {
             if (exType === 'cardio' || exType === 'duration') {

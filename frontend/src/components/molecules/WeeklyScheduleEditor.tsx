@@ -206,7 +206,7 @@ export const WeeklyScheduleEditor: React.FC<WeeklyScheduleEditorProps> = ({
 
               {/* Workout Options */}
               {workouts
-                .filter(w => w.exercises.length > 0) // Filter out "Rest Day" placeholders
+                .filter(w => (w.exercises ?? []).length > 0) // Filter out "Rest Day" placeholders
                 .map(workout => {
                 const isSelected = selectedDay && schedule[selectedDay] === workout.id;
                 
@@ -224,7 +224,7 @@ export const WeeklyScheduleEditor: React.FC<WeeklyScheduleEditorProps> = ({
                         {workout.name}
                       </Text>
                       <Text variant="caption" color="secondary">
-                        {workout.exercises.length} exercises
+                        {(workout.exercises ?? []).length} exercises
                       </Text>
                     </View>
                     {isSelected && (

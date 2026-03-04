@@ -5,13 +5,13 @@
  */
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { AppState, Platform, Pressable, StyleSheet, View } from 'react-native';
+import { AppState, Linking, Platform, Pressable, StyleSheet, View } from 'react-native';
 import type { AppStateStatus } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import * as NavigationBar from 'expo-navigation-bar';
-import MapView, { Polyline, PROVIDER_GOOGLE } from 'react-native-maps';
+import MapView, { Circle, Marker, Polyline, PROVIDER_GOOGLE } from 'react-native-maps';
 
 import { Text } from '@/components/atoms/Text';
 import { IconSymbol } from '@/components/ui/icon-symbol';
@@ -60,11 +60,11 @@ const OutdoorSessionScreen: React.FC = () => {
   // addWorkoutLocally + syncWorkoutToSupabase are called via getState() in handleFinish
   const convertDistanceToMiles = useSettingsStore((s) => s.convertDistanceToMiles);
 
-  // Get current location immediately on mount so map centers before tracking starts
+  // Request location permission on mount (shows native OS dialog) and get initial position
   useEffect(() => {
-    const fetchInitialLocation = async () => {
+    const requestAndFetchLocation = async () => {
       try {
-        const { status } = await Location.getForegroundPermissionsAsync();
+        const { status } = await Location.requestForegroundPermissionsAsync();
         if (status === 'granted') {
           setPermissionStatus('granted');
           const loc = await Location.getCurrentPositionAsync({
@@ -75,10 +75,10 @@ const OutdoorSessionScreen: React.FC = () => {
           setPermissionStatus('denied');
         }
       } catch {
-        // Permission not yet granted; will be requested when user taps Start
+        setPermissionStatus('denied');
       }
     };
-    void fetchInitialLocation();
+    void requestAndFetchLocation();
   }, []);
 
   // Keep currentLocation in sync with the latest GPS coordinate while tracking
@@ -121,11 +121,12 @@ const OutdoorSessionScreen: React.FC = () => {
     }
   }, [theme.primary.bg]);
 
-  // Restart foreground watcher when app returns from background
+  // Restart only the foreground watcher when app returns from background.
+  // The background task continues running independently — no need to restart it.
   useEffect(() => {
     const handleAppState = (nextState: AppStateStatus) => {
       if (nextState === 'active' && status === 'active') {
-        void outdoorTrackingService.startGpsTracking();
+        void outdoorTrackingService.restartForegroundWatcher();
       }
     };
 
@@ -265,9 +266,9 @@ const OutdoorSessionScreen: React.FC = () => {
           ref={mapRef}
           style={styles.map}
           initialRegion={initialRegion}
-          showsUserLocation
+          showsUserLocation={false}
           showsMyLocationButton={false}
-          followsUserLocation={status === 'active'}
+          followsUserLocation={false}
           userInterfaceStyle={isDarkMode ? 'dark' : 'light'}
           customMapStyle={isDarkMode && Platform.OS === 'android' ? DARK_MAP_STYLE : undefined}
           provider={Platform.OS === 'android' ? PROVIDER_GOOGLE : undefined}
@@ -283,7 +284,7 @@ const OutdoorSessionScreen: React.FC = () => {
               />
             ) : null,
           )}
-          {/* Dashed lines connecting gap endpoints */}
+          {/* Solid lines connecting gap endpoints — same style as route */}
           {routeSegments.length >= 2 &&
             routeSegments.slice(0, -1).map((seg, idx) => {
               const nextSeg = routeSegments[idx + 1];
@@ -292,12 +293,31 @@ const OutdoorSessionScreen: React.FC = () => {
                 <Polyline
                   key={`gap-${idx}`}
                   coordinates={[seg[seg.length - 1], nextSeg[0]]}
-                  strokeColor={theme.accent.orangeMuted}
-                  strokeWidth={2}
-                  lineDashPattern={[8, 8]}
+                  strokeColor={theme.accent.orange}
+                  strokeWidth={4}
                 />
               );
             })}
+          {/* Custom user location indicator — avoids native blue ring flickering in dark mode */}
+          {currentLocation && (
+            <>
+              <Circle
+                center={currentLocation}
+                radius={12}
+                fillColor={theme.accent.orange + '30'}
+                strokeColor={theme.accent.orange + '60'}
+                strokeWidth={1}
+              />
+              <Marker
+                coordinate={currentLocation}
+                anchor={{ x: 0.5, y: 0.5 }}
+                flat
+                tracksViewChanges={false}
+              >
+                <View style={[styles.locationDot, { backgroundColor: theme.accent.orange, borderColor: theme.primary.bg }]} />
+              </Marker>
+            </>
+          )}
         </MapView>
 
         {/* Back button */}
@@ -333,14 +353,17 @@ const OutdoorSessionScreen: React.FC = () => {
       {/* Bottom Panel */}
       <View style={[styles.bottomPanel, { backgroundColor: theme.primary.bg, paddingBottom: insets.bottom + spacing.md }]}>
         {showPermissionDenied && (
-          <View style={[styles.permissionBanner, { backgroundColor: theme.accent.orangeMuted }]}>
+          <Pressable
+            onPress={() => void Linking.openSettings()}
+            style={[styles.permissionBanner, { backgroundColor: theme.accent.orangeMuted }]}
+          >
             <Text variant="bodySemibold" color="orange">
               Location permission required
             </Text>
             <Text variant="caption" color="secondary">
-              Enable location access in your device settings to track your route.
+              Tap here to open Settings and enable location access.
             </Text>
-          </View>
+          </Pressable>
         )}
 
         <OutdoorMetricsBar
@@ -418,6 +441,12 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     borderRadius: radius.md,
     gap: spacing.xs,
+  },
+  locationDot: {
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    borderWidth: 2,
   },
 });
 

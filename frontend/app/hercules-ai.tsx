@@ -369,11 +369,7 @@ const HerculesAIScreen: React.FC = () => {
               await useActiveScheduleStore.getState().hydrateActiveSchedule();
               await useSchedulesStore.getState().hydrateSchedules();
               console.log('[HerculesAI] Active schedule and schedules refreshed');
-            } else if (
-              actionType === 'add_workout_session' ||
-              actionType === 'edit_workout_session' ||
-              actionType === 'delete_workout_session'
-            ) {
+            } else if (actionType === 'add_workout_session') {
               await useWorkoutSessionsStore.getState().hydrateWorkouts();
               console.log('[HerculesAI] Workout sessions refreshed');
             }
@@ -503,9 +499,6 @@ const HerculesAIScreen: React.FC = () => {
       create_plan: 'Create this plan?',
       create_program_plan: 'Create this program?',
       create_schedule: 'Create this schedule?',
-      edit_workout_session: 'Edit this session?',
-      delete_workout_session: 'Delete this session?',
-      create_custom_exercise: 'Create this exercise?',
     };
 
     let displayContent = item.content;

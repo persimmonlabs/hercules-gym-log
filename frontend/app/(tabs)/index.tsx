@@ -525,12 +525,12 @@ const DashboardScreen: React.FC = () => {
 
     // Check plans (My Workouts)
     const plan = plans.find((p) => p.id === workoutId);
-    if (plan) return plan.exercises.length;
+    if (plan) return (plan.exercises ?? []).length;
 
     // Check user programs
     for (const program of userPrograms) {
       const workout = program.workouts.find((w) => w.id === workoutId);
-      if (workout) return workout.exercises.length;
+      if (workout) return (workout.exercises ?? []).length;
     }
 
     return 0;
@@ -600,7 +600,7 @@ const DashboardScreen: React.FC = () => {
       return {
         variant: 'ongoing',
         sessionName: currentSession.name,
-        exerciseCount: currentSession.exercises.length,
+        exerciseCount: (currentSession.exercises ?? []).length,
         elapsedMinutes,
       };
     }
@@ -716,7 +716,7 @@ const DashboardScreen: React.FC = () => {
       const suggestedSetsMap: Record<string, SetLog[]> = {};
       const dataPointsMap: Record<string, any[]> = {};
       const repRangesMap: Record<string, RepRange[]> = {};
-      const workoutExercises: WorkoutExercise[] = target.exercises.map((exercise) => {
+      const workoutExercises: WorkoutExercise[] = (target.exercises ?? []).map((exercise) => {
         const result = createSetsWithSmartSuggestions(exercise.name, workouts, smartSuggestionsEnabled, undefined, undefined, customExercises, userGoal);
         historySetCounts[exercise.name] = result.historySetCount;
         if (result.smartSuggestedSets.length > 0) {
@@ -775,8 +775,9 @@ const DashboardScreen: React.FC = () => {
   }, [workouts]);
 
   const formatWorkoutSubtitle = useCallback((workout: Workout) => {
-    const completedExercises = workout.exercises.filter((exercise) =>
-      exercise.sets.length > 0 ? exercise.sets.some((set) => set.completed) : false
+    const exercises = workout.exercises ?? [];
+    const completedExercises = exercises.filter((exercise) =>
+      exercise.sets?.length > 0 ? exercise.sets.some((set) => set.completed) : false
     );
     const completedCount = completedExercises.length;
     const base = `${completedCount} ${completedCount === 1 ? 'exercise' : 'exercises'}`;
@@ -1055,7 +1056,7 @@ const DashboardScreen: React.FC = () => {
                                     const suggestedSetsMap2: Record<string, SetLog[]> = {};
                                     const dataPointsMap2: Record<string, any[]> = {};
                                     const repRangesMap2: Record<string, RepRange[]> = {};
-                                    const workoutExercises: WorkoutExercise[] = targetWorkout.exercises.map((exercise) => {
+                                    const workoutExercises: WorkoutExercise[] = (targetWorkout.exercises ?? []).map((exercise) => {
                                       const result = createSetsWithSmartSuggestions(exercise.name, workouts, smartSuggestionsEnabled, undefined, undefined, customExercises, userGoal2);
                                       historySetCounts[exercise.name] = result.historySetCount;
                                       if (result.smartSuggestedSets.length > 0) {
@@ -1119,10 +1120,10 @@ const DashboardScreen: React.FC = () => {
                               </Text>
                               <Text variant="body" color="secondary">
                                 {todaysCardState.variant === 'rotation'
-                                  ? `${todaysCardState.workout.exercises.length} exercises`
+                                  ? `${(todaysCardState.workout.exercises ?? []).length} exercises`
                                   : todaysCardState.variant === 'standaloneRotation'
-                                    ? `${todaysCardState.plan.exercises.length} exercises`
-                                    : `${todaysCardState.plan.exercises.length} exercises`}
+                                    ? `${(todaysCardState.plan.exercises ?? []).length} exercises`
+                                    : `${(todaysCardState.plan.exercises ?? []).length} exercises`}
                               </Text>
                             </View>
                             <Pressable

@@ -159,7 +159,7 @@ export default function AddWorkoutsToProgramScreen() {
         const programWorkout: ProgramWorkout = {
           id: `workout-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
           name: workout.name,
-          exercises: workout.exercises.map(ex => ({
+          exercises: (workout.exercises ?? []).map(ex => ({
             id: ex.id,
             name: ex.name,
             sets: 3,
@@ -195,7 +195,7 @@ export default function AddWorkoutsToProgramScreen() {
             <View style={styles.workoutInfo}>
               <Text variant="bodySemibold" color="primary">{item.name}</Text>
               <Text variant="caption" color="secondary">
-                {item.exercises.length} {item.exercises.length === 1 ? 'exercise' : 'exercises'}
+                {(item.exercises ?? []).length} {(item.exercises ?? []).length === 1 ? 'exercise' : 'exercises'}
               </Text>
             </View>
             <View style={styles.checkIcon}>

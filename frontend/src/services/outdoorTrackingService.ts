@@ -119,10 +119,11 @@ class OutdoorTrackingService {
 
       await Location.startLocationUpdatesAsync(BACKGROUND_LOCATION_TASK, {
         accuracy: Location.Accuracy.High,
-        timeInterval: 5000,
-        distanceInterval: 5,
-        deferredUpdatesInterval: 5000,
+        timeInterval: 3000,
+        distanceInterval: 3,
+        deferredUpdatesInterval: 3000,
         showsBackgroundLocationIndicator: true,
+        activityType: Location.ActivityType.Fitness,
         foregroundService: {
           notificationTitle: 'Hercules — Tracking Route',
           notificationBody: 'Your outdoor activity is being recorded.',
@@ -209,6 +210,17 @@ class OutdoorTrackingService {
       this.timerInterval = null;
       console.log('[OutdoorTrackingService] Timer stopped');
     }
+  }
+
+  /**
+   * Restart only the foreground watcher without touching the background task.
+   * Called when the app returns to foreground so the background task continues
+   * uninterrupted while the foreground watcher provides high-frequency updates.
+   */
+  async restartForegroundWatcher(): Promise<void> {
+    if (!this.isTrackingActive) return;
+    await this.startForegroundWatcher();
+    console.log('[OutdoorTrackingService] Foreground watcher restarted (background task untouched)');
   }
 
   isGpsActive(): boolean {

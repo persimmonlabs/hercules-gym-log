@@ -341,7 +341,7 @@ export const useInsightsData = () => {
     const weekMovementPatterns = new Set<string>();
 
     weekWorkouts.forEach((workout) => {
-      workout.exercises.forEach((exercise: any) => {
+      (workout.exercises ?? []).forEach((exercise: any) => {
         const meta = EXERCISE_METADATA[exercise.name];
         if (!meta) return;
         const et = meta.exercise_type || 'weight';
@@ -350,7 +350,7 @@ export const useInsightsData = () => {
         const muscleWeights = EXERCISE_MUSCLES[exercise.name];
         const bwMult = BW_MULTIPLIER_MAP[exercise.name] ?? DEFAULT_BW_MULTIPLIER_BY_TYPE[et] ?? 0;
 
-        exercise.sets.forEach((set: any) => {
+        (exercise.sets ?? []).forEach((set: any) => {
           if (!isCompletedSet(set)) return;
           const vol = computeSetVolume(set, et, userBodyWeight, bwMult);
 
@@ -488,7 +488,7 @@ export const useInsightsData = () => {
       const weekIdx = Math.floor((nowMs - wDateMs) / WEEK_MS);
       if (weekIdx >= PLATEAU_WEEKS) return;
 
-      workout.exercises.forEach((exercise: any) => {
+      (workout.exercises ?? []).forEach((exercise: any) => {
         const meta = EXERCISE_METADATA[exercise.name];
         if (!meta) return;
         if (meta.exercise_type !== 'weight') return;
@@ -511,7 +511,7 @@ export const useInsightsData = () => {
         let sessionHasData = false;
         const rangesUsed = new Set<RepRange>();
 
-        exercise.sets.forEach((set: any) => {
+        (exercise.sets ?? []).forEach((set: any) => {
           if (!isCompletedSet(set)) return;
           const w = set.weight ?? 0;
           const r = set.reps ?? 0;
@@ -672,13 +672,13 @@ export const useInsightsData = () => {
 
     // 7-day window
     weekWorkouts.forEach((workout) => {
-      workout.exercises.forEach((exercise: any) => {
+      (workout.exercises ?? []).forEach((exercise: any) => {
         const meta = EXERCISE_METADATA[exercise.name];
         if (!meta) return;
         const et = meta.exercise_type || 'weight';
         if (et === 'cardio' || et === 'duration') return;
 
-        exercise.sets.forEach((set: any) => {
+        (exercise.sets ?? []).forEach((set: any) => {
           if (!isCompletedSet(set)) return;
           distributeSets(exercise, meta, set, { sets: weekSets, volume: weekVolume });
         });
@@ -688,13 +688,13 @@ export const useInsightsData = () => {
     // 14-day window
     const twoWeekVolRef = { v: 0 };
     twoWeekWorkouts.forEach((workout) => {
-      workout.exercises.forEach((exercise: any) => {
+      (workout.exercises ?? []).forEach((exercise: any) => {
         const meta = EXERCISE_METADATA[exercise.name];
         if (!meta) return;
         const et = meta.exercise_type || 'weight';
         if (et === 'cardio' || et === 'duration') return;
 
-        exercise.sets.forEach((set: any) => {
+        (exercise.sets ?? []).forEach((set: any) => {
           if (!isCompletedSet(set)) return;
           twoWeekTotalSets += 1;
           distributeSets(exercise, meta, set, { volume: twoWeekVolume }, { ref: twoWeekVolRef });
@@ -705,7 +705,7 @@ export const useInsightsData = () => {
 
     // 4-week trained check
     fourWeekWorkouts.forEach((workout) => {
-      workout.exercises.forEach((exercise: any) => {
+      (workout.exercises ?? []).forEach((exercise: any) => {
         const meta = EXERCISE_METADATA[exercise.name];
         if (!meta) return;
         const et = meta.exercise_type || 'weight';
@@ -713,7 +713,7 @@ export const useInsightsData = () => {
         const muscleWeights = EXERCISE_MUSCLES[exercise.name];
         if (!muscleWeights) return;
 
-        const hasCompleted = exercise.sets.some(isCompletedSet);
+        const hasCompleted = (exercise.sets ?? []).some(isCompletedSet);
         if (hasCompleted) {
           Object.keys(muscleWeights).forEach((m) => {
             const l2 = LEAF_TO_L2[m];
@@ -725,13 +725,13 @@ export const useInsightsData = () => {
 
     // All-time trained check
     workouts.forEach((workout) => {
-      workout.exercises.forEach((exercise: any) => {
+      (workout.exercises ?? []).forEach((exercise: any) => {
         const meta = EXERCISE_METADATA[exercise.name];
         if (!meta) return;
         const muscleWeights = EXERCISE_MUSCLES[exercise.name];
         if (!muscleWeights) return;
 
-        const hasCompleted = exercise.sets.some(isCompletedSet);
+        const hasCompleted = (exercise.sets ?? []).some(isCompletedSet);
         if (hasCompleted) {
           Object.keys(muscleWeights).forEach((m) => {
             const l2 = LEAF_TO_L2[m];

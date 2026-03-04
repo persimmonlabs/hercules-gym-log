@@ -245,12 +245,12 @@ export const FocusDistributionChart: React.FC<FocusDistributionChartProps> = ({ 
     let totalSets = 0;
 
     workouts.forEach((workout: any) => {
-      workout.exercises.forEach((exercise: any) => {
+      (workout.exercises ?? []).forEach((exercise: any) => {
         const weights = EXERCISE_NAME_TO_MUSCLES[exercise.name];
         if (!weights) return;
 
         // Exclude sets with 0 weight
-        const completedSets = exercise.sets.filter((s: any) => s.completed && (s.weight ?? 0) > 0).length;
+        const completedSets = (exercise.sets ?? []).filter((s: any) => s.completed && (s.weight ?? 0) > 0).length;
         if (completedSets === 0) return;
 
         totalSets += completedSets;

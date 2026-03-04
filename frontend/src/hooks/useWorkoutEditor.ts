@@ -105,9 +105,9 @@ export const useWorkoutEditor = (workoutId?: string): WorkoutEditorHook => {
       return;
     }
 
-    const nextDrafts = workout.exercises.map((exercise) => ({
+    const nextDrafts = (workout.exercises ?? []).map((exercise) => ({
       ...exercise,
-      sets: exercise.sets.map((set) => ({
+      sets: (exercise.sets ?? []).map((set) => ({
         ...set,
         weight: convertWeight(set.weight ?? 0),
       })),
@@ -195,9 +195,9 @@ export const useWorkoutEditor = (workoutId?: string): WorkoutEditorHook => {
       const currentExercise = prev.find((ex) => ex.name === baseName);
       let defaultSets: SetLog[];
 
-      if (currentExercise && currentExercise.sets.some((set) => set.completed)) {
+      if (currentExercise && (currentExercise.sets ?? []).some((set) => set.completed)) {
         // Use the current workout's data
-        defaultSets = currentExercise.sets.map((set) => ({
+        defaultSets = (currentExercise.sets ?? []).map((set) => ({
           reps: set.reps,
           weight: set.weight,
           completed: false,
@@ -333,7 +333,7 @@ export const useWorkoutEditor = (workoutId?: string): WorkoutEditorHook => {
       // Convert exercises from User Unit (display) to LBS (storage)
       const preparedExercises = exerciseDrafts.map((exercise) => ({
         ...exercise,
-        sets: exercise.sets.map((set) => ({
+        sets: (exercise.sets ?? []).map((set) => ({
           ...set,
           weight: convertWeightToLbs(set.weight ?? 0),
         })),

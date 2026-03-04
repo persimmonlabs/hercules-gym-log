@@ -119,7 +119,7 @@ export const WorkoutExerciseSummaryCard: React.FC<WorkoutExerciseSummaryCardProp
   // (duration > 0 or distance > 0) even if not explicitly marked completed,
   // since users often enter time/distance without pressing "Complete set".
   const isTimedType = exerciseType === 'cardio' || exerciseType === 'duration';
-  const completedSets = exercise.sets
+  const completedSets = (exercise.sets ?? [])
     .map((set, originalIndex) => ({ set, originalIndex }))
     .filter(({ set }) => {
       if (set.completed) return true;

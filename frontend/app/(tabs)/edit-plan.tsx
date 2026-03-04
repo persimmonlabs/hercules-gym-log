@@ -143,14 +143,14 @@ export default function EditPlanScreen() {
           match = candidates[0];
         } else if (candidates.length > 1 && workout.exercises && workout.exercises.length > 0) {
           const workoutExerciseIds = new Set(
-            workout.exercises.map((ex: any) => String(ex.id)),
+            (workout.exercises ?? []).map((ex: any) => String(ex.id)),
           );
 
           let best: Plan | undefined;
           let bestOverlap = -1;
 
           for (const candidate of candidates) {
-            const overlap = candidate.exercises.filter((ex) =>
+            const overlap = (candidate.exercises ?? []).filter((ex) =>
               workoutExerciseIds.has(String(ex.id)),
             ).length;
 
@@ -242,7 +242,7 @@ export default function EditPlanScreen() {
       const programWorkout: ProgramWorkout = {
         id: workout.id,
         name: workout.name,
-        exercises: workout.exercises.map((ex) => ({
+        exercises: (workout.exercises ?? []).map((ex) => ({
           id: ex.id,
           name: ex.name,
           sets: 3,

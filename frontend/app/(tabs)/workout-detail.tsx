@@ -47,6 +47,7 @@ const WorkoutDetailScreen: React.FC = () => {
   const [isEditing, setIsEditing] = useState<boolean>(false);
   const [editedName, setEditedName] = useState<string>('');
   const [editedExercises, setEditedExercises] = useState<WorkoutExercise[]>([]);
+  const [editedDuration, setEditedDuration] = useState<number>(0);
   const [isSaving, setIsSaving] = useState<boolean>(false);
 
   useEffect(() => {
@@ -87,7 +88,8 @@ const WorkoutDetailScreen: React.FC = () => {
     if (!workout) return;
     triggerHaptic('selection');
     setEditedName(workout.name ?? '');
-    setEditedExercises(JSON.parse(JSON.stringify(workout.exercises)));
+    setEditedExercises(JSON.parse(JSON.stringify(workout.exercises ?? [])));
+    setEditedDuration(workout.duration ?? 0);
     setIsEditing(true);
   }, [workout]);
 
@@ -96,6 +98,7 @@ const WorkoutDetailScreen: React.FC = () => {
     setIsEditing(false);
     setEditedName('');
     setEditedExercises([]);
+    setEditedDuration(0);
   }, []);
 
   const handleSaveEdit = useCallback(async () => {
@@ -111,7 +114,7 @@ const WorkoutDetailScreen: React.FC = () => {
       if (exType !== 'cardio' && exType !== 'duration') return exercise;
       return {
         ...exercise,
-        sets: exercise.sets.map((set) => {
+        sets: (exercise.sets ?? []).map((set) => {
           if (set.completed) return set;
           const hasDuration = (set.duration ?? 0) > 0;
           const hasDistance = (set.distance ?? 0) > 0;
@@ -127,6 +130,8 @@ const WorkoutDetailScreen: React.FC = () => {
       ...workout,
       name: editedName.trim() || workout.name,
       exercises: finalExercises,
+      duration: editedDuration > 0 ? editedDuration : workout.duration,
+      endTime: editedDuration > 0 && workout.startTime ? workout.startTime + editedDuration * 1000 : workout.endTime,
     };
     
     try {
@@ -134,15 +139,20 @@ const WorkoutDetailScreen: React.FC = () => {
       setIsEditing(false);
       setEditedName('');
       setEditedExercises([]);
+      setEditedDuration(0);
     } catch (error) {
       console.error('[workout-detail] Failed to save workout', error);
     } finally {
       setIsSaving(false);
     }
-  }, [workout, editedName, editedExercises, updateWorkout, isSaving]);
+  }, [workout, editedName, editedExercises, editedDuration, updateWorkout, isSaving]);
 
   const handleExercisesChange = useCallback((exercises: WorkoutExercise[]) => {
     setEditedExercises(exercises);
+  }, []);
+
+  const handleDurationChange = useCallback((seconds: number) => {
+    setEditedDuration(seconds);
   }, []);
 
   const planName = useMemo(() => {
@@ -316,7 +326,9 @@ const WorkoutDetailScreen: React.FC = () => {
         isEditing ? (
           <EditableWorkoutDetailContent
             workout={{ ...workout, exercises: editedExercises }}
+            durationSeconds={editedDuration}
             onExercisesChange={handleExercisesChange}
+            onDurationChange={handleDurationChange}
           />
         ) : (
           <WorkoutDetailContent workout={workout} />

@@ -5,7 +5,7 @@
  */
 
 import React from 'react';
-import { View, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, ScrollView, TouchableOpacity, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 
@@ -35,7 +35,11 @@ export const PremiumSlide: React.FC<PremiumSlideProps> = ({
       >
         {/* Hero Section */}
         <Animated.View entering={FadeInUp.springify()} style={styles.heroSection}>
-          <Ionicons name="fitness" size={56} color={lt.accent.orange} />
+          <Image
+            source={require('@/assets/images/icon.png')}
+            style={styles.heroIcon}
+            resizeMode="contain"
+          />
           <Text variant="heading1" style={[styles.heroTitle, { color: lt.text.primary }]}>
             Hercules Pro
           </Text>
@@ -94,6 +98,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingTop: spacing.md,
     paddingBottom: spacing.xl,
+  },
+  heroIcon: {
+    width: 80,
+    height: 80,
   },
   heroTitle: {
     marginTop: spacing.sm,

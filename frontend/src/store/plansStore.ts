@@ -149,7 +149,7 @@ export const usePlansStore = create<PlansState>((set, get) => ({
       // Sync to Supabase
       await updateWorkoutTemplate(user.id, updatedPlan.id, {
         name: trimmedName,
-        exercises: updatedPlan.exercises.map(e => ({
+        exercises: (updatedPlan.exercises ?? []).map(e => ({
           id: e.id,
           name: e.name,
           sets: 3,

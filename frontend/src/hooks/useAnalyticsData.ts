@@ -210,12 +210,12 @@ export const useAnalyticsData = (options: UseAnalyticsDataOptions = {}) => {
 
     filteredWorkouts.forEach((workout) => {
       let hasCardio = false;
-      workout.exercises.forEach((exercise: any) => {
+      (workout.exercises ?? []).forEach((exercise: any) => {
         const exerciseType = EXERCISE_TYPE_MAP[exercise.name];
         if (exerciseType !== 'cardio') return;
 
         hasCardio = true;
-        exercise.sets.forEach((set: any) => {
+        (exercise.sets ?? []).forEach((set: any) => {
           // Include sets that are completed OR have meaningful cardio data
           // (users often enter time/distance without pressing "Complete set")
           const hasData = (set.duration ?? 0) > 0 || (set.distance ?? 0) > 0;
@@ -241,7 +241,7 @@ export const useAnalyticsData = (options: UseAnalyticsDataOptions = {}) => {
     const low: Record<string, number> = {};
 
     filteredWorkouts.forEach((workout) => {
-      workout.exercises.forEach((exercise: any) => {
+      (workout.exercises ?? []).forEach((exercise: any) => {
         const weights = EXERCISE_MUSCLES[exercise.name];
         if (!weights) return;
 
@@ -252,7 +252,7 @@ export const useAnalyticsData = (options: UseAnalyticsDataOptions = {}) => {
 
         const bwMult = BW_MULTIPLIER_MAP[exercise.name] ?? DEFAULT_BW_MULTIPLIER_BY_TYPE[exerciseType] ?? 0;
 
-        exercise.sets.forEach((set: any) => {
+        (exercise.sets ?? []).forEach((set: any) => {
           if (!set.completed) return;
 
           // Calculate set volume using shared BW-adjusted formula
@@ -299,7 +299,7 @@ export const useAnalyticsData = (options: UseAnalyticsDataOptions = {}) => {
     const distL3: Record<string, number> = {};
 
     filteredWorkouts.forEach((workout) => {
-      workout.exercises.forEach((exercise: any) => {
+      (workout.exercises ?? []).forEach((exercise: any) => {
         const muscleWeights = EXERCISE_MUSCLES[exercise.name];
         if (!muscleWeights) return;
 
@@ -310,7 +310,7 @@ export const useAnalyticsData = (options: UseAnalyticsDataOptions = {}) => {
 
         const bwMult = BW_MULTIPLIER_MAP[exercise.name] ?? DEFAULT_BW_MULTIPLIER_BY_TYPE[exerciseType] ?? 0;
 
-        exercise.sets.forEach((set: any) => {
+        (exercise.sets ?? []).forEach((set: any) => {
           if (!set.completed) return;
 
           let setVolume = computeSetVolume(set, exerciseType, userBodyWeight, bwMult);
@@ -372,7 +372,7 @@ export const useAnalyticsData = (options: UseAnalyticsDataOptions = {}) => {
     const distByLevel: Record<string, Record<string, number>> = {};
 
     filteredWorkouts.forEach((workout) => {
-      workout.exercises.forEach((exercise: any) => {
+      (workout.exercises ?? []).forEach((exercise: any) => {
         const muscleWeights = EXERCISE_MUSCLES[exercise.name];
         if (!muscleWeights) return;
 
@@ -383,7 +383,7 @@ export const useAnalyticsData = (options: UseAnalyticsDataOptions = {}) => {
 
         const bwMult = BW_MULTIPLIER_MAP[exercise.name] ?? DEFAULT_BW_MULTIPLIER_BY_TYPE[exerciseType] ?? 0;
 
-        exercise.sets.forEach((set: any) => {
+        (exercise.sets ?? []).forEach((set: any) => {
           if (!set.completed) return;
 
           let setVolume = computeSetVolume(set, exerciseType, userBodyWeight, bwMult);
@@ -581,7 +581,7 @@ export const useAnalyticsData = (options: UseAnalyticsDataOptions = {}) => {
       // Bucket by LOCAL calendar day so "today" always shows up on the 7-day chart
       const dateKey = formatLocalDate(new Date(workout.startTime ?? workout.date));
       
-      workout.exercises.forEach((exercise: any) => {
+      (workout.exercises ?? []).forEach((exercise: any) => {
         const exerciseType = EXERCISE_TYPE_MAP[exercise.name] || 'weight';
         
         // Skip cardio and pure duration exercises
@@ -591,7 +591,7 @@ export const useAnalyticsData = (options: UseAnalyticsDataOptions = {}) => {
 
         const bwMult = BW_MULTIPLIER_MAP[exercise.name] ?? DEFAULT_BW_MULTIPLIER_BY_TYPE[exerciseType] ?? 0;
 
-        exercise.sets.forEach((set: any) => {
+        (exercise.sets ?? []).forEach((set: any) => {
           if (!set.completed) return;
 
           const setVolume = computeSetVolume(set, exerciseType, userBodyWeight, bwMult);

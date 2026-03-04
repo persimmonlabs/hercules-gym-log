@@ -90,7 +90,7 @@ export default function PaywallModal() {
         <TouchableOpacity onPress={handleDismiss} style={styles.closeButton}>
           <MaterialIcons name="close" size={24} color={theme.text.primary} />
         </TouchableOpacity>
-        <Text variant="h2" style={styles.headerTitle}>Upgrade to Pro</Text>
+        <Text variant="heading2" style={styles.headerTitle}>Upgrade to Pro</Text>
         <View style={styles.placeholder} />
       </View>
     </View>

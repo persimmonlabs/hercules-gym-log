@@ -203,7 +203,7 @@ const WorkoutSubcardList: React.FC<WorkoutSubcardListProps> = ({
                     </>
                   )}
                   <Text variant="body" color="secondary" style={styles.exerciseCount}>
-                    {workout.exercises.length} {workout.exercises.length === 1 ? 'exercise' : 'exercises'}
+                    {(workout.exercises ?? []).length} exercise{(workout.exercises ?? []).length === 1 ? '' : 's'}
                   </Text>
                 </View>
               </>

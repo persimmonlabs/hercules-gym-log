@@ -266,7 +266,7 @@ export const PlanBuilderCard: React.FC<PlanBuilderCardProps> = ({
                             {workout.name}
                           </Text>
                           <Text variant="captionSmall" color="tertiary">
-                            {workout.exercises.length} exercise{workout.exercises.length !== 1 ? 's' : ''}
+                            {(workout.exercises ?? []).length} exercise{(workout.exercises ?? []).length !== 1 ? 's' : ''}
                           </Text>
                         </View>
                         <View style={[styles.addButton, { backgroundColor: theme.accent.orangeMuted }]}>
@@ -409,7 +409,7 @@ const SelectedWorkoutRow: React.FC<SelectedWorkoutRowProps> = React.memo(functio
           {workout.name}
         </Text>
         <Text variant="caption" color="secondary">
-          {workout.exercises.length} exercise{workout.exercises.length !== 1 ? 's' : ''}
+          {(workout.exercises ?? []).length} exercise{(workout.exercises ?? []).length !== 1 ? 's' : ''}
         </Text>
       </View>
 

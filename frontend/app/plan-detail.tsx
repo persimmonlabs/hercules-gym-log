@@ -228,7 +228,7 @@ const PlanDetailScreen: React.FC = () => {
               </Text>
               <Text variant="body" color="secondary">
                 {plan
-                  ? `${plan.exercises.length} exercise${plan.exercises.length === 1 ? '' : 's'} saved.`
+                  ? `${(plan.exercises ?? []).length} exercise${(plan.exercises ?? []).length === 1 ? '' : 's'} saved.`
                   : 'No exercises found for this plan.'}
               </Text>
             </View>
@@ -236,7 +236,7 @@ const PlanDetailScreen: React.FC = () => {
 
           {plan ? (
             <SurfaceCard tone="neutral" padding="xl" showAccentStripe={false} style={styles.exercisesCard}>
-              {plan.exercises.map((exercise, index) => {
+              {(plan.exercises ?? []).map((exercise, index) => {
                 // Get all muscle names from the exercise's muscles object
                 const muscleNames = Object.keys(exercise.muscles || {});
                 

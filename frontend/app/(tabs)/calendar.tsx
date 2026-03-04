@@ -7,10 +7,11 @@ import { LinearGradient } from 'expo-linear-gradient';
 
 import { SurfaceCard } from '@/components/atoms/SurfaceCard';
 import { Text } from '@/components/atoms/Text';
+import { IconSymbol } from '@/components/ui/icon-symbol';
 import { MonthlyCalendar } from '@/components/molecules/MonthlyCalendar';
 import { ScreenHeader } from '@/components/molecules/ScreenHeader';
 import { TabSwipeContainer } from '@/components/templates/TabSwipeContainer';
-import { spacing } from '@/constants/theme';
+import { radius, sizing, spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/useTheme';
 import { formatDateToLocalISO, getDeviceCurrentDate, parseLocalISODate } from '@/utils/date';
 import { formatWorkoutTitle, getWorkoutSummary } from '@/utils/workout';
@@ -151,6 +152,11 @@ const CalendarScreen: React.FC = () => {
     [router],
   );
 
+  const handleLogSession = useCallback(() => {
+    triggerHaptic('selection');
+    router.push({ pathname: '/log-session', params: { date: selectedDate } });
+  }, [router, selectedDate]);
+
   return (
     <TabSwipeContainer ref={scrollRef} contentContainerStyle={[styles.contentContainer, { backgroundColor: theme.primary.bg }]}>
       <ScreenHeader
@@ -204,6 +210,21 @@ const CalendarScreen: React.FC = () => {
             </Text>
           </SurfaceCard>
         )}
+
+        <Pressable
+          onPress={handleLogSession}
+          accessibilityRole="button"
+          accessibilityLabel="Log a session for this date"
+        >
+          <SurfaceCard tone="neutral" padding="md" showAccentStripe={false} style={[styles.logSessionCard, { borderColor: theme.accent.orange }]}>
+            <View style={styles.logSessionCardContent}>
+              <IconSymbol name="add" size={sizing.iconSM} color={theme.accent.orange} />
+              <Text variant="bodySemibold" style={{ color: theme.accent.orange }}>
+                Log a Session
+              </Text>
+            </View>
+          </SurfaceCard>
+        </Pressable>
       </View>
     </TabSwipeContainer>
   );
@@ -242,5 +263,16 @@ const styles = StyleSheet.create({
   },
   noWorkoutCard: {
     gap: spacing.xs,
+  },
+  logSessionCard: {
+    borderStyle: 'dashed',
+    borderWidth: 1,
+    borderRadius: radius.lg,
+  },
+  logSessionCardContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
   },
 });

@@ -13,6 +13,14 @@ export default (_: ConfigContext): ExpoConfig => {
 
   const expoConfig: ExpoConfig = {
     ...baseConfig,
+    android: {
+      ...baseConfig.android,
+      config: {
+        googleMaps: {
+          apiKey: process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY || '',
+        },
+      },
+    },
     updates: {
       ...baseConfig.updates,
     },

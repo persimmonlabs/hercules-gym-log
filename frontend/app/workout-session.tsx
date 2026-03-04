@@ -482,7 +482,7 @@ const WorkoutSessionScreen: React.FC = () => {
       const exType = getExerciseTypeByName(exercise.name, currentCustomExercises);
       return {
         ...exercise,
-        sets: exercise.sets.map((set) => {
+        sets: (exercise.sets ?? []).map((set) => {
           // Auto-complete cardio/duration sets that have meaningful data entered
           // Users often enter time/distance without pressing "Complete set"
           let completed = set.completed;
@@ -511,7 +511,7 @@ const WorkoutSessionScreen: React.FC = () => {
     let sessionName = currentSessionData.name;
     if (!sessionName && exercisesInLbs.length === 1) {
       const exercise = exercisesInLbs[0];
-      const hasCompletedSets = exercise.sets.some(set => set.completed);
+      const hasCompletedSets = (exercise.sets ?? []).some(set => set.completed);
       if (hasCompletedSets) {
         sessionName = exercise.name;
       }
@@ -721,8 +721,8 @@ const WorkoutSessionScreen: React.FC = () => {
 
   const completedExercisesCount = useMemo(() => {
     return sessionExercises.filter((exercise) => {
-      const totalSets = exerciseProgress[exercise.name]?.totalSets ?? exercise.sets.length;
-      const completedSets = exerciseProgress[exercise.name]?.completedSets ?? exercise.sets.filter((set) => set.completed).length;
+      const totalSets = exerciseProgress[exercise.name]?.totalSets ?? (exercise.sets ?? []).length;
+      const completedSets = exerciseProgress[exercise.name]?.completedSets ?? (exercise.sets ?? []).filter((set) => set.completed).length;
       return totalSets > 0 && completedSets === totalSets;
     }).length;
   }, [sessionExercises, exerciseProgress]);

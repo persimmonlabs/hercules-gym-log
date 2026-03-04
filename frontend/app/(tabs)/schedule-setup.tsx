@@ -241,7 +241,7 @@ const ScheduleSetupScreen: React.FC = () => {
     // Add workouts from programs — only if not already present by name
     userPrograms.forEach((program) => {
       program.workouts.forEach((w) => {
-        if (w.exercises.length === 0) return;
+        if ((w.exercises ?? []).length === 0) return;
         const nameKey = w.name.trim().toLowerCase();
         if (!seenNames.has(nameKey)) {
           seenNames.add(nameKey);

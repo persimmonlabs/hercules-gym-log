@@ -157,10 +157,10 @@ export const extractDataPoints = (
     const workoutDate = new Date(workout.date).getTime();
     if (workoutDate < cutoff) continue;
 
-    const exercise = workout.exercises.find((ex) => ex.name === exerciseName);
+    const exercise = (workout.exercises ?? []).find((ex) => ex.name === exerciseName);
     if (!exercise) continue;
 
-    const completedSets = exercise.sets.filter((s) => s.completed);
+    const completedSets = (exercise.sets ?? []).filter((s) => s.completed);
     if (completedSets.length === 0) continue;
 
     // Only consider sets with weight data for weight-based analysis
@@ -1185,8 +1185,8 @@ export const detectCompoundIsolationSplit = (
     const compoundReps: number[] = [];
     const isolationReps: number[] = [];
 
-    for (const exercise of workout.exercises) {
-      const completedSets = exercise.sets.filter((s) => s.completed && s.reps !== undefined && s.reps > 0);
+    for (const exercise of (workout.exercises ?? [])) {
+      const completedSets = (exercise.sets ?? []).filter((s) => s.completed && s.reps !== undefined && s.reps > 0);
       if (completedSets.length === 0) continue;
 
       const avgReps = completedSets.reduce((sum, s) => sum + (s.reps ?? 0), 0) / completedSets.length;

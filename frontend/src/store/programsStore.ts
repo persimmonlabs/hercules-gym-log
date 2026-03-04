@@ -279,7 +279,7 @@ export const useProgramsStore = create<ProgramsState>((set, get) => ({
       usePlansStore.getState().plans,
       get().userPrograms,
     );
-    const programWorkoutCount = premade.workouts.filter(w => w.exercises.length > 0).length;
+    const programWorkoutCount = premade.workouts.filter(w => (w.exercises ?? []).length > 0).length;
 
     console.log('[programsStore] Program limit check:', {
       currentPlanCount,
@@ -460,14 +460,14 @@ export const useProgramsStore = create<ProgramsState>((set, get) => ({
           // Only promote if no standalone template exists AND not in another program
           if (!existingNames.has(nameKey) && !otherProgramWorkoutNames.has(nameKey)) {
             try {
-              const exercisesToSave = workout.exercises.map(e => ({
+              const exercisesToSave = (workout.exercises ?? []).map(e => ({
                 id: e.id,
                 name: e.name,
                 sets: 3,
               }));
               await plansStore.addPlan({
                 name: workout.name,
-                exercises: workout.exercises.map(e => {
+                exercises: (workout.exercises ?? []).map(e => {
                   // Resolve full exercise objects from the catalog
                   const catalogExercise = require('@/constants/exercises').exercises.find(
                     (ex: any) => ex.id === e.id

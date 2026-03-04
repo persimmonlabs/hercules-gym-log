@@ -55,7 +55,7 @@ export const WorkoutDetailContent: React.FC<WorkoutDetailContentProps> = ({ work
   const outdoorMetrics = useMemo(() => {
     if (!isOutdoorSession) return null;
 
-    const set = workout.exercises[0]?.sets[0];
+    const set = (workout.exercises ?? [])[0]?.sets[0];
     const distanceMiles = set?.distance ?? 0;
     const durationSeconds = workout.duration ?? set?.duration ?? 0;
 
@@ -156,7 +156,7 @@ export const WorkoutDetailContent: React.FC<WorkoutDetailContentProps> = ({ work
           Exercises
         </Text>
         <View style={styles.exerciseList}>
-          {workout.exercises.map((exercise, index) => (
+          {(workout.exercises ?? []).map((exercise, index) => (
             <WorkoutExerciseSummaryCard key={`${exercise.name}-${index}`} exercise={exercise} index={index} />
           ))}
         </View>

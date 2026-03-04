@@ -211,7 +211,7 @@ export const usePlanBuilderState = (editingPlanId: string | null): PlanBuilderSt
     if (!plan) return null;
 
     // Resolve exercises from all available (including custom)
-    const resolvedExercises = plan.exercises.map(ex => {
+    const resolvedExercises = (plan.exercises ?? []).map(ex => {
       const found = allExercises.find(e => e.name === ex.name);
       return found ? { ...found } : ex;
     });

@@ -445,7 +445,7 @@ const PlansScreen: React.FC = () => {
     // 2. Collect all plan-specific workouts
     userPrograms.forEach(prog => {
       prog.workouts.forEach(w => {
-        if (w.exercises.length === 0) return;
+        if ((w.exercises ?? []).length === 0) return;
 
         const nameKey = w.name.trim().toLowerCase();
         if (!workoutsGroupedByName[nameKey]) {
@@ -480,8 +480,8 @@ const PlansScreen: React.FC = () => {
         ...w,
         // Simplified subtitles: just show exercise count, or plan name + exercise count
         subtitle: w.programNames.length > 0
-          ? `${w.programNames[0]} • ${w.exercises.length} ${w.exercises.length === 1 ? 'exercise' : 'exercises'}`
-          : `${w.exercises.length} ${w.exercises.length === 1 ? 'exercise' : 'exercises'}`
+          ? `${w.programNames[0]} • ${(w.exercises ?? []).length} ${(w.exercises ?? []).length === 1 ? 'exercise' : 'exercises'}`
+          : `${(w.exercises ?? []).length} ${(w.exercises ?? []).length === 1 ? 'exercise' : 'exercises'}`
       }))
       .sort((a, b) => {
         // Priority 1: Group by Plan (Custom considered as a plan group)
@@ -518,7 +518,7 @@ const PlansScreen: React.FC = () => {
       const suggestedSetsMap: Record<string, SetLog[]> = {};
       const dataPointsMap: Record<string, any[]> = {};
       const repRangesMap: Record<string, RepRange[]> = {};
-      const workoutExercises: WorkoutExercise[] = item.exercises.map((exercise: any) => {
+      const workoutExercises: WorkoutExercise[] = (item.exercises ?? []).map((exercise: any) => {
         const result = createSetsWithSmartSuggestions(exercise.name, allWorkouts, smartSuggestionsEnabled, undefined, undefined, customExercises, userGoal);
         historySetCounts[exercise.name] = result.historySetCount;
         if (result.smartSuggestedSets.length > 0) {

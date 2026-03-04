@@ -4,9 +4,17 @@ import { createClient } from '@supabase/supabase-js';
 
 // Supabase configuration
 // Environment variables are inlined at build time by Expo/Metro
-// Fallback to hardcoded values if env vars are not available (e.g., in production builds)
-const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL || 'https://rzhkagmwhtsvkbjnecfm.supabase.co';
-const SUPABASE_ANON_KEY = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ6aGthZ213aHRzdmtiam5lY2ZtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ0NTAwMTAsImV4cCI6MjA4MDAyNjAxMH0.5q0JUAWOpCzS-a-VWJVxyVvIjTm_0Dzv5X0CtrsM5Bw';
+// These MUST be set in .env file - no fallback values for security
+const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL;
+const SUPABASE_ANON_KEY = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
+
+if (!SUPABASE_URL) {
+  throw new Error('Missing EXPO_PUBLIC_SUPABASE_URL environment variable. Check your .env file.');
+}
+
+if (!SUPABASE_ANON_KEY) {
+  throw new Error('Missing EXPO_PUBLIC_SUPABASE_ANON_KEY environment variable. Check your .env file.');
+}
 
 console.log('[Supabase] Initializing client with URL:', SUPABASE_URL);
 console.log('[Supabase] Key available:', !!SUPABASE_ANON_KEY && SUPABASE_ANON_KEY.length > 50);

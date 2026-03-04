@@ -83,14 +83,17 @@ const CircularProgress: React.FC<CircularProgressProps> = ({ percentage, size })
 };
 
 const formatDuration = (totalSeconds: number): string => {
-  const hours = Math.floor(totalSeconds / 3600);
+  const days = Math.floor(totalSeconds / 86400);
+  const hours = Math.floor((totalSeconds % 86400) / 3600);
   const minutes = Math.floor((totalSeconds % 3600) / 60);
 
+  if (days > 0) {
+    // Use d:hr:min format when days are present
+    return `${days}:${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+  }
   if (hours > 0) {
-    if (minutes < 10) {
-      return `${hours}:0${minutes}`;
-    }
-    return `${hours}:${minutes}`;
+    // Use hr:min format when hours are present (but no days)
+    return `${hours}:${minutes.toString().padStart(2, '0')}`;
   }
   return `${minutes}m`;
 };

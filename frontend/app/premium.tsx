@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   BackHandler,
   Alert,
+  Image,
 } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -89,7 +90,11 @@ export default function PremiumScreen() {
       >
         {/* Hero Section */}
         <Animated.View entering={FadeInUp.springify()} style={styles.heroSection}>
-          <Ionicons name="fitness" size={56} color={theme.accent.orange} />
+          <Image
+            source={require('@/assets/images/icon.png')}
+            style={styles.heroIcon}
+            resizeMode="contain"
+          />
           <Text variant="heading1" style={styles.heroTitle}>
             Hercules Pro
           </Text>
@@ -156,6 +161,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingTop: spacing.md,
     paddingBottom: spacing.xl,
+  },
+  heroIcon: {
+    width: 80,
+    height: 80,
   },
   heroTitle: {
     marginTop: spacing.sm,
