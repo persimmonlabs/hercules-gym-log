@@ -16,9 +16,6 @@ if (!SUPABASE_ANON_KEY) {
   throw new Error('Missing EXPO_PUBLIC_SUPABASE_ANON_KEY environment variable. Check your .env file.');
 }
 
-console.log('[Supabase] Initializing client with URL:', SUPABASE_URL);
-console.log('[Supabase] Key available:', !!SUPABASE_ANON_KEY && SUPABASE_ANON_KEY.length > 50);
-
 export const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: {
     storage: localStorage,

@@ -188,6 +188,13 @@ const HerculesAIScreen: React.FC = () => {
     const { data, error } = await sendChatMessage(userMessage.content, sessionId ?? undefined, appStats);
 
     if (error) {
+      // DEBUG: Log full error details
+      console.error('[HerculesAI] Error details:', {
+        message: error.message,
+        code: error.code,
+        fullError: JSON.stringify(error)
+      });
+      
       if (error.code === 'CREDITS_EXHAUSTED') {
         setCreditsNextReset(error.nextResetAt || usage?.nextResetAt || '');
         setCreditsModalVisible(true);

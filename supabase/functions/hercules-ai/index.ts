@@ -95,14 +95,27 @@ Deno.serve(async (request: Request): Promise<Response> => {
 
   try {
     const supabase = createSupabaseAdmin();
-    const userId = await getUserIdFromRequest(supabase, request);
+    const isDev = getOptionalEnv('HERCULES_ENV', 'production') === 'development';
+    
+    let userId: string | null = null;
+    if (isDev) {
+      // Dev mode: use a fake user ID for testing
+      userId = 'dev-user-id';
+      console.log('[HerculesAI] Dev mode: using fake user ID');
+    } else {
+      userId = await getUserIdFromRequest(supabase, request);
+      console.log('[HerculesAI] User ID from request:', userId ? 'valid' : 'null');
+    }
 
     if (!userId) {
+      console.error('[HerculesAI] No user ID - returning 401');
       return createJsonResponse({ error: 'Unauthorized' }, 401);
     }
 
     const isPremium = await isPremiumUser(supabase, userId);
+    console.log('[HerculesAI] Premium check result:', isPremium);
     if (!isPremium) {
+      console.error('[HerculesAI] User not premium - returning 403');
       return createJsonResponse({ error: 'Premium required' }, 403);
     }
 
@@ -294,8 +307,6 @@ Deno.serve(async (request: Request): Promise<Response> => {
     }
 
     // Dev mode bypass — skip usage and rate limits during development
-    const isDev = getOptionalEnv('HERCULES_ENV', 'production') === 'development';
-
     // Rate limit check (skip in dev)
     if (!isDev) {
       const isRateLimited = await checkRateLimit(supabase, userId);
@@ -640,7 +651,11 @@ Deno.serve(async (request: Request): Promise<Response> => {
 
     return createJsonResponse(responseBody);
   } catch (error) {
-    console.error('[HerculesAI] Handler failed', error);
-    return createJsonResponse({ error: 'Internal server error' }, 500);
+    console.error('[HerculesAI] Handler failed:', error);
+    console.error('[HerculesAI] Error stack:', error instanceof Error ? error.stack : 'No stack');
+    console.error('[HerculesAI] Error message:', error instanceof Error ? error.message : String(error));
+    return createJsonResponse({ 
+      error: 'Internal server error',
+    }, 500);
   }
 });

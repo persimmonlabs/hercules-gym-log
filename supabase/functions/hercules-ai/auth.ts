@@ -24,20 +24,16 @@ export const isPremiumUser = async (
   supabase: SupabaseClient,
   userId: string
 ): Promise<boolean> => {
-  // TODO: Remove this dev bypass once premium is properly set up
-  console.log('[HerculesAI] Dev mode: bypassing premium check for user', userId);
-  return true;
-  
-  // const { data, error } = await supabase
-  //   .from('profiles')
-  //   .select('is_pro')
-  //   .eq('id', userId)
-  //   .maybeSingle();
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('is_pro')
+    .eq('id', userId)
+    .maybeSingle();
 
-  // if (error) {
-  //   console.warn('[HerculesAI] Premium check failed', error.message);
-  //   return false;
-  // }
+  if (error) {
+    console.warn('[HerculesAI] Premium check failed', error.message);
+    return false;
+  }
 
-  // return Boolean(data?.is_pro);
+  return Boolean(data?.is_pro);
 };

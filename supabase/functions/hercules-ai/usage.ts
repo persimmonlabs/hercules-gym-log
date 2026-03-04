@@ -105,7 +105,14 @@ export const getOrCreateUsage = async (
     .single();
 
   if (insertError || !inserted) {
-    throw new Error('[HerculesAI] Failed to create usage row');
+    console.error('[HerculesAI] Failed to insert usage row:', insertError);
+    console.error('[HerculesAI] Insert error details:', {
+      message: insertError?.message,
+      code: insertError?.code,
+      details: insertError?.details,
+      hint: insertError?.hint,
+    });
+    throw new Error(`[HerculesAI] Failed to create usage row: ${insertError?.message || 'Unknown error'}`);
   }
 
   return {

@@ -13,7 +13,13 @@
 import { createClient } from '@supabase/supabase-js';
 
 // Supabase configuration for Node.js (using service role key for admin access)
-const SUPABASE_URL = process.env.HERCULES_SUPABASE_URL || 'https://rzhkagmwhtsvkbjnecfm.supabase.co';
+const SUPABASE_URL = process.env.HERCULES_SUPABASE_URL || process.env.SUPABASE_URL;
+
+if (!SUPABASE_URL) {
+  console.error('ERROR: SUPABASE_URL environment variable is required');
+  console.log('Set it in your .env file or export it before running');
+  process.exit(1);
+}
 const SUPABASE_SERVICE_ROLE_KEY = process.env.HERCULES_SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 // Debug: Check if environment variable is set

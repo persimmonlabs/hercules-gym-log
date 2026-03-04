@@ -30,7 +30,8 @@
       "channel": "production",
       "env": {
         "EXPO_PUBLIC_SUPABASE_URL": "https://rzhkagmwhtsvkbjnecfm.supabase.co",
-        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ6aGthZ213aHRzdmtiam5lY2ZtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ0NTAwMTAsImV4cCI6MjA4MDAyNjAxMH0.5q0JUAWOpCzS-a-VWJVxyVvIjTm_0Dzv5X0CtrsM5Bw"
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ6aGthZ213aHRzdmtiam5lY2ZtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ0NTAwMTAsImV4cCI6MjA4MDAyNjAxMH0.5q0JUAWOpCzS-a-VWJVxyVvIjTm_0Dzv5X0CtrsM5Bw",
+        "HERCULES_ENV": "production"
       }
     }
   },
